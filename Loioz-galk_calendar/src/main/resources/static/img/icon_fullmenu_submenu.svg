@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="19" height="19" viewBox="0 0 19 19">
+  <g id="icon_fullmenu_submenu" transform="translate(-909 -452)">
+    <g id="sfm" transform="translate(909 452)" fill="none" stroke="#fff" stroke-width="1">
+      <circle cx="9.269" cy="9.269" r="9.269" stroke="none"/>
+      <circle cx="9.269" cy="9.269" r="8.769" fill="none"/>
+    </g>
+    <path id="sfm-2" data-name="sfm" d="M8876.639,1650.337l4.167,4.168-4.167,4.168" transform="translate(-7960.169 -1193.539)" fill="none" stroke="#fff" stroke-width="1"/>
+  </g>
+</svg>

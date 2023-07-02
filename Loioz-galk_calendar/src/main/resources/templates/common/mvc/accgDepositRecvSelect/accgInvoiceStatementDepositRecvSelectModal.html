@@ -1,0 +1,295 @@
+ <!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+<meta charset="utf-8" />
+</head>
+<body>
+
+<!--/* 本処理は、モーダルを扱うFragment領域で定義する */-->
+<script type="text/javascript" th:inline="javascript" th:fragment="accgInvoiceStatementDepositRecvSelectModalFragmentJs">
+	benzo.global.fragment.accgInvoiceStatementDepositRecvSelectModalFragmentObj = {
+		<!--/* 呼び出し元で定義が可能な処理 */-->
+		setUpObj : {
+			
+			<!--/* 追加処理 */-->
+			depositAddAction: () => {
+				throw new Error('depositAddActionのセットアップ処理がされていません');
+			},
+		},
+		
+		<!--/* フラグメントのパラメータに関連する処理 */-->
+		paramObj : {
+			<!--/* 入金の預り金SEQ取得処理 */-->
+			getNyukinDepositRecvSeqArray: () => {
+				const nyukinDepositRecvSeqArray = $(".targetCheck:checked").map(function(){
+					if ($(this).closest('.depositRow').find('.depositType').val() == /*[[${T(jp.loioz.common.constant.CommonConstant$DepositType).NYUKIN.cd}]]*/ '') {
+						return $(this).data('depositRecvSeq');
+					}
+				}).get();
+				return nyukinDepositRecvSeqArray;
+			} ,
+			
+			<!--/* 出金の預り金SEQ取得処理 */-->
+			getShukkinDepositRecvSeqArray: (modal) => {
+				const shukkinDepositRecvSeqArray = $(".targetCheck:checked").map(function(){
+					if ($(this).closest('.depositRow').find('.depositType').val() == /*[[${T(jp.loioz.common.constant.CommonConstant$DepositType).SHUKKIN.cd}]]*/ '') {
+						return $(this).data('depositRecvSeq');
+					}
+				}).get();
+				return shukkinDepositRecvSeqArray;
+			} ,
+		},
+		
+		<!--/* 
+			本フラグメント以外でも扱う処理
+			基本的には書き換えを行わない。
+		*/-->
+		commonFn : {
+		},
+	};
+</script>
+<!--/* 本処理は、モーダルを扱うFragment領域で定義する end */-->
+
+
+<!--/* 預り金選択モーダル */-->
+<div id="accgInvoiceStatementDepositRecvSelectModalFragment" th:fragment="accgInvoiceStatementDepositRecvSelectModalFragment"
+	th:object="${accgInvoiceStatementDepositRecvSelectViewForm}"
+	th:with="shukkinFlg=*{T(jp.loioz.common.constant.CommonConstant$DepositType).SHUKKIN.equalsByCode(depositType)},
+					nyukinFlg=*{T(jp.loioz.common.constant.CommonConstant$DepositType).NYUKIN.equalsByCode(depositType)}">
+	<script type="text/javascript" th:inline="javascript">
+		$(function() {
+			let ajaxRunning = false;
+			
+			<!--/* 共有の要素セットアップ処理 */-->
+			commonSetUpElement("#accgInvoiceStatementDepositRecvSelectModalFragment");
+			
+			const accgInvoiceStatementDepositRecvSelectModalFragment = $('#accgInvoiceStatementDepositRecvSelectModalFragment');
+			
+			<!--/* モーダル閉じる時設定 */-->
+			const $accgInvoiceStatementDepositRecvSelectModalFragment = $("#accgInvoiceStatementDepositRecvSelectModalFragment");
+			const $accgInvoiceStatementDepositRecvSelectModal = $accgInvoiceStatementDepositRecvSelectModalFragment.closest(".modal");
+			const $accgInvoiceStatementDepositRecvSelectModalFragmentWrap = $accgInvoiceStatementDepositRecvSelectModal.find(".accgInvoiceStatementDepositRecvSelectModalFragmentWrap");
+			
+			<!--/* チェックボックス全選択・全解除 */-->
+			accgInvoiceStatementDepositRecvSelectModalFragment.on('click', '.checkBoxAllCheck', function(){
+				$('.targetCheck').prop("checked", $(this).prop("checked"));
+			});
+			
+			<!--/* 項目を追加のリンクをクリック */-->
+			accgInvoiceStatementDepositRecvSelectModalFragment.on("click", '.openInputDepositRecv', function(){
+				$(".errorMessageArea").addClass("hidden");
+				$(".infoMessageArea").addClass("hidden");
+				<!--/* 反映ボタンを非活性化 */-->
+				accgInvoiceStatementDepositRecvSelectModalFragment.find('.reflect').prop('disabled', true);
+				accgInvoiceStatementDepositRecvSelectModalFragment.find('.reflect').addClass('btn-secondary');
+				
+				const personId = $(".personId").val();
+				const ankenId = $(".ankenId").val();
+				const depositType = $(".depositType").val();
+				
+				<!--/* 2重押下防止 */-->
+				if(ajaxRunning){
+					return false;
+				}
+				ajaxRunning = true;
+				
+				const requestParam = [
+					{name:"ankenId", value:ankenId},
+					{name:"personId", value:personId},
+					{name:"depositType", value:depositType}
+				];
+
+				$.ajax({
+					url : "/common/mvc/accgInvoiceStatementDepositRecvSelect/openInputDepositRecv",
+					type : "GET",
+					data : requestParam
+				})
+				.done(function(data, status, jqXHR) {
+					if (isAjaxProcSuccess(jqXHR)) {
+						<!--/* 処理成功 */-->
+						$('#depositRecvSelectMocalInputRowFragmentWrap').html(data);
+						<!--/* 追加Fragmentを表示する場合は、「項目を追加」リンクを非表示にする */-->
+						$('.openInputDepositRecv').addClass("hidden");
+					} else {
+						<!--/* 処理失敗 */-->
+						const errorMsg = getAjaxProcResutlMessage(jqXHR);
+						showErrorMessageForJs(errorMsg);
+					}
+				})
+				.fail(function(jqXHR, status, errorThrown) {
+					showErrorMessageForJs(/*[[#{E00091}]]*/ "error");
+				})
+				.always(function(){
+					ajaxRunning = false;
+				});
+			});
+			
+			<!--/* 「追加」ボタン押下処理 */-->
+			accgInvoiceStatementDepositRecvSelectModalFragment.on("click", ".add", function(e) {
+				const depositRecvSeqArray = $(".targetCheck:checked").map(function(){
+					return $(this).data('depositRecvSeq');
+				}).get();
+				if (!depositRecvSeqArray.length) {
+					<!--/* チェックが無い場合は処理終了 */-->
+					$(".errorMessageArea").removeClass("hidden");
+					$(".errMsgText").text("一覧の項目をチェックしてください。");
+					return false;
+				}
+				
+				benzo.global.fragment.accgInvoiceStatementDepositRecvSelectModalFragmentObj.setUpObj.depositAddAction(e);
+			});
+			
+			<!--/* 登録フォーム閉じる処理 */-->
+			accgInvoiceStatementDepositRecvSelectModalFragment.on("click", '.closeAddRow', function(){
+				$(".errorMessageArea").addClass("hidden");
+				$(".infoMessageArea").addClass("hidden");
+				$('#depositRecvSelectMocalInputRowFragmentWrap').html('');
+				<!--/* 項目を追加リンクを表示する */-->
+				$('.openInputDepositRecv').removeClass("hidden");
+				<!--/* 反映ボタンを活性化 */-->
+				accgInvoiceStatementDepositRecvSelectModalFragment.find('.reflect').prop('disabled', false);
+				accgInvoiceStatementDepositRecvSelectModalFragment.find('.reflect').removeClass('btn-secondary');
+			});
+			
+			<!--/* 項目の設定データリスト：非表示処理 */-->
+			$(document).off('click.depositRecvSelectModalItemSearchPopoverHide');
+			$(document).on('click.depositRecvSelectModalItemSearchPopoverHide', function(e) {
+				<!--/* 自作ポップオーバーの非表示処理（ポップオーバー外のクリック） */-->
+				let popoverWraper = $(e.target).closest('.depositRecvSelectModalDataListFragmentWrap');
+				if(!popoverWraper.length) {
+					<!--/* ポップオーバー要素の外側をクリックした時の操作 */--> 
+					<!--/* 全てのポップオーバーを非表示とする */-->
+					$('.depositRecvSelectModalDataListFragmentWrap').html('');
+				} else {
+					<!--/* ターゲット要素をクリックした時の操作 */-->
+					<!--/* 特になにもしない */-->
+				}
+			});
+			
+			<!--/* モーダルを閉じたときの処理 */-->
+			$accgInvoiceStatementDepositRecvSelectModalFragment.off("hidden.bs.modal.commonHiddenAction");
+			$accgInvoiceStatementDepositRecvSelectModalFragment.one("hidden.bs.modal.commonHiddenAction", function(){
+				$accgInvoiceStatementDepositRecvSelectModalFragmentWrap.html("");
+			});
+			
+		});
+	</script>
+	
+	<div class="modal-header">
+		<h2 class="modalheader_title" id="accountSelectionTitle">
+			<!--/* 既入金選択モーダル */-->
+			<th:block th:if="${nyukinFlg}">未精算の預り金を選択</th:block>
+			<!--/* 実費選択モーダル */-->
+			<th:block th:if="${shukkinFlg}">未請求の実費を選択</th:block>
+		</h2>
+	</div>
+	
+	<form id="depositRecvSelectModalBodyWrap">
+		<input type="hidden" class="ankenId" th:value="*{ankenId}">
+		<input type="hidden" class="personId" th:value="*{personId}">
+		<input type="hidden" class="depositType" th:value="*{depositType}">
+		<div class="modal-body">
+			<div class="fc_sub">
+				<!--/* 既入金選択モーダル */-->
+				<th:block th:if="${nyukinFlg}">未精算の預り金を選択してください。</th:block>
+				<!--/* 実費選択モーダル */-->
+				<th:block th:if="${shukkinFlg}">未請求の実費を選択してください。</th:block>
+			</div>
+			<div class="text-danger">
+				<i class="fas fa-exclamation-circle mr-1"></i>
+				<!--/* 既入金選択モーダル */-->
+				<th:block th:if="${nyukinFlg}">設定後、既入金の保存ボタンを押下すると請求書／精算書に反映されます。</th:block>
+				<!--/* 実費選択モーダル */-->
+				<th:block th:if="${shukkinFlg}">設定後、請求項目の保存ボタンを押下すると請求書／精算書に反映されます。</th:block>
+			</div>
+			<div class="errorMessageArea error_msg_js hidden">
+				<i class="fas fa-exclamation-triangle mr-2"></i>
+				<span class="errMsgText" role="alert"></span>
+			</div>
+			<div class="infoMessageArea info_msg_js hidden">
+				<i class="fas fa-check mr-2"></i>
+				<span class="infoMsgText" role="alert"></span>
+			</div>
+			
+			<div class="header_fixed_table_wrapper table_deposit_recv_add mt-4">
+				<table class="table table_standard table-sm table_fixed table-hover">
+					<thead>
+						<tr>
+							<th class="col_10">
+								<label class="checkbox_btn no_text">
+									<input type="checkbox" class="checkbox_input checkBoxAllCheck">
+									<span class="checkbox_txt"></span>
+								</label>
+							</th>
+							<th class="col_25">項目</th>
+							<th class="col_20">発生日</th>
+							<th class="col_15 text-right" th:if="${nyukinFlg}">入金額</th>
+							<th class="col_15 text-right" th:if="${shukkinFlg}">出金額</th>
+							<th class="col_40">摘要</th>
+						</tr>
+					</thead>
+					<tbody>
+						<!--/*/ <th:block th:if="*{#lists.isEmpty(depositRecvList)}"> /*/-->
+							<tr>
+								<th:block th:if="*{T(jp.loioz.common.constant.CommonConstant$DepositType).NYUKIN.equalsByCode(depositType)}">
+									<td colspan="5" class="no_data col_no_data"><span>選択可能な預り金はありません。</span></td>
+								</th:block>
+								<th:block th:if="*{T(jp.loioz.common.constant.CommonConstant$DepositType).SHUKKIN.equalsByCode(depositType)}">
+									<td colspan="5" class="no_data col_no_data"><span>選択可能な実費項目はありません。</span></td>
+								</th:block>
+							</tr>
+						<!--/*/ </th:block> /*/-->
+						
+						<tr class="depositRow" th:each="data : *{depositRecvList}" data-click-sync-for-descendants=".targetCheck">
+							<td>
+								<label class="checkbox_btn no_text">
+									<input type="checkbox" class="checkbox_input targetCheck" th:checked="${data.checked}" th:data-deposit-recv-seq="${data.depositRecvSeq}">
+									<span class="checkbox_txt"></span>
+								</label>
+							</td>
+							<td>
+								<div class="char_ellipsis" th:text="${data.depositItemName}">着手金</div>
+								<input type="hidden" class="depositType" th:value="${data.depositType}">
+							</td>
+							<td>
+								<span th:text="${#strings.isEmpty(data.depositDate)} ? '-' : ${data.depositDate}"></span>
+							</td>
+							<td class="text-right" th:if="${nyukinFlg}">
+								<span class="fs15 depositAmount" th:text="${#strings.isEmpty(data.depositAmount)} ? '-' : ${data.depositAmount}">110,000</span>
+							</td>
+							<td class="text-right" th:if="${shukkinFlg}">
+								<span class="fs15 withdrawalAmount" th:text="${#strings.isEmpty(data.withdrawalAmount)} ? '-' : ${data.withdrawalAmount}">110,000</span>
+							</td>
+							<td>
+								<div class="char_ellipsis" th:text="${#strings.isEmpty(data.sumText)} ? '-' : ${data.sumText}"></div>
+							</td>
+						</tr>
+					</tbody>
+				</table>
+			</div>
+			<!--/* 預り金追加入力用 */-->
+			<div id="depositRecvSelectMocalInputRowFragmentWrap"></div>
+			<div class="mt-3" th:with="depositRecvAddRegistLimit=${(T(jp.loioz.common.constant.CommonConstant).DEPOSIT_RECV_ADD_REGIST_LIMIT)}">
+				<th:block th:if="${accgInvoiceStatementDepositRecvSelectViewForm.numberOfRegistDeposit < depositRecvAddRegistLimit}">
+					<a href="javascript:void(0);" class="fs15 openInputDepositRecv">
+						<i class="fas fa-plus-square mr-1"></i>
+						<!--/* 既入金選択モーダル */-->
+						<th:block th:if="${nyukinFlg}">預り金(入金)を追加</th:block>
+						<!--/* 実費選択モーダル */-->
+						<th:block th:if="${shukkinFlg}">請求する実費を追加</th:block>
+					</a>
+				</th:block>
+			</div>
+		</div>
+		
+		<div class="modal-footer">
+			<button type="button" class="btn btn-primary add mr-4 reflect" data-dismiss="modal">
+				<span>対象を設定...</span>
+			</button>
+			<button type="button" class="btn btn-light" data-dismiss="modal" name="cancel"><i class="fas fa-times"></i>閉じる</button>
+		</div>
+	</form>
+</div>
+
+</body>
+</html>

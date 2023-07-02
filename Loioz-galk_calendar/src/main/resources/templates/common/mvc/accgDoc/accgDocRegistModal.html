@@ -1,0 +1,348 @@
+ <!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+<meta charset="utf-8" />
+</head>
+<body>
+
+<!--/* 本処理は、モーダルを扱うFragment領域で定義する */-->
+<script type="text/javascript" th:inline="javascript" th:fragment="accgDocRegistModalFragmentJs">
+	benzo.global.fragment.accgDocRegistModalFragmentObj = {
+		<!--/* 呼び出し元で定義が可能な処理 */-->
+		setUpObj : {
+			
+			// 登録側
+			registAction: () => {
+				throw new Error('registActionのセットアップ処理がされていません');
+			},
+		},
+		
+		<!--/* フラグメントのパラメータに関連する処理 */-->
+		paramObj : {
+			
+			<!--/* モーダルの表示名 ※default値は当事者・関与者*/-->
+			modalNameLabel : '請求書・精算書',
+			
+			<!--/* 検索フォームパラメータの取得処理 */-->
+			getFormParams: (modal) => {
+				let formParam = $(modal).find('#accgDocRegistModalInputForm').serializeArray();
+				return formParam;
+			} ,
+
+		},
+		
+		<!--/* 
+			本フラグメント以外でも扱う処理
+			基本的には書き換えを行わない。
+		*/-->
+		commonFn : {
+		},
+	};
+</script>
+<!--/* 本処理は、モーダルを扱うFragment領域で定義する end */-->
+
+<!--/* 請求書・精算書作成モーダル */-->
+<div th:id="${uuid}" class="accgDocRegistModalFragment" th:fragment="accgDocRegistModalFragment" th:object="${accgDocRegistModalInputForm}" th:with="uuid=${T(java.util.UUID).randomUUID().toString()}">
+	<script type="text/javascript" th:inline="javascript">
+		$(function() {
+			let ajaxRunning = false;
+			
+			<!--/* 共有の要素セットアップ処理 */-->
+			commonSetUpElement("#accgDocRegistModalFragment");
+			
+			<!--/* モーダル閉じる時設定 */-->
+			const accgDocRegistModalFragment = $("#" + /*[[${uuid}]]*/"id");
+			const accgDocRegistModal = accgDocRegistModalFragment.closest(".modal");
+			const accgDocRegistModalFragmentWrap = accgDocRegistModal.find(".accgDocRegistModalFragmentWrap");
+			
+			<!--/* 可変ラベルの設定 */-->
+			accgDocRegistModalFragment.find(".variableLabel").text(benzo.global.fragment.accgDocRegistModalFragmentObj.paramObj.modalNameLabel);
+			
+			<!--/* 顧客入力時処理 */-->
+			let timeoutId = "";
+			accgDocRegistModalFragment.on("change keydown paste cut", "#customerSearchInput", function(e) {
+				
+				<!--/* Enter、矢印の処理 */-->
+				if (keyActionAccgDocRegistModal(e.which)) {
+					return false;
+				}
+				
+				$('[data-toggle="tooltip"]').tooltip('hide');
+				timeoutId = lazyQueueFn(getCustomerList, {"clearQueueId":timeoutId});
+			});
+			
+			<!--/* 顧客候補取得処理 */-->
+			function getCustomerList() {
+				
+				<!--/* 顧客名が無い場合は候補リストを消して終了 */-->
+				const searchWord = $("#customerSearchInput").val().trim();
+				if (searchWord === '') {
+					$('#customerListWrap').html("");
+					return;
+				}
+				
+				$.ajax({
+					url : "/common/mvc/accgDocRegist/getCustomerList",
+					type : "GET",
+					data : {
+						"searchWord" : searchWord
+					},
+				})
+				.done(function(data, status, jqXHR) {
+					
+					if (isAjaxProcSuccess(jqXHR)) {
+						<!--/* 処理成功 */-->
+						$('#customerListWrap').html(data);
+					} else {
+						<!--/* 処理失敗 */-->
+						const errorMsg = getAjaxProcResutlMessage(jqXHR);
+						showErrorMessageForJs(errorMsg);
+					}
+				}).fail(function() {
+					showErrorMessageForJs(/*[[#{E00010}]]*/ "変更に失敗しました。");
+				});
+			}
+			
+			<!--/** キーアクション */-->
+			function keyActionAccgDocRegistModal(keyCode) {
+				
+				let returnFlg = false;
+				const poperFocusCustomerBtn = $('.customerSearchPoper .addCustomer[aria-selected=true]');
+				switch (keyCode){
+					case void 0:
+						<!--/** キーボード入力ではないが呼び出された場合 */-->
+						returnFlg = true;
+						break;
+					case 13:
+						<!--/** Enter */-->
+						const customerId = poperFocusCustomerBtn.data("id");
+						if (customerId != null) {
+							selectedCustomer(customerId);
+						}
+						returnFlg = true;
+						break;
+					case 38:
+						<!--/** ↑処理 */-->
+						if(poperFocusCustomerBtn.length && poperFocusCustomerBtn.prev().length) {
+							poperFocusCustomerBtn.attr("aria-selected", false)
+							.prev().attr("aria-selected", true);
+						}
+						returnFlg = true;
+						break;
+					case 40:
+						<!--/** ↓処理 */-->
+						if(poperFocusCustomerBtn.length && poperFocusCustomerBtn.next().length) {
+							poperFocusCustomerBtn.attr("aria-selected", false)
+							.next().attr("aria-selected", true);
+						}
+						if(!poperFocusCustomerBtn.length) {
+							$('.customerSearchPoper .addCustomer:first').attr("aria-selected",true);
+						}
+						returnFlg = true;
+						break;
+					default:
+						break;
+				}
+				return returnFlg;
+			}
+			
+			<!--/* 顧客候補リストから選択 */-->
+			accgDocRegistModalFragment.on('click', '.addCustomer', function(e) {
+				const personId = $(this).data("id");
+				selectedCustomer(personId);
+			});
+			
+			<!--/* 顧客候補リストから選択時処理 */-->
+			function selectedCustomer(personId) {
+				
+				if (ajaxRunning) {
+					return false;
+				}
+				ajaxRunning = true;
+				$('#customerListWrap').html("");
+				Promise.resolve(personId)
+					.then(renderSelectedCustomerAreaFunc)
+					.then(renderAnkenListAreaFunc)
+					.catch(() => { /*何もしない*/ })
+					.finally(() => ajaxRunning = false);
+			}
+			
+			<!--/* 選択済み顧客の表示 */-->
+			const renderSelectedCustomerAreaFunc = (personId) => {
+				return new Promise((resolve, reject) => {
+					$.ajax({
+						url : "/common/mvc/accgDocRegist/renderSelectedCustomer",
+						type : "GET",
+						data : {
+							"personId" : personId
+						}
+					})
+					.done(function(data, status, jqXHR) {
+						if (isAjaxProcSuccess(jqXHR)) {
+							<!--/* 処理成功 */-->
+							$('#customerSelectedWrap').html(data);
+							$('#customerSearchArea').addClass('hidden');
+							
+							return resolve(personId);
+						} else {
+							<!--/* 処理失敗 */-->
+							const errorMsg = getAjaxProcResutlMessage(jqXHR);
+							showErrorMessageForJs(errorMsg);
+							return reject();
+						}
+					})
+					.fail(function(jqXHR, status, errorThrown) {
+						showErrorMessageForJs(/*[[#{E00091}]]*/ "error");
+						return reject();
+					})
+				});
+			}
+			
+			<!--/* 案件リストボックスの表示 */-->
+			const renderAnkenListAreaFunc = (personId) => {
+				return new Promise((resolve, reject) => {
+					$.ajax({
+						url : "/common/mvc/accgDocRegist/getAnkenList",
+						type : "GET",
+						data : {
+							"personId" : personId
+						}
+					})
+					.done(function(data, status, jqXHR) {
+						if (isAjaxProcSuccess(jqXHR)) {
+							<!--/* 処理成功 */-->
+							$('#defaultAnkenList').addClass('hidden');
+							$('#ankenListWrap').html(data);
+							
+							return resolve();
+						} else {
+							<!--/* 処理失敗 */-->
+							const errorMsg = getAjaxProcResutlMessage(jqXHR);
+							showErrorMessageForJs(errorMsg);
+							return reject();
+						}
+					})
+					.fail(function(jqXHR, status, errorThrown) {
+						showErrorMessageForJs(/*[[#{E00091}]]*/ "error");
+						return reject();
+					})
+				});
+			}
+			
+			<!--/* 顧客候補リストを閉じる */-->
+			accgDocRegistModalFragment.on('click touchend', function(e) {
+				if (!$(e.target).closest('.customer_search').length && !$(e.target).closest('#customerSelectedArea').length && !$(e.target).closest('#customerSearchInput').length && !$(e.target).is('.addCustomer')) {
+					$("#customerListWrap").html("");
+				}
+			});
+			
+			<!--/* 選択済み顧客を外す処理 */-->
+			accgDocRegistModalFragment.on("click", ".deleteCustomer", function(e) {
+				<!--/* 本来設定されているキーイベントを外す */-->
+				e.preventDefault();
+				<!--/* 顧客選択初期状態 */-->
+				$('#customerSearchArea').removeClass('hidden');
+				$('#customerSelectedWrap').html('');
+				$('#customerSearchInput').val('');
+				<!--/* 案件リスト初期状態 */-->
+				$('#defaultAnkenList').removeClass('hidden');
+				$('#ankenListWrap').html('');
+			});
+			
+			<!--/* 「作成する」ボタン押下処理 */-->
+			accgDocRegistModalFragment.on("click", ".regist", function(e) {
+				benzo.global.fragment.accgDocRegistModalFragmentObj.setUpObj.registAction(e);
+			});
+			
+			<!--/* モーダルを閉じたときの処理 */-->
+			accgDocRegistModal.off("hidden.bs.modal.commonHiddenAction");
+			accgDocRegistModal.one("hidden.bs.modal.commonHiddenAction", function(){
+				accgDocRegistModalFragmentWrap.html("");
+			});
+		});
+	</script>
+	
+	<form id="accgDocRegistModalInputForm">
+		<div class="modal-header">
+			<h2 class="modalheader_title" id="invoiceCreateTitle"><span class="variableLabel">請求書</span>作成</h2>
+		</div>
+		<div class="modal-body">
+			<div th:replace="common/messageArea::jsMessageArea"></div>
+			<div class="modal_description">
+				<span class="variableLabel">請求書</span>を作成する対象の「顧客」と「案件」を選択してください。
+			</div>
+			<div class="form-row">
+				<div class="form-group col-md-12">
+					<label class="input_parts_label">顧客選択</label>
+					<span class="mark_equired">必須</span>
+					<div id="customerSearchArea" class="d-flex">
+						<span id="customerListWrap"></span>
+						<input type="search" id="customerSearchInput" class="form-control" maxlength="300" placeholder="名前を入力（名簿検索）..." autocomplete="off"/>
+					</div>
+					<div id="customerSelectedWrap"></div>
+				</div>
+			</div>
+			<div class="form-row">
+				<div class="form-group col-md-12">
+					<label class="input_parts_label">案件選択</label>
+					<span class="mark_equired">必須</span>
+					<select id="defaultAnkenList" class="form-control">
+						<option value="">-</option>
+					</select>
+					<div id="ankenListWrap"></div>
+				</div>
+			</div>
+		</div>
+		<div class="modal-footer">
+			<button type="button" class="btn btn-info regist"><i class="fas fa-check"></i>作成する</button>
+			<button type="button" class="btn btn-light icon_btn_close" data-dismiss="modal" name="cancel"><i class="fas fa-times"></i>閉じる</button>
+		</div>
+	</form>
+	
+</div>
+
+<!--/* 顧客候補リストフラグメント start */-->
+<div th:fragment="customerListFragment" id="customerListFragment">
+	<script type="text/javascript" th:inline="javascript">
+	</script>
+	<th:block th:if="${#lists.isEmpty(customerList)}">
+		<div class="popover accg_customer_search_wrapper mt-2 ml-2" role="tooltip">
+			<div class="popover-body">
+				<div class="customer_search">該当する顧客が見つかりません。</div>
+			</div>
+		</div>
+	</th:block>
+	<th:block th:unless="${#lists.isEmpty(customerList)}">
+		<div class="popover accg_customer_search_wrapper customerSearchPoper fade bs-popover-bottom show" role="tooltip">
+			<div class="popover-body">
+				<div class="customer_search">
+					<button class="btn add_customer addCustomer" th:data-id="${customer.value}"
+						th:each="customer, stat : ${customerList}" th:aria-selected="${stat.index} == 0 ? true : false" th:text="${customer.label}">
+						山田 太郎(名-8937)
+					</button>
+				</div>
+			</div>
+		</div>
+	</th:block>
+</div>
+<!--/* 顧客候補データリストフラグメント end */-->
+
+<!--/* 選択済み顧客表示フラグメント end */-->
+<div th:fragment="customerSelectedFragment" id="customerSelectedFragment" class="customer_select_area">
+	<th:block th:if="${person}">
+		<button class="btn add_customer w-100 pr-4 char_ellipsis deleteCustomer" th:text="|*{person.personName}（${person.personId}）|">山田 太郎（名-1234）</button>
+		<input type="hidden" name="personId" th:value="${person.personId.asLong()}">
+	</th:block>
+</div>
+<!--/* 選択済み顧客表示フラグメント end */-->
+
+<!--/* 案件リストボックスフラグメント start */-->
+<div th:fragment="ankenListFragment" id="ankenListFragment">
+	<select class="form-control" name="ankenId">
+		<option th:each="anken : *{ankenList}" th:value="${anken.value}" th:text="${anken.label}"></option>
+	</select>
+</div>
+<!--/* 案件リストボックスフラグメント end */-->
+
+</body>
+</html>

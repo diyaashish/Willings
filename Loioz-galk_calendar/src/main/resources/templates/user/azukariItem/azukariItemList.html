@@ -1,0 +1,403 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+	xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+	layout:decorator="commonLayout">
+<head>
+<meta charset="utf-8" />
+<title layout:fragment="title-contents">
+	[[${T(jp.loioz.common.utility.LoiozUtils).getHtmlTitle("預り品", T(jp.loioz.common.utility.SessionUtils).getTenantName())}]]
+</title>
+<style type="text/css">
+.popover .arrow {
+	display: none;
+}
+ul.output_nav {
+	list-style: none;
+	padding: 0;
+	margin: 5px;
+}
+.output_nav li {
+	width: 100%;
+	text-align: left;
+	margin-bottom: 5px;
+}
+.output_nav li .btn {
+	border: none;
+}
+.output_nav li:hover {
+	background-color: #EFF1F3;
+}
+</style>
+<script type="text/javascript" th:inline="javascript">
+$(function() {
+
+	let ankenId = /*[[${viewForm.ankenId}]]*/;
+
+	<!--/* 検索条件（表示）の検索処理を発火 */-->
+	$(document).on('change', '#azukariSearchForm [name="azukariSearchStatus"]', function() {
+		$('#azukariSearchForm').submit();
+	});
+
+	<!--/* 預り元種別変更時の操作 */-->
+	$(document).on('click', '[name="azukariItemDto.azukariFromType"]', function() {
+		changeAzukarimotoType();
+	});
+
+	<!--/* 返却先種別変更時の操作 */-->
+	$(document).on('click', '[name="azukariItemDto.returnToType"]', function() {
+		changeHenkyakusakiType();
+	});
+
+	<!--/* 預り元種別の表示切り替え処理 */-->
+	function changeAzukarimotoType() {
+		let shihraishaType = $('input[name="azukariItemDto.azukariFromType"]:checked').val();
+		if(shihraishaType == "0"){
+			$("#azukarimotoCustomerSelect").show();
+			$("#azukarimotoKanyoshaSelect").hide();
+			$("#azukarimotoText").hide();
+		}else if(shihraishaType == "1"){
+			customerId = $("select#nyukinShiharaiKanyoshaSelect").val();
+			$("#azukarimotoCustomerSelect").hide();
+			$("#azukarimotoKanyoshaSelect").show();
+			$("#azukarimotoText").hide();
+		}else if(shihraishaType == "2"){
+			$("#azukarimotoCustomerSelect").hide();
+			$("#azukarimotoKanyoshaSelect").hide();
+			$("#azukarimotoText").show();
+		}else{
+			let shiharaiSakiTypeRadio = document.getElementsByName("azukariItemDto.azukariFromType");
+			shiharaiSakiTypeRadio[0].checked = true;
+			$("#azukarimotoCustomerSelect").show();
+			$("#azukarimotoKanyoshaSelect").hide();
+			$("#azukarimotoText").hide();
+		}
+	}
+
+	<!--/* 返却先の表示切り替え処理 */-->
+	function changeHenkyakusakiType(){
+		let henkyakusakiType = $('input[name="azukariItemDto.returnToType"]:checked').val();
+		if(henkyakusakiType == "0"){
+			$("#henkyakusakiCustomerSelect").show();
+			$("#henkyakusakiKanyoshaSelect").hide();
+			$("#henkyakusakiText").hide();
+		}else if(henkyakusakiType == "1"){
+			customerId = $("select#nyukinShiharaiKanyoshaSelect").val();
+			$("#henkyakusakiCustomerSelect").hide();
+			$("#henkyakusakiKanyoshaSelect").show();
+			$("#henkyakusakiText").hide();
+		}else if(henkyakusakiType == "2"){
+			$("#henkyakusakiCustomerSelect").hide();
+			$("#henkyakusakiKanyoshaSelect").hide();
+			$("#henkyakusakiText").show();
+		}else{
+			let shiharaiSakiTypeRadio = document.getElementsByName("azukariItemDto.returnToType");
+			shiharaiSakiTypeRadio[0].checked = true;
+			$("#henkyakusakiCustomerSelect").show();
+			$("#henkyakusakiKanyoshaSelect").hide();
+			$("#henkyakusakiText").hide();
+		}
+	}
+
+	// -----------------------------------------
+	// 新規登録、編集モーダルの表示
+	// -----------------------------------------
+	$(document).on('click', '#registAzukariItem, #updateAzukariItem', function() {
+
+		let action = $(this).data("action");
+		let ankenItemSeq = $(this).attr('data-seq');
+
+		$.ajax({
+			url : action,
+			type : "POST",
+			data : {"ankenId":ankenId,
+						"ankenItemSeq" : ankenItemSeq},
+		}).done(function(val) {
+			// モーダルの表示
+			const newContents = $(val);
+			$('.azukariItemModalBody').html(newContents);
+
+			// datepickerの設定
+			newContents.find(".btn_popcal").each((i,btn) => setUpDatepickerButton($(btn)));
+
+			// 表示切り替えアクションを発火
+			changeAzukarimotoType();
+			changeHenkyakusakiType();
+
+		}).fail(function(jqXHR, textStatus, errorThrown) {
+			window.location.href = "/systemError";
+		}).always(function() {
+		});
+	});
+
+	//新規登録・連続登録処理
+	let azukariItemAjaxRunning = false;
+	let updatedFlg = false;// モーダルを閉じた後画面を更新するかどうかのフラグ
+	$(document).on('click', "#azukariItemModal [name=regist],#azukariItemModal [name=update],#azukariItemModal [name=delete],#azukariItemModal [name=multiRegist]", function() {
+
+		let modal = $(this).closest('.modal');
+
+		let ankenItemSeq = $(".azukariItemModalBody [name='azukariItemDto.ankenItemSeq']").val();
+
+		let action = $(this).data("action");
+		let name =$(this).prop("name");
+		let formData = modal.find("[name^='azukariItemDto.']").serializeArray();
+		formData.push({name : "ankenId", value : ankenId});
+
+		if(name == "delete"){
+			let confirmResult = confirm("削除してもよろしいですか？");
+			if(!confirmResult){
+				return false;
+			}
+		}
+
+		// 2重押下防止
+		if (azukariItemAjaxRunning) {
+			return false;
+		}
+		azukariItemAjaxRunning =true;
+		$.ajax({
+			url : action,
+			type : "POST",
+			data : formData,
+		}).done(function(result) {
+			if (result.succeeded) {
+				updatedFlg = true;
+				if (name === "multiRegist") {
+					// 連続登録
+					showInfoMsgForModal(result.message);
+					clearAllItemMsg();
+					$('input[name="azukariItemDto.hinmoku"]').val("");
+					$('input[name="azukariItemDto.azukariCount"]').val("");
+					$('textarea[name="azukariItemDto.remarks"]').val("");
+
+				} else {
+					// 登録
+					alert(result.message);
+					modal.modal("hide");
+				}
+			} else {
+				// エラー
+				showErrorMessage(result.message,modal,result.errors);
+
+			}
+		}).fail(function(jqXHR, textStatus, errorThrown) {
+			showErrorMessage(/*[[#{E00013}]]*/ "error", modal);
+		}).always(function() {
+			azukariItemAjaxRunning = false;
+		});
+	});
+
+	<!--/* モーダルクローズ時に入力内容とエラーメッセージを削除する */-->
+	$('#azukariItemModal.modal').on("hide.bs.modal", function() {
+		if (updatedFlg) {
+			location.reload();
+		}
+		// モーダルの中身を削除
+		$('.azukariItemModalBody').html("");
+	});
+
+	<!--/* 受領証出力ボタン押下時 */-->
+	$(document).on('click', '#downloadJyuryoSho', function() {
+		const url = "/user/azukariItem/document/juryo";
+		const button = $(this);
+
+		const azukariSeqList = getSelectedSeq();
+		const ankenId = /*[[${viewForm.ankenId}]]*/;
+
+		let formData =[
+			{name:"ankenId",value:ankenId},
+			{name:"azukariSeqList",value:azukariSeqList},
+		];
+
+		if(azukariSeqList.length){
+			downloadFileAjax(url,button,formData);
+		}else {
+			alert("出力する預り品を選んでください");
+		}
+	});
+
+	<!--/* 預り証出力 */-->
+	$(document).on("click", "#downloadAzukariSho", function() {
+		const azukariSeqList = getSelectedSeq();
+		const url = "/user/azukariItem/document/azukari";
+		const button = $(this);
+		const ankenId = /*[[${viewForm.ankenId}]]*/null;
+
+		let formData =[
+			{name:"ankenId",value:ankenId},
+			{name:"azukariSeqList",value:azukariSeqList},
+		];
+
+		if(azukariSeqList.length){
+			downloadFileAjax(url,button,formData);
+		}else {
+			alert("出力する預り品を選んでください");
+		}
+	});
+
+	<!--/* 選択中のデータSEQを取得*/-->
+	function getSelectedSeq() {
+		return $.map($('input[name="sentaku-checkbox"]:checked'), (obj) => {
+			return $(obj).closest('tr').data('seq');
+		});
+	}
+
+	<!--/* popoverを閉じる */-->
+	$(document).on('click touchend', function(event) {
+		if (!$(event.target).closest('.popover').length) {
+			$(document).find('#downLoadPoper').popover('hide');
+		}
+	});
+
+});
+</script>
+</head>
+<body>
+	<div layout:fragment="main-contents" th:remove="tag">
+
+		<div class="contents_sidebar_wrapper contentsSlidebarWrapper" th:data-click-open=${customerAnkenMenuOpenClickForSessionValue} th:data-resize-open=${customerAnkenMenuOpenResizeForSessionValue}>
+
+			<!--/* 顧客・案件メニュー */-->
+			<div th:replace="common/customerAnkenMenu::menuList(
+				sideMenuAnkenId=${viewForm.ankenId},
+				sideMenuCustomerId=null,
+				selectedTabClass = 'is_azukari')">
+			</div>
+
+			<!--/* メインコンテンツ */-->
+			<div class="contents_wrapper">
+				<div class="container-fluid">
+					<main class="content">
+						
+						<!--/* ぱんくず */-->
+						<div th:replace="common/wrapHeader::wrapHeader(
+							returnListScreen=${T(jp.loioz.common.utility.SessionUtils).getSessionVaule(T(jp.loioz.common.constant.SessionAttrKeyEnum).RETURN_LIST_SCREEN.codeKey)},
+							sideMenuAnkenId=${viewForm.ankenId},
+							selectedTabClass = 'is_azukari')">
+						</div>
+						
+						<!--/* メッセージエリア */-->
+						<div th:replace="common/messageArea::messageArea"></div>
+						
+						<!--/* 顧客情報・案件情報 */-->
+						<div th:replace="common/customerAnkenSelected::detailInfo(
+							wrapHeaderAnkenId=${viewForm.ankenId},
+							wrapHeaderCustomerId=null,
+							pageName='預り品')">
+						</div>
+						
+						<div class="">
+							<form id="azukariSearchForm" th:action="@{/user/azukariItem/search}" method="get">
+								<section>
+									<div class="section_header mb-2">
+										<div class="section_header__title">
+											<div class="input-group">
+												<div class="pl-3">
+													<button type="button" id="downLoadPoper" class="btn btn-light stop-events btn-sm"
+														data-offset="45,0" data-boundary="window" data-toggle="popover" data-placement="bottom" data-html="true" th:data-content=
+														'|<ul class="output_nav">
+																<li><button id="downloadAzukariSho" class="btn btn-light"><i class="fas fa-download text-primary mr-3"></i><i class="fas fa-spinner mr-3 text-primary faa-spin animated hidden"></i>預り証を出力する</button></li>
+																<li><button id="downloadJyuryoSho" class="btn btn-light" data-target="#azukariPreDownloadModal"><i class="fas fa-download text-primary mr-3"></i><i class="fas fa-spinner mr-3 text-primary faa-spin animated hidden"></i>受領証を出力する</button></li>
+														</ul>|'>チェックした預り品の証書を出力<i class="fas fa-chevron-down mr-0 ml-2 text-primary"></i></button>
+												</div>
+												<div class="ml-5">
+													<label class="view_side_label align-baseline">表示：</label>
+													<label class="radio_btn_select fw0" th:each="enum: ${T(jp.loioz.app.user.azukariItem.enums.AzukariSearchStatus).values()}">
+														<input type="radio" class="radio_btn_input" th:value="${enum.getCd()}" th:field="${azukariItemSearchForm.azukariSearchStatus}">
+														<span class="radio_btn_txt" th:text="${enum.getVal()}">すべて</span>
+													</label>
+												</div>
+											</div>
+										</div>
+										<!--/* アクションボタン郡 */-->
+										<div class="section_header__action">
+											<a href="javascript:void(0);" class="fs15" id="registAzukariItem" data-toggle="modal" data-target="#azukariItemModal"
+												th:data-action="@{/user/azukariItem/create}"><i class="fas fa-plus-square mr-2"></i>預り品追加</a>
+										</div>
+									</div>
+									
+									<div class="section_body"  th:object="${viewForm}">
+										<div class="section_body__contents p-0">
+											<table class="table table-hover align-top table_fixed custody_items_list">
+												<thead class="bg-info">
+													<tr>
+														<th class="col_no1">選択</th>
+														<th class="col_no2">ステータス</th>
+														<th class="col_no3">品目</th>
+														<th class="col_no4">数量</th>
+														<th class="col_no5">保管場所</th>
+														<th class="col_no6">預り元／預り日</th>
+														<th class="col_no7">返却期限</th>
+														<th class="col_no8">返却先／返却日</th>
+														<th class="col_no9">備考</th>
+													</tr>
+												</thead>
+												<tbody>
+		<!--/*/ 							<th:block th:if="*{#lists.isEmpty(azukariItemDtoList)}"> /*/-->
+													<tr>
+														<td colspan="9" class="no_data_table_list">
+															<span th:text="#{I00021}">MSG_I00021</span>
+														</td>
+													</tr>
+		<!--/*/ 							</th:block> /*/-->
+													<tr th:each="azukariItemDto : *{azukariItemDtoList}" th:class="!${#strings.isEmpty(azukariItemDto.returnDate)}? 'row_completed'" data-toggle="modal" id="updateAzukariItem" data-target="#azukariItemModal"
+														th:data-seq="${azukariItemDto.ankenItemSeq}" th:data-action="@{/user/azukariItem/edit}"
+														th:data-azukariFromType="${azukariItemDto.azukariFromType}"
+														th:data-azukariFromCustomerId="${azukariItemDto.azukariFromCustomerId}"
+														th:data-azukariFromKanyoshaSeq="${azukariItemDto.azukariFromKanyoshaSeq}"
+														th:data-azukariFrom="${azukariItemDto.azukariFrom}"
+														th:data-noComparisonRequired ="${azukariItemDto.noComparisonRequired}">
+														<td class="stop-events">
+															<label class="checkbox_btn no_text">
+																<input type="checkbox" name="sentaku-checkbox" class="checkbox_input">
+																<span class="checkbox_txt"></span>
+															</label>
+															<input type="hidden" name="ankenItemSeq" class ="ankenItemSeq" th:value="${azukariItemDto.ankenItemSeq}">
+														</td>
+														<td th:text="${T(jp.loioz.common.constant.CommonConstant$AzukariItemStatus).of(azukariItemDto.azukariStatus).getVal()}"></td>
+														<td th:text="${azukariItemDto.hinmoku}"></td>
+														<td th:text="${azukariItemDto.azukariCount}"></td>
+														<td th:text="${azukariItemDto.hokanPlace}"></td>
+														<td>
+															<div th:text="${azukariItemDto.azukariFrom}"></div>
+															<div th:text="${azukariItemDto.azukariDate}"></div>
+														</td>
+														<td th:text="${azukariItemDto.returnLimitDate}"></td>
+														<td>
+															<div th:text="${azukariItemDto.returnTo}"></div>
+															<div th:text="${azukariItemDto.azukariDate}"></div>
+														</td>
+														<td class="char_ellipsis text-break" myth:nl2br="${azukariItemDto.remarks}"></td>
+													</tr>
+												</tbody>
+											</table>
+											<th:block th:if="*{page.hasPrevious() || page.hasNext()}">
+												<div  th:replace="common/pager::pager(page=*{page}, url=@{/user/azukariItem/pageList})"></div>
+											</th:block>
+										</div>
+									</div>
+								</section>
+							</form>
+						</div>
+					</main>
+				</div>
+				
+				<div id="selectEditModal">
+					<!-- /* 預り品登録モーダル「呼び出し」 */ -->
+					<div th:replace="::azukariItemModalTemplate(id='azukariItemModal', target='azukariItemModalBody')"></div>
+				</div>
+			</div>
+		</div>
+	</div>
+
+	<!-- /* 預り品登録モーダル */ -->
+	<div th:fragment="azukariItemModalTemplate(target)" th:id="${id}" class="modal fade " tabindex="-1" role="dialog" aria-hidden="true" data-backdrop="static">
+		<div class="modal-dialog modal-dialog-centered" role="document">
+			<div class="modal-content">
+				<div th:class="${target}"></div>
+			</div>
+		</div>
+	</div>
+
+</body>
+</html>

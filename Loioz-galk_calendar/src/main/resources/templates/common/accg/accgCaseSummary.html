@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+	layout:decorator="commonLayout">
+<head>
+<meta charset="utf-8" />
+</head>
+<body>
+
+<!--/* 預り金明細、報酬明細のヘッダー情報フラグメント */-->
+<div id="accgCaseSummaryFragment" th:fragment="accgCaseSummaryFragment(accgCaseSummaryForm)" th:object="${accgCaseSummaryForm}"
+	th:with="
+		isAccgAnkenSide=${T(jp.loioz.common.utility.SessionUtils).getSessionVaule(T(jp.loioz.common.constant.SessionAttrKeyEnum).ACCG_ANKEN_SCREEN_BOOL.codeKey)},
+		isFee=${isFee}?:false,
+		isDeposit=${isDeposit}?:false,
+		isInvoiceStatement=${isInvoiceStatement}?:false">
+	
+	<!--/* スクリプト */-->
+	<script th:inline="javascript">
+	$(function(){
+		<!--/* 共有の要素セットアップ処理 */-->
+		commonSetUpElement("#accgCaseSummaryFragment");
+		
+		const accgCaseSummaryFragment = $('#accgCaseSummaryFragment');
+		const isAccgAnkenSide = (function(){
+			let isAnken = /*[[${isAccgAnkenSide}]]*/false;
+			return toBoolean(isAnken);
+		}());
+		
+	});
+	</script>
+	
+	<section class="section_accg_summary">
+		<div class="section_body">
+			<div class="summary_card_flex">
+				
+				<div class="flex-fill d-flex flex-column">
+					<!--/* 報酬 */-->
+					<div class="summary_card mb-3" th:classAppend="${isFee} ? 'selected' " data-click-sync-for-descendants=".transitionCaseFee"
+						data-boundary="window" th:data-container="${fragmentId}" data-toggle="tooltip" data-trigger="hover" title="報酬明細へ">
+						
+	<th:block th:with="paramNameVal=${isAccgAnkenSide} == 'true' ? ${T(jp.loioz.common.constant.UrlConstant).ACCG_REFERER_ANKEN_SIDE_PARAM_NAME} + '=true' : '' ">
+						<a class="hidden transitionCaseFee" th:href="@{/user/feeDetail/{personId}/{ankenId}/?{paramName}(personId=${accgCaseSummaryForm.personId},ankenId=${accgCaseSummaryForm.ankenId}, paramName=${paramNameVal})}"></a>
+	</th:block>
+						<div class="summary_card__title fee_total">
+							<th:block th:if="${isFee}"><i class="fas fa-edit mr-2"></i></th:block>報酬
+						</div>
+						<div class="summary_card__contents">
+							<div class="row_amount">
+								<div class="row_amount__label">
+									<span class="fc_sub fw600">報酬合計</span>
+								</div>
+								<div class="row_amount__value">
+									<span class="fw600 fs16">[[*{#numbers.formatInteger(feeTotalAmount, 1, 'COMMA')}]]<span class="fw0 fs12 ml-1">円</span></span>
+								</div>
+							</div>
+							
+	<!--/* 報酬明細のみ表示 */-->
+	<th:block th:if="${isFee} or ${isInvoiceStatement}">
+							<hr class="my-1">
+							<div class="row_amount">
+								<div class="row_amount__label">
+									<span class="">請求済</span>
+								</div>
+								<div class="row_amount__value">
+									<span>[[*{#numbers.formatInteger(salesTaxIncludedAmount, 1, 'COMMA')}]]<span class="jp_yen">円</span></span>
+								</div>
+							</div>
+							<div class="row_amount">
+								<div class="row_amount__label">
+									<span class="">未請求</span>
+								</div>
+								<div class="row_amount__value">
+									<span class="" th:classappend="*{feeUnclaimedTotalAmount} > 0 ? 'text-danger' ">
+										[[*{#numbers.formatInteger(feeUnclaimedTotalAmount, 1, 'COMMA')}]]</span><span class="jp_yen">円</span>
+								</div>
+							</div>
+	</th:block>
+	<!--/* 報酬明細のみ表示 end */-->
+						</div>
+					</div>
+					<!--/* 報酬 end */-->
+					
+					<!--/* 預り金 */-->
+					<div class="summary_card mt-auto" th:classAppend="${isDeposit} ? 'selected' " data-click-sync-for-descendants=".transitionCaseDeposit"
+						data-boundary="window" th:data-container="${fragmentId}" data-toggle="tooltip" data-trigger="hover" title="預り金／実費明細へ">
+	<th:block th:with="paramNameVal=${isAccgAnkenSide} == 'true' ? ${T(jp.loioz.common.constant.UrlConstant).ACCG_REFERER_ANKEN_SIDE_PARAM_NAME} + '=true' : '' ">
+							<a class="transitionCaseDeposit hidden" th:href="@{/user/depositRecvDetail/{personId}/{ankenId}/?{paramName}(personId=${accgCaseSummaryForm.personId},ankenId=${accgCaseSummaryForm.ankenId}, paramName=${paramNameVal})}"></a>
+	</th:block>
+						<div class="summary_card__title deposit_total">
+							<th:block th:if="${isDeposit}"><i class="fas fa-edit mr-2"></i></th:block>預り金
+						</div>
+						<div class="summary_card__contents">
+							<div class="row_amount">
+								<div class="row_amount__label">
+									<span class="fc_sub fw600">残高</span>
+								</div>
+								<div class="row_amount__value">
+									<span class="fw600 fs16" th:classappend="*{totalDepositBalanceAmount} < 0 ? 'text-danger' ">[[*{#numbers.formatInteger(totalDepositBalanceAmount, 1, 'COMMA')}]]</span><span class="fw0 fs12 ml-1">円</span>
+								</div>
+							</div>
+							
+	<!--/* 預り金明細のみ表示 */-->
+	<th:block th:if="${isDeposit}">
+							<hr class="my-1">
+							<div class="row_amount">
+								<div class="row_amount__label">
+									<span>入金計</span>
+								</div>
+								<div class="row_amount__value">
+									<span>[[*{#numbers.formatInteger(totalDepositAmount, 1, 'COMMA')}]]<span class="jp_yen">円</span></span>
+								</div>
+							</div>
+							<div class="row_amount">
+								<div class="row_amount__label">
+									<span>出金計</span>
+								</div>
+								<div class="row_amount__value">
+									<span>[[*{#numbers.formatInteger(totalWithdrawalAmount, 1, 'COMMA')}]]<span class="jp_yen">円</span></span>
+								</div>
+							</div>
+							
+		<!--/* 事務所負担あり表示 */-->
+		<th:block th:if="*{totalTenantBearAmount} > 0">
+							<hr class="my-1">
+							<div class="row_amount">
+								<div class="row_amount__label">
+									<span>事務所負担</span>
+								</div>
+								<div class="row_amount__value">
+									<span>[[*{#numbers.formatInteger(totalTenantBearAmount, 1, 'COMMA')}]]<span class="jp_yen">円</span></span>
+								</div>
+							</div>
+		</th:block>
+		<!--/* 事務所負担あり表示 end */-->
+		
+	</th:block>
+	<!--/* 預り金明細のみ表示 end */-->
+							
+						</div>
+					</div>
+					<!--/* 預り金 end */-->
+				</div>
+				<div class="flex-fill">
+					<!--/* 売上 */-->
+					<div class="summary_card" th:classAppend="${isInvoiceStatement} ? 'selected' " 
+						data-click-sync-for-descendants=".transitionCaseInvoiceStatement"
+						data-boundary="window" th:data-container="${fragmentId}" data-toggle="tooltip" data-trigger="hover" title="請求書／精算書へ">
+						
+	<th:block th:with="paramNameVal=${isAccgAnkenSide} == 'true' ? ${T(jp.loioz.common.constant.UrlConstant).ACCG_REFERER_ANKEN_SIDE_PARAM_NAME} + '=true' : '' ">
+							<a class="transitionCaseInvoiceStatement hidden" th:href="@{/user/caseInvoiceStatementList/{personId}/{ankenId}/?{paramName}(personId=${accgCaseSummaryForm.personId},ankenId=${accgCaseSummaryForm.ankenId}, paramName=${paramNameVal})}"></a>
+	</th:block>
+						<div class="summary_card__title sales_total">
+							<th:block th:if="${isInvoiceStatement}"><i class="fas fa-edit mr-2"></i></th:block>売上
+						</div>
+						<div class="summary_card__contents">
+							<div class="row_amount">
+								<div class="row_amount__label">
+									<span class="fc_sub fw600">売上合計</span>
+								</div>
+								<div class="row_amount__value">
+									<span class="fw600 fs16">[[*{#numbers.formatInteger(salesAmountExpect, 1, 'COMMA')}]]</span><span class="fw0 fs12 ml-1">円</span>
+								</div>
+							</div>
+							<hr class="my-1">
+							<div class="row_amount">
+								<div class="row_amount__label">
+									<span class="fc_sub">報酬(税込)</span>
+								</div>
+								<div class="row_amount__value">
+									<span>[[*{#numbers.formatInteger(salesTaxIncludedAmount, 1, 'COMMA')}]]<span class="jp_yen">円</span></span>
+								</div>
+							</div>
+							<div class="row_amount">
+								<div class="row_amount__label">
+									<span class="fc_sub">源泉徴収税</span>
+								</div>
+								<div class="row_amount__value">
+									<span>[[*{#numbers.formatInteger(salesWithholdingAmount, 1, 'COMMA')}]]<span class="jp_yen">円</span></span>
+								</div>
+							</div>
+							<div class="row_amount">
+								<div class="row_amount__label">
+									<span class="fc_sub">値引き</span>
+								</div>
+								<div class="row_amount__value">
+									<span>[[*{#numbers.formatInteger(salesDiscountAmount, 1, 'COMMA')}]]<span class="jp_yen">円</span></span>
+								</div>
+							</div>
+							<hr class="my-1">
+							<div class="row_amount">
+								<div class="row_amount__label">
+									<span>入金済み</span>
+								</div>
+								<div class="row_amount__value">
+									<span>[[*{#numbers.formatInteger(salesAmountResult, 1, 'COMMA')}]]<span class="jp_yen">円</span></span>
+								</div>
+							</div>
+							<div class="row_amount">
+								<div class="row_amount__label">
+									<span>入金待ち</span>
+								</div>
+								<div class="row_amount__value">
+									<span>[[*{#numbers.formatInteger(salesAwaitingPaymentAmount, 1, 'COMMA')}]]<span class="jp_yen">円</span></span>
+								</div>
+							</div>
+						</div>
+					</div>
+				</div>
+			</div>
+		</div>
+		
+	</section>
+	
+</div>
+</body>
+</html>

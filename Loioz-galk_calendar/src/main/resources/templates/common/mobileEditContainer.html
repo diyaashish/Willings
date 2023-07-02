@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+<meta charset="utf-8" />
+</head>
+<body>
+	<!--/*
+		モーダル
+		
+		@param id
+			編集画面のID属性
+			
+		@param direction
+			画面の表示方法(jquery show/hide参照)
+			
+		@param headerContents
+			ヘッダー部分(Thymeleafフラグメント)
+		
+		@param bodyContents
+			ボディ部分(Thymeleafフラグメント)
+			
+		@param footerContents
+			フッター部分(Thymeleafフラグメント)
+					
+		e.g.)
+		<div th:replace="common/mobileEditContainer::mobileEditContainer(
+			id='fooModal',
+			absolute='false',
+			headerNaviList=~{::headerContents},
+			bodyContents=~{::bodyContents},
+			footerContents=~{::footerContents})"></div>
+	*/-->
+	<!--/* 通常のモーダル */-->
+	<th:block th:fragment="mobileEditContainer">
+		<th:block th:if="${absolute}">
+			<div th:id="${id}? |${id}Bg| : _" class="bg_moble_edit"></div>
+			<div th:id="${id}?: _" class="mobileEdit edit_container absolute" th:data-target="${id}? |#${id}Bg| : _">
+				<div class="mobile_edit_container">
+					<div th:replace="${headerContents}?: _"></div>
+					<div  th:replace="${bodyContents}?: _"></div>
+					<div  th:replace="${footerContents}?: _"></div>
+				</div>
+			</div>
+		</th:block>
+		<th:block th:unless="${absolute}">
+			<div th:id="${id}?: _" class="mobileEdit edit_container fixed">
+				<div class="mobile_edit_container">
+					<div th:replace="${headerContents}?: _"></div>
+					<div  th:replace="${bodyContents}?: _"></div>
+					<div  th:replace="${footerContents}?: _"></div>
+				</div>
+			</div>
+		</th:block>
+	</th:block>
+</body>
+</html>

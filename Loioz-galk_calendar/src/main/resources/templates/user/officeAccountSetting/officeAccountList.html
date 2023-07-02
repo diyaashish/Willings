@@ -1,0 +1,607 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+	xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+	layout:decorator="commonLayout">
+<head>
+<meta charset="UTF-8">
+<title layout:fragment="title-contents">
+	[[${T(jp.loioz.common.utility.LoiozUtils).getHtmlTitle(T(jp.loioz.common.constant.CommonConstant$SystemSettingMenu).KEIYAKU_ACCOUNT.getVal(), T(jp.loioz.common.utility.SessionUtils).getTenantName())}]]
+</title>
+<style type="text/css">
+.license_area {
+	border-radius: 3px;
+	border: 1px solid #eea426;
+	margin-top: 10px;
+	text-align: center;
+	padding: 3px;
+	width: 300px;
+}
+.license_area__count {
+	font-weight: 600;
+	font-size: 1.7rem;
+}
+.invite_label {
+	font-weight: 600;
+	font-size: 1.7rem;
+	color: var(--text-color-sub);
+}
+.col_account_block {
+	display: flex;
+	align-items: center;
+}
+.account_svg {
+	font-size: 2.8rem;
+	height: 40px;
+}
+.account_info {
+	margin-left: 15px;
+}
+.account_info_row1 {
+	align-items: baseline;
+	display: flex;
+	margin-bottom: 1px;
+}
+.account_info_row1__name {
+	margin-right: 15px;
+}
+.account_info_row1__daihyo {
+	font-size: 1.2rem;
+}
+.account_info_row2 {
+	display: flex;
+	align-items: center;
+	font-size: 1.3rem;
+	color: var(--text-color-sub);
+	padding: 1px 0 0;
+}
+.account_info_row2__account_id {
+	margin-right: 10px;
+}
+.account_info_row2__mail_address {
+	border-left: 3px solid var(--loioz-blue);
+	padding-left: 10px;
+	max-width: 450px;
+}
+.popover {
+	max-width: none;
+}
+.account_type_info {
+	display: flex;
+	flex-direction: column;
+	font-size: 1.1rem;
+}
+.account_type_info>div{
+	display:inline-flex;
+	width: 100%;
+}
+/* 招待メール一覧 */
+.invite_mail_list {
+	max-height: 400px;
+	overflow-y: auto;
+	overflow-x: hidden;
+	padding: 5px 2px;
+}
+</style>
+<script type="text/javascript" th:inline="javascript">
+	$(function() {
+		let ajaxRunning = false;
+
+		function setUpAutoKana(container){
+			const nameSei = container.find("#accountNameSei");
+			const nameSeiKana = container.find("#accountNameSeiKana");
+			const nameMei = container.find("#accountNameMei");
+			const nameMeiKana = container.find("#accountNameMeiKana");
+
+			$.fn.autoKana(nameSei, nameSeiKana,{});
+			$.fn.autoKana(nameMei, nameMeiKana,{});
+		}
+
+		<!--/* アカウント種別変更 */-->
+		$(document).on("change", "[name='accountEditData.accountType']", function() {
+			// 弁護士か判定
+			if ($(this).val() != '1') {
+				// 弁護士以外
+				$('input[name="accountEditData.accountOwnerFlg"]').prop('checked', false);
+				$('input[name="accountEditData.accountOwnerFlg"]').prop('disabled', true);
+			} else {
+				// 弁護士
+				$('input[name="accountEditData.accountOwnerFlg"]').prop('disabled', false);
+			}
+		});
+
+		<!--/* パスワードの目 */-->
+		$(document).on("click",".toggle-password-display", function() {
+			let passwordForm = $(this).closest(".password-container").find("input");
+			let toggleButton = $(this);
+			if (passwordForm.attr("type") == "password") {
+				passwordForm.attr("type", "text");
+				toggleButton
+				.find(".fa-eye").addClass("hidden").end()
+				.find(".fa-eye-slash").removeClass("hidden");
+			} else {
+				passwordForm.attr("type", "password");
+				toggleButton
+				.find(".fa-eye-slash").addClass("hidden").end()
+				.find(".fa-eye").removeClass("hidden");
+		}});
+
+		<!--/* ダイアログ表示(登録／更新) */-->
+		$(document).on("click", '.saveModal', function() {
+			const action = $(this).data("action");
+			const accountSeq = $(this).data('seq');
+
+			// 2重押下防止
+			if(ajaxRunning){
+				return false;
+			}
+			ajaxRunning = true;
+			$.ajax({
+				url : action,
+				type : "POST",
+				data :{ 'accountEditData.accountSeq' : accountSeq},
+			}).done(function(result) {
+				// 成功時
+				let newContent = $(result);
+
+				newContent.find('[data-toggle="popover"]').popover();
+
+				// モーダルの表示
+				$('.targetModalBody').html(newContent);
+				setUpAutoKana(newContent);
+				$("[name='accountEditData.accountType']:checked").trigger("change");
+
+			}).fail(function(jqXHR, textStatus, errorThrown) {
+				// 失敗時
+				window.location.href = "/systemError";
+			}).always(function() {
+				// どちらもおこなう
+				ajaxRunning = false;
+			});
+		});
+
+		<!--/* モーダルからリンクを開く */-->
+		$(document).on("click",".openPlanSettingForModal", function() {
+			let requestUrl = /*[[${'/' + T(jp.loioz.common.constant.UrlConstant).PLANSETTING_GATEWAY_URL + '/' + T(jp.loioz.common.constant.plan.PlanConstant).PLAN_SETTING_GATEWAY_PATH}]]*/ ''
+
+				$.ajax({
+				  type: 'GET',
+				  url: requestUrl,
+				})
+				.done(function(result) {
+					if (result.succeeded) {
+
+						<!--/* 下記の画面遷移中（画面ロード中）に再度ボタンが押されないよう、クリックイベントを削除 */-->
+						<!--/* ※画面遷移の完了より前にalwaysの関数が実行され、通常の2重押下防止対応だけでは対応しきれないことによる特別な対応 */-->
+						$('.openPlanSetting').off('click');
+
+						<!--/* 画面読み込み */-->
+						window.location.href = result.uriUntilContextPath + '/user/planSetting/'
+					} else {
+						// システムエラー
+					}
+				})
+				.fail(function(jqXHR) {
+					// システムエラー
+				})
+				.always(function(){
+					openPlanSettingClickRunning = false;
+				});			
+		});
+
+		<!--/* モーダル閉じる処理 */-->
+		$('#selectModal').on('hide.bs.modal', function (e) {
+			// 初期化する
+			$('.targetModalBody').html('');
+		})
+
+		<!--/* 登録・更新・削除ボタン */-->
+		$('.targetModalBody').on("click", '#regist, #update', function() {
+			
+			// 押下したボタンのIDをアクションとして取得
+			let clickTargetId = $(this).attr('id')
+			let action = "/user/officeAccountSetting/" + clickTargetId;
+			
+			let procAfterGoToTop = false;
+			
+			<!--/* 自分自身の管理者権限を外そうとしている場合の処理 */-->
+			if (clickTargetId === $('.targetModalBody #update').attr('id')) {
+				<!--/* 更新の場合 */-->
+				
+				let myAccountSeq = /*[[${T(jp.loioz.common.utility.SessionUtils).getLoginAccountSeq()}]]*/""
+				let editTargetAccountSeq = $('#editForm .editTargetAccountSeq').val()
+				
+				if (myAccountSeq === Number(editTargetAccountSeq)) {
+					<!--/* 自分自身のアカウント情報の場合 */-->
+					
+					let beforeUpdateAccountKengenCheck = $('#editForm #beforeUpdateAccountKengenCheck').prop("checked")
+					let updateAccountKengenCheck = $('#editForm .accountKengenCheck').prop("checked")
+					if (beforeUpdateAccountKengenCheck && !updateAccountKengenCheck) {
+						<!--/* 管理者権限を外す場合 */-->
+						
+						if (!confirm('管理者としての権限を外そうとしています。\nこのまま保存した場合、現在のアカウントでは、アカウント管理の画面を含む、\nシステム設定の画面へのアクセスはできなくなります。\nよろしいですか？')) {
+							return false;
+						}
+						procAfterGoToTop = true;
+					}
+				}
+			}
+			
+			// 2重押下防止
+			if (ajaxRunning) {
+				return false;
+			}
+			
+			let modal = $(this).closest('.modal');
+			let params = $('form#editForm').serializeArray();
+			
+			ajaxRunning = true;
+			$.ajax({
+				type : "POST",
+				url : action,
+				data : params,
+			}).done(function(result) {
+				// 成功のとき
+				if(result.succeeded){
+					alert(result.message);
+					if (procAfterGoToTop) {
+						let loginUrl = /*[[${T(jp.loioz.common.constant.UrlConstant).LOGIN_URL}]]*/ ''
+						location.href = '/' + loginUrl + '/';
+					} else {
+						location.reload();
+					}
+				} else {
+					showErrorMessage(result.message, modal, result.errors);
+				}
+			}).fail(function() {
+				// 失敗のとき
+				window.location.href = "/systemError";
+			}).always(function(){
+				// どちらのときも
+				ajaxRunning = false;
+			});
+		});
+
+		// 有効／停止の切り替え処理
+		$('.targetModalBody').on("click", '#changeStatus', function() {
+			// 現在のアカウントステータス
+			const accountStatus = $('input[name="accountEditData.accountStatus"]').val();
+			let statusMsg = /*[[${T(jp.loioz.common.constant.CommonConstant.AccountStatus).DISABLED.getVal()}]]*/"";
+			if (accountStatus == "0") {
+				statusMsg = /*[[${T(jp.loioz.common.constant.CommonConstant.AccountStatus).ENABLED.getVal()}]]*/"";
+			}
+			if (!confirm("アカウントを" + statusMsg + "にします。 \r\nよろしいですか？")) {
+				return false;
+			}
+			// 2重押下防止
+			if (ajaxRunning){
+				return false;
+			}
+			let modal = $(this).closest('.modal');
+			let params = $('form#editForm').serializeArray();
+			ajaxRunning = true;
+			$.ajax({
+				url : "/user/officeAccountSetting/changeStatus",
+				type : "POST",
+				data : params,
+			}).done(function(result) {
+				// 成功時
+				if (result.succeeded) {
+					if (result.accountDeleted) {
+						$("#logoutForm").submit();
+					}
+					alert(result.message);
+					location.reload();
+				} else {
+					showErrorMessage(result.message, modal, result.errors);
+				}
+			}).fail(function() {
+				// 失敗時
+				window.location.href = "/systemError";
+			}).always(function(){
+				// どちらのときも
+				ajaxRunning = false;
+			});
+		});
+
+		<!--/* ダイアログ表示 (招待メール送信) */-->
+		$(document).on("click", '.inviteMailModal', function() {
+			// 2重押下防止
+			if(ajaxRunning){
+				return false;
+			}
+			ajaxRunning = true;
+			$.ajax({
+				url : '/user/officeAccountSetting/invite',
+				type : "GET",
+				data :null,
+			}).done(function(result) {
+				// 成功時
+				let newContent = $(result);
+				newContent.find("[data-toggle='tooltip']").tooltip();
+				
+				// モーダルの表示
+				$('.targetInviteModalBody').html(newContent);
+				setUpAutoKana(newContent);
+				$("[name='accountEditData.accountType']:checked").trigger("change");
+
+			}).fail(function(jqXHR, textStatus, errorThrown) {
+				// 失敗時
+				window.location.href = "/systemError";
+			}).always(function() {
+				// どちらもおこなう
+				ajaxRunning = false;
+			});
+		});
+		
+		<!--/* 招待メール送信ボタン */-->
+		$('.targetInviteModalBody').on("click", '#sendInviteMail', function() {
+			if (!confirm("招待メールを送信します。よろしいですか？")) {
+				return false;
+			}
+			let action = 'sendInviteMail';
+			let procAfterGoToTop = false;
+			
+			// 2重押下防止
+			if (ajaxRunning) {
+				return false;
+			}
+			
+			let modal = $(this).closest('.modal');
+			let params = $('form#inviteMailForm').serializeArray();
+			
+			ajaxRunning = true;
+			$.ajax({
+				type : "POST",
+				url : '/user/officeAccountSetting/' + action,
+				data : params,
+			}).done(function(result) {
+				// 成功のとき
+				if(result.succeeded){
+					alert(result.message);
+					if (procAfterGoToTop) {
+						let loginUrl = /*[[${T(jp.loioz.common.constant.UrlConstant).LOGIN_URL}]]*/ ''
+						location.href = '/' + loginUrl + '/';
+					} else {
+						location.reload();
+					}
+				} else if(result.mailModalRefresh){
+					action = 'invite';
+					let errMessage = result.message;
+					let result_errors = result.errors;
+					$.ajax({
+						url : '/user/officeAccountSetting/' + action,
+						type : "GET",
+						data :null,
+					}).done(function(result) {
+						// 成功時
+						let newContent = $(result);
+						<!--/* tooltip有効 */-->
+						newContent.find("[data-toggle='tooltip']").tooltip();
+						
+						// モーダルの表示
+						$('.targetInviteModalBody').html(newContent);
+						newContent.find('[data-toggle="popover"]').popover();
+						showErrorMessage(errMessage, modal, result_errors);
+					});
+				}else{
+					showErrorMessage(result.message, modal, result.errors);
+				}
+			}).fail(function() {
+				// 失敗のとき
+				window.location.href = "/systemError";
+			}).always(function(){
+				// どちらのときも
+				ajaxRunning = false;
+			});
+		});
+		
+		<!--/* 招待を取り消すボタン */-->
+		$('.targetInviteModalBody').on("click", '.inviteCancel', function() {
+			if (!confirm("招待を取り消します。よろしいですか？")) {
+				return false;
+			}
+			// 2重押下防止
+			if (ajaxRunning) {
+				return false;
+			}
+			const verificationkey = $(this).data('verificationkey');
+			
+			let action = 'inviteCancel';
+			let modal = $(this).closest('.modal');
+			let procAfterGoToTop = false;
+			
+			ajaxRunning = true;
+			$.ajax({
+				type : "POST",
+				url : "/user/officeAccountSetting/" + action,
+				data : { 'verificationkey' : verificationkey},
+			}).done(function(result) {
+				// 成功のとき
+				if(result.succeeded){
+					alert(result.message);
+					$('[data-toggle="tooltip"]').tooltip('hide');
+					action = 'invite';
+					$.ajax({
+						url : '/user/officeAccountSetting/' + action,
+						type : "GET",
+						data :null,
+					}).done(function(result) {
+						// 成功時
+						let newContent = $(result);
+						<!--/* tooltip有効 */-->
+						newContent.find("[data-toggle='tooltip']").tooltip();
+						
+						<!--/* モーダル表示 */-->
+						$('.targetInviteModalBody').html(newContent);
+					});
+				} else {
+					showErrorMessage(result.message, modal, result.errors);
+				}
+			}).fail(function() {
+				// 失敗のとき
+				window.location.href = "/systemError";
+			}).always(function(){
+				// どちらのときも
+				ajaxRunning = false;
+			});
+		});
+
+		<!--/* モーダル閉じる処理 */-->
+		$('#inviteMailModal').on('hide.bs.modal', function (e) {
+			// 初期化する
+			$('.targetInviteModalBody').html('');
+		})
+	});
+</script>
+</head>
+<body>
+	<div class="contents_sidebar_wrapper_setting" layout:fragment="main-contents">
+		<!-- サイドメニュー -->
+		<div th:replace="common/systemSettingMenu::selectMenu(${T(jp.loioz.common.constant.CommonConstant$SystemSettingMenu).KEIYAKU_ACCOUNT.getCd()})"></div>
+
+		<!-- コンテンツ -->
+		<div class="contents_wrapper" th:object="${viewForm}">
+			<!--/* メッセージエリア */-->
+			<div th:replace="common/messageArea::messageArea"></div>
+
+			<!--/* contents_limited_width_setting サイズ幅(maxサイズ）start */-->
+			<div class="container-fluid contents_limited_width_setting">
+
+				<!--/* パンくず*/-->
+				<div class="breadcrumb_area">
+					<ul>
+						<li><span>事務所設定</span></li>
+						<li><i class="fas fa-angle-right"></i></li>
+						<th:block th:if="${T(jp.loioz.common.utility.SessionUtils).isSystemMng()}">
+							<li>アカウントの管理</li>
+						</th:block>
+						<th:block th:unless="${T(jp.loioz.common.utility.SessionUtils).isSystemMng()}">
+							<li>アカウント一覧</li>
+						</th:block>
+					</ul>
+				</div>
+
+				<!--/* コンテンツブロック start */-->
+				<div class="contents_block">
+
+					<!--/* アカウント情報 start */-->
+					<th:block th:if="${T(jp.loioz.common.utility.SessionUtils).isSystemMng()}">
+						<div class="block_title">アカウントの管理</div>
+					</th:block>
+					<th:block th:unless="${T(jp.loioz.common.utility.SessionUtils).isSystemMng()}">
+						<div class="block_title">アカウント一覧</div>
+					</th:block>
+					<div class="block_detail">
+						<th:block th:if="${T(jp.loioz.common.utility.SessionUtils).isSystemMng()}">
+							<p>アカウントの登録や編集、無効など、loiozにアクセスするユーザーアカウントの管理を行います。</p>
+							<p>契約ライセンス数は、「<a href="javascript:void(0);" class="openPlanSetting">[[${T(jp.loioz.common.utility.SessionUtils).isFreePlanStatus()} ? 'ご利用プランの設定' : 'ご利用プラン／請求情報']]</a>」メニューから変更することができます。</p>
+							<div class="d-flex">
+								<div class="license_area">
+									契約ライセンス：<span class="license_area__count" th:text="*{useableLicenseCount}">0</span>
+									（残り<span class="license_area__count" th:text="*{useableLicenseCount - usingLicenseCount}">0</span>ライセンス）
+								</div>
+								<div class="block_action">
+									<button type="button" class="btn btn-outline-primary inviteMailModal" data-toggle="modal" data-target="#inviteMailModal"
+										th:data-action="@{/user/officeAccountSetting/invite}">
+										<i class="far fa-paper-plane mr-2"></i>招待する
+									</button>
+									<button type="button" class="btn btn-primary ml-3 saveModal" data-toggle="modal" data-target="#selectModal" 
+										th:data-action="@{/user/officeAccountSetting/create}"><i class="fas fa-plus"></i>新規登録</button>
+								</div>
+							</div>
+						</th:block>
+					</div>
+
+					<!--/* 一覧表示 */-->
+					<div class="list_area">
+						<table class="table table-sm table_standard table_fixed table-striped">
+							<thead>
+								<tr>
+									<th class="col_60">アカウント</th>
+									<th class="col_10">種別</th>
+									<th class="col_7">管理者</th>
+									<th class="col_7">状態</th>
+									<th:block th:if="${T(jp.loioz.common.utility.SessionUtils).isSystemMng()}">
+										<th class="col_10">操作</th>
+									</th:block>
+								</tr>
+							</thead>
+							<tbody>
+<!--/*/ 				<th:block th:if="*{#lists.isEmpty(accountList)}"> /*/-->
+								<tr>
+									<td colspan="5" class="no_data"><span th:text="#{I00022}">MSG_I00022</span></td>
+								</tr>
+<!--/*/ 				</th:block> /*/-->
+								<tr th:each="account : *{accountList}" th:object="${account}"
+									th:classappend="*{T(jp.loioz.common.constant.CommonConstant.AccountStatus).DISABLED == accountStatus} ? 'table-secondary'">
+									<td>
+										<div class="col_account_block">
+											<!--/* アカウントアイコン */-->
+											<div class="account_svg">
+												<i class="fas fa-user-circle" th:style="|color: *{accountColor}|"></i>
+											</div>
+											<!--/* アカウント情報 */-->
+											<div class="account_info">
+												<div class="account_info_row1">
+													<div class="account_info_row1__name" th:text="*{accountName}"></div>
+													<div class="account_info_row1__daihyo" th:if="*{accountOwnerFlg}">
+														<i class="far fa-check-square mr-2"></i>経営者
+													</div>
+												</div>
+												<div class="account_info_row2">
+													<div class="account_info_row2__account_id" th:text="*{accountId}"></div>
+													<div th:if="*{!#lists.isEmpty(accountMailAddress)}"
+														class="account_info_row2__mail_address char_ellipsis" th:text="*{accountMailAddress}">
+													</div>
+												</div>
+											</div>
+										</div>
+									</td>
+									<td th:text="*{accountType.getVal()}"></td>
+									<td th:text="*{accountKengen.getCd() == T(jp.loioz.common.constant.CommonConstant.AccountKengen).SYSTEM_MNG.cd} ? '◯' "></td>
+									<td th:text="*{accountStatus.getVal()}"></td>
+									<th:block th:if="${T(jp.loioz.common.utility.SessionUtils).isSystemMng()}">
+										<td>
+											<span class="d-inline-block" data-toggle="tooltip" title="アカウントを編集" data-trigger="hover">
+												<button class="btn btn-sm btn-light saveModal" data-toggle="modal" data-target="#selectModal" th:data-seq="*{accountSeq}" th:data-action="@{/user/officeAccountSetting/edit}">
+													<i class="fas fa-edit mr-1"></i>
+													<span>編集</span>
+												</button>
+											</span>
+										</td>
+									</th:block>
+								</tr>
+							</tbody>
+						</table>
+						<th:block th:if="*{page.hasPrevious() || page.hasNext()}">
+							<div th:replace="common/pager::pager(page=*{page}, url=@{/user/officeAccountSetting/pageList})"></div>
+						</th:block>
+					</div>
+				</div>
+			</div>
+		</div>
+		<div id="selectEditModal">
+			<div th:replace="::modalTemplate(target='targetModalBody')"></div>
+		</div>
+		<div id="selectMailModal">
+			<div th:replace="::mailmodalTemplate(target='targetInviteModalBody')"></div>
+		</div>
+	</div>
+
+	<div th:fragment="mailmodalTemplate(target)" id="inviteMailModal" class="modal fade" tabindex="-1" role="dialog" aria-hidden="true" data-backdrop="static">
+		<div class="modal-dialog modal-dialog-centered modal_account" role="document">
+			<div class="modal-content">
+				<div th:class="${target}"></div>
+			</div>
+		</div>
+	</div>
+	<div th:fragment="modalTemplate(target)" id="selectModal" class="modal fade" tabindex="-1" role="dialog" aria-hidden="true" data-backdrop="static">
+		<div class="modal-dialog modal-dialog-centered modal_account" role="document">
+			<div class="modal-content">
+				<div th:class="${target}"></div>
+			</div>
+		</div>
+	</div>
+
+</body>
+</html>

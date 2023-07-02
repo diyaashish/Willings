@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html  xmlns:th="http://www.thymeleaf.org"
+	xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+	layout:decorator="commonLayout">
+<head>
+<meta charset="UTF-8">
+<title layout:fragment="title-contents">
+	[[${T(jp.loioz.common.utility.LoiozUtils).getHtmlTitle(T(jp.loioz.common.constant.CommonConstant$AccountSettingMenu).MY_ACCOUNT_EDIT.getVal(), T(jp.loioz.common.utility.SessionUtils).getTenantName())}]]
+</title>
+<script type="text/javascript">
+let ajaxRunning = false;
+
+<!--/* 個人情報設定入力フラグメント情報の取得 */-->
+function getMyAccountSettingInputFragment() {
+	return new Promise((resolve, reject) => {
+		$.ajax({
+			url : "/user/myAccountEdit/getMyAccountSettingInputFragment",
+			type : "GET",
+		}).done(function(data, status, jqXHR) {
+			<!--/* 成功 */-->
+			if (isAjaxProcSuccess(jqXHR)) {
+				$('#myAccountSettingInputFragmentWrap').html(data);
+				return resolve();
+			} else {
+				// 処理失敗
+				const errorMsg = getAjaxProcResutlMessage(jqXHR);
+				showErrorMessageForJs(errorMsg);
+				return reject(errorMsg);
+			}
+		}).fail(function(jqXHR, textStatus, errorThrown) {
+			<!--/* 失敗 */-->
+			const errorMsg = /*[[#{E00091}]]*/ "error";
+			showErrorMessageForJs(errorMsg);
+			return resolve(errorMsg);
+		});
+	});
+}
+
+<!--/* 弁護士職印入力フラグメント情報の取得 */-->
+function getLawyerStampInputFragment() {
+	return new Promise((resolve, reject) => {
+		$.ajax({
+			url : "/user/myAccountEdit/getLawyerStampInputFragment",
+			type : "GET",
+		}).done(function(data, status, jqXHR) {
+			<!--/* 成功 */-->
+			if (isAjaxProcSuccess(jqXHR)) {
+				$('#lawyerStampInputFragmentWrap').html(data);
+				return resolve();
+			} else {
+				// 処理失敗
+				const errorMsg = getAjaxProcResutlMessage(jqXHR);
+				showErrorMessageForJs(errorMsg);
+				return reject(errorMsg);
+			}
+		}).fail(function(jqXHR, textStatus, errorThrown) {
+			<!--/* 失敗 */-->
+			const errorMsg = /*[[#{E00091}]]*/ "error";
+			showErrorMessageForJs(errorMsg);
+			return resolve(errorMsg);
+		});
+	});
+}
+</script>
+</head>
+<body>
+	<div class="contents_sidebar_wrapper_setting" layout:fragment="main-contents">
+		<!-- サイドメニュー -->
+		<div th:replace="common/accountSettingMenu::selectMenu(${T(jp.loioz.common.constant.CommonConstant$AccountSettingMenu).MY_ACCOUNT_EDIT.getCd()})"></div>
+
+		<!-- コンテンツ -->
+		<div class="contents_wrapper" th:object="${viewForm}">
+			<!--/* メッセージエリア */-->
+			<div th:replace="common/messageArea::messageArea"></div>
+
+			<!-- contents_limited_width_setting サイズ幅(maxサイズ）start -->
+			<div class="container-fluid contents_limited_width_setting">
+
+				<!-- パンくず-->
+				<div class="breadcrumb_area">
+					<ul>
+						<li><span>個人設定</span></li>
+						<li><i class="fas fa-angle-right"></i></li>
+						<li>個人情報の設定</li>
+					</ul>
+				</div>
+
+				<!-- コンテンツブロック start -->
+				<div class="contents_block">
+				
+					<!--/* 個人設定 */-->
+					<div id="myAccountSettingInputFragmentWrap" th:insert="user/myAccountEdit/myAccountEditFragment::myAccountSettingInputFragment(${accountSettingInputForm})"></div>
+
+	<!--/* アカウントが「弁護士」の場合のみ表示 */-->
+	<th:block th:if="${T(jp.loioz.common.utility.SessionUtils).isLawyer()}">
+					<hr>
+					<!--/* 弁護士職印 */-->
+					<div id="lawyerStampInputFragmentWrap" th:insert="user/myAccountEdit/myAccountEditFragment::lawyerStampInputFragment(${lawyerStampInputForm})"></div>
+	</th:block>
+		
+				</div>
+				<!-- コンテンツブロック end -->
+			</div>
+		</div>
+	</div>
+</body>
+</html>

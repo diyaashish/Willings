@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+	layout:decorator="commonLayout">
+<head>
+<meta charset="UTF-8">
+</head>
+<body>
+
+<div class="nav_sidebar_setting" th:fragment="selectMenu(cd)">
+
+	<div class="nav_sidebar_setting_inner">
+		<ul>
+			<li class="category border-top-0">個人設定</li>
+			<li>
+				<ul class="nav_sidebar_account__menu_items">
+					<li th:classappend="${cd == T(jp.loioz.common.constant.CommonConstant$AccountSettingMenu).MY_ACCOUNT_EDIT.getCd()} ? 'selected' ">
+						<a href="/user/myAccountEdit/">個人情報の設定</a>
+					</li>
+					<th:block th:if="${T(jp.loioz.common.utility.SessionUtils).canUsePlanFunc(T(jp.loioz.common.constant.plan.PlanConstant$PlanFuncRestrict).PF0002)}">
+						<li th:if="${T(jp.loioz.common.utility.SessionUtils).isLawyer()}" th:classappend="${cd == T(jp.loioz.common.constant.CommonConstant$AccountSettingMenu).MY_ACCOUNT_KOZA.getCd()} ? 'selected' ">
+							<a href="/user/myAccountKozaList/">個人口座の設定</a>
+						</li>
+					</th:block>
+					<li th:classappend="${cd == T(jp.loioz.common.constant.CommonConstant$AccountSettingMenu).MY_ACCOUNT_PASSWORD.getCd()} ? 'selected' ">
+						<a href="/user/myAccountPassword/">パスワード変更</a>
+					</li>
+					<li th:classappend="${cd == T(jp.loioz.common.constant.CommonConstant$AccountSettingMenu).MY_EXTERNAL_SERIVE.getCd()} ? 'selected' ">
+						<a href="/user/myExternalSetting/">外部サービス接続</a>
+					</li>
+				</ul>
+			</li>
+			<li class="category">サポート</li>
+			<li>
+				<ul class="nav_sidebar_account__menu_items">
+					<li th:classappend="${cd == T(jp.loioz.common.constant.CommonConstant$AccountSettingMenu).TOIAWASE.getCd()} ? 'selected' ">
+						<a href="/user/toiawase/">ご質問・ご要望
+							<th:block th:if="${loginHeaderForm.hasNewDetailToiawaseCount > 0}">
+								<i class="fas fa-exclamation-circle exclamation_circle"></i>
+							</th:block>
+						</a>
+					</li>
+				</ul>
+			</li>
+		</ul>
+	</div>
+</div>
+</body>
+</html>

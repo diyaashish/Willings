@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+	xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+	layout:decorator="commonLayout">
+<head>
+<meta charset="UTF-8">
+<title>
+	[[${T(jp.loioz.common.utility.LoiozUtils).getHtmlTitle("新規お問い合わせ", T(jp.loioz.common.utility.SessionUtils).getTenantName())}]]
+</title>
+<style type="text/css" th:replace="user/toiawase/toiawaseDetail::css"></style>
+<script type="text/javascript" th:replace="user/toiawase/toiawaseDetail::scripts"></script>
+<script type="text/javascript">
+$(function() {
+	$('#privacySafeCheck').on('change', function() {
+		if ($(this).prop('checked')) {
+			$('#registBtn').prop('disabled', false);
+			$('#registBtn').removeClass("btn-secondary");
+			$('#registBtn').addClass("btn-info");
+		} else {
+			$('#registBtn').prop('disabled', true);
+			$('#registBtn').addClass("btn-secondary");
+			$('#registBtn').removeClass("btn-info");
+		}
+	});
+
+	$("#registBtn").on('click', function() {
+		if (!confirm('お問い合わせ内容を送信します。よろしいですか？\n※送信後のお問い合わせ内容は「変更・削除」できません。')) {
+			return false;
+		}
+		$('#newAddForm').submit();
+	});
+
+});
+</script>
+</head>
+<body>
+	<div class="contents_sidebar_wrapper_setting" layout:fragment="main-contents">
+
+		<!--/* サイドメニュー */-->
+		<div th:replace="common/accountSettingMenu::selectMenu(${T(jp.loioz.common.constant.CommonConstant$AccountSettingMenu).TOIAWASE.getCd()})"></div>
+
+		<!--/* コンテンツ */-->
+		<div class="contents_wrapper">
+
+			<!--/* メッセージ表示領域 */-->
+			<div th:replace="common/messageArea::messageArea"></div>
+
+			<!--/* contents_limited_width_setting サイズ幅(maxサイズ） */-->
+			<div class="container-fluid contents_limited_width_setting">
+
+				<!--/* パンくず */-->
+				<div class="breadcrumb_area">
+					<ul>
+						<li><span>サポート</span></li>
+						<li><i class="fas fa-angle-right"></i></li>
+						<li>
+							<span>
+								<a href="/user/toiawase/" th:text="${T(jp.loioz.common.constant.CommonConstant$AccountSettingMenu).TOIAWASE.getVal()}">お問い合わせ</a>
+							</span>
+						</li>
+						<li><i class="fas fa-angle-right"></i></li>
+						<li><span>新規お問い合わせ</span></li>
+					</ul>
+				</div>
+
+				<!--/* ブロック */-->
+				<div class="contents_block">
+
+					<!--/* 画面タイトル */-->
+					<div class="block_title">新規お問い合わせ</div>
+					<div class="block_detail">
+						<p>下記、フォームにお問い合わせ内容を入力し、送信してください。</p>
+						<p>※返信があった場合、画面上部の歯車アイコンに通知マークが表示されます。</p>
+					</div>
+
+					<!--/* フォーム */-->
+					<div class="mt-3">
+						<form id="toiawaseCreate" th:action="@{/user/toiawase/regist}" method="post" enctype="multipart/form-data" th:autocomplete="off" th:object="${inputForm}">
+
+							<div class="form-row">
+								<div class="form-group col-sm-5">
+									<label class="input_parts_label" for="toiawaseType">種別</label>
+									<span class="mark_equired">必須</span>
+									<select class="form-control" th:field="*{toiawaseType}">
+										<option value="">---</option>
+										<option th:each="enum : ${T(jp.loioz.common.constant.CommonConstant$ToiawaseType).values()}"
+											th:label="${enum.val}" th:text="${enum.val}" th:value="${enum.cd}"></option>
+									</select>
+									<div th:if="${#fields.hasErrors('toiawaseType')}" th:errors="*{toiawaseType}" class="error_mag_point">error</div>
+								</div>
+							</div>
+
+							<div class="form-row">
+								<div class="form-group col-sm-9">
+									<label class="input_parts_label" for="subject">タイトル</label>
+									<span class="mark_equired">必須</span>
+									<input type="text" class="form-control" maxlength="100" placeholder="例）顧客・案件一覧画面の検索について" th:field="*{subject}">
+									<div th:if="${#fields.hasErrors('subject')}" th:errors="*{subject}" class="error_mag_point">error</div>
+								</div>
+							</div>
+
+							<div class="form-row">
+								<div class="form-group col-sm-9">
+									<label class="input_parts_label" for="body">内容</label>
+									<span class="mark_equired">必須</span>
+									<textarea id="newAddContent" rows="13" class="form-control" maxlength="10000" th:field="*{body}"></textarea>
+									<div th:if="${#fields.hasErrors('body')}" th:errors="*{body}" class="error_mag_point">error</div>
+								</div>
+							</div>
+
+							<div class="form-row">
+								<div class="form-group col-sm-9">
+									<label class="input_parts_label">添付ファイル（最大10MB）</label>
+									<div class="custom-file">
+										<input type="file" class="custom-file-input" th:field="*{uploadFile}">
+										<label class="input_parts_label custom-file-label" for="uploadFile"><span id="fileName">ファイルが選択されていません。</span></label>
+									</div>
+									<div th:if="${#fields.hasErrors('uploadFile')}" th:errors="*{uploadFile}" class="error_mag_point mt-4">error</div>
+								</div>
+							</div>
+
+							<div class="form-row my-4">
+								<div class="form-group">
+									<label class="checkbox_btn">
+										<input id="privacySafeCheck" class="checkbox_input" type="checkbox" />
+										<span class="checkbox_txt">お問い合わせ内容に個人情報が含まれる場合、その内容に問題がないことを確認しました。</span>
+									</label>
+								</div>
+							</div>
+
+							<!--/* Enterで送信されないようにするためのダミーインプット */-->
+							<input class="hidden" type="text" data-name="dummy">
+							<div class="form-row">
+								<div class="form-group col-9 text-center">
+									<button id="registBtn" type="button" class="btn btn-secondary" onclick="submit();" disabled>上記の内容で送信する</button>
+								</div>
+							</div>
+						</form>
+					</div>
+
+				</div>
+
+			</div>
+
+		</div>
+
+	</div>
+
+</body>
+</html>

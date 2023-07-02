@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+	xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+	layout:decorator="commonLayout">
+<head>
+<meta charset="UTF-8">
+	<th:block th:fragment="js" th:with="id=${id}?:'selectModal'">
+		<script type="text/javascript" th:inline="javascript">
+		$(function() {
+			const modal = $("#"+/*[[${id}]]*/"");
+
+			<!--/** 選択肢の切り替え */-->
+			$(document).on('change', '.userTypeSelect', function() {
+				modal.find('.memberCandidates').data('type', $(this).val());
+				modal.find('.memberCandidates').attr('data-type', $(this).val());
+			});
+			<!--/** 選択肢の押下処理 */-->
+			$(document).on('click', '.memberCandidates .member', function() {
+				modal.find('.memberList').append($(this));
+			});
+			<!--/** 所属ユーザーの押下処理 */-->
+			$(document).on('click', '.memberList .member', function() {
+				modal.find('.memberCandidates').append($(this));
+			});
+			<!--/** 全員選択押下処理 */-->
+			$(document).on('click', '.userSelectAll', function() {
+				const type = modal.find('.memberCandidates').data("type");
+				modal.find('.memberCandidates .member[data-type='+type+']').trigger("click");
+			});
+			<!--/** 全員削除押下処理 */-->
+			$(document).on('click', '.userRemoveAll', function() {
+				modal.find('.memberList .member').trigger("click");
+			});
+
+		});
+		</script>
+	</th:block>
+	<th:block th:fragment="css" th:with="id=${id}?:'selectModal'">
+		<style type="text/css" th:inline="css">
+		<!--/* 参加者の表示制御 部署 */-->
+		/*[# th:each="accountType : ${T(jp.loioz.common.constant.CommonConstant$AccountType).values()}"]*/
+		#[[${id}]] .memberCandidates[data-type="[(${accountType.getCd()})]"] .member:not([data-type="[(${accountType.getCd()})]"]) {
+			display: none;
+		}
+		/*[/]*/
+		</style>
+	</th:block>
+</head>
+<body>
+	<div th:fragment="select-modal" class="select-modal">
+		<div th:object="${bushoEditForm}">
+			<div class="modal-header">
+				<h2 class="modalheader_title" th:text="*{isNew()} ? '部門登録' : '部門更新'"></h2>
+			</div>
+			<div class="modal-body">
+				<form id="editForm">
+					<div th:replace="common/messageArea::jsMessageArea"></div>
+					<!-- 入力エリア -->
+					<div class="modal_input_area">
+						<input type="hidden" th:field="*{bushoEditData.bushoId}">
+						<input type="hidden" th:field="*{bushoEditData.versionNo}">
+
+						<!-- 部門名 -->
+						<div class="form-row">
+							<div class="form-group col-md-12">
+								<label class="input_parts_label">部門名</label>
+								<span class="mark_equired">必須</span>
+								<input type="text"  class="form-control" th:field="*{bushoEditData.bushoName}" maxlength="128">
+								<!-- Enter key対応のダミー -->
+								<input type="text" name="dummy" style="display:none;">
+								<div class="error_mag_point hidden" id="itemMsg_bushoEditData.bushoName"></div>
+							</div>
+						</div>
+						<!-- 部門名 end -->
+						<!-- ユーザ選択 -->
+						<div class="user_selectblock">
+							<div class="user_selectcol_l">
+								<div class="user_selectbox is_participantlist memberList">
+									<th:block th:each="shozokuAccount : *{shozokuAccountList}" th:object="${shozokuAccount}">
+										<button type="button" class='user_selectbtn member' th:data-seq="*{accountSeq}" th:data-type="*{accountType.getCd()}" th:text="*{accountName}"></button>
+									</th:block>
+								</div>
+								<a href="javascript:void(0);" class="userRemoveAll">全員削除</a>
+							</div>
+							<div class="user_selectcol_c"></div>
+							<div class="user_selectcol_r">
+								<select class="form-control userTypeSelect">
+									<option th:each="enum : ${T(jp.loioz.common.constant.CommonConstant$AccountType).values()}"
+										th:value="${enum.cd}" th:text="${enum.val}"></option>
+								</select>
+								<div class="user_selectbox is_userlist memberCandidates" th:data-type="${T(jp.loioz.common.constant.CommonConstant$AccountType).LAWYER.getCd()}">
+									<th:block th:each="selectAccount : *{selectAccountList}" th:object="${selectAccount}">
+										<button type="button" class='user_selectbtn member' th:data-seq="*{accountSeq}" th:data-type="*{accountType.getCd()}" th:text="*{accountName}"></button>
+									</th:block>
+								</div>
+								<a href="javascript:void(0);" class="userSelectAll">全員追加</a>
+							</div>
+						</div>
+						<!-- ユーザ選択 end -->
+					</div>
+				</form>
+			</div>
+			<div class="modal-footer">
+				<button th:if="*{!isNew()}" type="button" class="btn btn-light mr-auto" id="delete"><i class="far fa-trash-alt"></i>削除</button>
+				<button th:if="*{isNew()}" type="button" class="btn btn-info" id="regist"><i class="fas fa-check"></i>登録</button>
+				<button  th:if="*{!isNew()}" type="button" class="btn btn-info" id="update"><i class="fas fa-check"></i>保存</button>
+				<button type="button" class="btn btn-light" data-dismiss="modal"><i class="fas fa-times"></i>閉じる</button>
+			</div>
+		</div>
+	</div>
+</body>
+</html>

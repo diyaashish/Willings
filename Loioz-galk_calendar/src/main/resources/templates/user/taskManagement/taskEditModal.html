@@ -1,0 +1,1889 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+			xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+			layout:decorator="commonLayout">
+<head>
+<meta charset="utf-8" />
+<script type="text/javascript" th:fragment="taskModalJs">
+<!-- モーダルの表示時の処理  -->
+$(function() {
+
+	benzo.global.taskEdit = {
+		ajaxRunning : false,
+	};
+
+	<!--/* タスク情報の登録・更新・削除処理 */-->
+	benzo.global.taskEdit.saveAction = function(modal, path, params, btn) {
+		if(benzo.global.taskEdit.ajaxRunning){
+			return false
+		}
+		benzo.global.taskEdit.ajaxRunning = true;
+		$.ajax({
+			url : path,
+			type : "POST",
+			data : params,
+		}).done(function(result) {
+			if(result.succeeded){
+				const taskSeq = result.taskSeq;
+				modal.modal('hide');
+				setTimeout(function(){
+					if (btn === 'regist' || btn === 'update') {
+						$.ajax({
+							url : "/user/taskManagement/getTaskEditListRow",
+							type : "POST",
+							data : {"taskSeq" : taskSeq},
+							dataType : 'html',
+						}).done(function(result) {
+							if (btn === 'regist') {
+								<!--/* タスク情報の登録時に0番目に追加 */-->
+								$('.taskList').prepend(result);
+								showInfoMessageForJs('タスクを登録しました。');
+							} else {
+								<!--/* タスク情報の更新時にオブジェクトを更新 */-->
+								$('#taskData' + taskSeq).replaceWith(result);
+								showInfoMessageForJs('タスクを保存しました。');
+							}
+							commonSetUpElement();
+						}).fail(function(jqXHR, textStatus, errorThrown) {
+							window.location.href = "/systemError";
+						}).always(function() {
+							benzo.global.taskEdit.ajaxRunning = false;
+						});
+					} else if (btn === 'delete') {
+						<!--/* オブジェクトを削除 */-->
+						$('#taskData' + params[0].value).remove();
+						showInfoMessageForJs('タスクを削除しました。');
+					}
+				}, 100);
+			} else {
+				showErrorMessage(result.message, modal, result.errors);
+			}
+		}).fail(function(jqXHR, textStatus, errorThrown) {
+			window.location.href = "/systemError";
+		}).always(function() {
+			benzo.global.taskEdit.ajaxRunning = false;
+		});
+	}
+
+	<!--/* モーダル作成処理 */-->
+	$(document).on("click", '.openTaskModal', function() {
+
+		if(benzo.global.taskEdit.ajaxRunning){
+			return false
+		}
+
+		let path = "/user/taskManagement";
+		let taskSeq = $(this).attr('data-task_seq');
+		let otherRootAnkenId = $(this).attr('data-anken_id');
+		let type = "";
+
+		<!--/* 外部からのアクセスの場合 */-->
+		if(otherRootAnkenId){
+			path += "/otherRoot"
+		}
+
+		<!--/* 新規作成or編集 */-->
+		if (taskSeq) {
+			path += "/edit";
+			type = "POST";
+		}else{
+			path += "/create";
+			type = "GET";
+		}
+		benzo.global.taskEdit.ajaxRunning = true;
+		$.ajax({
+			url : path,
+			type : type,
+			data :{
+				'taskSeq' : taskSeq,
+				'ankenId' : otherRootAnkenId
+			},
+		}).done(function(result) {
+
+			let newContents = $(result);
+			let modal = $('.targetTaskModalBody').closest(".modal");
+
+			<!--/* モーダルの表示 */-->
+			$('.targetTaskModalBody').html(newContents);
+
+			<!--/* datepickedの設定 */-->
+			setUpDatepickerButton(newContents.find(".btn_popcal"));
+
+			<!--/* ヘッダーの更新 */-->
+			headerRefresh();
+
+		}).fail(function(jqXHR, textStatus, errorThrown) {
+			window.location.href = "/systemError";
+		}).always(function() {
+			benzo.global.taskEdit.ajaxRunning = false
+		});
+
+	});
+
+	<!-- /** タスクの登録・更新・削除処理 */ -->
+	$(".targetTaskModalBody").on("click","#regist, #update, #delete", function(){
+		const modal = $(this).closest('.modal');
+		const path = $(this).data("action");
+		const btn = $(this).attr("id");
+		<!-- /* 削除処理の場合はconfirmで確認 */ -->
+		if (btn === 'delete') {
+			if (!confirm('タスクを削除します。よろしいですか?')) {
+				return false;
+			}
+		}
+		const params = $("#inputForm").serializeArray();
+		benzo.global.taskEdit.saveAction(modal, path, params, btn);
+	});
+
+	<!--/* モーダル閉じる際のタスク情報更新処理 */-->
+	benzo.global.taskEdit.closeModalAction = function() {
+		const taskSeq = $("#taskSeq").val();
+		$.ajax({
+			url : "/user/taskManagement/getTaskEditListRow",
+			type : "POST",
+			data : {"taskSeq" : taskSeq},
+			dataType : 'html',
+		}).done(function(result) {
+			<!--/* タスク情報を更新 */-->
+			$('#taskData' + taskSeq).replaceWith(result);
+			commonSetUpElement();
+		}).fail(function(jqXHR, textStatus, errorThrown) {
+			window.location.href = "/systemError";
+		}).always(function() {
+			benzo.global.taskEdit.ajaxRunning = false;
+		});
+	}
+
+	<!-- /** モーダル閉じるボタン処理 */ -->
+	$(".targetTaskModalBody").on("click","#close", function(){
+		benzo.global.taskEdit.closeModalAction();
+	});
+
+	<!-- /** コメント投稿 処理 */ -->
+	$(".targetTaskModalBody").on("click",".addComment", function(){
+		if(benzo.global.taskEdit.ajaxRunning){
+			return false
+		}
+		benzo.global.taskEdit.ajaxRunning = true;
+
+		$('[data-toggle="tooltip"]').tooltip('hide');
+		const modal = $(this).closest(".modal");
+		const taskSeq = $("#taskEditModal").find("[name='taskSeq']").val();
+		const comment =$(this).closest("#addCommentForm").find("[name='comment']").val();
+		const params = [];
+		params.push({"name" : "taskSeq" , "value" : taskSeq});
+		params.push({"name" : "comment" , "value" : comment});
+
+		$.ajax({
+			url : "/user/taskManagement/addComment",
+			type : "POST",
+			data : params,
+		}).done(function(result) {
+			if(result.succeeded){
+				const newContentRequest = $.when(getCommentHistory(taskSeq));
+				newContentRequest.done(function(newContents){
+					<!-- /** 新規追加処理なのでadd */ -->
+					let addContents = newContents.find("#commentData" + result.taskHistorySeq);
+					$(modal).find("#taskHistoryContents").prepend(addContents);
+					$(modal).find("#addCommentForm textarea").val("");
+					<!--/* コメント文のHTML有効化 */-->
+					$('#commentView' + result.taskHistorySeq).html($('#commentView' + result.taskHistorySeq).text());
+				});
+				showInfoMessage(result.message, modal, result.errors);
+			}else{
+				showErrorMessage(result.message, modal, result.errors);
+			}
+		}).fail(function(jqXHR, textStatus, errorThrown) {
+			window.location.href = "/systemError";
+		}).always(function() {
+			benzo.global.taskEdit.ajaxRunning = false;
+		});
+	});
+
+	<!-- コメント編集ボタン押下時 -->
+	$(document).on("click",".commentEdit", function(){
+		const taskHistorySeq= $(this).data("task-history-seq");
+		$("#taskEditModal").find("#commentLabel" + taskHistorySeq).addClass("hidden");
+		$("#taskEditModal").find("#commentEditForm" + taskHistorySeq).removeClass("hidden");
+		commonSetUpElement();
+	});
+
+	<!-- コメント編集キャンセルボタン押下時 -->
+	$(document).on("click",".editEnd", function(){
+		const taskHistorySeq= $(this).data("task-history-seq");
+		$("#taskEditModal").find("#commentEditForm" + taskHistorySeq).addClass("hidden");
+		$("#taskEditModal").find("#commentLabel" + taskHistorySeq).removeClass("hidden");
+	});
+
+	<!-- /** コメント編集 処理*/ -->
+	$(".targetTaskModalBody").on("click",".updateComment", function(){
+		if(benzo.global.taskEdit.ajaxRunning){
+			return false
+		}
+		benzo.global.taskEdit.ajaxRunning = true;
+
+		$('[data-toggle="tooltip"]').tooltip('hide');
+		const modal = $(this).closest(".modal");
+		const taskSeq = $("#taskEditModal").find("[name='taskSeq']").val();
+		const taskHistorySeq= $(this).data("task-history-seq");
+		const comment = $("#taskEditModal").find("#commentEditForm" + taskHistorySeq).find("[name='comment']").val();
+		const params = [];
+		params.push({"name" : "taskSeq" , "value" : taskSeq});
+		params.push({"name" : "taskHistorySeq" , "value" : taskHistorySeq});
+		params.push({"name" : "comment" , "value" : comment});
+
+		$.ajax({
+			url : "/user/taskManagement/updateComment",
+			type : "POST",
+			data : params,
+		}).done(function(result) {
+			if(result.succeeded){
+				const newContentRequest = $.when(getCommentHistory(taskSeq));
+				newContentRequest.done(function(newContents){
+					<!-- /** 更新処理なのでreplace */ -->
+					let replaceContents = newContents.find("#commentData" + result.taskHistorySeq);
+					$(modal).find("#commentData" + result.taskHistorySeq).replaceWith(replaceContents);
+					<!--/* コメント文のHTML有効化 */-->
+					$('#commentView' + result.taskHistorySeq).html($('#commentView' + result.taskHistorySeq).text());
+				});
+				showInfoMessage(result.message, modal, result.errors);
+			}else{
+				showErrorMessage(result.message, modal, result.errors);
+			}
+		}).fail(function(jqXHR, textStatus, errorThrown) {
+			window.location.href = "/systemError";
+		}).always(function() {
+			benzo.global.taskEdit.ajaxRunning = false;
+		});
+	});
+
+	<!-- /** コメント削除 処理*/ -->
+	$(".targetTaskModalBody").on("click",".deleteComment", function(){
+		if(benzo.global.taskEdit.ajaxRunning){
+			return false
+		}
+		benzo.global.taskEdit.ajaxRunning = true;
+
+		$('[data-toggle="tooltip"]').tooltip('hide');
+		const modal = $(this).closest(".modal");
+		const taskSeq = $("#taskEditModal").find("[name='taskSeq']").val();
+		const taskHistorySeq= $(this).data("task-history-seq");
+		const params = [];
+		params.push({"name" : "taskSeq" , "value" : taskSeq});
+		params.push({"name" : "taskHistorySeq" , "value" : taskHistorySeq});
+
+		$.ajax({
+			url : "/user/taskManagement/deleteComment",
+			type : "POST",
+			data : params,
+		}).done(function(result) {
+			if(result.succeeded){
+				<!-- /** コメント履歴削除 */ -->
+				let removeDetailCommentContents ="#commentData" + taskHistorySeq;
+				$(removeDetailCommentContents).remove();
+				showInfoMessage(result.message, modal, result.errors);
+			}else{
+				showErrorMessage(result.message, modal, result.errors);
+			}
+		}).fail(function(jqXHR, textStatus, errorThrown) {
+			window.location.href = "/systemError";
+		}).always(function() {
+			benzo.global.taskEdit.ajaxRunning = false;
+		});
+	});
+
+	<!-- /* コメント履歴の取得処理 */ -->
+	function getCommentHistory(taskSeq){
+		const def= $.Deferred();
+		const getHistoryRequest = $.ajax({
+			url : "/user/taskManagement/getCommentHistory",
+			type : "POST",
+			data : {"taskSeq": taskSeq},
+		})
+
+		<!-- /* 成功時 */-->
+		getHistoryRequest.done(function(result) {
+			let response = $(result)
+			def.resolve(response);
+		})
+
+		<!-- /* 失敗時 */-->
+		getHistoryRequest.fail(function(jqXHR, textStatus, errorThrown) {
+			window.location.href = "/systemError";
+		})
+
+		<!-- /* どちらも行う処理 */-->
+		getHistoryRequest.always(function() {
+		});
+
+		<!-- /* 結果を返却 */-->
+		return def.promise(this);
+	}
+
+});
+</script>
+</head>
+<body>
+
+	<!--/* モーダル本体 */-->
+	<div th:fragment="select-task-modal" th:id="${taskEditViewForm.New} ? 'taskCreateModal' : 'taskEditModal'" class="select-modal">
+
+		<script th:inline="javascript">
+		$(function() {
+
+			<!--/* 共有の要素セットアップ処理 */-->
+			commonSetUpElement();
+
+			<!--/* コメントのHTMLタグ有効化 */-->
+			enableHtmlForComment();
+
+			const flg = /*[[${taskEditViewForm.New}]]*/;
+			const id = flg ? 'taskCreateModal' : 'taskEditModal';
+			
+			const taskModal = $("#"+ id);
+
+			<!--/* サブタスク追加リンク表示／非表示処理 */-->
+			refreshCheckItemAddLinkShowHidden();
+
+			<!--/* 選択アカウントの表示非表示設定を最新化 */-->
+			function hiddenIfSelect() {
+				$(".selectArea button").removeClass("hidden");
+				const seletedAccount = getSelectedAccountSeq();
+				const workerButton = $(".selectArea button").filter((idx, elem) => {
+					return seletedAccount.includes($(elem).data("workerAccountSeq"));
+				});
+				workerButton.addClass("workerSelected");
+				workerButton.find(".workerCheckSquare").removeClass("hidden")
+				workerButton.find(".workerSquare").addClass("hidden");
+			};
+
+			<!--/* 選択中のアカウントSEQをArray型で取得 */-->
+			function getSelectedAccountSeq() {
+				return $.map($("input[name*='workerAccountSeq']"), (elem, idx) => {
+					if (!(elem.disabled)) {
+						return Number(elem.value);
+					}
+				});
+			};
+
+			<!--/* 案件設定の候補案件を検索 */-->
+			function searchAnkenList(searchWord) {
+				
+				$.ajax({
+					url : "/user/taskManagement/searchTaskModalAnkenList",
+					type : "GET",
+					data : {
+						"searchWord" : searchWord
+					},
+				}).done(function(data, status, jqXHR) {
+
+					if (isAjaxProcSuccess(jqXHR)) {
+						<!--/* 処理成功 */-->
+						$('#taskEditAnkenDataListFragmentWrap').html(data);
+
+					} else {
+						if (data) {
+							<!--/* ajaxProcがFailureだがHTMLが帰って来た場合は、validationエラー */-->
+							$('#taskDetailFragmentWrap').html(data);
+						}
+						<!--/* 処理失敗 */-->
+						const errorMsg = getAjaxProcResutlMessage(jqXHR);
+						showErrorMessageForJs(errorMsg);
+					}
+				}).fail(function() {
+					showErrorMessageForJs(/*[[#{E00010}]]*/ "変更に失敗しました。");
+				}).always(function() {
+				});
+			}
+
+			<!--/* コメントのHTMLタグ有効化関数 */-->
+			function enableHtmlForComment() {
+				<!--/* 詳細タブのコメントのHTMLタグ有効化 */-->
+				$('.commentView').each(function(idx, element){
+					$(element).html($(element).text());
+				});
+			}
+
+			<!--/* 今日のタスクボタン押下（今日のタスクに追加） */-->
+			$("#" + id).on("click", ".doTaskToday", function(){
+				$(".doTaskToday").addClass("hidden");
+				$(".doTaskLater").removeClass("hidden");
+				$("#todayTaskFlg").val(true);
+			});
+
+			<!--/* 今日のタスク追加ボタン押下（今日のタスクから外す） */-->
+			$("#" + id).on("click", ".doTaskLater", function(){
+				$(".doTaskToday").removeClass("hidden");
+				$(".doTaskLater").addClass("hidden");
+				$("#todayTaskFlg").val(false);
+			});
+
+			<!--/* 割り当て選択エリア 独自popperの表示処理 */-->
+			$("#" + id).on("click", ".showSelectArea", function() {
+				<!--/* 担当者欄の選択済（workerSelected）を削除、サブタスクマークを非表示、□マークを表示にする（フラットな状態） */-->
+				$(".addWorkerAccount").removeClass("workerSelected");
+				$(".workerSquare").removeClass("hidden");
+				$(".workerCheckSquare").addClass("hidden");
+				<!--/* 実際の担当者のみサブタスクマークを表示、□マークを非表示にする */-->
+				hiddenIfSelect();
+				$(".selectArea").removeClass("hidden");
+			});
+
+			<!--/* 割り当て選択エリア 独自popperの閉じる処理 */-->
+			$("#" + id).on("click", ".closeSelectArea", function() {
+				$(".selectArea").addClass("hidden");
+			});
+
+			<!--/* 割り当て選択エリアクリック ここだけdocumentにアクションを追加する*/-->
+			$(document).off("click.taskTanto");
+			$(document).on("click.taskTanto", function(e) {
+				if ($(e.target).is(".showSelectArea")) {
+					return false;
+				}
+				if (!$(e.target).closest('.task_tanto_select').length && !$(".selectArea").hasClass("hidden")) {
+					$(".selectArea").toggleClass("hidden");
+				}
+			});
+
+			<!--/* 割り当ての選択処理 */-->
+			$("#" + id).on("click",".addWorkerAccount", function() {
+				if ($(this).find(".workerSquare").hasClass("hidden")) {
+					$(this).removeClass("workerSelected");
+					$(this).find(".workerCheckSquare").addClass("hidden")
+					$(this).find(".workerSquare").removeClass("hidden");
+				} else {
+					$(this).addClass("workerSelected");
+					$(this).find(".workerCheckSquare").removeClass("hidden")
+					$(this).find(".workerSquare").addClass("hidden");
+				}
+			});
+
+			<!--/* 割り当ての変更処理 */-->
+			$("#" + id).on("click", ".changeTaskTanto", function(){
+
+				$('[data-toggle="tooltip"]').tooltip('hide');
+
+				<!--/* 割り当て名、SEQを全て非表示、disabled */-->
+				$(".taskTanto").addClass("hidden");
+				$('input[name="workerAccountSeq"]').prop('disabled', true);
+				const workerAccountSeq = [];
+				$(".workerSelected").map(function (index, el) {
+					<!--/* 選択されている割り当てだけを表示、有効にする */-->
+					$("#taskTanto" + $(this).attr("data-worker-account-seq")).removeClass("hidden");
+					$("#taskWorkerAccountSeq" + $(this).attr("data-worker-account-seq")).prop('disabled', false);
+					workerAccountSeq.push($(this).attr("data-worker-account-seq"));
+				});
+				if (workerAccountSeq.length > 0) {
+					<!--/* 未設定リンクを非表示 */-->
+					$("#tantoSetLink").addClass("hidden");
+					<!--/* 変更リンクを表示 */-->
+					$("#tantoChangeLink").removeClass("hidden");
+				} else {
+					<!--/* 未設定リンクを表示 */-->
+					$("#tantoSetLink").removeClass("hidden");
+					<!--/* 変更リンクを非表示 */-->
+					$("#tantoChangeLink").addClass("hidden");
+				}
+				$(".selectArea").addClass("hidden");
+			});
+
+			<!--/* 案件リンクをクリック */-->
+			taskModal.find(".transitionAnken").on("click", function(){
+				const ankenId = $("#ankenId").val();
+				<!--/* 案件ダッシュボード画面へ遷移 */-->
+				window.location.href = "/user/ankenDashboard/" + ankenId + "/";
+			});
+			
+			<!--/* 案件を設定するリンクをクリック */-->
+			taskModal.find(".setAnken").on("click", function() {
+				
+				taskModal.find('.setAnken').addClass("hidden");
+				taskModal.find('.taskAnkenSearchPopoverWrap').removeClass("hidden");
+				taskModal.find(".ankenList").trigger('input').focus();
+			});
+			
+			<!--/* 案件設定：非表示処理 */-->
+			$(document).off('click.taskAnkenSearchPopoverHide');
+			$(document).on('click.taskAnkenSearchPopoverHide', function(e) {
+				
+				<!--/* 自作ポップオーバーの非表示処理（ポップオーバー外のクリック） */-->
+				let setAnkenLink = $(e.target).closest('.setAnken');
+				let popoverWraper = $(e.target).closest('.taskAnkenSearchPopoverWrap');
+				if(!popoverWraper.length && !setAnkenLink.length) {
+					<!--/* ポップオーバー要素の外側をクリックした時の操作 */--> 
+					<!--/* 全てのポップオーバーを非表示とする */--> 
+					if (!taskModal.find('.taskAnkenSearchPopoverWrap').hasClass('hidden')) {
+						taskModal.find('.taskAnkenSearchPopover').hide();
+						taskModal.find('.setAnken').removeClass("hidden");
+						taskModal.find('.taskAnkenSearchPopoverWrap').addClass("hidden");
+					}
+				} else {
+					<!--/* ターゲット要素をクリックした時の操作 */-->
+					<!--/* 特になにもしない */-->
+				}
+			});
+			
+			<!--/* 案件設定入力検索 */-->
+			let timeoutId = "";
+			taskModal.find('.ankenList').on('input', function(e) {
+				const searchWord = $(this).val();
+				if (searchWord.trim() === '') {
+					$('#taskEditAnkenDataListFragmentWrap').html('');
+					return;
+				}
+				$('[data-toggle="tooltip"]').tooltip('hide');
+				timeoutId = lazyQueueFn(searchAnkenList, {"clearQueueId":timeoutId}, searchWord);
+			});
+			
+			<!--/* 選択した案件データの反映処理 */-->
+			benzo.global.fragment.addTaskAnken = function(ankenDataObj) {
+				
+				const {ankenId, ankenName} = ankenDataObj;
+				
+				$('#taskEditAnkenDataListFragmentWrap').html('');
+				
+				taskModal.find('.taskAnkenSearchPopoverWrap').addClass('hidden')
+				taskModal.find('.relationAnkenBlock').addClass("hidden");
+				taskModal.find('.ankenNameLabel').removeClass("hidden");
+				taskModal.find('.unlink_anken_block').removeClass("hidden");
+				
+				taskModal.find('.ankenNameLabel').text(ankenName)
+				taskModal.find('#ankenId').val(ankenId);
+			}
+
+			<!--/* タスクに設定してある案件を外す */-->
+			$("#" + id).on("click", ".deleteAnken", function(){
+
+				$('[data-toggle="tooltip"]').tooltip('hide');
+				if (!confirm('案件紐付けを解除します。よろしいですか?')) {
+					return false;
+				}
+
+				$('.ankenNameLink').text("");
+				$('.ankenNameLabel').text("");
+				$(".ankenList").val('');
+				$('#ankenId').val("");
+
+				$('.setAnken').removeClass("hidden");
+				$('.ankenNameLabel').addClass("hidden");
+				$('.relationAnkenBlock').addClass("hidden");
+				$('.unlink_anken_block').addClass("hidden");
+			});
+
+			<!--/* ステータス変更処理 */-->
+			$("#" + id).on("change",".changeStatus", function() {
+				$("#taskStatus").val($(this).val());
+			});
+
+			<!--/* サブタスクを追加するリンクをクリック */-->
+			$("#" + id).on("click", ".addCheckList", function(){
+				<!--/* サブタスク入力フォームを全て非表示にする */-->
+				closeAllCheckItemInput();
+				<!--/* 新規サブタスク入力フォームを表示する */-->
+				showNewCheckItemInput();
+			});
+
+			<!--/* サブタスク入力フォームを全て非表示にする */-->
+			function closeAllCheckItemInput() {
+				$('.checkItemName').removeClass("hidden");
+				$('.checkItemInput').addClass("hidden");
+				$('.changeCheckItemName').addClass("hidden");
+				$('.closeCheckItem').addClass("hidden");
+			}
+
+			<!--/* 該当のサブタスク入力フォームを表示する */-->
+			function showCheckItemInput(checkItemSeq) {
+				$('#taskCheckItemView_' + checkItemSeq).addClass("hidden");
+				$('#taskCheckItemInputField_' + checkItemSeq).removeClass("hidden");
+				$('#taskCheckItemSaveButton_' + checkItemSeq).removeClass("hidden");
+				$('#taskCheckItemCloseButton_' + checkItemSeq).removeClass("hidden");
+			}
+
+			<!--/* 新規サブタスク項目入力フォームを表示する */-->
+			function showNewCheckItemInput() {
+				$('.newTaskContents').removeClass("hidden");
+				$('.saveCheckItem').removeClass("hidden");
+				$('.closeNewCheckItem').removeClass("hidden");
+				$('.newCheckItem').removeClass("hidden");
+				if ($('.newCheckItemError').text()) {
+					$('.newCheckItemError').removeClass("hidden");
+				}
+				$('.newCheckItem').select();
+			}
+
+			<!--/* 新規サブタスク項目入力フォームを非表示する */-->
+			function closeNewCheckItemInput() {
+				<!--/* サブタスク入力フォームを非表示にする */-->
+				$('.newTaskContents').addClass("hidden");
+				$('.saveCheckItem').addClass("hidden");
+				$('.closeNewCheckItem').addClass("hidden");
+				$('.newCheckItem').val("");
+				$('.newCheckItem').addClass("hidden");
+				$('.newCheckItemError').addClass("hidden");
+			}
+
+			<!--/* 新規サブタスク項目入力フォームをクリアしフォーカスをあてる */-->
+			function clearCheckItemInputAndFocus() {
+				$('.newCheckItemError').addClass("hidden");
+				$('.newCheckItem').val('');
+				$('.newCheckItem').focus();
+			}
+
+			<!--/* 新規サブタスク項目フォームでボタン押下 */-->
+			$("#" + id).on("keydown", ".newCheckItem", function(e) {
+
+				<!--/* Enterキー以外は処理終了 */-->
+				if (e.keyCode != 13) {
+					return;
+				}
+				<!--/* 本来設定されているキーイベントを外す */-->
+				e.preventDefault(); 
+
+				<!--/* 入力値が空は処理終了 */-->
+				if ($(this).val() == '') {
+					return false;
+				}
+
+				if (benzo.global.taskEdit.ajaxRunning) {
+					return false;
+				}
+				benzo.global.taskEdit.ajaxRunning = true;
+
+				if (flg) {
+					<!--/* タスク新規作成の場合 */-->
+					<!--/* サブタスク1行分作成 */-->
+					createNewCheckItemRow();
+					<!--/* 成功時エラーメッセージ削除 */-->
+					$('.newCheckItemError').text("");
+
+					if (validCheckItemCountOver()) {
+						<!--/* サブタスクが上限数以上の場合、入力フォームを非表示にする */-->
+						closeNewCheckItemInput();
+					} else {
+						<!--/* サブタスクが登録可能なら、入力フォームの内容をクリアしフォーカスをあてる */-->
+						clearCheckItemInputAndFocus();
+					}
+
+					<!--/* サブタスク追加リンク表示／非表示処理 */-->
+					refreshCheckItemAddLinkShowHidden();
+	 				benzo.global.taskEdit.ajaxRunning = false;
+				} else {
+					<!--/* タスク編集の場合 */-->
+					const modal = $(this).closest(".modal");
+					const taskSeq = $(this).data("seq");
+					const params = $("#inputForm").serializeArray();
+					saveCheckItem(params, taskSeq, modal);
+				} 
+			});
+
+			<!--/* サブタスク項目保存ボタンをクリック */-->
+			$("#" + id).on("click", ".saveCheckItem", function(){
+
+				if (benzo.global.taskEdit.ajaxRunning) {
+					return false;
+				}
+
+				if (flg) {
+					<!--/* タスク新規作成の場合 */-->
+					<!--/* 入力値が空はエラーメッセージを表示 */-->
+					if ($('.newCheckItem').val() == '') {
+						$('.newCheckItemError').text("入力必須です");
+						$('.newCheckItemError').removeClass('hidden');
+						$('.newCheckItem').focus();
+						return false;
+					}
+					<!--/* サブタスク1行分作成 */-->
+					createNewCheckItemRow();
+					<!--/* 成功時エラーメッセージ削除 */-->
+					$('.newCheckItemError').text("");
+
+					if (validCheckItemCountOver()) {
+						<!--/* サブタスクが上限数以上の場合、入力フォームを非表示にする */-->
+						closeNewCheckItemInput();
+					} else {
+						<!--/* サブタスクが登録可能なら、入力フォームの内容をクリアしフォーカスをあてる */-->
+						clearCheckItemInputAndFocus();
+					}
+
+					<!--/* サブタスク追加リンク表示／非表示処理 */-->
+					refreshCheckItemAddLinkShowHidden();
+	 				benzo.global.taskEdit.ajaxRunning = false;
+
+				} else {
+					<!--/* タスク編集の場合 */-->
+					const modal = $(this).closest(".modal");
+					const taskSeq = $(this).data("seq");
+					const params = $("#inputForm").serializeArray();
+					saveCheckItem(params, taskSeq, modal);
+				}
+			});
+
+			<!--/* サブタスク新規追加の閉じるボタン押下 */-->
+			$("#" + id).on("click", ".closeNewCheckItem", function(e) {
+				closeNewCheckItemInput();
+			});
+
+			<!--/* サブタスク新規入力フォームに入力したサブタスク名で1行分のDOMを作成しID、完了フラグをセット */-->
+			function createNewCheckItemRow() {
+				let $checkItemViewFormTemplate = $('.checkItemRow:first').clone();
+				$checkItemViewFormTemplate.removeClass("hidden");
+				<!--/* li件数（新規作成用のli分を引く） */-->
+				let checkListCount = $('#taskCheckList li').length - 1;
+				$checkItemViewFormTemplate.attr('id', 'checkItemRow_' + checkListCount);
+				<!--/* 完了フラグのhidden項目作成 */-->
+				let hiddenCompleteFlgHtml = "<input type='hidden' id='checkList[" + checkListCount + "].completeFlg' name='checkList[" + checkListCount + "].completeFlg' value='false'>";
+				$checkItemViewFormTemplate.prepend(hiddenCompleteFlgHtml);
+				<!--/* サブタスクマークの設定 */-->
+				$checkItemViewFormTemplate.find('.changeCheckItemStatus').attr('data-complete-flg', false);
+				$checkItemViewFormTemplate.find('.changeCheckItemStatus').attr('data-check-item-seq', checkListCount);
+				<!--/* サブタスク名表示の設定 */-->
+				$checkItemViewFormTemplate.find('.checkItemName').attr('id', 'taskCheckItemView_' + checkListCount);
+				$checkItemViewFormTemplate.find('.checkItemName').data('check-item-seq', checkListCount);
+				$checkItemViewFormTemplate.find('.checkItem').data('check-item-seq', checkListCount);
+				$checkItemViewFormTemplate.find('.checkItemView').attr('text', $('.newCheckItem').val());
+				$checkItemViewFormTemplate.find('.checkItemView').text($('.newCheckItem').val());
+				<!--/* サブタスク名のhidden項目作成 */-->
+				const hiddenChekcItemNameHtml = "<input type='hidden' id='checkList[" + checkListCount + "].itemName' name='checkList[" + checkListCount + "].itemName' value='" + $('.newCheckItem').val() + "'>";
+				$checkItemViewFormTemplate.append(hiddenChekcItemNameHtml);
+				<!--/* 削除ボタンに属性設定 */-->
+				$checkItemViewFormTemplate.find('.deleteCheckItemName').data('check-item-seq', checkListCount);
+				<!--/* サブタスク名入力フォームの設定 */-->
+				$checkItemViewFormTemplate.find('.checkItemInput').attr('id', 'taskCheckItemInputField_' + checkListCount);
+				$checkItemViewFormTemplate.find('.checkItem').attr('id', 'taskCheckItemInput_' + checkListCount);
+				$checkItemViewFormTemplate.find('.checkItem').val($('.newCheckItem').val());
+				$checkItemViewFormTemplate.find('.checkItem').data('check-item-seq', checkListCount);
+				<!--/* 保存ボタンに属性設定 */-->
+				$checkItemViewFormTemplate.find('.changeCheckItemName').attr('id', 'taskCheckItemSaveButton_' + checkListCount);
+				$checkItemViewFormTemplate.find('.changeCheckItemName').data('check-item-seq', checkListCount);
+				<!--/* 閉じるボタンに属性設定 */-->
+				$checkItemViewFormTemplate.find('.closeCheckItem').attr('id', 'taskCheckItemCloseButton_' + checkListCount);
+				$checkItemViewFormTemplate.find('.closeCheckItem').data('check-item-seq', checkListCount);
+				<!--/* バリデーションエラー表示用要素にid設定 */-->
+				$checkItemViewFormTemplate.find('.checkItemError').attr('id', 'itemMsg_checkList[' + checkListCount + '].itemName');
+
+				$('#taskCheckList').append($checkItemViewFormTemplate);
+				$('#taskCheckList').find('[data-toggle="tooltip"]').tooltip();
+			}
+
+			<!--/* サブタスク項目保存処理 */-->
+			function saveCheckItem(params, taskSeq, modal) {
+
+				$.ajax({
+					url : "/user/taskManagement/saveTaskModalCheckItem",
+					type : "POST",
+					data : params,
+				}).done(function(result) {
+
+					if(result.succeeded){
+						<!-- /** 追加したサブタスク項目1行分データを取得 */ -->
+						const newContentRequest = $.when(getTaskModalCheckItem(result.taskCheckItemSeq));
+						newContentRequest.done(function(newContents){
+							<!-- /** 新規追加処理なのでappend */ -->
+							$(modal).find("#taskCheckList").append(newContents);
+							renderActivityTab(taskSeq, modal);
+
+							if (validCheckItemCountOver()) {
+								<!--/* サブタスクが上限数以上の場合、入力フォームを非表示にする */-->
+								closeNewCheckItemInput();
+							} else {
+								<!--/* サブタスクが登録可能なら、入力フォームの内容をクリアしフォーカスをあてる */-->
+								clearCheckItemInputAndFocus();
+							}
+							<!--/* サブタスク追加リンク表示／非表示処理 */-->
+							refreshCheckItemAddLinkShowHidden();
+						});
+						showInfoMessage(result.message, modal, result.errors);
+					}else{
+						showErrorMessage(result.message, modal, result.errors);
+						showNewCheckItemInput();
+					}
+
+				}).fail(function() {
+					window.location.href = "/systemError";
+				}).always(function() {
+					benzo.global.taskEdit.ajaxRunning = false;
+				});	
+			}
+
+			<!-- /* サブタスク項目（1行分）の取得処理 */ -->
+			function getTaskModalCheckItem(taskCheckItemSeq){
+				const def= $.Deferred();
+				const getHistoryRequest = $.ajax({
+					url : "/user/taskManagement/getTaskModalCheckItem",
+					type : "GET",
+					data : {"taskCheckItemSeq": taskCheckItemSeq},
+				})
+
+				<!-- /* 成功時 */-->
+				getHistoryRequest.done(function(result) {
+					let response = $(result)
+					def.resolve(response);
+				})
+
+				<!-- /* 失敗時 */-->
+				getHistoryRequest.fail(function(jqXHR, textStatus, errorThrown) {
+					window.location.href = "/systemError";
+				})
+
+				<!-- /* どちらも行う処理 */-->
+				getHistoryRequest.always(function() {
+				});
+
+				<!-- /* 結果を返却 */-->
+				return def.promise(this);
+			}
+
+			<!--/* サブタスク項目名をホバー */-->
+			$("#" + id).on('mouseenter','.checkItemName',function(){
+				<!--/* 追加登録したサブタスク行のツールチップを有効化する */-->
+				commonSetUpElement();
+			});
+
+			<!--/* サブタスク項目名（表示）をクリック */-->
+			$("#" + id).on("click", ".checkItemName", function() {
+				<!--/* サブタスク入力フォームを全て非表示にする */-->
+				closeAllCheckItemInput();
+				<!--/* 新規サブタスク入力フォームを全て非表示にする */-->
+				closeNewCheckItemInput();
+
+				const checkItemSeq = $(this).data("check-item-seq");
+				<!--/* 該当のサブタスク入力フォームを表示する */-->
+				showCheckItemInput(checkItemSeq);
+				<!--/* サブタスク項目入力フォームの内容を変更前に戻す */-->
+				$('#taskCheckItemInput_' + checkItemSeq).val($('#taskCheckItemView_' + checkItemSeq).text().trim());
+				$('#taskCheckItemInput_' + checkItemSeq).focus();
+				commonSetUpElement();
+			});
+
+			<!--/* サブタスク項目名フォームでボタン押下 */-->
+			$("#" + id).on("keydown", ".checkItem", function(e) {
+
+				<!--/* Enterキー以外は処理終了 */-->
+				if (e.keyCode != 13) {
+					return;
+				}
+				<!--/* 本来設定されているキーイベントを外す */-->
+				e.preventDefault(); 
+
+				let checkItemSeq = $(this).data("check-item-seq");
+				<!--/* 入力値が空は処理終了 */-->
+				if ($('#taskCheckItemInput_' + checkItemSeq).val() == '') {
+					return false;
+				}
+
+				if (benzo.global.taskEdit.ajaxRunning) {
+					return false;
+				}
+				benzo.global.taskEdit.ajaxRunning = true;
+
+				if (flg) {
+					<!--/* タスク新規作成の場合 */-->
+
+					<!--/* サブタスク1行分更新 */-->
+					updateCheckItemAfterInputName(checkItemSeq);
+					benzo.global.taskEdit.ajaxRunning = false;
+				} else {
+					<!--/* タスク編集の場合 */-->
+					const modal = $(this).closest(".modal");
+					const taskSeq = $(this).data("seq");
+					const checkItemName = $('#taskCheckItemInput_' + checkItemSeq).val();
+					changeCheckItemName(taskSeq, checkItemName, checkItemSeq, modal);
+				}
+			});
+
+			<!--/* サブタスク項目名変更後、入力フォームを非表示にする  */-->
+			function updateCheckItemAfterInputName(checkItemSeq) {
+				$('#taskCheckItemInput_' + checkItemSeq).val();
+				$('#taskCheckItemView_' + checkItemSeq).find('.checkItemView').text($('#taskCheckItemInput_' + checkItemSeq).val());
+				$('[id="checkList[' + checkItemSeq + '].itemName"]').val($('#taskCheckItemInput_' + checkItemSeq).val());
+
+				<!--/* サブタスク項目入力フォームを非表示にする */-->
+				$('#taskCheckItemView_' + checkItemSeq).removeClass("hidden");
+				$('#taskCheckItemInputField_' + checkItemSeq).addClass("hidden");
+				$('#taskCheckItemSaveButton_' + checkItemSeq).addClass("hidden");
+				$('#taskCheckItemCloseButton_' + checkItemSeq).addClass("hidden");
+				$('[id="itemMsg_checkList[' + checkItemSeq + '].itemName"]').text('');
+				$('[id="itemMsg_checkList[' + checkItemSeq + '].itemName"]').addClass('hidden');
+			}
+
+			<!--/* サブタスク項目名保存ボタンをクリック（変更） */-->
+			$("#" + id).on("click", ".changeCheckItemName", function(){
+
+				if (benzo.global.taskEdit.ajaxRunning) {
+					return false;
+				}
+				benzo.global.taskEdit.ajaxRunning = true;
+
+				$('[data-toggle="tooltip"]').tooltip('hide');
+				const checkItemSeq = $(this).data("check-item-seq");
+
+				if (flg) {
+					<!--/* タスク新規作成の場合 */-->
+
+					<!--/* 入力値が空はエラーメッセージを表示 */-->
+					if ($('#taskCheckItemInput_' + checkItemSeq).val() == '') {
+						$('[id="itemMsg_checkList[' + checkItemSeq + '].itemName"]').text("入力必須です");
+						$('[id="itemMsg_checkList[' + checkItemSeq + '].itemName"]').removeClass('hidden');
+						$('#taskCheckItemInput_' + checkItemSeq).focus();
+						benzo.global.taskEdit.ajaxRunning = false;
+						return false;
+					}
+					<!--/* サブタスク1行分更新 */-->
+					updateCheckItemAfterInputName(checkItemSeq);
+					benzo.global.taskEdit.ajaxRunning = false;
+				} else {
+					<!--/* タスク編集の場合 */-->
+					const modal = $(this).closest(".modal");
+					const taskSeq = $(this).data("seq");
+					const checkItemName = $('#taskCheckItemInput_' + checkItemSeq).val();
+					changeCheckItemName(taskSeq, checkItemName, checkItemSeq, modal);
+				}
+			});
+
+			<!--/* サブタスク項目名変更処理 */-->
+			function changeCheckItemName(taskSeq, checkItemName, checkItemSeq, modal) {
+
+				const formData = [];
+				formData.push({"name" : "taskSeq", "value" : taskSeq});
+				formData.push({"name" : "taskCheckItemSeq", "value" : checkItemSeq});
+				formData.push({"name" : "checkItemName", "value" : checkItemName});
+
+				$.ajax({
+					url : "/user/taskManagement/changeTaskModalCheckItemName",
+					type : "POST",
+					data : formData,
+				}).done(function(result) {
+
+					if(result.succeeded){
+						<!--/* 処理成功 */-->
+						renderTaskModalCheckItem(checkItemSeq, modal);
+						renderActivityTab(taskSeq, modal);
+						showInfoMessage(result.message, modal, result.errors);
+					}else{
+						showErrorMessage(result.message, modal, result.errors);
+						$('#taskCheckItemInput_' + checkItemSeq).focus();
+					}
+
+				}).fail(function() {
+					window.location.href = "/systemError";
+				}).always(function() {
+					<!--/* blur処理を遅延させているため、時間調整 */-->
+					benzo.global.taskEdit.ajaxRunning = false;
+				});	
+			}
+
+			<!--/* サブタスク1行分の再表示関数 */-->
+			function renderTaskModalCheckItem(taskCheckItemSeq, modal) {
+				return new Promise((resolve, reject) => {
+
+					const param = {
+							"taskCheckItemSeq" : taskCheckItemSeq
+						}
+
+					$.ajax({
+						url : '/user/taskManagement/getTaskModalCheckItem',
+						type : "GET",
+						data : param,
+						dataType: 'html',
+					})
+					.done(function(data, status, jqXHR) {
+						if (isAjaxProcSuccess(jqXHR)) {
+							<!-- /* 再表示処理なのでreplace */-->
+							$("#taskCheckItemData_" + taskCheckItemSeq).replaceWith(data);
+						} else {
+							<!--/* 処理失敗 */-->
+							const errorMsg = getAjaxProcResutlMessage(jqXHR);
+							showErrorMessage(errorMsg, modal);
+						}
+						return resolve();
+					})
+					.fail(function(jqXHR, status, errorThrown) {
+						showErrorMessage(/*[[#{E00091}]]*/ "error", modal);
+						return reject();
+					});
+				});
+			}
+
+			<!--/* サブタスク項目閉じるボタンをクリック（変更）  */-->
+			$("#" + id).on("click", ".closeCheckItem", function(){
+				const checkItemSeq = $(this).data("check-item-seq");
+				if (benzo.global.taskEdit.ajaxRunning) {
+					return false;
+				}
+				<!--/* サブタスク項目入力フォームを非表示にする */-->
+				$('#taskCheckItemView_' + checkItemSeq).removeClass("hidden");
+				$('#taskCheckItemInputField_' + checkItemSeq).addClass("hidden");
+				$('#taskCheckItemSaveButton_' + checkItemSeq).addClass("hidden");
+				$('#taskCheckItemCloseButton_' + checkItemSeq).addClass("hidden");
+			});
+
+			<!--/* サブタスク項目のステータスサブタスクボックスをクリック */-->
+			$("#" + id).on("click", ".changeCheckItemStatus", function(){
+
+				if (benzo.global.taskEdit.ajaxRunning) {
+					return false;
+				}
+				benzo.global.taskEdit.ajaxRunning = true;
+
+				$('[data-toggle="tooltip"]').tooltip('hide');
+				if (flg) {
+					<!--/* タスク新規作成時 */-->
+					const checkItemSeq = $(this).attr("data-check-item-seq");
+					const completeFlg = $('[id="checkList[' + checkItemSeq + '].completeFlg"]').val();
+					<!--/* サブタスク項目の状態を変更する */-->
+					if (completeFlg == 'true') {
+						<!--/* 未完了に変更 */-->
+						$('[id="checkList[' + checkItemSeq + '].completeFlg"]').val('false');
+						$('#taskCheckItemView_' + checkItemSeq).removeClass("task_check_item_name_compleat");
+						$('#taskCheckItemView_' + checkItemSeq).addClass("task_check_item_name");
+					} else {
+						<!--/* 完了に変更 */-->
+						$('[id="checkList[' + checkItemSeq + '].completeFlg"]').val('true');
+						$('#taskCheckItemView_' + checkItemSeq).removeClass("task_check_item_name");
+						$('#taskCheckItemView_' + checkItemSeq).addClass("task_check_item_name_compleat");
+					}
+					benzo.global.taskEdit.ajaxRunning = false;
+				} else {
+					<!--/* タスク編集時 */-->
+					const modal = $(this).closest(".modal");
+					const taskSeq = $(this).data("seq");
+					const checkItemSeq = $(this).data("check-item-seq");
+					const completeFlg = $(this).data("complete-flg");
+					const checkItemName = $('#taskCheckItemInput_' + checkItemSeq).val();
+					let newCompleteFlg;
+					<!--/* サブタスク項目の状態を変更する */-->
+					if (completeFlg) {
+						<!--/* 未完了に変更 */-->
+						newCompleteFlg = /*[[${T(jp.loioz.common.constant.CommonConstant$CheckItemStatus).INCOMPLETE.cd}]]*/'';
+					} else {
+						<!--/* 完了に変更 */-->
+						newCompleteFlg = /*[[${T(jp.loioz.common.constant.CommonConstant$CheckItemStatus).COMPLETED.cd}]]*/'';
+					}
+					changeCheckItemStatus(taskSeq, newCompleteFlg, checkItemName, checkItemSeq, modal);
+				}
+			});
+
+			<!--/* サブタスク項目ステータス変更処理 */-->
+			function changeCheckItemStatus(taskSeq, newCompleteFlg, checkItemName, checkItemSeq, modal) {
+
+				const formData = [];
+				formData.push({"name" : "taskSeq", "value" : taskSeq});
+				formData.push({"name" : "taskCheckItemSeq", "value" : checkItemSeq});
+				formData.push({"name" : "checkItemName", "value" : checkItemName});
+				formData.push({"name" : "newCompleteFlg", "value" : newCompleteFlg});
+
+				$.ajax({
+					url : "/user/taskManagement/changeTaskModalCheckItemStatus",
+					type : "POST",
+					data : formData,
+				}).done(function(result) {
+
+					if(result.succeeded){
+						<!--/* 処理成功 */-->
+						renderTaskModalCheckItem(checkItemSeq, modal);
+						renderActivityTab(taskSeq, modal);
+						showInfoMessage(result.message, modal, result.errors);
+					}else{
+						showErrorMessage(result.message, modal, result.errors);
+						$('#taskCheckItemInput_' + checkItemSeq).focus();
+					}
+
+				}).fail(function() {
+					window.location.href = "/systemError";
+				}).always(function() {
+					benzo.global.taskEdit.ajaxRunning = false;
+				});	
+			}
+
+			<!--/* サブタスク追加リンクの表示／非表示制御 */-->
+			function refreshCheckItemAddLinkShowHidden() {
+
+				let checkItemAddLimit = /*[[${T(jp.loioz.common.constant.CommonConstant).TASK_CHECK_ITEM_ADD_LIMIT}]]*/ ''
+
+				<!--/* サブタスクアイテムの表示件数 新規作成用の空li分を引く */-->
+				let checkItemInputFormCount = $('#taskCheckList li').length-1;
+
+				<!--/* サブタスクアイテムが上限数より小さい場合は追加リンクを表示する */-->
+				if (checkItemInputFormCount < checkItemAddLimit) {
+					$('.addCheckList').removeClass('hidden');
+				} else {
+					$('.addCheckList').addClass('hidden');
+				}
+			}
+
+			<!--/* サブタスクが上限数以上かチェックする（上限数以上ならtrue） */-->
+			function validCheckItemCountOver() {
+
+				let checkItemAddLimit = /*[[${T(jp.loioz.common.constant.CommonConstant).TASK_CHECK_ITEM_ADD_LIMIT}]]*/ ''
+
+				<!--/* サブタスクアイテムの表示件数 新規作成用の空li分を引く */-->
+				let checkItemInputFormCount = $('#taskCheckList li').length-1;
+
+				<!--/* サブタスクが上限数以上場合はtrueを返す */-->
+				if (checkItemAddLimit <= checkItemInputFormCount) {
+					return true;
+				}
+				return false;
+			}
+			
+
+			<!--/* アクティビティタブの再表示関数 */-->
+			function renderActivityTab(taskSeq, modal) {
+				return new Promise((resolve, reject) => {
+
+					const param = {
+							"taskSeq" : taskSeq
+						}
+
+					$.ajax({
+						url : '/user/taskManagement/displayTaskModalActivity',
+						type : "GET",
+						data : param,
+						dataType: 'html',
+					})
+					.done(function(data, status, jqXHR) {
+						if (isAjaxProcSuccess(jqXHR)) {
+							<!--/* アクティビティタブ部分に描画 */-->
+							$('#acrivityListFragmentWrap').html(data);
+						} else {
+							<!--/* 処理失敗 */-->
+							const errorMsg = getAjaxProcResutlMessage(jqXHR);
+							showErrorMessage(errorMsg, modal);
+						}
+						return resolve();
+					})
+					.fail(function(jqXHR, status, errorThrown) {
+						showErrorMessage(/*[[#{E00091}]]*/ "error", modal);
+						return reject();
+					});
+				});
+			}
+
+			<!--/* サブタスク項目削除処理（タスク新規時） */-->
+			$("#" + id).on("click", ".deleteCheckItemName", function(event){
+
+				event.stopPropagation();
+				if (benzo.global.taskEdit.ajaxRunning) {
+					return false;
+				}
+				benzo.global.taskEdit.ajaxRunning = true;
+
+				$('[data-toggle="tooltip"]').tooltip('hide');
+				<!--/* liタグを削除 */-->
+				let checkItemSeq = $(this).data("check-item-seq");
+				$('#checkItemRow_' + checkItemSeq).remove();
+				<!--/* 削除後、残ったサブタスクのidやnameを再設定 */-->
+				setCheckItemAttribute(id);
+				<!--/* サブタスク追加リンク表示／非表示処理 */-->
+				refreshCheckItemAddLinkShowHidden();
+
+				benzo.global.taskEdit.ajaxRunning = false;
+			});
+
+			<!--/* サブタスク項目削除処理（タスク編集時） */-->
+			$("#" + id).on("click", ".deleteCheckItemRow", function(event){
+
+				event.stopPropagation();
+				if (benzo.global.taskEdit.ajaxRunning) {
+					return false;
+				}
+				benzo.global.taskEdit.ajaxRunning = true;
+
+				$('[data-toggle="tooltip"]').tooltip('hide');
+				const modal = $(this).closest(".modal");
+				const taskSeq = $(this).data("seq");
+				const checkItemName = $(this).data("check-item-name");
+				const checkItemSeq = $(this).data("check-item-seq");
+				deleteCheckItem(taskSeq, checkItemName, checkItemSeq, modal);
+			});
+
+			<!--/* サブタスク項目削除処理 */-->
+			function deleteCheckItem(taskSeq, checkItemName, checkItemSeq, modal) {
+
+				const formData = [];
+				formData.push({"name" : "taskSeq", "value" : taskSeq});
+				formData.push({"name" : "checkItemName", "value" : checkItemName});
+				formData.push({"name" : "taskCheckItemSeq", "value" : checkItemSeq});
+
+				$.ajax({
+					url : "/user/taskManagement/deleteTaskModalCheckItem",
+					type : "POST",
+					data : formData,
+				}).done(function(result) {
+
+					if(result.succeeded){
+						<!--/* 処理成功 */-->
+						$('#taskCheckItemData_' + checkItemSeq).remove();
+						<!--/* サブタスク追加リンク表示／非表示処理 */-->
+						refreshCheckItemAddLinkShowHidden();
+						renderActivityTab(taskSeq, modal);
+						showInfoMessage(result.message, modal, result.errors);
+					}else{
+						showErrorMessage(result.message, modal, result.errors);
+					}
+
+				}).fail(function() {
+					showErrorMessage(/*[[#{E00013}]]*/ "保存に失敗しました。", modal);
+				}).always(function() {
+					benzo.global.taskEdit.ajaxRunning = false;
+				});	
+			}
+
+			<!--/* サブタスクの初期の表示順を保存する（１行ずつ変更する処理） */-->
+			let currentDispOrder = new Map();
+			$('#taskCheckList li').each(function(idx){
+				currentDispOrder.set($(this).attr('data-check-item-seq'), parseInt(idx));
+			});
+
+			<!--/* サブタスクの並べ替え処理（１行ずつ変更する処理） */-->
+			$('#taskCheckList').sortable({
+				containment: "parent",
+			});
+
+			<!--/* サブタスクの並べ替え処理（１行ずつ変更する処理） */-->
+			$('#taskCheckList').bind('sortupdate', function(){
+
+				if (flg) {
+					<!--/* タスク作成時 */-->
+					<!--/* 並び替え順でフォームに渡すデータのidやnameを再設定 */-->
+					setCheckItemAttribute(id);
+				} else {
+					<!--/* タスク編集時 */-->
+					let checkItemSeq = [];
+
+					$(this).find('.checkItemRow').each(function(idx){
+						<!--/* 並び替えたタスク一覧を順番通りにセット */-->
+						if (typeof $(this).attr('data-check-item-seq') !== 'undefined'){
+							checkItemSeq.push($(this).attr('data-check-item-seq'));
+						}
+					});
+
+					<!--/* パラメータをStringに変換して渡す */-->
+					if (checkItemSeq.length > 0) {
+						if (benzo.global.taskEdit.ajaxRunning) {
+							return false;
+						}
+						benzo.global.taskEdit.ajaxRunning = true;
+
+						$.ajax({
+							url : "/user/taskManagement/changeTaskModalCheckItemDispOrder",
+							type : "POST",
+							data : {
+								"checkItemSeq" : String(checkItemSeq)
+							},
+						}).done(function(responce) {
+							if (responce.succeeded) {
+								$('#taskCheckList li').each(function(idx){
+									currentDispOrder.set($(this).attr('data-check-item-seq'), parseInt(idx));
+								});
+							} else {
+								if (responce.message) {
+									alert(responce.message);
+								}
+							}
+						}).fail(function(jqXHR, textStatus, errorThrown) {
+						}).always(function() {
+							benzo.global.taskEdit.ajaxRunning = false;
+						});
+					}
+				}
+			});
+
+			<!--/* フォームに渡すサブタスクデータのidやnameを再設定 */-->
+			function setCheckItemAttribute(id) {
+
+				let count = 0;
+				$("#" + id).find('.checkItemRow').each(function(idx){
+					<!--/* 最初は新規作成用のテンプレートなのでスキップ */-->
+					if (idx != 0) {
+						$(this).attr('id', 'checkItemRow_' + count);
+						$(this).find("input:hidden").first().attr('id', 'checkList[' + count + '].completeFlg');
+						$(this).find("input:hidden").first().attr('name', 'checkList[' + count + '].completeFlg');
+						$(this).find('.changeCheckItemStatus').attr('data-complete-flg', $(this).find('.changeCheckItemStatus').val());
+						$(this).find('.changeCheckItemStatus').attr('data-check-item-seq', count);
+						$(this).find('.checkItemName').attr('id', 'taskCheckItemView_' + count);
+						$(this).find('.checkItemName').data('check-item-seq', count);
+						$(this).find('.checkItem').data('check-item-seq', count);
+						$(this).find("input:hidden").last().attr('id', 'checkList[' + count + '].itemName');
+						$(this).find("input:hidden").last().attr('name', 'checkList[' + count + '].itemName');
+						$(this).find('.deleteCheckItemName').data('check-item-seq', count);
+						$(this).find('.checkItemInput').attr('id', 'taskCheckItemInputField_' + count);
+						$(this).find('.checkItem').attr('id', 'taskCheckItemInput_' + count);
+						$(this).find('.checkItem').data('check-item-seq', count);
+						$(this).find('.changeCheckItemName').attr('id', 'taskCheckItemSaveButton_' + count);
+						$(this).find('.changeCheckItemName').data('check-item-seq', count);
+						$(this).find('.closeCheckItem').attr('id', 'taskCheckItemCloseButton_' + count);
+						$(this).find('.closeCheckItem').data('check-item-seq', count);
+						$(this).find('.checkItemError').attr('id', 'itemMsg_checkList[' + count + '].itemName');
+						count++;
+					}
+				});
+			}
+
+		});
+		</script>
+
+		<div class="viewFormContent">
+			<div class="modal-header">
+				<h2 class="modalheader_title">タスク登録</h2>
+			</div>
+			<div class="modal-body">
+				<!--/* タスク入力 */-->
+				<div class="modal_input_area modal_task_input">
+					<div th:replace="common/messageArea::jsMessageArea"></div>
+					<form id="inputForm" th:fragment="taskEditInput" autocomplete="off">
+						<input type="hidden" th:if="${inputForm.taskSeq}" th:field="${inputForm.taskSeq}">
+						<input type="hidden" th:field="${inputForm.todayTaskChangeableFlag}">
+						
+						<!--/* 案件未設定の場合 */-->
+						<div th:unless="${inputForm.ankenId}" class="mt-1 d-flex align-items-center">
+							<a href="javascript:void(0);" class="select_anken linkSetAnken setAnken" 
+								data-toggle="tooltip" data-trigger="hover" title="案件のタスクとして登録">
+								<span class="notAnkenName"><i class="fas fa-plus mr-2"></i>案件を設定する</span>
+							</a>
+							
+							<!--/* 案件入力エリア */-->
+							<div class="popover_box_wrap taskAnkenSearchPopoverWrap w-100 hidden">
+								<input type="search" id="search" class="form-control ankenList" placeholder="案件名または顧客名を入力..." autocomplete="off">
+								<input type="hidden" id="ankenId" name="ankenId">
+								<!--/* 案件候補 */-->
+								<div id="taskEditAnkenDataListFragmentWrap">
+									<!--/* 初期状態は空のまま */-->
+								</div>
+							</div>
+
+							<!--/* 案件ラベル */-->
+							<div class="task_anken_info char_ellipsis">
+								<span class="task_anken_name ankenNameLabel hidden"></span>
+							</div>
+
+							<!--/* 案件リンク */-->
+							<div class="relationAnkenBlock hidden">
+								<a href="javascript:void(0);" class="relation_link select_relation_anken transitionAnken"
+									 data-toggle="tooltip" data-trigger="hover" title="案件ダッシュボードへ">
+									<span class="ankenNameLink" th:text="${inputForm.ankenNameAndCustomerName}"></span>
+								</a>
+							</div>
+
+							<!--/* 削除ボタン */-->
+							<div class="unlink_anken_block hidden">
+								<button type="button" class="btn btn-light btn_icon_only deleteAnken unlink_anken"
+									 data-toggle="tooltip" data-trigger="hover" title="案件紐付けを解除する">
+									<i class="fas fa-unlink"></i>
+								</button>
+							</div>
+							
+						</div>
+
+						<!--/* 案件設定済みの場合 */-->
+						<div th:if="${inputForm.ankenId}" class="mt-1 d-flex align-items-center">
+							<a href="javascript:void(0);" class="select_anken linkSetAnken setAnken hidden" 
+								data-toggle="tooltip" data-trigger="hover" title="案件のタスクとして登録">
+								<span class="notAnkenName"><i class="fas fa-plus mr-2"></i>案件を設定する</span>
+							</a>
+							
+							<!--/* 案件入力エリア */-->
+							<div class="popover_box_wrap taskAnkenSearchPopoverWrap w-100 hidden">
+								<input type="search" id="search" class="form-control ankenList" placeholder="案件名または顧客名を入力..." autocomplete="off">
+								<input type="hidden" id="ankenId" name="ankenId" th:value="${inputForm.ankenId.asLong()}">
+								<!--/* 案件候補 */-->
+								<div id="taskEditAnkenDataListFragmentWrap">
+									<!--/* 初期状態は空のまま */-->
+								</div>
+							</div>
+
+							<!--/* 案件ラベル */-->
+							<div class="task_anken_info char_ellipsis relation_link">
+								<span class="task_anken_name ankenNameLabel hidden"></span>
+							</div>
+
+							<!--/* 案件リンク */-->
+							<div class="relationAnkenBlock char_ellipsis">
+								<a href="javascript:void(0);" class="relation_link select_relation_anken transitionAnken"
+									 data-toggle="tooltip" data-trigger="hover" title="案件ダッシュボードへ">
+									<i class="fas fa-hashtag mr-2"></i><span class="ankenNameLink" th:text="${inputForm.ankenNameAndCustomerName}"></span>
+								</a>
+							</div>
+
+							<!--/* 削除ボタン */-->
+							<div class="unlink_anken_block">
+								<button type="button" class="btn btn-light btn_icon_only deleteAnken unlink_anken"
+									 
+									data-toggle="tooltip" data-trigger="hover" title="案件紐付けを解除する">
+									<i class="fas fa-unlink"></i>
+								</button>
+							</div>
+						</div>
+
+						<!--/* タイトル */-->
+						<div class="form-row mt-2">
+							<!--/* 編集タイトル */-->
+							<div class="form-group col-md-12">
+								<input type="text" class="form-control " placeholder="タイトル（必須入力）" th:field="${inputForm.title}" maxlength="255">
+								<div class="error_mag_point hidden" id="itemMsg_title"></div>
+							</div>
+						</div>
+
+						<!--/* サブタスク */-->
+						<div th:replace="::checkListFragment(${inputForm})"></div>
+
+						<!--/* 詳細 */-->
+						<div class="form-row">
+							<!--/* 編集タイトル */-->
+							<div class="form-group col-md-12">
+								<!--/* 詳細入力エリア */-->
+								<textarea rows="5" name="content" class="form-control" maxlength="2000" th:field="${inputForm.content}" placeholder="詳細を追加する..."></textarea>
+								<div class="error_mag_point hidden" id="itemMsg_content"></div>
+							</div>
+						</div>
+
+						<div class="task_setting">
+							<!--/* ステータス */-->
+							<div class="form-row">
+								<div class="form-group col-md-4 mb-1">
+									<label class="form_label"><i class="far fa-check-circle mr-2"></i>進捗</label>
+								</div>
+								<div class="form-group col-md-8 mb-1">
+									<select class="form-control digit7 changeStatus" th:with="status=${inputForm.taskStatus}">
+										<option th:each="taskStatus : ${T(jp.loioz.common.constant.CommonConstant$TaskStatus).values()}" 
+											th:label="${taskStatus.getVal()}" th:text="${taskStatus.getVal()}" th:value="${taskStatus.getCd()}" th:selected="${taskStatus.equalsByCode(status)}">未着手</option>
+									</select>
+									<input type="hidden" th:field="${inputForm.taskStatus}">
+								</div>
+							</div>
+
+							<!--/* 期限 */-->
+							<div class="form-row">
+								<div class="form-group col-md-4 mb-1">
+									<label class="form_label"><i class="far fa-calendar-alt mr-2"></i>期限</label>
+								</div>
+								<div class="form-group col-md-8 mb-1">
+									<div class="d-flex" th:data-limit-date="${inputForm.limitDate}">
+										<div class="task_edit_item">
+											<input type="text" class="form-control digit7 inputDateSlash_task" th:field="${inputForm.limitDate}"
+												placeholder="未設定" data-click-sync="[data-target-name='limitDate']">
+											<button type="button" class="btn btn_popcal hidden" data-toggle="datepicker" data-target-name="limitDate">カレンダー</button>
+											<div class="error_mag_point hidden" id="itemMsg_limitDate"></div>
+										</div>
+									</div>
+								</div>
+							</div>
+							<!--/* 期限 end */-->
+
+							<!--/* 今日のタスクが変更可能な場合（カレンダー画面からの表示の場合） */-->
+							<th:block th:if="${inputForm.todayTaskChangeableFlag} == true">
+								<!--/* 今日のタスク */-->
+								<div class="form-row">
+									<div class="form-group col-md-4 mb-1">
+										<label class="form_label"><i class="far fa-clock"></i> 今日のタスク</label>
+									</div>
+									<div class="form-group col-md-8 mb-1">
+										<div class="task_edit_item">
+											<button type="button" class="btn btn_today_task doTaskToday"
+											 	th:classappend="${#temporals.format(inputForm.todayTaskDate, 'yyyy-MM-dd')==#dates.format(#dates.createNow(), 'yyyy-MM-dd')} ? 'hidden' : ''"
+												 data-toggle="tooltip" data-trigger="hover"
+												title="今日のタスクに追加する">
+												未設定
+											</button>
+											<button type="button" class="btn btn_today_task comp_task doTaskLater" 
+												th:classappend="${#temporals.format(inputForm.todayTaskDate, 'yyyy-MM-dd')==#dates.format(#dates.createNow(), 'yyyy-MM-dd')} ? '' : 'hidden'" 
+												 
+												data-toggle="tooltip" data-trigger="hover" title="今日のタスクから除外する">
+												追加済み <i class="far fa-calendar-check ml-1"></i>
+											</button>
+											<input type="hidden" th:field="${inputForm.todayTaskFlg}">
+										</div>
+									</div>
+								</div>
+								<!--/* 今日のタスク end */-->
+							</th:block>
+
+							<!--/* 割り当て設定 */-->
+							<div class="form-row align-items-start mt-2">
+								<div class="form-group col-md-4 mb-1">
+									<label class="form_label"> <i class="fas fa-user-check mr-1"></i>割り当て</label>
+								</div>
+								<div class="form-group col-md-8 mb-1">
+									<!--/* 選択候補が存在しない場合 */-->
+									<a id="tantoSetLink" href="javascript:void(0);" class="showSelectArea btn_select_tanto"
+										th:classappend="${inputForm.getNumberOfSelectedTaskTanto() == 0} ? '' : 'hidden' "
+										 
+										data-toggle="tooltip" data-trigger="hover" title="割り当てを設定する">未設定</a>
+									<!--/* 選択候補が存在しない場合 end */-->
+									
+									<!--/* 選択済みのアカウントエリア */-->
+									<!-- /* 割り当て名表示 */-->
+									<div class="task_tanto_view" >
+										<th:block th:each="taskTanto, stat : ${inputForm.taskTantoList}">
+											<div th:id="|taskTanto${taskTanto.accountSeq}|" class="taskTanto d-flex mb-1" th:classappend="${taskTanto.workerFlg}==true ? '' : 'hidden' ">
+												<input type="hidden" th:id="|taskWorkerAccountSeq${taskTanto.accountSeq}|" name="workerAccountSeq" th:value="${taskTanto.accountSeq}" th:disabled="${taskTanto.workerFlg}==false">
+												<i class="fas fa-user-circle fs18 mr-2" th:style="|color: *{taskTanto.accountColor}|"></i>
+												<div class="task_tanto_view__name" th:text="${inputForm.getAccountName(taskTanto.accountSeq)}"></div> 
+											</div>
+										</th:block>
+									</div>
+									<div class="text-left mt-1">
+										<!-- /* 割り当て名表示 end */-->
+										<a id="tantoChangeLink" href="javascript:void(0);" class="showSelectArea" th:classappend="${inputForm.getNumberOfSelectedTaskTanto() > 0} ? '' : 'hidden' "><i class="fas fa-user-plus mx-2"></i>変更</a>
+									</div>
+									<!--/* 割り当て選択 */-->
+									<div class="position-absolute task_tanto_select selectArea task_tanto_select_for_modal hidden">
+										<div class="task_tanto_select_title">タスクを割り当てます</div>
+										<ul>
+											<li th:each="option : ${inputForm.tantoOptions}">
+												<button type="button" class="btn btn-light addWorkerAccount" th:data-worker-account-seq="${option.value}">
+													<span class="workerSquare">
+														<i class="far fa-square mr-3"></i>
+													</span>
+													<span class="workerCheckSquare hidden">
+														<i class="far fa-check-square mr-3"></i>
+													</span>
+													<span class="tanto_select__account_label" th:text="${option.label}"></span>
+												</button>
+											</li>
+										</ul>
+										<div class="task_tanto_select_footer">
+											<div>
+												<button type="button" class="btn btn-light btn_icon_only closeSelectArea" data-toggle="tooltip" data-trigger="hover" title="閉じる">
+													<i class="fas fa-times"></i>
+												</button>
+											</div>
+											<div class="ml-auto">
+												<button type="button" class="btn btn-info btn-sm changeTaskTanto" data-toggle="tooltip" data-trigger="hover" title="割り当てを設定する">
+													<i class="fas fa-check mr-2"></i>設定する
+												</button>
+											</div>
+										</div>
+									</div>
+								</div>
+							</div>
+							<!--/* 割り当て設定 end */-->
+						</div>
+					</form>
+
+					<!--/* タブ */-->
+					<form id="commentForm" th:fragment ="commentForm" th:if="${commentForm}">
+						<div class="under_line_tab task_edit_tab mt-2">
+							<ul class="nav nav-tabs nav-justified" id="myTab" role="tablist">
+								<!--/* コメント */-->
+								<li class="nav-item">
+									<a class="nav-link active" id="comment-tab" data-toggle="tab" href="#tabComment" role="tab" aria-controls="comment" aria-selected="true">
+										<span>コメント</span>
+									</a>
+								</li>
+								<!--/* アクティビティ */-->
+								<li class="nav-item">
+									<a class="nav-link" id="history-tab" data-toggle="tab" href="#tabHistory" role="tab" aria-controls="history" aria-selected="false">アクティビティ</a>
+								</li>
+							</ul>
+						</div>
+
+						<!--/* タブの内容 */-->
+						<div class="tab-content" id="myTabContent">
+
+							<!--/* コメント */-->
+							<div class="tab-pane fade show active" id="tabComment" role="tabpanel" aria-labelledby="comment-tab">
+								<div class="comment_form mt-3 mb-4">
+									<div id="addCommentForm" class="comment_regist">
+										<textarea rows="3" th:field="${commentForm.comment}" class="form-control" maxlength="2000" placeholder="コメントは割り当てた人にも通知されます"></textarea>
+										<div class="error_mag_point hidden" id="itemMsg_comment"></div>
+										<div class="text-right mt-2 mr-1">
+											<button type="button" class="btn btn-info addComment" data-toggle="tooltip" data-trigger="hover" title="コメントを投稿する">
+												<i class="far fa-comment mr-2"></i>投稿する
+											</button>
+										</div>
+									</div>
+									<div id="taskHistoryContents">
+										<ul th:id="|commentData${comment.taskHistorySeq}|" class="comment_list" th:each="comment : ${taskEditViewForm.commentList}">
+											<li>
+												<div class="comment_header">
+													<div class="comment_name" th:text="${comment.accountName}">山田　太郎</div>
+													<div class="sub_text">
+														<span th:text ="${#temporals.format(comment.createdAt, 'M月d日')}">1月1日</span>
+														<span th:text="| (${#temporals.format(comment.createdAt, 'E')})|">(月)</span>
+														<span th:if="${comment.createdAt}" th:text ="| ${#temporals.format(comment.createdAt, 'H:mm')}|">0:00</span>
+													</div>
+												</div>
+												<div th:id="|commentLabel${comment.taskHistorySeq}|">
+													<div class="comment_body">
+														<span th:id="|commentView${comment.taskHistorySeq}|" class="commentView" myth:nl2br="${comment.commentForDisplay}">コメント</span>
+													</div>
+													<div class="text-right">
+														<a href="javascript:void(0);" class="comment_edit commentEdit" th:if="${comment.MyComment}" th:data-task-history-seq="${comment.taskHistorySeq}">
+															<span>編集</span>
+														</a>
+													</div>
+												</div>
+												<div th:id="|commentEditForm${comment.taskHistorySeq}|" class="task_comment_edit mt-2 hidden" th:if="${comment.MyComment}">
+													<textarea class="form-control" name="comment" rows="4" maxlength="200">[[${comment.comment}]]</textarea>
+													<div class="error_mag_point hidden" th:id="|itemMsg_comment[${comment.taskHistorySeq}]|"></div>
+													<div class="button_container">
+														<!--/* コメント削除 */-->
+														<button type="button" class="btn btn-light mr-auto btn_icon_only deleteComment" th:data-seq="${comment.taskSeq}" th:data-task-history-seq="${comment.taskHistorySeq}"
+															 data-toggle="tooltip" data-trigger="hover" title="コメントを削除する"><i class="far fa-trash-alt"></i></button>
+														<!--/* コメント保存 */-->
+														<button type="button" class="btn btn-info btn_icon_only updateComment" th:data-seq="${comment.taskSeq}" th:data-task-history-seq="${comment.taskHistorySeq}"
+															 data-toggle="tooltip" data-trigger="hover" title="コメントを保存する"><i class="fas fa-check"></i></button>
+														<!--/* コメント閉じる */-->
+														<button type="button" class="btn btn-light btn_icon_only editEnd ml-3" th:data-task-history-seq="${comment.taskHistorySeq}" 
+															 data-toggle="tooltip" data-trigger="hover" title="コメントを閉じる"><i class="fas fa-times"></i></button>
+													</div>
+												</div>
+											</li>
+										</ul>
+									</div>
+								</div>
+							</div>
+							<!--/* コメント end */-->
+
+							<!--/* アクティビティタブ start */-->
+							<div class="tab-pane fade" id="tabHistory" role="tabpanel" aria-labelledby="history-tab">
+								<div id="acrivityListFragmentWrap" th:insert="::activityListFragment(${taskEditViewForm.activityList})"></div>
+							</div>
+							<!--/* アクティビティタブ end */-->
+						</div>
+					</form>
+				</div>
+				<!--/* タスク入力 end */-->
+
+			</div>
+		</div>
+		<div class="modal-footer">
+			<button th:if="${inputForm.taskSeq}" type="button" id="delete" class="btn btn-light mr-auto" th:data-action="@{/user/taskManagement/delete}"><i class="far fa-trash-alt"></i>削除</button>
+			<button th:if="!${inputForm.taskSeq}" type="button" id="regist" class="btn btn-info" th:data-action="@{/user/taskManagement/regist}"><i class="fas fa-check"></i>登録</button>
+			<button th:if="${inputForm.taskSeq}" type="button" id="update" class="btn btn-info" th:data-action="@{/user/taskManagement/update}"><i class="fas fa-check"></i>保存</button>
+			<button th:if="${inputForm.taskSeq}" type="button" id="close" class="btn btn-light" data-dismiss="modal" name ="cancel"><i class="fas fa-times"></i>閉じる</button>
+			<button th:if="!${inputForm.taskSeq}" type="button" class="btn btn-light icon_btn_close" data-dismiss="modal" name ="cancel"><i class="fas fa-times"></i>閉じる</button>
+		</div>
+	</div>
+	<!-- モーダル本体 end -->
+
+	<!--/* サブタスクリストフラグメント start */-->
+	<div th:fragment="checkListFragment(taskEditInputForm)" id="checkListFragment" th:object="${inputForm}" class="mb-3">
+		<ul id="taskCheckList" class="task_check_list">
+			<!--/* 新規作成用：空のサブタスクアイテム start */-->
+			<li class="checkItemRow hidden">
+				<div class="task_sub_item">
+					<!--/* サブタスクマーク */-->
+					<div class="task_check_item_check_box">
+						<label class="checkbox_btn no_text">
+							<input type="checkbox" class="checkbox_input changeCheckItemStatus">
+							<span class="checkbox_txt"></span>
+						</label>
+					</div>
+					<!--/* 【表示】サブタスク項目名 */-->
+					<div class="d-flex checkItemName task_check_item_name">
+						<div class="checkItemView task_check_item_name_view"></div>
+						<!--/* 削除ボタン */-->
+						<div class="ml-auto">
+							<div class="check_item_delete__trash deleteCheckItemName" data-toggle="tooltip" title="削除">
+								<i class="far fa-trash-alt"></i>
+							</div>
+						</div>
+					</div>
+					<!--/* 【入力】サブタスク項目名 */-->
+					<div class="task_edit_top_input__check_list checkItemInput hidden">
+						<input type="text" class="form-control checkItem" placeholder="サブタスク" autocomplete="off" maxlength="100">
+						<div class="error_mag_point checkItemError hidden"></div>
+						<div class="text-right mt-2">
+							<!--/* 保存ボタン */-->
+							<button type="button" class="btn ml-3 btn btn-info btn_icon_only changeCheckItemName hidden" data-toggle="tooltip" data-trigger="hover" title="変更">
+								<i class="fas fa-check"></i>
+							</button>
+							<!--/* 閉じるボタン */-->
+							<button type="button" class="ml-2 btn btn-light btn_icon_only closeCheckItem hidden" 
+								data-toggle="tooltip" data-trigger="hover" title="閉じる">
+								<i class="fas fa-times"></i>
+							</button>
+						</div>
+					</div>
+				</div>
+			</li>
+			<!--/* 新規作成用：空のサブタスクアイテム end */-->
+
+			<th:block th:each="checkItem, stat : *{checkList}">
+				<li th:replace="::checkItemFragment(${checkItem})"></li>
+			</th:block>
+		</ul>
+		<div>
+			<div class="task_edit_top_input newTaskContents hidden">
+				<!--/* 【入力】サブタスク項目名 */-->
+				<div class="task_edit_top_input__check_list">
+					<input type="text" class="form-control hidden newCheckItem" placeholder="サブタスク" th:field="${inputForm.checkItem}" autocomplete="off" maxlength="100" th:data-seq ="*{taskSeq}">
+					<div class="error_mag_point hidden newCheckItemError" id="itemMsg_checkItem"></div>
+						<div class="text-right mt-2">
+						<!--/* 保存ボタン */-->
+						<button type="button" class="ml-3 btn btn-info btn_icon_only hidden saveCheckItem"
+							th:data-seq ="*{taskSeq}" data-toggle="tooltip" data-trigger="hover" title="サブタスクを追加">
+							<i class="fas fa-check"></i>
+						</button>
+						<!--/* 閉じるボタン */-->
+						<button type="button" class="ml-2 btn btn-light btn_icon_only closeNewCheckItem hidden" 
+							data-toggle="tooltip" data-trigger="hover" title="追加せずに閉じる">
+							<i class="fas fa-times"></i>
+						</button>
+					</div>
+				</div>
+			</div>
+			<div>
+				<a href="javascript:void(0);" class="addCheckList">
+					<i class="fas fa-plus mr-2"></i>サブタスクを追加する
+				</a>
+			</div>
+		</div>
+	</div>
+	<!--/* サブタスクリストフラグメント end */-->
+
+	<!--/* タスクデータ */-->
+	<div th:fragment="taskListScheduleViewForm" id="taskListScheduleViewForm" th:object="${taskListScheduleViewForm}" th:remove="tag">
+
+		<li th:unless="*{(T(jp.loioz.common.constant.CommonConstant$TaskStatus).COMPLETED.equalsByCode(taskDto.taskStatus)) or taskDto.taskSeq == null}" th:id="|taskData*{taskDto.taskSeq}|" class="openTaskModal" 
+				th:data-task_seq="*{taskDto.taskSeq}" data-toggle="modal" data-target="#selectTaskModal">
+			<div class="sidebar_task_data">
+				<!--/* タスクサブタスク */-->
+				<div class="sidebar_task_data_comp stop-events taskCheckHover"  th:data-container="|#taskData*{taskDto.taskSeq}|" data-toggle="tooltip" title="完了にする">
+					<div class="taskStatusPreparing" th:classappend="${(T(jp.loioz.common.constant.CommonConstant$TaskStatus).COMPLETED.equalsByCode(taskListScheduleViewForm.taskDto.taskStatus) ? 'hidden' : ' ')}">
+						<i class="far fa-circle"></i>
+					</div>
+					<div class="taskStatusComp task_comp hidden" th:data-taskSeq="*{taskDto.taskSeq}">
+						<i class="far fa-check-circle"></i>
+					</div>
+				</div>
+				<!--/* タスク詳細 */-->
+				<div class="sidebar_task_data_detail">
+					<!--/* タイトル */-->
+					<div class="sidebar_task_list_row__title taskTitle" th:text ="*{taskDto.title}"></div>
+					<div class="sidebar_task_list_row">
+						<!--/* 期限 */-->
+						<div th:if="*{taskDto.limitDtTo}" class="sidebar_task_list_row__limit" th:classappend="*{taskDto.limitDateStyle}">
+							<i class="far fa-calendar-alt"></i>
+							<span th:text ="${#temporals.format(taskListScheduleViewForm.taskDto.limitDateForDisplay, 'M月d日')}">1月1日</span>
+							<span th:text="| (${#temporals.format(taskListScheduleViewForm.taskDto.limitDateForDisplay, 'E')})|">(月)</span>
+							<span th:if="*{taskDto.limitTime}" th:text ="| ${#temporals.format(taskListScheduleViewForm.taskDto.limitTime, 'H:mm')}|">0:00</span>
+						</div>
+						<!--/* コメント件数 */-->
+						<div class="sidebar_task_list_row__comment" th:if="*{taskDto.commentCount} > 0">
+							<i class="far fa-comment"></i>
+							<span  th:text="*{taskDto.commentCount}"></span>
+						</div>
+						<!--/* サブタスクが有る場合、件数を表示） */-->
+						<div class="check_item_count">
+							<th:block th:if="*{taskDto.checkItemCount != 0}">
+								<i class="far fa-check-square mr-1"></i>
+								<span th:text="*{taskDto.completeCheckItemCount}"></span>/<span th:text="*{taskDto.checkItemCount}"></span>
+							</th:block>
+						</div>
+
+					</div>
+					<div class="sidebar_task_list_row">
+						<!--/* 今日タスク */-->
+						<div class="sidebar_task_list_row__today" th:if="*{#temporals.format(taskDto.todayTaskDate, 'yyyy-MM-dd')==#dates.format(#dates.createNow(), 'yyyy-MM-dd')}">
+							<i class="far fa-clock"></i>
+							<span>今日のタスク</span>
+						</div>
+					</div>
+					<!--/* 案件紐付け */-->
+					<div class="sidebar_task_list_row">
+						<div class="stop-events task_anken_name" th:if ="*{taskDto.ankenId}"
+						 	 data-container=".block_task" data-toggle="tooltip" title="案件ダッシュボードへ">
+							<a th:href="@{/user/ankenDashboard/{ankenId}/(ankenId=*{taskDto.ankenId.asLong()})}" class="relation_link">
+								<i class="fas fa-hashtag mr-1"></i><span th:text="*{#lists.isEmpty(taskDto.ankenName.ankenName)} ? '(案件名未入力)' : *{taskDto.ankenName.ankenName} ">案件名</span>
+								<span class="relation_link_text" th:text="|(*{taskDto.ankenId})|">ankenId</span>
+							</a>
+						</div>
+					</div>
+					<!--/* 担当者 */-->
+					<div class="sidebar_task_list_row justify-content-end mt-2">
+						<th:block th:each="taskTanto, stat : ${taskListScheduleViewForm.taskDto.assignTaskTantoList}">
+							<span  data-container=".block_task" data-toggle="tooltip" th:title="${taskListScheduleViewForm.taskDto.getAccountName(taskTanto.workerAccountSeq)}" >
+								<i class="fas fa-user-circle ml-2 fa-lg" th:style="|color: ${taskTanto.accountColor}|"></i>
+							</span>
+						</th:block>
+					</div>
+				</div>
+			</div>
+		</li>
+	</div>
+
+	<!--/* サブタスクリスト1行分フラグメント start */-->
+	<li th:fragment="checkItemFragment(checkItem)" th:id="|taskCheckItemData_${checkItem.taskCheckItemSeq}|" class="checkItemRow" th:data-check-item-seq="${checkItem.taskCheckItemSeq}">
+		<div class="task_sub_item">
+			<!--/* サブタスクマーク */-->
+			<div class="task_check_item_check_box changeCheckItemStatus" th:data-seq="${checkItem.taskSeq}" th:data-check-item-seq="${checkItem.taskCheckItemSeq}" th:data-complete-flg="${checkItem.completeFlg}">
+				<label class="checkbox_btn no_text">
+					<input type="checkbox" class="checkbox_input" th:checked="${checkItem.completeFlg}">
+					<span class="checkbox_txt"></span>
+				</label>
+			</div>
+			<!--/* 【表示】サブタスク項目名 */-->
+			<div th:id="|taskCheckItemView_${checkItem.taskCheckItemSeq}|" class="d-flex checkItemName" th:classappend="${checkItem.completeFlg ? 'task_check_item_name_compleat' : 'task_check_item_name'}"
+				th:data-check-item-seq="${checkItem.taskCheckItemSeq}">
+				<div th:id="|taskCheckItemView_${checkItem.taskCheckItemSeq}|" class="checkItemView task_check_item_name_view" th:text="${checkItem.itemName}"></div>
+				<!--/* 削除ボタン */-->
+				<div class="ml-auto">
+					<div class="check_item_delete__trash deleteCheckItemRow" th:data-seq="${checkItem.taskSeq}" th:data-check-item-seq="${checkItem.taskCheckItemSeq}" th:data-check-item-name="${checkItem.itemName}" data-toggle="tooltip" title="削除">
+						<i class="far fa-trash-alt"></i>
+					</div>
+				</div>
+			</div>
+			<!--/* 【入力】サブタスク項目名 */-->
+			<div th:id="|taskCheckItemInputField_${checkItem.taskCheckItemSeq}|" class="task_edit_top_input__check_list checkItemInput hidden">
+				<input type="text" th:id="|taskCheckItemInput_${checkItem.taskCheckItemSeq}|" class="form-control checkItem" placeholder="サブタスク" autocomplete="off" maxlength="100" 
+					th:value="${checkItem.itemName}" th:data-seq="${checkItem.taskSeq}" th:data-check-item-seq="${checkItem.taskCheckItemSeq}">
+				<div class="error_mag_point checkItemError hidden" th:id="|itemMsg_checkItemName[${checkItem.taskCheckItemSeq}]|"></div>
+				<!--/* 保存ボタン */-->
+				<div class="text-right mt-2">
+					<button type="button" th:id="|taskCheckItemSaveButton_${checkItem.taskCheckItemSeq}|" class="btn btn-info btn_icon_only ml-3 changeCheckItemName hidden"
+						th:data-seq="${checkItem.taskSeq}" th:data-check-item-seq="${checkItem.taskCheckItemSeq}" data-toggle="tooltip" data-trigger="hover" title="変更">
+						<i class="fas fa-check"></i>
+					</button>
+					<!--/* 閉じるボタン */-->
+					<button type="button" th:id="|taskCheckItemCloseButton_${checkItem.taskCheckItemSeq}|" class="btn btn-light btn_icon_only ml-2 closeCheckItem hidden" 
+						th:data-seq="${checkItem.taskSeq}" th:data-check-item-seq="${checkItem.taskCheckItemSeq}" data-toggle="tooltip" data-trigger="hover" title="閉じる">
+						<i class="fas fa-times"></i>
+					</button>
+				</div>
+			</div>
+		</div>
+	</li>
+	<!--/* サブタスクリスト1行分フラグメント end */-->
+
+	<!--/* アクティビティフラグメント start */-->
+	<div th:fragment="activityListFragment(activityList)" class="mt-3 mb-4">
+		<ul class="activity_list">
+			<li th:each="activity : ${activityList}">
+				<th:block th:if="${activity.accountName} != null">
+					<span class="activity_list__val" th:text="${activity.accountName}"></span>さんが
+					<span class="activity_list__val" th:text="${activity.itemName}"></span>
+					<th:block th:if="${activity.checkItemName} != null">
+						<span class="activity_list__val">：</span>
+						<span class="activity_list__val" th:text="${activity.checkItemName}"></span>
+					</th:block>
+					<th:block th:if="${(T(jp.loioz.common.constant.CommonConstant$TaskCheckItemUpdateKbn).UPDATE.equalsByCode(activity.checkItemUpdateKbn))}">
+						に名称
+					</th:block>
+					を
+					<th:block th:if="${activity.taskStatus} != null">
+						<span class="activity_list__val" th:text="${activity.taskStatus}"></span>に
+					</th:block>
+					<th:block th:if="${(T(jp.loioz.common.constant.CommonConstant$TaskCheckItemUpdateKbn).IN_COMPLETE.equalsByCode(activity.checkItemUpdateKbn))}">
+						<span class="activity_list__val">未完了</span>に
+					</th:block>
+					<th:block th:if="${(T(jp.loioz.common.constant.CommonConstant$TaskCheckItemUpdateKbn).COMPLETE.equalsByCode(activity.checkItemUpdateKbn))}">
+						<span class="activity_list__val">完了</span>に
+					</th:block>
+					<span class="activity_list__val" th:text="${activity.action}"></span>しました
+				</th:block>
+
+				<div class="activity_sub_text" th:if="${activity.createdAt} != null">
+					<span th:text ="${#temporals.format(activity.createdAt, 'M月d日')}">1月1日</span>
+					<span th:text="| (${#temporals.format(activity.createdAt, 'E')})|">(月)</span>
+					<span th:if="${activity.createdAt}" th:text ="| ${#temporals.format(activity.createdAt, 'H:mm')}|">0:00</span>
+				</div>
+			</li>
+		</ul>
+	</div>
+	<!--/* アクティビティフラグメント end */-->
+
+</body>
+</html>

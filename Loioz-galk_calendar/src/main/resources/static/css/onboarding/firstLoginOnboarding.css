@@ -1,0 +1,217 @@
+@charset "UTF-8";
+.modal_onboarding .first_login_top {
+	position: absolute;
+	display: inline-block;
+	width: 100%;
+	top: 50%;
+	transform: translateY(-50%);
+	text-align: center;
+	margin: auto;
+}
+.modal_onboarding .first_login_logo_area {
+	width: 460px;
+	height: auto;
+	display: inline-flex;
+	align-items: flex-end;
+	margin: 0 auto;
+}
+.first_login_logo {
+	display: inline-flex;
+	align-items: flex-end;
+	width: 260px;
+	height: 85px;
+	margin: auto;
+}
+.modal_onboarding .first_login_logo_area + div {
+	width: 500px;
+	height: 120px;
+	margin : auto;
+}
+.first_login_title {
+	font-weight: normal;
+	line-height: 0.8;
+	margin: 0;
+	font-size: 2.8rem;
+}
+.modal_onboarding .first_login_top p {
+	margin: 10px;
+	font-size: 1.3rem;
+}
+.first_login_top .headerOfficeMenu_title_mark {
+	width: 20px;
+	height: 20px;
+	background-color: #ffffff;
+	border: 1px solid #63595c;
+}
+.first_login_top .is_setting {
+	background-size : 12px;
+	background-image: url(../../img/icon_setting.svg);
+}
+.navi_list_firstLoginOnboarding {
+	list-style: none;
+	padding: 0;
+	margin: 10px 75px 10px 75px;
+}
+.navi_list_firstLoginOnboarding a {
+	overflow : hidden;
+	outline : none;
+}
+
+/** 初期設定ガイドページ用  */
+.first_login_guide_contents {
+	width:100%;
+	height: 100%;
+	margin: 5px 0 0 0;
+	overflow-y: auto;
+}
+.first_login_guide_body{
+	padding: 0 10px 10px 0;
+}
+.first_login_guide_body .master_note {
+	font-weight: normal;
+}
+.first_login_guide_body .separatebox_head .head_title {
+	font-weight: normal;
+	width: 170px;
+	background-color: var(--loioz-blue);
+	font-size: 1.4rem;
+}
+.first_login_guide_body .line14mm{
+	line-height: 1.4;
+}
+.first_login_guide_body table{
+	border-right:1px solid #A3A3A3;
+	border-top:1px solid #A3A3A3;
+	border-radius:20px;
+	width: 99.9%;
+	line-height: 1.2;
+	font-size: 1.3rem;
+	background: #ffffff;
+	margin: 5px 0;
+	line-height: 1.6;
+}
+.first_login_guide_body table td {
+	border-bottom: 1px solid #A3A3A3;
+	border-left: 1px solid #A3A3A3;
+	padding: 4px 5px;
+	text-align: left;
+	font-size: 1.2rem;
+}
+.first_login_guide_body table td.isCenter{
+	min-width : 120px;
+	width: 120px;
+	background-color: #F0FAFA;
+	text-align: center;
+}
+.onboard_contents_header{
+	display: flex;
+	height: 30px;
+	align-items: center;
+	margin-right: auto;
+	border-bottom: 3px solid var(--loioz-blue);
+}
+.onboard_contents_header .contents_name{
+	font-weight: bold;
+	font-size: 1.6rem;
+	letter-spacing: 1px;
+	color: #242424;
+	padding-left: 5px;
+	line-height: 1.1;
+}
+.logo-svg path.icon {
+  fill: #000;
+  stroke: transparent;
+  -webkit-animation: logo-icon-stroke 3s ease-in-out forwards;
+  animation: logo-icon-stroke 3s ease-in-out forwards;
+  stroke: rgba(23, 172, 199, 0.7);
+  stroke-dasharray: 900;
+  stroke-dashoffset: 0;
+  stroke-width: 1;
+}
+
+.logo-svg path.text {
+  fill: #000;
+  stroke: transparent;
+  -webkit-animation: logo-text-stroke 2s ease-in-out forwards;
+  animation: logo-text-stroke 2s ease-in-out forwards;
+  stroke: rgba(0, 0, 0, 0.7);
+  stroke-dasharray: 1800;
+  stroke-dashoffset: 0;
+  stroke-width: 6;
+}
+
+/** 解像度対応 */
+@media screen and (max-height:700px) {
+	.first_login_guide_contents  {
+		height: 320px;
+	}
+}
+
+/** アニメーション定義 */
+@-webkit-keyframes logo-icon-stroke {
+  0% {
+    fill: #eee;
+    stroke-dashoffset: 900;
+  }
+  10% {
+    fill: transparent;
+  }
+  80% {
+    fill: transparent;
+  }
+  100% {
+    fill: var(--loioz-blue);;
+    stroke-dashoffset: 0;
+  }
+}
+
+@keyframes logo-icon-stroke {
+  0% {
+    fill: #eee;
+    stroke-dashoffset: 900;
+  }
+  10% {
+    fill: transparent;
+  }
+  80% {
+    fill: rgba(23, 172, 199, 0.7);
+  }
+  100% {
+    fill: var(--loioz-blue);;
+    stroke-dashoffset: 0;
+  }
+}
+
+@-webkit-keyframes logo-text-stroke {
+  0% {
+    fill: #eee;
+    stroke-dashoffset: 1800;
+  }
+  10% {
+    fill: transparent;
+  }
+  80% {
+    fill: rgba(23, 172, 199, 0.5);
+  }
+  100% {
+    fill: #000;
+    stroke-dashoffset: 0;
+  }
+}
+
+@keyframes logo-text-stroke {
+  0% {
+    fill: #eee;
+    stroke-dashoffset: 1800;
+  }
+  10% {
+    fill: transparent;
+  }
+  80% {
+    fill: transparent;
+  }
+  100% {
+    fill: #000;
+    stroke-dashoffset: 0;
+  }
+}

@@ -1,0 +1,312 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+		xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+		layout:decorator="commonLayout">
+<head>
+	<meta charset="utf-8" />
+</head>
+<body>
+	<!--/* 支払計画モーダル */-->
+	<div th:fragment="shiharaiPlanEdit" th:object="${shiharaiPlanEditForm}">
+		<div class="modal-header">
+			<h2 class="modalheader_title">支払計画</h2>
+		</div>
+		
+		<div class="modal-body">
+			<!-- メッセージ表示領域 -->
+			<div th:replace="common/messageArea::jsMessageArea"></div>
+			
+			<!--/* メッセージ表示領域 */-->
+			<div th:if="*{ShowSeisanCompletedMsg} or *{ShowAnkenCompletedMsg} or *{ShowPlanCompletedMsg}">
+				<div class="error_msg_js">
+					<th:block th:if="*{ShowAnkenCompletedMsg}">
+						<!--/* 案件ステータスが完了状態である旨のメッセージ */-->
+						<i class="fas fa-exclamation-triangle mr-2"></i>[[#{I00047}]]
+					</th:block>
+					<th:block th:if="!*{ShowAnkenCompletedMsg} and *{ShowSeisanCompletedMsg}">
+						<!--/* 精算完了日が設定されている旨のメッセージ */-->
+						<i class="fas fa-exclamation-triangle mr-2"></i>[[#{I00048}]]
+					</th:block>
+					<th:block th:if="!*{ShowAnkenCompletedMsg} and !*{ShowSeisanCompletedMsg} and *{ShowPlanCompletedMsg}">
+						<!--/* 支払い計画が完了している（全ての予定が処理済み）旨のメッセージ */-->
+						<i class="fas fa-exclamation-triangle mr-2"></i>[[#{I00052}]]
+					</th:block>
+				</div>
+			</div>
+			
+			<div>
+				<form id="shiharaiPlanSettingForm" th:autocomplete="off">
+					<!-- 左側 -->
+					<input type="hidden" th:field="*{shiharaiPlanDto.seisanSeq}">
+					
+					<!-- モーダル上部 -->
+					<div class="shiharai_plan_top">
+						<div class="row">
+							
+							<!--/* モーダル上部（左側） */-->
+							<div id="shiharaiPlanEditArea" class="col-md-7 pr-5">
+								<div class="modal_input_area shiharai_plan_edit">
+									<div class="form-row">
+										<!-- 請求方法 -->
+										<div class="input_parts form-group col-md-6 mb-0">
+											<label for="shiharaiPlanDto.seikyuType">請求方法</label>
+											<select class="form-control digit10" th:field="*{shiharaiPlanDto.seikyuType}" th:disabled="*{exsitsJissekiData() || SeisanCompleted}">
+												<option th:each="enum : ${T(jp.loioz.common.constant.CommonConstant$SeikyuType).values()}"
+													th:value="${enum.cd}" th:text="${enum.val}"></option>
+											</select>
+											<input type="hidden" th:if="*{exsitsJissekiData() || SeisanCompleted}" th:field="*{shiharaiPlanDto.seikyuType}" />
+											<div class="checkbox_label" th:if="*{exsitsJissekiData() || SeisanCompleted}">
+												<label class="checkbox_btn">
+													<input type="checkbox" class="checkbox_input" th:field="*{shiharaiPlanDto.summarizing}">
+													<span class="checkbox_txt">残りを1件にまとめる</span>
+												</label>
+											</div>
+											<div class="error_mag_point hidden" id="itemMsg_shiharaiPlanDto.seikyuType"></div>
+										</div>
+										<!-- 請求方法 end -->
+										
+										<!-- 月々の支払額 -->
+										<div class="input_parts form-group col-md-6 mb-0 bunkatsuItem">
+											<label for="shiharaiPlanDto.monthShiharaiGaku">毎月請求額</label>
+											<div class="d-flex align-items-center">
+												<input type="text" class="form-control col-7 input_money commaFormat input_number_only dispDicimalInput"
+													data-target="[name='shiharaiPlanDto.monthShiharaiGaku']"
+													th:value="*{shiharaiPlanDto.dispMonthShiharaiGaku}"
+													th:maxlength="${T(jp.loioz.common.constant.CommonConstant).MAX_KINGAKU_INPUT_DIGIT}">
+												<input type="hidden" th:field="*{shiharaiPlanDto.monthShiharaiGaku}" />
+												<div class="ml-2">円</div>
+											</div>
+											<div class="error_mag_point hidden" id="itemMsg_shiharaiPlanDto.monthShiharaiGaku"></div>
+										</div>
+										<!-- 月々の支払額 end -->
+										
+										<!-- 支払日(一括) -->
+										<div class="input_parts form-group col-md-6 ikkatsuItem">
+											<label for="shiharaiPlanDto.shiharaiDate">支払日</label>
+											<input type="text" class="form-control " th:field="*{shiharaiPlanDto.shiharaiDate}" data-click-sync="#shiharaiCal">
+											<button type="button" id="shiharaiCal" class="btn btn_popcal hidden" data-toggle="datepicker" data-target="[name='shiharaiPlanDto.shiharaiDate']">カレンダー</button>
+											<div class="error_mag_point hidden" id="itemMsg_shiharaiPlanDto.shiharaiDate"></div>
+										</div>
+										<!-- 支払日(一括) end -->
+									</div>
+									
+									<div class="form-row bunkatsuItem">
+										<!-- 端数 -->
+										<div class="input_parts form-group col-md-6 mb-0">
+											<label for="shiharaiPlanDto.hasu" class="mb-0">端数</label>
+											<div class="pt-3">
+												<label id="hasu" class="radio_btn" th:each="enum : ${T(jp.loioz.common.constant.CommonConstant$Hasu).values()}">
+													<input type="radio" class="radio_input c_orng" th:field="*{shiharaiPlanDto.hasu}" th:value="${enum.cd}" >
+													<span class="radio_txt" th:text="${enum.val}"></span>
+												</label>
+											</div>
+											<div class="error_mag_point hidden" id="itemMsg_shiharaiPlanDto.hasu"></div>
+										</div>
+										
+										<!-- 支払日(分割) -->
+										<div class="input_parts form-group col-md-6 mb-0">
+											<label for="shiharaiPlanDto.shiharaiDt">請求開始年月</label>
+											<div class="d-flex align-items-center">
+												<select class="form-control digit5" th:field="*{shiharaiPlanDto.shiharaiYear}">
+													<option value="">-</option>
+													<option th:each="num : ${#numbers.sequence(#calendars.year(#calendars.createToday()) - 3 ,#calendars.year(#calendars.createToday()) + 5)}"
+															th:value="${num}" th:text="${num}"></option>
+												</select>
+												<div class="mx-2">年</div>
+												<select class="form-control digit3" th:field="*{shiharaiPlanDto.shiharaiMonth}">
+													<option value="">-</option>
+													<option th:each="num : ${#numbers.sequence(1,12)}" th:value="${num}" th:text="${num}"></option>
+												</select>
+												<div class="ml-2">月</div>
+											</div>
+											<div class="error_mag_point hidden" id="itemMsg_shiharaiPlanDto.shiharaiYear"></div>
+											<div class="error_mag_point hidden" id="itemMsg_shiharaiPlanDto.shiharaiMonth"></div>
+										</div>
+									</div>
+
+									<!-- 入金予定日(分割) -->
+									<div class="form-row align-items-end bunkatsuItem">
+										<div class="input_parts form-group col-md-8">
+											<label for="shiharaiPlanDto.shiharaiDt" class="mb-0">入金予定日</label>
+											<div class="d-flex align-items-center">
+												<div class="pt-3">
+													<label class="radio_btn" th:each="enum : ${T(jp.loioz.common.constant.CommonConstant$SeisanShiharaiMonthDay).values()}"
+														th:classappend="${T(jp.loioz.common.constant.CommonConstant$SeisanShiharaiMonthDay).DESIGNATEDDAY.equalsByCode(enum.cd)} ? 'mr-0'">
+														<input type="radio" class="radio_input c_orng" th:field="*{shiharaiPlanDto.shiharaiDayType}" th:value="${enum.cd}">
+														<span th:unless="${T(jp.loioz.common.constant.CommonConstant$SeisanShiharaiMonthDay).DESIGNATEDDAY.equalsByCode(enum.cd)}" class="radio_txt" th:text="${enum.val}"></span>
+														<span th:if="${T(jp.loioz.common.constant.CommonConstant$SeisanShiharaiMonthDay).DESIGNATEDDAY.equalsByCode(enum.cd)}" class="radio_txt">&nbsp;</span>
+													</label>
+												</div>
+												<select class="form-control digit4" th:field="*{shiharaiPlanDto.shiharaiDay}">
+													<option th:each="num : ${#numbers.sequence(1,29)}" th:value="${num}" th:text="${num}"></option>
+												</select>
+												<div class="ml-2">日払い</div>
+											</div>
+												<div class="error_mag_point hidden" id="itemMsg_shiharaiPlanDto.shiharaiDay"></div>
+										</div>
+										<div class="input_parts form-group col-md-4 text-center">
+											<button type="button" th:unless="*{shiharaiPlanDto.PlanComplete || SeisanCompleted}" class="btn btn-danger mr-auto mb-2 reCalc visibility"><i class="fas fa-calculator"></i>再計算</button>
+										</div>
+									</div>
+
+									<div class="form-row ikkatsuItem">
+										<div class="form-group col-md-8">
+										</div>
+										<div class="input_parts form-group col-md-4 text-center">
+											<button type="button" th:unless="*{shiharaiPlanDto.PlanComplete || SeisanCompleted}" class="btn btn-danger mr-auto reCalc visibility"><i class="fas fa-calculator"></i>再計算</button>
+										</div>
+									</div>
+								</div>
+							</div>
+							<!--/* モーダル上部（左側）end  */-->
+							
+							<!--/* モーダル上部（右側） */-->
+							<div id="shiharaiSummaryArea" class="col-md-5">
+								<div class="shiharai_summary_block">
+									<div class="row">
+										<div class="col-4 summary_title">請求額</div>
+										<div class="col-8 d-flex align-items-center justify-content-end">
+											<div class="summary_money" th:classappend="*{T( jp.loioz.common.utility.StringUtils).isMinusDicimalStr(shiharaiPlanDto.seikyuGaku)}? 'minus_money_text':_" 
+												th:text="*{shiharaiPlanDto.seikyuGaku}">
+											</div>
+											<div class="" th:classappend="*{T( jp.loioz.common.utility.StringUtils).isMinusDicimalStr(shiharaiPlanDto.seikyuGaku)}? 'minus_money_text':_">円</div>
+										</div>
+									</div>
+									<div class="row">
+										<div class="col-4 summary_title">入金額</div>
+										<div class="col-8 d-flex align-items-center justify-content-end">
+											<div class="summary_money" th:classappend="*{T( jp.loioz.common.utility.StringUtils).isMinusDicimalStr(shiharaiPlanDto.nyukinGaku)}? 'minus_money_text':_" 
+												th:text="*{shiharaiPlanDto.nyukinGaku}"></div>
+											<div class=""
+												 th:classappend="*{T( jp.loioz.common.utility.StringUtils).isMinusDicimalStr(shiharaiPlanDto.nyukinGaku)}? 'minus_money_text':_">円</div>
+										</div>
+									</div>
+									<div class="row">
+										<div class="col-4 summary_title">残額</div>
+										<div class="col-8 d-flex align-items-center justify-content-end">
+											<div class="summary_money" th:classappend="*{T( jp.loioz.common.utility.StringUtils).isMinusDicimalStr(shiharaiPlanDto.zankin)}? 'minus_money_text':_"
+												th:text="*{shiharaiPlanDto.zankin}"></div>
+											<div class="" th:classappend="*{T( jp.loioz.common.utility.StringUtils).isMinusDicimalStr(shiharaiPlanDto.zankin)}? 'minus_money_text':_">円</div>
+										</div>
+									</div>
+									<div class="zankin_chackbox">
+										<label class="checkbox_btn mr-0">
+										<input type="checkbox" class="checkbox_input" th:field="*{uncollectible}">
+										<span class="checkbox_txt">残額を回収不能として処理する</span></label>
+									</div>
+								</div>
+							</div>
+						</div>
+					</div>
+					<!-- モーダル上部 end -->
+				</form>
+
+				<form id="shiharaiPlanYoteiForm" th:autocomplete="off">
+					<!-- モーダル下部 -->
+					<div class="d-flex align-items-center justify-content-end mb-5">
+						<div class="sagaku_block">
+							<div class="sagaku_label">差額</div>
+							<div class="sagaku_detail_label">(残額-入金予定額合計)</div>
+							<div class="sagaku_input">
+								<input type="text" class="form-control sagakuInput" th:classappend="*{T( jp.loioz.common.utility.StringUtils).isMinusDicimalStr(shiharaiPlanDto.sagaku)}? 'minus_money_text':_" 
+									th:value="*{shiharaiPlanDto.sagaku}" readonly th:data-expected="*{shiharaiPlanDto.Expected}">
+							</div>
+							<div class="ml-2" th:classappend="*{T( jp.loioz.common.utility.StringUtils).isMinusDicimalStr(shiharaiPlanDto.sagaku)}? 'minus_money_text':_">円</div>
+						</div>
+						<div>
+							<button type="button" id="shiharaiPlanOutPut" class="btn btn-light mr-2">
+								<i class="fas fa-download text-primary mr-2"></i>
+								<i class="fas fa-spinner text-primary faa-spin animated hidden"></i>支払計画書を出力
+							</button>
+						</div>
+						<div class="bunkatsuItem">
+							<button type="button" id="shiharaiPlanAdd" class="btn btn-primary planAdd" 
+								th:disabled="*{SeisanCompleted || shiharaiPlanYoteiEdit.size() >= T(jp.loioz.common.constant.CommonConstant).BUNKATU_LIMIT_COUNT}">
+									<i class="fas fa-plus mr-2"></i>支払回数の追加</button>
+						</div>
+					</div>
+					<div class="shiharaiPlanScrollArea header_fixed_table_wrapper table_shiharai_plan">
+						<table id="shiharaiPlanYotei" class="table-hover">
+							<thead>
+								<tr>
+									<th class="col_shiharai_idx">回数</th>
+									<th class="col_shiharai_date">入金予定日</th>
+									<th class="col_shiharai_money">入金予定額</th>
+									<th class="col_shiharai_date">入金日</th>
+									<th class="col_shiharai_money">入金額</th>
+									<th class="col_shiharai_tekiyo">摘要</th>
+									<th class="col_del">　</th>
+								</tr>
+							</thead>
+							<tbody>
+								<tr th:each="plan, stat : ${shiharaiPlanEditForm.shiharaiPlanYoteiList}" th:fragment="addPlanContents"
+									th:with="nameTarget=${plan.responseTarget()}, isNewAdd=${plan.isNewAdd()} ,completed=${shiharaiPlanEditForm.SeisanCompleted || plan.Completed}"
+									th:classappend="(${isNewAdd} ? 'newAddData row_important' : '') + (${completed} ? 'row_completed' : '')" th:data-add-no="${plan.newAddIndex}">
+									
+									<td class="col_shiharai_idx text-right pr-3">
+										<input type='hidden' class="shiharaiPlan_seq" th:value="${plan.nyushukkinYoteiSeq}" th:name="|${nameTarget}.nyushukkinYoteiSeq|">
+										<span class='shiharaiPlan_num planCount' th:text="${stat.count}"></span>
+									</td>
+									<td class="col_shiharai_date">
+										<input type='text' class="form-control "
+											th:value="${plan.nyushukkinYoteiDate}" th:name="|${nameTarget}.nyushukkinYoteiDate|"
+											th:readonly="${completed}" th:classappend="${completed} ? 'input_disabled'"
+											th:data-click-sync="|[id='${nameTarget}.nyushukkinYoteiDateCal']|" />
+										<button type='button' th:id="|${nameTarget}.nyushukkinYoteiDateCal|" class='ml-1 btn btn_popcal hidden' data-toggle="datepicker"
+											th:data-target="|[name='${nameTarget}.nyushukkinYoteiDate']|" th:disabled="${completed}">カレンダー</button>
+										<div class="error_mag_point hidden" th:id="|itemMsg_${nameTarget}.nyushukkinYoteiDate|"></div>
+									</td>
+									<td class="col_shiharai_money">
+										<input type='text' class="form-control input_money shiharaiPlan_yotei_gaku commaFormat input_number_only dispDicimalInput"
+											th:data-target="|[name='${nameTarget}.nyushukkinYoteiGaku']|"
+											th:value="${plan.dispNyushukkinYoteiGaku}" th:maxlength="${T(jp.loioz.common.constant.CommonConstant).MAX_KINGAKU_INPUT_DIGIT}"
+											th:readonly="${completed}" th:classappend="${completed} ? 'input_disabled'" />
+										<input type="hidden" class="planMoneyInput" th:value="${plan.nyushukkinYoteiGaku}" th:name="|${nameTarget}.nyushukkinYoteiGaku|">
+										<div class="error_mag_point hidden" th:id="|itemMsg_${nameTarget}.nyushukkinYoteiGaku|"></div>
+									</td>
+									<td class="col_shiharai_date">
+										<div class="d-table text-center">
+											<input type='text' class="form-control  shiharaiPla_date"
+												th:value="${plan.nyushukkinDate}" th:name="|${nameTarget}.nyushukkinDate|"
+												th:readonly="${completed}" th:classappend="${completed} ? 'input_disabled'"
+												th:data-click-sync="|[id='${nameTarget}.nyushukkinDateCal']|">
+											<button type='button' th:id="|${nameTarget}.nyushukkinDateCal|" class='ml-1 btn btn_popcal hidden' data-toggle="datepicker"
+												th:data-target="|[name='${nameTarget}.nyushukkinDate']|" th:disabled="${completed}">カレンダー</button>
+										</div>
+										<div class="error_mag_point hidden" th:id="|itemMsg_${nameTarget}.nyushukkinDate|"></div>
+									</td>
+									<td class="col_shiharai_money">
+										<input type='text' class="form-control input_money shiharaiPlan_yotei_gaku commaFormat input_number_only dispDicimalInput"
+											th:value="${plan.dispNyushukkinGaku}" th:maxlength="${T(jp.loioz.common.constant.CommonConstant).MAX_KINGAKU_INPUT_DIGIT}"
+											th:data-target="|[name='${nameTarget}.nyushukkinGaku']|"
+											th:readonly="${completed}" th:classappend="${completed} ? 'input_disabled'">
+										<input type="hidden" class="planMoneyInput" th:value="${plan.nyushukkinGaku}" th:name="|${nameTarget}.nyushukkinGaku|">
+										<div class="error_mag_point hidden" th:id="|itemMsg_${nameTarget}.nyushukkinGaku|"></div>
+									</td>
+									<td class="col_shiharai_tekiyo">
+										<input type='text' class="form-control fw_full shiharaiPlan_tekiyo" th:value="${plan.tekiyo}" th:name="|${nameTarget}.tekiyo|"
+											th:readonly="${completed}" th:classappend="${completed} ? 'input_disabled'">
+										<div class="error_mag_point hidden" th:id="|itemMsg_${nameTarget}.tekiyo|"></div>
+									</td>
+									<td class="col_del">
+										<button th:unless="${completed}" type="button" class="btn btn-light btn_icon_only removeInput text-primary"><i class="fas fa-minus-circle"></i></button>
+									</td>
+								</tr>
+							</tbody>
+						</table>
+					</div>
+					<!-- モーダル下部 end -->
+				</form>
+			</div>
+		</div>
+
+		<!-- フッター -->
+		<div class="modal-footer">
+			<button type="button" th:unless="*{shiharaiPlanDto.PlanComplete || SeisanCompleted}" class="btn btn-info save"><i class="fas fa-check"></i>保存</button>
+			<button type="button" class="btn btn-light" data-dismiss="modal"><i class="fas fa-times"></i>閉じる</button>
+		</div>
+		<!-- フッター end -->
+	</div>
+	<!-- 支払計画モーダル end -->
+</body>
+</html>

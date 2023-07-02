@@ -1,0 +1,291 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+	<meta charset="utf-8" />
+</head>
+<body>
+
+
+<!--/* タスクリスト画面 */-->
+<div th:fragment="taskListViewFragment(viewForm)" id="taskListViewFragment">
+
+	<!--/* スクリプト */-->
+	<script th:inline="javascript">
+	$(function(){
+
+		<!--/* 共有の要素セットアップ処理 */-->
+		commonSetUpElement();
+
+		<!--/* 二重送信防止対応用の値 */-->
+		let ajaxRunning = false;
+
+		<!-- /* タスクチェックhoverアクション */ -->
+		$('.taskList').on({
+			mouseenter: function() {
+				$(this).children('.taskStatusPreparing').addClass('hidden');
+				$(this).children('.taskStatusComp').removeClass('hidden');
+			},
+			mouseleave: function() {
+				$(this).children('.taskStatusPreparing').removeClass('hidden');
+				$(this).children('.taskStatusComp').addClass('hidden');
+			}
+		}, '.taskCheckHover');
+
+		<!-- /* ステータスの完了アクション */ -->
+		$('#taskListViewFragment').on("click" ,".taskStatusComp",function(){
+			let taskSeq = $(this).data('taskseq');
+			let statusCompleted = /*[[${T(jp.loioz.common.constant.CommonConstant$TaskStatus).COMPLETED}]]*/ '';
+
+			<!-- /* タスクを取り消し線をつける */ -->
+			$('#taskData' + taskSeq).find('.taskTitle').css('color', 'var(--text-color-title)');
+			$('#taskData' + taskSeq).find('.taskTitle').css('text-decoration', 'line-through');
+			$('#taskData' + taskSeq).find('.taskStatusPreparing').addClass('hidden');
+			$(this).children('.taskStatusComp').removeClass('hidden');
+			$('#taskData' + taskSeq).find('.taskCheckHover').removeClass('taskCheckHover');
+
+			<!-- /* 完了にする */ -->
+			taskComp(taskSeq, statusCompleted);
+
+			<!-- /* 最後は消す */ -->
+			setTimeout(function(){
+				$('#taskData' + taskSeq).remove();
+			}, 500);
+		});
+
+		<!-- /* ステータスの変更アクション */ -->
+		$(document).on("change" ,".taskstatus",function(){
+			let taskSeq = $(this).parent("li").attr("data-task_seq");
+			let taskStatus = $(this).val();
+			taskComp(taskSeq,taskStatus)
+		});
+
+		<!--/* 表示チェック変更 */-->
+		$('#taskListViewFragment').on("change", ".changeCalendarTaskViewOption", function() {
+
+			if (ajaxRunning) {
+				return false;
+			}
+			ajaxRunning = true;
+
+			const isAllRelatedTask = $('#allRelatedTask1').prop("checked");
+
+			$.ajax({
+				url : '/user/schedule/changeCalendarTaskViewOption',
+				type : "GET",
+				data : {
+					"isAllRelatedTask": isAllRelatedTask
+				},
+			}).done(function(data, status, jqXHR) {
+				if (isAjaxProcSuccess(jqXHR)) {
+					<!--/* 処理成功 */-->
+					$('#taskListViewFragmentWrap').html(data);
+				} else {
+					// 処理失敗
+					const errorMsg = getAjaxProcResutlMessage(jqXHR);
+					showErrorMessageForJs(errorMsg);
+				}
+			}).fail(function(jqXHR, textStatus, errorThrown) {
+			}).always(function() {
+				ajaxRunning = false;
+			});
+		});
+
+		<!--/* 並び替えセレクトボックス変更 */-->
+		$('#taskListViewFragment').on("change", ".changeTaskListSortKey", function() {
+
+			if (ajaxRunning) {
+				return false;
+			}
+			ajaxRunning = true;
+
+			<!--/* タスク一覧ソート 1:設定した順 2:期限日-昇順 3:期限日-降順 */-->
+			const sortKeyCd = $(this).val();
+
+			$.ajax({
+				url : '/user/schedule/sortTaskList',
+				type : "GET",
+				data : {
+					"sortKeyCd": sortKeyCd
+				},
+			}).done(function(data, status, jqXHR) {
+				if (isAjaxProcSuccess(jqXHR)) {
+					<!--/* 処理成功 */-->
+					$('#taskListViewFragmentWrap').html(data);
+				} else {
+					// 処理失敗
+					const errorMsg = getAjaxProcResutlMessage(jqXHR);
+					showErrorMessageForJs(errorMsg);
+				}
+			}).fail(function(jqXHR, textStatus, errorThrown) {
+			}).always(function() {
+				ajaxRunning = false;
+			});
+		});
+
+		<!-- /* ステータスの更新処理 */ -->
+		function taskComp(taskSeq,taskStatus){
+
+			$.ajax({
+				url : "/user/taskManagement/taskCompBySchedule",
+				type : "POST",
+				data : {
+					"taskSeq" : taskSeq,
+					"taskStatus" : taskStatus
+					},
+			}).done(function(data, status, jqXHR) {
+				if (isAjaxProcSuccess(jqXHR)) {
+					// 処理成功
+					showInfoMessageForJs(getAjaxProcResutlMessage(jqXHR));
+					let newContent = $(data);
+					if(newContent.is("#taskListData")){
+						const replaceId = "#taskData"+taskSeq;
+						let replaceData;
+						let statusCompleted = /*[[${T(jp.loioz.common.constant.CommonConstant$TaskStatus).COMPLETED}]]*/ '';
+						if (taskStatus === statusCompleted) {
+							// ステータス完了時は、再表示させない
+							replaceData = "";
+						} else {
+							replaceData = $(data).find(replaceId);
+						}
+						$(replaceId).replaceWith(replaceData);
+					}else{
+						$("#taskListData").html(newContent);
+					}
+					<!--/* ヘッダーの更新 */-->
+					headerRefresh();
+				} else {
+					// 処理失敗
+					const errorMsg = getAjaxProcResutlMessage(jqXHR);
+					showErrorMessageForJs(errorMsg);
+				}
+
+			}).fail(function(jqXHR, textStatus, errorThrown) {
+				window.location.href = "/systemError";
+			}).always(function() {
+				// なにもしない
+			});
+		}
+
+	});
+	</script>
+
+	<!--/* HTML */-->
+	<div class="block_task sidebar">
+		<!--/* 閉じたタスク */-->
+		<div class="schedule_sidebar_task closeMenu open openCloseTask border-bottom-0" th:classappend="${viewForm.scheduleOpenTaskFlg} ? 'hidden' : '' ">
+			<div class="schedule_sidebar_task__link">
+				<a href="javascript:void(0);" data-boundary="window" data-container=".block_schedule" data-toggle="tooltip" title="タスクを開く">
+					<i class="fas fa-list"></i>
+				</a>
+			</div>
+		</div>
+		
+		<!--/* 開いたタスク */-->
+		<div class="schedule_sidebar_task openMenu" th:classappend="${viewForm.scheduleOpenTaskFlg} ? '' : 'hidden' ">
+			<div class="d-flex align-items-center">
+				<div class="schedule_sidebar_task__link">
+					<a th:href="@{/user/taskManagement/list}" data-boundary="window" data-container=".block_task" data-toggle="tooltip" title="タスク画面へ">
+						<i class="fas fa-list"></i>
+					</a>
+				</div>
+				<div class="schedule_sidebar_task__title">タスク</div>
+				<div class="schedule_sidebar_task__close openCloseTask" data-boundary="window" data-container=".block_task" data-toggle="tooltip" title="閉じる">
+					<i class="fas fa-times close"></i>
+				</div>
+			</div>
+			<div class="schedule_sidebar_task_view_menu">
+				<label class="check_area checkbox_btn">
+					<input type="checkbox" class="checkbox_input changeCalendarTaskViewOption" th:field="${viewForm.allRelatedTask}">
+					<span class="checkbox_txt">割り当てたタスクも表示</span>
+				</label>
+			</div>
+		</div>
+		<!--/* タスク追加 */-->
+		<div class="mt-2 mb-1 ml-4 d-flex align-items-center openMenu" th:classappend="${viewForm.scheduleOpenTaskFlg} ? '' : 'hidden' ">
+			<a href="javascript:void(0);" class="openTaskModal" data-toggle="modal" data-target="#selectTaskModal">
+				<i class="fas fa-plus-square mr-2"></i>タスクを追加
+			</a>
+			<div class="selected_list_sort_task ml-auto mr-3">
+				<select class="form-control digit7 changeTaskListSortKey" th:with="sortKeyCd=${viewForm.taskListSortKeyCd}">
+					<option th:each="taskListSortKey : ${T(jp.loioz.common.constant.AccountSettingConstant$CalendarTaskSortOption).values()}" 
+						th:label="${taskListSortKey.getVal()}" th:text="${taskListSortKey.getVal()}" th:value="${taskListSortKey.getCd()}" th:selected="${taskListSortKey.equalsByCode(sortKeyCd)}">
+					</option>
+				</select>
+			</div>
+		</div>
+		
+		<!--/* タスク一覧 */-->
+		<div class="task_list_wrapper hover_scroll">
+			<ul class="schedule_sidebar_task_list taskList openMenu" th:classappend="${viewForm.scheduleOpenTaskFlg} ? '' : 'hidden' " th:object="${viewForm}">
+				<li th:id="|taskData${task.taskSeq}|" class="openTaskModal" th:each=" task : *{taskList}"
+						th:data-task_seq="${task.taskSeq}" data-toggle="modal" data-target="#selectTaskModal">
+					<div class="sidebar_task_data">
+						<!--/* タスクチェック */-->
+						<div class="sidebar_task_data_comp stop-events taskCheckHover" data-boundary="window" th:data-container="|#taskData${task.taskSeq}|" data-toggle="tooltip" title="完了にする">
+							<div class="taskStatusPreparing" th:classappend="${(T(jp.loioz.common.constant.CommonConstant$TaskStatus).COMPLETED.equalsByCode(task.taskStatus) ? 'hidden' : ' ')}">
+								<i class="far fa-circle"></i>
+							</div>
+							<div class="taskStatusComp task_comp hidden" th:data-taskSeq="${task.taskSeq}">
+								<i class="far fa-check-circle"></i>
+							</div>
+						</div>
+						<!--/* タスク詳細 */-->
+						<div class="sidebar_task_data_detail">
+							<!--/* タイトル */-->
+							<div class="sidebar_task_list_row__title taskTitle" th:text ="${task.title}"></div>
+							<div class="sidebar_task_list_row">
+								<!--/* 期限 */-->
+								<div th:if ="${task.limitDtTo}" class="sidebar_task_list_row__limit" th:classappend="${task.limitDateStyle}">
+									<i class="far fa-calendar-alt"></i>
+									<span th:text ="${#temporals.format(task.limitDateForDisplay, 'M月d日')}">1月1日</span>
+									<span th:text="| (${#temporals.format(task.limitDateForDisplay, 'E')})|">(月)</span>
+									<span th:if="${task.limitTime}" th:text ="| ${#temporals.format(task.limitTime, 'H:mm')}|">0:00</span>
+								</div>
+								<!--/* コメント件数 */-->
+								<div class="sidebar_task_list_row__comment" th:if="${task.commentCount} > 0">
+									<i class="far fa-comment"></i>
+									<span  th:text="${task.commentCount}"></span>
+								</div>
+								<!--/* サブタスクが有る場合、件数を表示） */-->
+								<div class="check_item_count">
+									<th:block th:if="${task.checkItemCount != 0}">
+										<i class="far fa-check-square mr-1"></i>
+										<span th:text="${task.completeCheckItemCount}"></span>/<span th:text="${task.checkItemCount}"></span>
+									</th:block>
+								</div>
+							</div>
+							<div class="sidebar_task_list_row">
+								<!--/* 今日タスク */-->
+								<div class="sidebar_task_list_row__today" th:if="${#temporals.format(task.todayTaskDate, 'yyyy-MM-dd')==#dates.format(#dates.createNow(), 'yyyy-MM-dd')}">
+									<i class="far fa-clock"></i>
+									<span>今日のタスク</span>
+								</div>
+							</div>
+							<!--/* 案件紐付け */-->
+							<div class="sidebar_task_list_row">
+								<div class="stop-events task_anken_name" th:if ="${task.ankenId}"
+								 	data-boundary="window" data-container=".block_task" data-toggle="tooltip" title="案件ダッシュボードへ">
+									<a th:href="@{/user/ankenDashboard/{ankenId}/(ankenId=${task.ankenId.asLong()})}" class="relation_link">
+										<i class="fas fa-hashtag mr-1"></i><span th:text="${#lists.isEmpty(task.ankenName.ankenName)} ? '(案件名未入力)' : ${task.ankenName.ankenName} ">案件名</span>
+										<span class="sub_text" th:text="|&#40;${task.ankenId}&#41;|">案件ID</span>
+									</a>
+								</div>
+							</div>
+							<!--/* 担当者 */-->
+							<div class="sidebar_task_list_row justify-content-end mt-2">
+								<th:block th:each="taskTanto, stat : ${task.assignTaskTantoList}">
+									<span data-boundary="window" data-container=".block_task" data-toggle="tooltip" th:title="${task.getAccountName(taskTanto.workerAccountSeq)}" >
+										<i class="fas fa-user-circle ml-2 fa-lg" th:style="|color: ${taskTanto.accountColor}|"></i>
+									</span>
+								</th:block>
+							</div>
+						</div>
+					</div>
+				</li>
+			</ul>
+		</div>
+	</div>
+</div>
+
+</body>
+</html>

@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+	layout:decorator="commonLayout">
+<head>
+<meta charset="UTF-8">
+</head>
+<body>
+
+<div class="nav_sidebar_user" th:fragment="accgMenuFragment(cd)">
+	<div class="nav_sidebar_user_inner">
+		<div class="list_page_menu_title">
+			会計管理
+		</div>
+		<ul class="list_page_menu">
+			<li th:classappend="${cd == T(jp.loioz.common.constant.CommonConstant$AccgMenu).FEE.getCd()} ? 'selected' ">
+				<a href="/user/feeList/list" class="menuClick"><div class="accg_list_menu"><span>報酬管理</span></div></a>
+			</li>
+			<li th:classappend="${cd == T(jp.loioz.common.constant.CommonConstant$AccgMenu).DEPOSIT_RECV.getCd()} ? 'selected' ">
+				<a href="/user/depositRecvList/list" class="menuClick"><div class="accg_list_menu"><span>預り金／実費管理</span></div></a>
+			</li>
+			<li th:classappend="${cd == T(jp.loioz.common.constant.CommonConstant$AccgMenu).INVOICE.getCd()} ? 'selected' ">
+				<a href="/user/invoiceList/list" class="menuClick"><div class="accg_list_menu"><span>請求書</span></div></a>
+			</li>
+			<li th:classappend="${cd == T(jp.loioz.common.constant.CommonConstant$AccgMenu).STATEMENT.getCd()} ? 'selected' ">
+				<a href="/user/statementList/list" class="menuClick"><div class="accg_list_menu"><span>精算書</span></div></a>
+			</li>
+			<th:block th:if="${T(jp.loioz.common.utility.SessionUtils).isSystemMng()}">
+				<li th:classappend="${cd == T(jp.loioz.common.constant.CommonConstant$AccgMenu).SETTING.getCd()} ? 'selected' ">
+					<a href="/user/officeKozaList/" class="menuClick"><div class="accg_list_menu"><span>設定</span></div></a>
+				</li>
+			</th:block>
+		</ul>
+	</div>
+</div>
+
+</body>
+</html>

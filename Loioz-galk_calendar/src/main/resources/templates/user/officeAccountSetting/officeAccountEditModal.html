@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+	xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+	layout:decorator="commonLayout">
+<head>
+<meta charset="utf-8" />
+</head>
+<body>
+	<div th:fragment="select-modal" class="select-modal">
+		<div th:object="${accountEditForm}">
+			<div class="modal-header">
+				<h2 class="modalheader_title" th:text="*{isNew()} ? 'アカウント登録' : 'アカウント更新'"></h2>
+			</div>
+			<div class="modal-body">
+				<div th:replace="common/messageArea::jsMessageArea"></div>
+				<form id="editForm" th:action="@{/user/officeAccountSetting/}" method="post">
+					<input type="hidden" class="editTargetAccountSeq" th:field="*{accountEditData.accountSeq}">
+					<input type="hidden" th:field="*{accountEditData.accountStatus}">
+					<input type="hidden" th:field="*{accountEditData.versionNo}">
+					<!-- 入力エリア -->
+					<div class="modal_input_area">
+						<div class="form-row">
+							<!--/* アカウントID */-->
+							<div class="form-group col-md-4 mb-0">
+								<label class="input_parts_label">アカウントID</label>
+								<span class="mark_equired">必須</span>
+								<input type="text" class="form-control input_half" th:field="*{accountEditData.accountId}" maxlength="50" th:autocomplete="off" placeholder="半角英数4桁以上">
+							</div>
+							<!--/* アカウントID end */-->
+							<!--/* カラー */-->
+							<div class="form-group col-md-2 mb-0">
+								<label class="input_parts_label">カラー</label>
+								<input type="color" class="form-control p-1" th:field="*{accountEditData.accountColor}" list="">
+								<div class="error_mag_point hidden" id="itemMsg_accountEditData.accountColor"></div>
+							</div>
+							<!--/* カラー end */-->
+							<div class="input_parts form-group col-md-12">
+								<div class="error_mag_point hidden" id="itemMsg_accountEditData.accountId"></div>
+							</div>
+						</div>
+						<!--/* 氏名 */-->
+						<div class="form-row">
+							<div class="form-group col-md-12 mb-0">
+								<label class="input_parts_label">氏名</label>
+								<span class="mark_equired">必須</span>
+							</div>
+							<!-- 姓 -->
+							<div class="form-group col-md-3 mb-2">
+								<input type="text" class="form-control" th:field="*{accountEditData.accountNameSei}" id="accountNameSei" maxlength="24" th:autocomplete="off" placeholder="姓">
+								<div class="error_mag_point hidden" id="itemMsg_accountEditData.accountNameSei"></div>
+							</div>
+							<!-- 名 -->
+							<div class="form-group col-md-3 mb-2">
+								<input type="text" class="form-control" th:field="*{accountEditData.accountNameMei}" id="accountNameMei" maxlength="24" th:autocomplete="off" placeholder="名">
+								<div class="error_mag_point hidden" id="itemMsg_accountEditData.accountNameMei"></div>
+							</div>
+						</div>
+						<!--/* 氏名（かな） */-->
+						<div class="form-row">
+							<!-- せい -->
+							<div class="form-group col-md-3 mb-0">
+								<input type="text" class="form-control" th:field="*{accountEditData.accountNameSeiKana}" id="accountNameSeiKana"  maxlength="64" th:autocomplete="off" placeholder="せい">
+								<div class="error_mag_point hidden" id="itemMsg_accountEditData.accountNameSeiKana"></div>
+							</div>
+							<!-- めい -->
+							<div class="form-group col-md-3 mb-0">
+								<input type="text" class="form-control" th:field="*{accountEditData.accountNameMeiKana}" id="accountNameMeiKana" maxlength="64" th:autocomplete="off" placeholder="めい">
+								<div class="error_mag_point hidden" id="itemMsg_accountEditData.accountNameMeiKana"></div>
+							</div>
+							<div class="form-group col-md-12 mb-0">
+								<div class="input_nav">
+									<p>loioz内で利用するユーザーの表示名です。</p>
+								</div>
+							</div>
+						</div>
+						<!--/* メールアドレス */-->
+						<div class="form-row">
+							<div class="form-group col-md-6">
+								<label class="input_parts_label">メールアドレス</label>
+								<input type="text" class="form-control" th:field="*{accountEditData.accountMailAddress}" maxlength="256" autocomplete="off">
+								<div class="error_mag_point text-nowrap hidden" id="itemMsg_accountEditData.accountMailAddress"></div>
+							</div>
+						</div>
+						<!--/* アカウント種別 */-->
+						<div class="form-row">
+							<div class="form-group col-md-12 mb-1">
+								<label class="input_parts_label" id="accountTypePopoverTarget">
+									種別
+									<span class="ml-2" data-boundary="window" data-toggle="popover" data-trigger="focus" tabindex="-1" data-placement="left" data-html="true" data-content=
+										'<div class="account_type_info">
+											<div class="col-md-12">経営者：</div>
+											<div class="col-md-12">・代表弁護士、パートナー弁護士を登録する際に選択をします。</div>
+											<div class="col-md-12">・経営者ユーザーは、案件担当者の売上計上先に指定することができます。  </div>
+											<div class="col-md-12 mt-4">管理者： </div>
+											<div class="col-md-12">・管理者ユーザーは、事務所、契約管理、データ設定の閲覧、編集ができます。</div>
+										</div>'>
+										<i class="fas fa-question-circle"></i>
+									</span>
+								</label>
+							</div>
+							<div class="form-group col-md-12">
+								<!--/* 弁護士、事務職員、その他 */-->
+								<label class="radio_btn" th:each="enum : ${T(jp.loioz.common.constant.CommonConstant$AccountType).values()}">
+									<input type="radio" class ="radio_input" th:field="*{accountEditData.accountType}" th:value="${enum.cd}">
+									<span class="radio_txt" th:text="${enum.val}">弁護士</span>
+								</label>
+								<div class="error_mag_point hidden" id="itemMsg_accountEditData.accountType"></div>
+								<div class="inner_checkbox_area">
+									<!--/* 代表弁護士チェック */-->
+									<label class="checkbox_btn">
+										<input class="checkbox_input" type="checkbox" th:field="*{accountEditData.accountOwnerFlg}"
+											th:disabled="*{T(jp.loioz.common.constant.CommonConstant.AccountType).LAWYER.cd != accountEditData.accountType}"
+											th:value="${T(jp.loioz.common.constant.CommonConstant$SystemFlg).FLG_ON.cd}">
+										<span class="checkbox_txt">経営者の場合はチェックをオンにしてください。</span>
+									</label>
+									<div class="error_mag_point hidden" id="itemMsg_accountEditData.accountOwnerFlg"></div>
+									<!--/* 管理者チェック */-->
+									<label class="checkbox_btn">
+										<input class="checkbox_input accountKengenCheck" type="checkbox" th:field="*{accountEditData.accountKengen}"
+											th:value="${T(jp.loioz.common.constant.CommonConstant.AccountKengen).SYSTEM_MNG.cd}">
+										<span class="checkbox_txt">管理者として登録する場合はチェックをオンにしてください。</span>
+									</label>
+									<input id="beforeUpdateAccountKengenCheck" class="checkbox_input hidden" type="checkbox" th:with="beforeAccountKengen=*{accountEditData.accountKengen}" th:checked="${T(jp.loioz.common.constant.CommonConstant.AccountKengen).SYSTEM_MNG.cd.equals(beforeAccountKengen)}" value="not use">
+									<div class="error_mag_point hidden" id="itemMsg_accountEditData.accountKengen"></div>
+								</div>
+							</div>
+						</div>
+						<!-- ログインパスワード -->
+						<div class="form-row">
+							<div class="form-group col-md-12 mb-0">
+								<label class="input_parts_label">ログインパスワード</label>
+								<span th:if="*{isNew()}" class="mark_equired">必須</span>
+							</div>
+							<div class="form-group col-md-4 mb-0">
+								<div class="password-container d-flex">
+									<input type="password" class="form-control input_half" th:field="*{accountEditData.password.password}" maxlength="30" th:autocomplete="new-password">
+									<div class="input-group-append">
+										<button class="toggle-password-display btn btn-light btn-sm btn_icon_only ml-2" type="button">
+											<i class="far fa-eye"></i>
+											<i class="far fa-eye-slash hidden"></i>
+										</button>
+									</div>
+								</div>
+								<div class="input_nav mb-1">
+									<p>8文字以上で半角英数字を含めて作成してください。</p>
+								</div>
+							</div>
+							<div class="input_parts form-group col-md-12">
+								<div class="error_mag_point hidden" id="itemMsg_accountEditData.password"></div>
+								<div class="error_mag_point hidden" id="itemMsg_accountEditData.password.password"></div>
+							</div>
+						</div>
+
+						<!-- ログインパスワード（確認用） -->
+						<div class="form-row">
+							<div class="form-group col-md-12 mb-0">
+								<label class="input_parts_label">ログインパスワード（確認用）</label>
+								<span th:if="*{isNew()}" class="mark_equired">必須</span>
+							</div>
+							<div class="form-group col-md-4 mb-0">
+								<div class="password-container d-flex">
+									<input type="password" class="form-control input_half" th:field="*{accountEditData.password.confirm}" maxlength="30" th:autocomplete="off">
+									<div class="input-group-append">
+										<button class="toggle-password-display btn btn-light btn-sm btn_icon_only ml-2" type="button">
+											<i class="far fa-eye"></i>
+											<i class="far fa-eye-slash hidden"></i>
+										</button>
+									</div>
+								</div>
+								<div class="input_nav mb-1">
+									<p>確認のため、入力したパスワードを再度入力してください。</p>
+								</div>
+							</div>
+							<div class="input_parts form-group col-md-12">
+								<div class="error_mag_point hidden" id="itemMsg_accountEditData.password"></div>
+								<div class="error_mag_point hidden" id="itemMsg_accountEditData.password.confirm"></div>
+							</div>
+						</div>
+					</div>
+				</form>
+			</div>
+			<div class="modal-footer">
+				<button th:if="*{!isNew()}" type="button" class="btn btn-light mr-auto" id="changeStatus">
+					<span th:text="*{accountEditData.accountStatus == T(jp.loioz.common.constant.CommonConstant.AccountStatus).ENABLED.cd}
+						? |アカウントを${T(jp.loioz.common.constant.CommonConstant.AccountStatus).DISABLED.getVal()}にする|
+						: |アカウントを${T(jp.loioz.common.constant.CommonConstant.AccountStatus).ENABLED.getVal()}にする|">停止</span>
+				</button>
+				<button th:if="*{isNew()}" type="button" class="btn btn-info" id="regist"><i class="fas fa-check"></i>登録</button>
+				<button  th:if="*{!isNew()}" type="button" class="btn btn-info" id="update"><i class="fas fa-check"></i>保存</button>
+				<button type="button" class="btn btn-light" data-dismiss="modal"><i class="fas fa-times"></i>閉じる</button>				
+			</div>
+		</div>
+	</div>
+</body>
+</html>

@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+	xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+	xmlns:xtra="https://github.com/connect-group/thymeleaf-extras"
+	layout:decorator="commonLayout">
+<head>
+<meta charset="utf-8" th:remove="tag" />
+<title layout:fragment="title-contents">
+	[[${T(jp.loioz.common.utility.LoiozUtils).getHtmlTitle("名簿登録", T(jp.loioz.common.utility.SessionUtils).getTenantName())}]]
+</title>
+<th:block th:with="version=${@environment.getProperty('app.version')}">
+	<link th:href="@{/css/person/person.css?{ver}(ver=${version})}" rel="stylesheet" type="text/css"/>
+</th:block>
+
+<script type="text/javascript" th:replace="common/js/ageCalculationJs::ageCalculationJs"></script>
+<script th:inline="javascript">
+
+<!--/*
+ 二重送信防止対応用の値。
+ このHTMLに差し込まれるfragment内のScriptの処理も、共通してこの変数を利用する。
+*/-->
+let ajaxRunning = false;
+
+</script>
+
+</head>
+<body>
+	<div layout:fragment="main-contents" th:remove="tag">
+		
+		<!--/* メインコンテンツの外側 */-->
+		<div class="contents_wrapper">
+			<div class="container-fluid container_limited_new_regist">
+				<div th:replace="common/messageArea::messageArea"></div>
+				<main>
+					<div class="new_regist_container">
+						<div class="new_regist_container__title">
+							名簿登録<span class="fs14 fw0 ml-3">データ登録後に、住所、連絡先、精算口座等の情報を設定いただけます。</span>
+						</div>
+						
+						<!--/* 顧客ブロック */-->
+						<div class="new_regist_container__edit">
+							<div id="personRegistBasicFragmentWrap" th:insert="user/personManagement/personRegistFragment::personRegistBasicInputFragment(${personRegistBasicInputForm})">
+								<!-- 顧客の基本情報の表示 -->
+							</div>
+						</div>
+					</div>
+				</main>
+			</div>
+		</div>
+		
+	</div>
+
+</body>
+</html>

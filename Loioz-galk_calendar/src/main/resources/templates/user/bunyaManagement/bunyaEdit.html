@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+	xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+	layout:decorator="commonLayout">
+<head>
+	<meta charset="utf-8" />
+</head>
+<body>
+	<div th:fragment="select-modal" class="select-modal">
+		<div th:object="${bunyaEditForm}">
+			<div class="modal-header">
+				<h2 class="modalheader_title" th:text="*{isNew()} ? '分野登録' : '分野更新'"></h2>
+			</div>
+			<div class="modal-body">
+				<div th:replace="common/messageArea::jsMessageArea"></div>
+				<form id="editForm">
+					<input type="hidden" th:field="*{bunyaEditData.bunyaId}">
+					<div class="modal_input_area">
+						<div class="form-row">
+							<div class="form-group col-md-4">
+								<label class="input_parts_label" for="input-bunyaType">区分</label>
+								<span class="mark_equired">必須</span>
+								<select class="form-control col-9" id="input-bunyaType" th:field="*{bunyaEditData.bunyaType}">
+									<option value="">-</option>
+									<option th:each="enum : ${T(jp.loioz.common.constant.CommonConstant$BunyaType).values()}"
+										th:value="${enum.cd}" th:text="${enum.val}">
+									</option>
+								</select>
+								<div class="error_mag_point hidden" id="itemMsg_bunyaEditData.bunyaType"></div>
+							</div>
+							<div class="form-group col-md-12">
+								<label class="input_parts_label" for="input-bunyaName">分野名</label>
+								<span class="mark_equired">必須</span>
+								<input type="text" class="form-control" id="input-bunyaName" th:field="*{bunyaEditData.bunyaName}" maxlength="30">
+								<!-- Enter key対応のダミー -->
+								<input type="text" name="dummy" style="display:none;">
+								<div class="error_mag_point hidden" id="itemMsg_bunyaEditData.bunyaName"></div>
+							</div>
+						</div>
+					</div>
+				</form>
+			</div>
+			<div class="modal-footer">
+				<button th:if="*{!isNew()}" type="button" class="btn btn-light" id="delete"><i class="far fa-trash-alt"></i>削除</button>
+				<button th:if="*{!isNew()} and *{isUsing()}" type="button" class="btn btn-light mr-auto" id="using" th:data-using="*{isUsing()}">停止</button>
+				<button th:if="*{!isNew()} and *{!isUsing()}" type="button" class="btn btn-light mr-auto" id="using" th:data-using="*{isUsing()}">再開</button>
+				<button th:if="*{isNew()}" type="button" class="btn btn-info" id="regist"><i class="fas fa-check"></i>登録</button>
+				<button th:if="*{!isNew()}" type="button" class="btn btn-info" id="update"><i class="fas fa-check"></i>保存</button>
+				<button type="button" class="btn btn-light" data-dismiss="modal"><i class="fas fa-times"></i>閉じる</button>
+			</div>
+		</div>
+	</div>
+</body>
+</html>

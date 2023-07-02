@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+	xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+	xmlns:xtra="https://github.com/connect-group/thymeleaf-extras"
+	layout:decorator="commonLayout">
+<head>
+<meta charset="utf-8" th:remove="tag" />
+<title layout:fragment="title-contents">
+	[[${T(jp.loioz.common.utility.LoiozUtils).getHtmlTitle("裁判登録", T(jp.loioz.common.utility.SessionUtils).getTenantName())}]]
+</title>
+<th:block th:with="version=${@environment.getProperty('app.version')}">
+	<link th:href="@{/css/saiban/saiban.css?{ver}(ver=${version})}" rel="stylesheet" type="text/css"/>
+</th:block>
+
+<script type="text/javascript" th:inline="javascript">
+
+<!--/*
+二重送信防止対応用の値。
+このHTMLに差し込まれるfragment内のScriptの処理も、共通してこの変数を利用する。
+*/-->
+let ajaxRunning = false;
+
+</script>
+
+</head>
+<body>
+	<div layout:fragment="main-contents" th:remove="tag">
+
+		<!--/* ①サイドメニューあり */-->
+		<div class="contents_sidebar_wrapper contentsSlidebarWrapper" th:data-click-open=${customerAnkenMenuOpenClickForSessionValue} th:data-resize-open=${customerAnkenMenuOpenResizeForSessionValue}>
+
+			<!--/* ②顧客・案件 サイドメニュー */-->
+			<div th:replace="common/customerAnkenMenu::menuList(
+				sideMenuAnkenId=${inputForm.ankenId.asLong()},
+				sideMenuCustomerId=null,
+				selectedTabClass='is_saiban')">
+			</div>
+
+			<!--/* ③メインコンテンツの外側 */-->
+			<div class="contents_wrapper">
+
+				<div class="container-fluid">
+
+					<!--/* ④裁判一覧に戻る */-->
+					<div th:replace="common/wrapHeader::wrapHeader(
+						returnListScreen=${T(jp.loioz.common.utility.SessionUtils).getSessionVaule(T(jp.loioz.common.constant.SessionAttrKeyEnum).RETURN_LIST_SCREEN.codeKey)},
+						sideMenuAnkenId=${inputForm.ankenId.asLong()},
+						selectedTabClass='is_saiban')"></div>
+
+					<!--/* ⑤画面メイン */-->
+					<main>
+
+						<!--/* ⑥メッセージエリア */-->
+						<div th:replace="common/messageArea::messageArea"></div>
+
+						<div class="new_regist_container">
+							<div class="new_regist_container__title">
+								裁判（民事）新規登録<span class="fs14 fw0 ml-3">データ登録後に、期日や、相手方等の情報を設定いただけます。</span>
+							</div>
+							
+							<!--/* 裁判ブロック */-->
+							<div class="new_regist_container__edit">
+								<!--/* 裁判情報（詳細） */-->
+								<div class="saiban_detail_block">
+									<div id="saibanRegistMinjiBasicFragmentWrap" th:insert="user/saibanManagement/saibanRegistMinjiFragment::saibanRegistMinjiBasicInputFragment(${saibanRegistMinjiBasicInputForm})">
+										裁判の基本情報の表示
+									</div>
+								</div>
+								<!--/* 裁判情報（詳細） end */-->
+							</div>
+							<!--/* 裁判ブロック end */-->
+							
+						</div>
+					</main>
+				</div>
+			</div>
+
+		</div>
+	</div>
+
+</body>
+</html>

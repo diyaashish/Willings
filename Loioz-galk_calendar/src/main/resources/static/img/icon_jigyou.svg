@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="21px" height="21px" viewBox="0 0 21 21" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" preserveAspectRatio="none">
+    <!-- Generator: Sketch 51.3 (57544) - http://www.bohemiancoding.com/sketch -->
+    <title>icon_jigyou</title>
+    <desc>Created with Sketch.</desc>
+    <defs></defs>
+    <g id="Page-1" stroke="none" stroke-width="1" fill="none" fill-rule="evenodd">
+        <g id="miraizu" transform="translate(-799.000000, -54.000000)">
+            <g id="icon_jigyou" transform="translate(798.989000, 54.000000)">
+                <circle id="楕円形_8" fill="#E52C29" fill-rule="nonzero" cx="9.518" cy="3.861" r="3.861"></circle>
+                <circle id="楕円形_9" fill="#E52C29" fill-rule="nonzero" cx="3.861" cy="17.06" r="3.861"></circle>
+                <circle id="楕円形_10" fill="#E52C29" fill-rule="nonzero" cx="17.15" cy="14.636" r="3.861"></circle>
+                <polygon id="パス_11" stroke="#E52C29" stroke-width="1.5" points="9.518 3.771 9.392 4.076 3.861 17.06 17.15 14.636"></polygon>
+            </g>
+        </g>
+    </g>
+</svg>

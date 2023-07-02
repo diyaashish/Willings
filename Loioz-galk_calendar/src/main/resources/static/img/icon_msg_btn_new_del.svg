@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="16" height="18" viewBox="0 0 16 18">
+  <g id="icon_msg_btn_new_del" transform="translate(0 -2)">
+    <rect id="長方形_274" data-name="長方形 274" width="16" height="2" rx="1" transform="translate(0 4)" fill="#119590"/>
+    <rect id="長方形_275" data-name="長方形 275" width="4" height="4" rx="1" transform="translate(6 2)" fill="#119590"/>
+    <path id="パス_147" data-name="パス 147" d="M4.759,25.675v10c0,1.628,1.854,3,3.429,3H13.33c1.575,0,3.429-1.372,3.429-3v-10Zm4.286,9H7.33v-7H9.044Zm3.429,0H10.759v-7h1.714Z" transform="translate(-2.759 -18.675)" fill="#119590"/>
+  </g>
+</svg>

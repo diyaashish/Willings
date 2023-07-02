@@ -1,0 +1,778 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+	<meta charset="utf-8" />
+</head>
+<body>
+
+<!-- 顧問契約登録・編集モーダルフラグメント -->
+<div th:fragment="select-modal" id="advisorContractEditModalFragment" class="contractModalContent">
+	
+	<!--/* スクリプト */-->
+	<script th:inline="javascript">
+	$(function() {
+		
+		<!--/* 共有の要素セットアップ処理 */-->
+		commonSetUpElement('#advisorContractEditModalFragment');
+		
+		<!--/* 初期表示時、カンマでフォーマット */-->
+		advisorContractEditModalFormatComma();
+		
+		<!--/* 登録ボタン */-->
+		$('#advisorContractEditModalFragment .registButton').on('click', function() {
+			
+			let actionUrl = "/user/advisorContractPerson/regist";
+			let $clickButton = $(this);
+			let personId = $('#advisorContractEditModalFragment #advisorContractEditForm #personId').val();
+			
+			<!--/* モーダルの登録処理 */-->
+			modalSave(actionUrl, $clickButton, personId);
+		})
+		
+		<!--/* 保存ボタン */-->
+		$('#advisorContractEditModalFragment .updateButton').on('click', function() {
+			
+			let actionUrl = "/user/advisorContractPerson/update";
+			let $clickButton = $(this);
+			let personId = $('#advisorContractEditModalFragment #advisorContractEditForm #personId').val();
+			
+			<!--/* モーダルの更新処理 */-->
+			modalSave(actionUrl, $clickButton, personId);
+		})
+		
+		<!--/* 削除ボタン */-->
+		$('#advisorContractEditModalFragment .deleteButton').on('click', function() {
+			
+			if (!confirm('削除します。よろしいですか？')) {
+				return false;
+			}
+			
+			let $clickButton = $(this);
+			let personId = $('#advisorContractEditModalFragment #advisorContractEditForm #personId').val();
+			let advisorContractSeq = $('#advisorContractEditModalFragment #advisorContractEditForm #advisorContractSeq').val();
+			
+			<!--/* モーダルの削除処理 */-->
+			modalDelete($clickButton, personId, advisorContractSeq);
+		})
+		
+		<!--/* 閉じるボタン */-->
+		$('#advisorContractEditModalFragment .closeButton').on('click', function() {
+			
+			let modal = $(this).closest('.modal');
+			<!--/* モーダルを閉じる */-->
+			closeModal(modal);
+		})
+		
+		<!--/* 契約区分の変更（事務所契約⇔個人契約）で売上計上先の再取得 */-->
+		$('#advisorContractEditModalFragment .contractTypeRadio').on('change', function() {
+			
+			const contractEditModalFragment = $('#advisorContractEditModalFragment')
+			
+			if (ajaxRunning) {
+				return false;
+			}
+
+			let alertFlg = false;
+			// 売上計上先の弁護士が選択されているかチェックする
+			if(contractEditModalFragment.find(".salesOwner").length !== contractEditModalFragment.find(".salesOwner.pl-0.hidden").length) {
+				alertFlg = true;
+			}
+
+			if (alertFlg) {
+				if (!confirm("区分を変更した場合、売上計上先がリセットされます。")) {
+					contractEditModalFragment.find("[name='contractType']:not(:checked)").prop("checked", true);
+					return false;
+				}
+			}
+
+			ajaxRunning = true;
+			// 売上計上先を取得し、再設定する
+			_setSalesOwner().finally(() => {
+				$("[data-toggle=popover]").popover();
+				ajaxRunning = false;
+			});
+			
+		})
+		
+		<!--/** 売上計上先取得 */-->
+		function _setSalesOwner() {
+			return new Promise((resolve, reject) => {
+				
+				const contractEditModalFragment = $('#advisorContractEditModalFragment')
+				
+				let personId = $('#advisorContractEditModalFragment #advisorContractEditForm #personId').val();
+				let advisorContractSeq = $('#advisorContractEditModalFragment #advisorContractEditForm #advisorContractSeq').val();
+				let contractType = contractEditModalFragment.find("[name='contractType']:checked").val();
+				
+				$.ajax({
+					url : "/user/advisorContractPerson/getSalesOwnerOptionsFragment",
+					type :"GET",
+					data : {
+						'personId' : personId,
+						'advisorContractSeq' : advisorContractSeq,
+						'contractType' : contractType
+					},
+					dataType: 'html',
+				}).done(function(data, status, jqXHR) {
+					if (isAjaxProcSuccess(jqXHR)) {
+						contractEditModalFragment.find(".lawyerOptionList").replaceWith(data);
+						
+						resolve();
+					} else {
+						// 処理失敗
+						const errorMsg = getAjaxProcResutlMessage(jqXHR);
+						showErrorMessageForJs(errorMsg);
+						
+						reject();
+					}
+
+				}).fail(function(jqXHR, status, errorThrown) {
+					showErrorMessageForJs(/*[[#{E00091}]]*/ "error");
+					
+					reject();
+				});
+			});
+		}
+		
+		<!--/* 顧問契約モーダルの保存処理（登録 or 更新） */-->
+		function modalSave(actionUrl, $clickButton, personId) {
+			
+			let dataObj = {
+				actionUrl: actionUrl,
+				$clickButton: $clickButton,
+				personId: personId
+			}
+			
+			<!--/* 2重押下防止 */-->
+			if(ajaxRunning){
+				return false;
+			}
+			
+			ajaxRunning = true;
+			
+			Promise.resolve(dataObj)
+				<!--/* 顧問契約の 登録 or 更新 */-->
+				.then(modalSaveFunc)
+				<!--/* モーダルを閉じる */-->
+				.then((param) => {
+					let modal = param.$clickButton.closest('.modal');
+					closeModal(modal);
+					<!--/* 引数データは後続処理に渡す */-->
+					return param;
+				})
+				<!--/* 一覧の再レンダリング */-->
+				.then(renderContractListViewFragmentFunc)
+				<!--/* 顧問ヘッダーの再レンダリング */-->
+				.then(renderCustomerAnkenSelectedView)
+				<!--/* 異常系の対応は各処理側で行っており、全体共通での異常系の処理は現状ない */-->
+				.catch((errorObj) => {console.log(errorObj)})
+				.finally(() => {
+					ajaxRunning = false;
+				})
+		}
+		
+		<!--/* 顧問契約情報の保存（dataObj.actionに設定するURLでリクエスト先を分ける（登録 or 更新）） */-->
+		const modalSaveFunc = (dataObj) => {
+			return new Promise((resolve, reject) => {
+				
+				<!--/* オブジェクトのプロパティ値を取得 */-->
+				const {$clickButton, actionUrl} = dataObj;
+				
+				let modal = $clickButton.closest('.modal');
+				
+				<!--/* カンマ項目のカンマを除去（送信パラメータの値にカンマがつかないようにするため） */-->
+				advisorContractEditModalUnformatComma();
+				let params = $('#advisorContractEditModalFragment form#advisorContractEditForm').serializeArray();
+				
+				<!--/* カンマ項目のカンマを付与（カンマ再設定） */-->
+				advisorContractEditModalFormatComma();
+				
+				<!--/* 顧問契約情報の保存*/-->
+				<!--/* 2重押下防止対応はPromiseチェーンのルートで処理するため、チェーン内では行わない */-->
+				$.ajax({
+					type : "POST",
+					url : actionUrl,
+					data : params,
+				}).done(function(result) {
+					if(result.succeeded){
+						
+						<!--/* 成功メッセージを表示 */-->
+						showInfoMessageForJs(result.message);
+						
+						<!--/* 引数データは後続処理に渡す */-->
+						resolve(dataObj);
+					} else {
+						showErrorMessage(result.message, modal, result.errors);
+						
+						reject();
+					}
+				}).fail(function() {
+					const message = /*[[#{E00091}]]*/ "error";
+					showErrorMessage(message, modal);
+					
+					reject();
+				})
+			});
+		}
+		
+		<!--/* 顧問契約情報の削除 */-->
+		function modalDelete($clickButton, personId, contractSeq) {
+			
+			let dataObj = {
+				$clickButton: $clickButton,
+				personId: personId,
+				contractSeq: contractSeq
+			}
+			
+			<!--/* 2重押下防止 */-->
+			if(ajaxRunning){
+				return false;
+			}
+			
+			ajaxRunning = true;
+			
+			Promise.resolve(dataObj)
+				<!--/* 顧問契約の削除 */-->
+				.then(modalDeleteFunc)
+				<!--/* モーダルを閉じる */-->
+				.then((param) => {
+					let modal = param.$clickButton.closest('.modal');
+					closeModal(modal);
+					<!--/* 引数データは後続処理に渡す */-->
+					return param;
+				})
+				<!--/* 一覧の再レンダリング */-->
+				.then(renderContractListViewFragmentFunc)
+				<!--/* 顧問ヘッダーの再レンダリング */-->
+				.then(renderCustomerAnkenSelectedView)
+				<!--/* 異常系の対応は各処理側で行っており、全体共通での異常系の処理は現状ない */-->
+				.catch((errorObj) => {console.log(errorObj)})
+				.finally(() => {
+					ajaxRunning = false;
+				})
+		}
+		
+		<!--/* 顧問契約情報の保存（dataObj.actionに設定するURLでリクエスト先を分ける（登録 or 更新）） */-->
+		const modalDeleteFunc = (dataObj) => {
+			return new Promise((resolve, reject) => {
+				
+				<!--/* オブジェクトのプロパティ値を取得 */-->
+				const {$clickButton, contractSeq} = dataObj;
+				
+				let modal = $clickButton.closest('.modal');
+				
+				<!--/* 顧問契約情報の保存*/-->
+				<!--/* 2重押下防止対応はPromiseチェーンのルートで処理するため、チェーン内では行わない */-->
+				$.ajax({
+					type : "POST",
+					url : "/user/advisorContractPerson/delete",
+					data : {
+						"advisorContractSeq" : contractSeq
+					}
+				}).done(function(result) {
+					if(result.succeeded){
+						
+						<!--/* 成功メッセージを表示 */-->
+						showInfoMessageForJs(result.message);
+						
+						<!--/* 引数データは後続処理に渡す */-->
+						resolve(dataObj);
+					} else {
+						showErrorMessage(result.message, modal, result.errors);
+						
+						reject();
+					}
+				}).fail(function() {
+					const message = /*[[#{E00091}]]*/ "error";
+					showErrorMessage(message, modal);
+					
+					reject();
+				})
+			});
+		}
+		
+		<!--/* 顧問契約一覧の再レンダリング */-->
+		const renderContractListViewFragmentFunc = (dataObj) => {
+			return new Promise((resolve, reject) => {
+				
+				<!--/* オブジェクトのプロパティ値を取得 */-->
+				const {personId} = dataObj;
+				
+				$.ajax({
+					url : "/user/advisorContractPerson/getContractListViewFragment",
+					type : "GET",
+					data : {
+						"personId" : personId
+					}
+				})
+				.done(function(data, status, jqXHR) {
+					if (isAjaxProcSuccess(jqXHR)) {
+						<!--/* 処理成功 */-->
+						<!--/* 親HTMLに記載のID */-->
+						$('#advisorContractListFragmentWrap').html(data);
+						
+						<!--/* 引数データは後続処理に渡す */-->
+						resolve(dataObj);
+					} else {
+						<!--/* 処理失敗 */-->
+						const errorMsg = getAjaxProcResutlMessage(jqXHR);
+						showErrorMessageForJs(errorMsg);
+						
+						reject();
+					}
+				})
+				.fail(function(jqXHR, status, errorThrown) {
+					showErrorMessageForJs(/*[[#{E00091}]]*/ "error");
+					
+					reject();
+				})
+			});
+		}
+		
+		<!--/* このモーダル内のカンマフォーマット指定項目についてカンマを付与する */-->
+		function advisorContractEditModalFormatComma() {
+			$('#advisorContractEditModalFragment .commaFormat').each(function() {
+				$(this).formatComma();
+			});
+		}
+		<!--/* このモーダル内のカンマフォーマット指定項目についてカンマを除去する */-->
+		function advisorContractEditModalUnformatComma() {
+			$('#advisorContractEditModalFragment .commaFormat').each(function() {
+				$(this).unformatComma();
+			});
+		}
+		
+		<!--/* モーダルを閉じる */-->
+		function closeModal(modal) {
+			<!--/* モーダルを閉じる */-->
+			modal.modal("hide");
+			<!--/* モーダルのHTMLコンテンツも空にする（親HTMLに記載のID） */-->
+			$('#advisorContractEditModalFragmentWrap').html('');
+		}
+		
+	})
+	</script>
+	
+	<!-- HTML -->
+	<div th:object="${editForm}">
+		<div class="modal-header">
+			<h2 class="modalheader_title">顧問契約</h2>
+		</div>
+		
+		<div class="modal-body">
+			<!-- メッセージ表示領域 -->
+			<div th:replace="common/messageArea::jsMessageArea"></div>
+			
+			<form id="advisorContractEditForm" autocomplete="off">
+			
+				<div class="row">
+					
+					<!--/* 左側 */-->
+					<div class="col-md-6">
+						<!-- 入力エリア -->
+						<div class="modal_input_area">
+							<div class="form-row">
+								<!--/* 契約ステータス */-->
+								<div class="form-group col-md-6">
+									<label class="input_parts_label">ステータス</label>
+									<span class="mark_equired">必須</span>
+									<select class="form-control digit8" th:field="*{contractStatus}">
+										<option value="">-</option>
+										<th:block th:each="statusOption : *{contractStatusOptionList}">
+											<option th:value="${statusOption.value}" th:text="${statusOption.label}">新規</option>
+										</th:block>
+									</select>
+									<div class="error_mag_point hidden" id="itemMsg_contractStatus"></div>
+								</div>
+							</div>
+							
+							<div class="form-row">
+								<!--/* 契約区分 */-->
+								<div class="form-group col-md-5">
+									<label class="input_parts_label">契約区分</label>
+									<div class="mt-2">
+										<th:block th:each="typeOption : *{contractTypeOptionList}">
+											<label class="radio_btn mb-0">
+												<input type="radio" class="radio_input contractTypeRadio" th:field="*{contractType}" th:value="${typeOption.value}">
+												<span class="radio_txt" th:text="${typeOption.label}">個人案件</span>
+											</label>
+										</th:block>
+									</div>
+									<div class="error_mag_point hidden" id="itemMsg_contractType"></div>
+								</div>
+								<div class="form-group col-md-7">
+									<label class="input_parts_label">契約期間</label>
+									<div class="d-flex align-items-start">
+										<!-- 契約開始日 -->
+										<div>
+											<input type="text" th:field="*{contractStartDate}" class="form-control digit7 inputDateSlash " maxlength="10" data-click-sync="#contractStartDateCal">
+											<button type="button" id="contractStartDateCal" class="btn btn_popcal hidden" data-target="#contractStartDate" data-toggle="datepicker">カレンダー</button>
+										</div>
+										<div class="fs15 mt-2 mx-2">〜</div>
+										<!-- 契約終了日 -->
+										<div>
+											<input type="text" th:field="*{contractEndDate}" class="form-control digit7 inputDateSlash " maxlength="10" data-click-sync="#contractEndDateCal">
+											<button type="button" id="contractEndDateCal" class="btn btn_popcal hidden" data-target="#contractEndDate" data-toggle="datepicker">カレンダー</button>
+										</div>
+									</div>
+									<div class="error_mag_point hidden" id="itemMsg_contractStartDate"></div>
+									<div class="error_mag_point hidden" id="itemMsg_contractEndDate"></div>
+								</div>
+							</div>
+							
+							<div class="form-row">
+								<!-- 顧問料 -->
+								<div class="form-group col-md-5">
+									<label class="input_parts_label">顧問料（月単価）</label>
+									<div class="d-flex align-items-center">
+										<input type="text" th:field="*{contractMonthCharge}" class="form-control digit8 text-right commaFormat input_number_only" th:maxlength="${T(jp.loioz.app.user.advisorContractPerson.form.AdvisorContractEditForm).MAX_MONTH_CHARGE_INPUT_DIGIT}">
+										<div class="ml-2">円</div>
+									</div>
+									<div class="error_mag_point hidden" id="itemMsg_contractMonthCharge"></div>
+								</div>
+								<!-- 顧問料 -->
+								<div class="form-group col-md-7">
+									<label class="input_parts_label">稼働時間（月）</label>
+									<div class="d-flex align-items-center">
+										<input type="text" th:field="*{contractMonthTime}" class="form-control digit7 commaFormat input_number_only" th:maxlength="${T(jp.loioz.app.user.advisorContractPerson.form.AdvisorContractEditForm).MAX_MONTH_TIME_INPUT_DIGIT}">
+										<div class="ml-2">時間</div>
+									</div>
+									<div class="error_mag_point hidden" id="itemMsg_contractMonthTime"></div>
+								</div>
+							</div>
+							
+							<div class="mt-3">
+								<!--/* 売上計上先・弁護士・事務選択 */-->
+								<div class="form-row">
+									<div class="form-group col-sm-6">
+										<div class="lawyerOptionList" th:fragment="lawyerOptionList">
+											<div
+												th:replace="::tantoTemplate(
+												itemName='salesOwner',
+												itemLabel='売上計上先',
+												optionList=${editForm.salesOwnerOptions},
+												salesOwnerHelpNavi=true)">
+											</div>
+										</div>
+									</div>
+								</div>
+								<div class="form-row">
+									<div class="form-group col-sm-6">
+										<div
+											th:replace="::tantoTemplate(
+											itemName='tantoLawyer',
+											itemLabel='担当弁護士',
+											optionList=${editForm.tantoLawyerOptions},
+											dispMainTanto=true,
+											salesOwnerHelpNavi=false)">
+										</div>
+									</div>
+									<div class="form-group col-sm-6">
+										<div
+											th:replace="::tantoTemplate(
+											itemName='tantoJimu',
+											itemLabel='担当事務',
+											optionList=${editForm.tantoJimuOptions},
+											dispMainTanto=true,
+											salesOwnerHelpNavi=false)">
+										</div>
+									</div>
+								</div>
+							</div>
+						</div>
+					
+					</div>
+					
+					<!--/* 右側 */-->
+					<div class="col-md-6">
+					
+						<!-- 入力エリア -->
+						<div class="modal_input_area">
+							
+							<div class="form-row">
+								<!-- 契約内容 -->
+								<div class="form-group col-md-12">
+									<label class="input_parts_label" >契約内容</label>
+									<textarea th:field="*{contractContent}" class="form-control" rows="9" maxlength="500"></textarea>
+									<div class="error_mag_point hidden" id="itemMsg_contractContent"></div>
+								</div>
+							</div>
+							
+							<div class="form-row">
+								<!-- メモ -->
+								<div class="form-group col-md-12">
+									<label class="input_parts_label" >メモ（内部向け）</label>
+									<textarea th:field="*{contractMemo}" class="form-control" rows="3" maxlength="100"></textarea>
+									<div class="error_mag_point hidden" id="itemMsg_contractMemo"></div>
+								</div>
+							</div>
+							
+						</div>
+					
+					</div>
+				
+				</div>
+				
+				<input type="hidden" th:field="*{personId}">
+				<input type="hidden" th:field="*{advisorContractSeq}">
+			</form>
+		</div>
+		
+		<!-- コマンド -->
+		<div class="modal-footer">
+			<th:block th:if="*{isNew()}">
+				<button type="button" class="btn btn-info registButton"><i class="fas fa-check"></i>登録</button>
+			</th:block>
+			<th:block th:unless="*{isNew()}">
+				<button type="button" class="btn btn-light deleteButton mr-auto"><i class="far fa-trash-alt"></i>削除</button>
+				<button type="button" class="btn btn-info updateButton"><i class="fas fa-check"></i>保存</button>
+			</th:block>
+			<button type="button" class="btn btn-light closeButton"><i class="fas fa-times"></i>閉じる</button>
+		</div>
+	</div>
+	
+</div>
+
+
+
+<!--/* 売上帰属・担当弁護士・担当事務 入力項目 */-->
+<div th:id="|${itemName}Container|" th:fragment="tantoTemplate(itemName, itemLabel, optionList, salesOwnerHelpNavi)" th:with="dispMainTanto=${dispMainTanto}?: false">
+
+	<!--/* Script */-->
+	<script th:inline="javascript">
+	$(function() {
+		const $container = $(/*[[|#${itemName}Container|]]*/"");
+		
+		// レンダリング時に選択アカウントの表示非表示切り替えを発火
+		hiddenIfSelect();
+		
+		<!--/* 選択アカウントの表示非表示設定を最新化 */-->
+		function hiddenIfSelect() {
+			const seletedAccount = getSelectedAccountSeq();
+			$container.find(".selectArea button").removeClass("hidden");
+			$container.find(".selectArea button").filter((idx, elem) => {
+				return seletedAccount.includes($(elem).data("seq"));
+			}).addClass("hidden");
+			if (canAddUser()) {
+				$container.find(".showSelectArea").removeClass("hidden");
+			}
+		};
+		
+		<!--/* 選択中のアカウントSEQをArray型で取得 */-->
+		function getSelectedAccountSeq() {
+			return $.map($container.find("input[name*='accountSeq']"), (elem, idx) => {
+				if (elem.value) {
+					return Number(elem.value);
+				}
+			});
+		};
+		
+		<!--/* アカウントが追加可能かどうか */-->
+		function canAddUser() {
+			return  $container.find("."+ [[${itemName}]] + ".hidden").length > 0;
+		}
+		
+		<!--/* removeした際にパラメータの中抜けが発生するため、パラメータを詰める */-->
+		function sortParam() {
+			const paramContents = $container.find("."+ [[${itemName}]]);
+			const paramJson = $.map(paramContents, (elem, ids) => {
+				if($(elem).find("input[name*='accountSeq']").val()) {
+					return {
+						"seq": $(elem).find("input[name*='accountSeq']").val(),
+						"mainTanto": $(elem).find("input[name*='mainTanto']").val() === "true",
+						"name":$(elem).find(".accountName").text(),
+					};
+				} 
+			});
+			
+			paramContents.addClass("hidden")
+			paramContents.each((idx, elem) => {
+				const params = paramJson[idx];
+				if (params) {
+					$(elem).find("input[name*='accountSeq']").val(params.seq);
+					$(elem).find(".accountName").text(params.name);
+					$(elem).removeClass("hidden");
+
+					if (params.mainTanto) {
+						$(elem).find(".star_btn_main").addClass("btn_checked");
+						$(elem).find("input[name*='mainTanto']").val(true);
+					} else {
+						$(elem).find(".star_btn_main").removeClass("btn_checked");
+						$(elem).find("input[name*='mainTanto']").val(false);
+					}
+				} else {
+					$(elem).find("input[name*='accountSeq']").val("");
+					$(elem).find(".star_btn_main").removeClass("btn_checked");
+					$(elem).find("input[name*='mainTanto']").val(false);
+					$(elem).find(".accountName").text("");
+				}
+			});
+		}
+		
+		<!--/* 独自popperの表示処理 */-->
+		$container.on("click", ".showSelectArea", function() {
+			$(".selectArea").addClass("hidden");
+			$container.find(".selectArea").removeClass("hidden");
+		});
+		
+		<!--/* 独自popperの閉じる処理 */-->
+		$container.on("click", ".closeSelectArea", function() {
+			$container.find(".selectArea").addClass("hidden");
+		});
+		
+		<!--/* ここだけdocumentにアクションを追加する*/-->
+		const itemName = /*[[${itemName}]]*/"";
+		$(document).off("click."+itemName);
+		$(document).on("click."+itemName, function(e) {
+			if ($(e.target).is(".showSelectArea")) {
+				return false;
+			}
+			if (!$(e.target).closest('.tanto_select').length && !$container.find(".selectArea").hasClass("hidden")) {
+				$container.find(".selectArea").toggleClass("hidden");
+			}
+		});
+		
+		<!--/* ユーザーの選択処理 */-->
+		$container.on("click",".addInputUser", function() {
+			const accountSeq = $(this).data("seq");
+			const accountName = $(this).text();
+			
+			const nextContent = $container.find("."+ [[${itemName}]] + ".hidden:first");
+			if (!nextContent.length) {
+				alert("追加できる上限追加できません")
+			}
+			
+			nextContent.removeClass("hidden");
+			nextContent.find("input[name*='accountSeq']").val(accountSeq);
+			nextContent.find(".accountName").text(accountName);
+			
+			// 選択肢の表示非表示切り替え
+			hiddenIfSelect();
+			
+			if(!canAddUser()) {
+				$container.find(".selectArea").addClass("hidden");
+				$container.find(".showSelectArea").addClass("hidden");
+			}
+		});
+		
+		<!--/* ユーザーの選択解除処理 */-->
+		$container.on("click",".removeInputUser", function() {
+			const refleshContent = $(this).closest("."+ [[${itemName}]]);
+			refleshContent.addClass("hidden");
+			refleshContent.find(".star_btn_main").removeClass("btn_checked");
+			refleshContent.find("input[name*='mainTanto']").val(false);
+			refleshContent.find("input[name*='accountSeq']").val("");
+			refleshContent.find(".accountName").text("");
+			
+			hiddenIfSelect();
+			sortParam();
+			
+			// 追加可能の場合
+			if(canAddUser()) {
+				$container.find(".showSelectArea").removeClass("hidden");
+			}
+		});
+		
+	});
+	</script>
+
+	<div class="hoverTooltip tanto_block">
+		<div class="d-flex align-items-center">
+			<div th:unless="${itemLabel} == '売上計上先'">
+				<label class="input_parts_label" th:text="${itemLabel}">担当弁護士</label>
+			</div>
+			<div th:if="${itemLabel} == '売上計上先'" class="stop-events outPutContainerClose" data-toggle="popover" data-html="true" 
+							data-content='
+							<div class="popover_advisor_contract_msg">
+								<div class="pt-2 pb-2 px-3">
+									弁護士アカウントの種別、区分によって選択できるアカウントが変わります。
+									<ul>
+										<li>事務所契約：経営者種別を持つ弁護士アカウントのみ選択できます。</li>
+										<li>個人契約　：すべての弁護士アカウントから選択できます。</li>
+									</ul>
+								</div>
+							</div>
+							'>
+				<label class="input_parts_label">売上計上先 <i class="far fa-question-circle cursor_pointer"></i></label>
+			</div>
+			<div class="ml-auto pt-1 mr-3">
+				<a href="javascript:void(0);" class="showSelectArea hidden"><i class="fas fa-user-plus mr-2"></i>選択</a>
+				
+				<!--/* 選択候補のアカウントエリア */-->
+				<div class="position-relative">
+					<div class="position-absolute tanto_select selectArea hidden">
+					
+					<!--/* 選択候補が存在する */-->
+<!--/*/			<th:block th:if="${!optionList.isEmpty()}"> /*/-->
+						<div class="tanto_select_title">担当を選択してください。</div>
+						<ul>
+							<!--/* 選択候補のアカウント */-->
+							<li th:each="option : ${optionList}">
+								<button type="button" class="btn btn-light addInputUser" th:data-seq="${option.value}">
+									<i class="fas fa-user-check"></i><span class="tanto_select__account_label" th:text="${option.label}"></span>
+								</button>
+							</li>
+						</ul>
+						<div class="tanto_select_footer">
+							<button type="button" class="btn btn-light btn_icon_only closeSelectArea" title="閉じる">
+								<i class="fas fa-times"></i>
+							</button>
+						</div>
+<!--/*/			</th:block> /*/-->
+					<!--/* 選択候補が存在する end */-->
+					
+					</div>
+				</div>
+				<!--/* 選択候補のアカウントエリア end */-->
+				
+			</div>
+		</div>
+		
+		<!--/* 選択済みのアカウントエリア */-->
+		<div class="row row_list">
+			<!--/* 選択候補が存在しない場合 */-->
+			<div class="tanto_select_no_data" th:if="${optionList.isEmpty()}">
+				<div>
+					<p><i class="fas fa-exclamation-triangle mr-2"></i>選択できるアカウント</p>
+					<p>（<span th:text="${itemLabel}"></span>）が存在しません。</p>
+				</div>
+				<th:block th:if="${salesOwnerHelpNavi}">
+					<!--/* 売上計上先のみのエラーメッセージ */-->
+					<div class="sub_text">
+						<p><i class="far fa-question-circle mr-2"></i>売上計上先のアカウントとは：</p>
+						<p class="ml-2">「弁護士」「経営者」チェックあり</p>
+					</div>
+				</th:block>
+			</div>
+			<!--/* 選択候補が存在しない場合 end */-->
+			
+<!--/*/		<th:block th:if="${!optionList.isEmpty()}" th:each="i : ${#numbers.sequence(0, T(java.lang.Math).min(optionList.size(), T(jp.loioz.common.constant.CommonConstant).CONTRACT_TANTO_ADD_LIMIT) - 1)}"> /*/-->
+			<div th:class="|col-auto mw-100 ${itemName} pl-0|" th:object="${editForm.__${itemName}__[__${i}__]}"
+				th:classappend="*{isEmpty()} ? 'hidden'">
+				<div class="d-flex align-items-center" th:id="|${itemName}${i}|">
+					<input type="button" th:if="${dispMainTanto}" class="star_btn_main" th:classappend="*{mainTanto} ? 'btn_checked': ''"
+						data-boundary="window" th:data-container="|#${itemName}${i}|" data-toggle="tooltip" data-trigger="hover" title="主担当">
+					<input type="hidden" th:if="${dispMainTanto}" th:field="*{mainTanto}" th:value="*{mainTanto}">
+					<input type="hidden" th:field="*{accountSeq}" th:value="*{accountSeq}">
+					<th:block th:with="accountSeq=*{accountSeq}">
+						<button type="button" class="btn tanto_selected_btn accountName removeInputUser"
+							th:text="${editForm.getAccountName(accountSeq)}"></button>
+					</th:block>
+				</div>
+				<div th:if="${#fields.hasErrors('${editForm.__${itemName}__[__${i}__]}')}" class="error_mag_point m-2"
+					th:errors="${editForm.__${itemName}__[__${i}__]}">
+				</div>
+			</div>
+<!--/*/		</th:block> /*/-->
+		</div>
+		<!--/* 選択済みのアカウントエリア end */-->
+		
+		<div class="error_mag_point hidden" th:id="|itemMsg_${itemName}|"></div>
+		
+	</div>
+</div>
+
+
+
+</body>
+</html>

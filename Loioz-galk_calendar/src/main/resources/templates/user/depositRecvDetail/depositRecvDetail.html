@@ -1,0 +1,484 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+	xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+	layout:decorator="commonLayout">
+<head>
+<meta charset="utf-8" />
+<title layout:fragment="title-contents">
+	[[${T(jp.loioz.common.utility.LoiozUtils).getHtmlTitle("預り金／実費明細", T(jp.loioz.common.utility.SessionUtils).getTenantName())}]]
+</title>
+<th:block th:with="version=${@environment.getProperty('app.version')}">
+	<link href="./css/accg/accg.css" th:href="@{/css/accg/accg.css?{ver}(ver=${version})}" rel="stylesheet" type="text/css" />
+	<script th:src="@{/js/accg/accg.js?{ver}(ver=${version})}" type="text/javascript"></script>
+</th:block>
+<script type="text/javascript" th:inline="javascript">
+<!--/*
+ 二重送信防止対応用の値。
+ このHTMLに差し込まれるfragment内のScriptの処理も、共通してこの変数を利用する。
+*/-->
+let ajaxRunning = false;
+
+</script>
+
+<script type="text/javascript" th:replace="common/js/accgAnkenScreenJs::accgAnkenScreenJs"></script>
+<script type="text/javascript" th:inline = "javascript">
+
+<!--/* 預り金明細一覧ソート処理 */-->
+const sortDepositRecvDetailListFunc = (optionParam) => {
+	return new Promise((resolve, reject) => {
+		const personId = /*[[${personId}]]*/;
+		const ankenId = /*[[${ankenId}]]*/;
+		
+		$.ajax({
+			url : "/user/depositRecvDetail/" + personId + "/" + ankenId + "/sort",
+			type : "GET",
+			data : optionParam,
+			dataType: 'html',
+		}).done(function(data, status, jqXHR) {
+			if (isAjaxProcSuccess(jqXHR)) {
+				<!--/* 処理成功 */-->
+				<!--/* ツールチップを非表示にする */-->
+				$('[data-toggle="tooltip"]').tooltip('hide');
+				<!-- /* フラグメント更新 */ -->
+				$('#depositRecvDetailFragmentWrap').html(data);
+				return resolve();
+			} else {
+				<!--/* 処理失敗 */-->
+				const errorMsg = getAjaxProcResutlMessage(jqXHR);
+				let sessionTimeOutKey = /*[[${T(jp.loioz.common.constant.MessageEnum).MSG_E00161.messageKey}]]*/'';
+				if (sessionTimeOutKey == errorMsg) {
+					window.location.href = "/user/depositRecvDetail/" + personId + "/" + ankenId + "/";
+				} else {
+					showErrorMessageForJs(errorMsg);
+				}
+				return reject();
+			}
+		}).fail(function() {
+			showErrorMessageForJs(/*[[#{E00059}]]*/ "データの取得に失敗しました。");
+			return reject();
+		});
+	});
+};
+
+<!--/* 預り金登録 */-->
+const registDepositRecvFunc = (formData) => {
+	return new Promise((resolve, reject) => {
+		const personId = /*[[${personId}]]*/;
+		const ankenId = /*[[${ankenId}]]*/;
+		
+		$.ajax({
+			url : "/user/depositRecvDetail/" + personId + "/" + ankenId + "/registDepositRecv",
+			type : "POST",
+			data : formData
+		})
+		.done(function(data, status, jqXHR) {
+			if (isAjaxProcSuccess(jqXHR)) {
+				<!--/* 処理成功 */-->
+				$('#depositRecvDetailFragmentWrap').html(data);
+				$("html,body").scrollTop(0);
+				showInfoMessageForJs(getAjaxProcResutlMessage(jqXHR));
+				return resolve();
+			} else {
+				<!--/* 処理失敗 */-->
+				if (data) {
+					<!--/* HTMLのコンテンツが返却されている場合 */-->
+					<!--/* 対象行部分にHTML表示 */-->
+					$('#depositRecvDetailInputRowFragmentWrap').html(data);
+					<!--/* 金額をカンマ区切りに変換 */-->
+					depositRecvDetailFormatComma();
+				}
+				const errorMsg = getAjaxProcResutlMessage(jqXHR);
+				showErrorMessageForJs(errorMsg);
+				return reject();
+			}
+		})
+		.fail(function(jqXHR, status, errorThrown) {
+			showErrorMessageForJs(/*[[#{E00091}]]*/ "error");
+			return reject();
+		})
+	});
+}
+
+<!--/* 預り金編集 */-->
+const editDepositRecvFunc = (formData) => {
+	return new Promise((resolve, reject) => {
+		const personId = /*[[${personId}]]*/;
+		const ankenId = /*[[${ankenId}]]*/;
+		
+		$.ajax({
+			url : "/user/depositRecvDetail/" + personId + "/" + ankenId + "/editDepositRecv",
+			type : "POST",
+			data : formData
+		})
+		.done(function(data, status, jqXHR) {
+			if (isAjaxProcSuccess(jqXHR)) {
+				<!--/* 処理成功 */-->
+				$('#depositRecvDetailFragmentWrap').html(data);
+				showInfoMessageForJs(getAjaxProcResutlMessage(jqXHR));
+				return resolve();
+			} else {
+				<!--/* 処理失敗 */-->
+				if (data) {
+					<!--/* HTMLのコンテンツが返却されている場合 */-->
+					let tmpData = $("<div></div>")
+					tmpData.append(data);
+					const depositRecvSeq = $(tmpData).find('.rowDepositRecvSeq').val();
+					<!--/* 対象行部分にHTML表示 */-->
+					$('#depositRow_' + depositRecvSeq).html(data);
+					<!--/* 金額をカンマ区切りに変換 */-->
+					depositRecvDetailFormatComma();
+				}
+				const errorMsg = getAjaxProcResutlMessage(jqXHR);
+				showErrorMessageForJs(errorMsg);
+				return reject();
+			}
+		})
+		.fail(function(jqXHR, status, errorThrown) {
+			showErrorMessageForJs(/*[[#{E00091}]]*/ "error");
+			return reject();
+		})
+	});
+}
+
+<!--/* 編集フラグメント表示前の確認 */-->
+const checkOfBeforeEditDepositRecvFunc = (param) => {
+	return new Promise((resolve, reject) => {
+		const personId = /*[[${personId}]]*/;
+		const ankenId = /*[[${ankenId}]]*/;
+		
+		$.ajax({
+			url : "/user/depositRecvDetail/" + personId + "/" + ankenId + "/checkOfBeforeEditDepositRecv",
+			type : "GET",
+			data : param,
+		})
+		.done(function(data, status, jqXHR) {
+			if (data.successed) {
+				<!--/* 処理成功 */-->
+				return resolve(param);
+			} else {
+				<!--/* 処理失敗 */-->
+				showErrorMessageForJs(data.message);
+				return reject();
+			}
+		})
+		.fail(function(jqXHR, status, errorThrown) {
+			showErrorMessageForJs(/*[[#{E00091}]]*/ "error");
+			return reject();
+		});
+	});
+}
+
+<!--/* 預り金選択中件数更新処理 */-->
+function updateCheckCount() {
+	let checkCnt = $('.targetCheck:checked').length;
+	$('.checkCnt').html(checkCnt);
+}
+
+<!--/* 預り金変更fragment表示 */-->
+const openEditDepositRecvFragmentFunc = (param) => {
+	return new Promise((resolve, reject) => {
+		const personId = /*[[${personId}]]*/;
+		const ankenId = /*[[${ankenId}]]*/;
+		const depositRecvSeq = param.depositRecvSeq;
+		
+		$.ajax({
+			url : "/user/depositRecvDetail/" + personId + "/" + ankenId + "/openEditDepositRecvFragment",
+			type : "GET",
+			data : param
+		})
+		.done(function(data, status, jqXHR) {
+			if (isAjaxProcSuccess(jqXHR)) {
+				<!--/* 処理成功 */-->
+				$('#depositRow_' + depositRecvSeq).html(data);
+				<!--/* 金額をカンマ区切りに変換 */-->
+				depositRecvDetailFormatComma();
+				<!--/* チェックボックス数を変更 */-->
+				updateCheckCount();
+			} else {
+				<!--/* 処理失敗 */-->
+				const errorMsg = getAjaxProcResutlMessage(jqXHR);
+				showErrorMessageForJs(errorMsg);
+			}
+		})
+		.fail(function(jqXHR, status, errorThrown) {
+			showErrorMessageForJs(/*[[#{E00091}]]*/ "error");
+		})
+		.always(function(){
+			ajaxRunning = false;
+		});
+	});
+}
+
+<!--/* 削除前の確認 */-->
+const checkOfBeforeDeleteDepositRecvFunc = (param) => {
+	return new Promise((resolve, reject) => {
+		const personId = /*[[${personId}]]*/;
+		const ankenId = /*[[${ankenId}]]*/;
+		
+		$.ajax({
+			url : "/user/depositRecvDetail/" + personId + "/" + ankenId + "/checkOfBeforeDeleteDepositRecv",
+			type : "GET",
+			data : param,
+		})
+		.done(function(data, status, jqXHR) {
+			if (data.successed) {
+				<!--/* 処理成功 */-->
+				if(!confirm("預り金／実費を削除します。よろしいですか？")){
+					return reject();
+				} else {
+					return resolve(param);
+				}
+			} else {
+				<!--/* 処理失敗 */-->
+				showErrorMessageForJs(data.message);
+				return reject();
+			}
+		})
+		.fail(function(jqXHR, status, errorThrown) {
+			showErrorMessageForJs(/*[[#{E00091}]]*/ "error");
+			return reject();
+		});
+	});
+}
+
+<!--/* 預り金削除 */-->
+const deleteDepositRecvFunc = (param) => {
+	return new Promise((resolve, reject) => {
+		const personId = /*[[${personId}]]*/;
+		const ankenId = /*[[${ankenId}]]*/;
+		
+		$.ajax({
+			url : "/user/depositRecvDetail/" + personId + "/" + ankenId + "/deleteDepositRecv",
+			type : "POST",
+			data : param
+		})
+		.done(function(data, status, jqXHR) {
+			if (isAjaxProcSuccess(jqXHR)) {
+				<!--/* 処理成功 */-->
+				$('#depositRecvDetailFragmentWrap').html(data);
+				showInfoMessageForJs(getAjaxProcResutlMessage(jqXHR));
+				return resolve();
+			} else {
+				<!--/* 処理失敗 */-->
+				const errorMsg = getAjaxProcResutlMessage(jqXHR);
+				showErrorMessageForJs(errorMsg);
+				return reject();
+			}
+		})
+		.fail(function(jqXHR, status, errorThrown) {
+			showErrorMessageForJs(/*[[#{E00091}]]*/ "error");
+			return reject();
+		})
+	});
+}
+
+<!--/* 預り金編集フラグメントで項目の候補を検索 */-->
+let timeoutId = "";
+function searchDepositRecvDataListEdit(depositRecvSeq, keyCode) {
+	
+	const personId = /*[[${personId}]]*/;
+	const ankenId = /*[[${ankenId}]]*/;
+	const searchWord = $('#depositRecvDetailEditRowFragment_' + depositRecvSeq).find("#depositItemName").val();
+	const depositType = $('#depositRecvDetailEditRowFragment_' + depositRecvSeq).find("input[name='depositType']:checked").val();
+	
+	<!--/** tabとキーボード入力以外で呼び出された場合 */-->
+	if (isTabOrMouseInput(keyCode)) {
+		$('#depositRecvDetailEditRowFragment_' + depositRecvSeq).find('.depositRecvDataListFragmentWrap').html('');
+		return false;
+	} else {
+		<!--/* 項目検索処理 */-->
+		$.ajax({
+			url : "/user/depositRecvDetail/" + personId + "/" + ankenId + "/searchDepositRecvDataList",
+			type : "GET",
+			data : {
+				"searchWord" : searchWord,
+				"depositType" : depositType
+			},
+			}).done(function(data, status, jqXHR) {
+			
+			if (isAjaxProcSuccess(jqXHR)) {
+				<!--/* 処理成功 */-->
+				$('#depositRecvDataListEditFragment_' + depositRecvSeq).html(data);
+			} else {
+				<!--/* 処理失敗 */-->
+				const errorMsg = getAjaxProcResutlMessage(jqXHR);
+				showErrorMessageForJs(errorMsg);
+			}
+		}).fail(function() {
+			showErrorMessageForJs(/*[[#{E00010}]]*/ "変更に失敗しました。");
+		});
+	}
+}
+
+<!--/* カンマフォーマット指定項目についてカンマを付与する */-->
+function depositRecvDetailFormatComma() {
+	$('#depositRecvDetailFragment .commaFormat').each(function(){
+		$(this).formatComma();
+	});
+}
+
+<!--/* カンマフォーマット指定項目についてカンマを除去する */-->
+function depositRecvDetailUnformatComma() {
+	$('#depositRecvDetailFragment .commaFormat').each(function(){
+		$(this).unformatComma();
+	});
+}
+
+<!--/* 項目の設定データリスト：非表示処理 */-->
+$(document).off('click.depositRecvItemSearchPopoverHide');
+$(document).on('click.depositRecvItemSearchPopoverHide', function(e) {
+	<!--/* 自作ポップオーバーの非表示処理（ポップオーバー外のクリック） */-->
+	let popoverWraper = $(e.target).closest('.depositRecvDataListFragmentWrap');
+	if(!popoverWraper.length) {
+		<!--/* ポップオーバー要素の外側をクリックした時の操作 */--> 
+		<!--/* 全てのポップオーバーを非表示とする */-->
+		$('.depositRecvDataListFragmentWrap').html('');
+	} else {
+		<!--/* ターゲット要素をクリックした時の操作 */-->
+		<!--/* 特になにもしない */-->
+	}
+});
+
+<!--/* 預り金編集用フォーム閉じる処理 */-->
+function closeEditDepositRecvFragment(depositRecvSeq, isChecked) {
+	const personId = /*[[${personId}]]*/;
+	const ankenId = /*[[${ankenId}]]*/;
+	const param = {
+		"depositRecvSeq": depositRecvSeq,
+		"isChecked": isChecked
+	}
+	
+	<!--/* 2重押下防止 */-->
+	if(ajaxRunning){
+		return false;
+	}
+	ajaxRunning = true;
+	
+	$.ajax({
+		url : "/user/depositRecvDetail/" + personId + "/" + ankenId + "/closeEditDepositRecvFragment",
+		type : "GET",
+		data : param
+	})
+	.done(function(data, status, jqXHR) {
+		if (isAjaxProcSuccess(jqXHR)) {
+			<!--/* 処理成功 */-->
+			$('#depositRow_' + depositRecvSeq).html(data);
+			<!--/* チェックボックス数を変更 */-->
+			updateCheckCount();
+		} else {
+			<!--/* 処理失敗 */-->
+			const errorMsg = getAjaxProcResutlMessage(jqXHR);
+			showErrorMessageForJs(errorMsg);
+		}
+	})
+	.fail(function(jqXHR, status, errorThrown) {
+		showErrorMessageForJs(/*[[#{E00091}]]*/ "error");
+	})
+	.always(function(){
+		ajaxRunning = false;
+	});
+}
+
+<!--/* 項目の候補を検索 */-->
+function searchDepositRecvDataList(keyCode) {
+	const personId = /*[[${personId}]]*/;
+	const ankenId = /*[[${ankenId}]]*/;
+	const searchWord = $('#depositRecvInputForm').find("#depositItemName").val();
+	const depositType = $('#depositRecvInputForm').find("input[name='depositType']:checked").val();
+	
+	<!--/** tabとキーボード入力以外で呼び出された場合 */-->
+	if (isTabOrMouseInput(keyCode)) {
+		$('#depositRecvInputForm').find('.depositRecvDataListFragmentWrap').html('');
+		return false;
+	} else {
+		<!--/* 項目検索処理 */-->
+		$.ajax({
+			url : "/user/depositRecvDetail/" + personId + "/" + ankenId + "/searchDepositRecvDataList",
+			type : "GET",
+			data : {
+				"searchWord" : searchWord,
+				"depositType" : depositType
+			},
+			}).done(function(data, status, jqXHR) {
+			
+			if (isAjaxProcSuccess(jqXHR)) {
+				<!--/* 処理成功 */-->
+				$('#depositRecvDataListRegistFragment').html(data);
+			} else {
+				<!--/* 処理失敗 */-->
+				const errorMsg = getAjaxProcResutlMessage(jqXHR);
+				showErrorMessageForJs(errorMsg);
+			}
+		}).fail(function() {
+			showErrorMessageForJs(/*[[#{E00010}]]*/ "変更に失敗しました。");
+		});
+	}
+}
+
+</script>
+
+</head>
+<body>
+	<div layout:fragment="main-contents" th:remove="tag">
+		
+		<div class="contents_sidebar_wrapper_user accg_side_menu" th:classappend="${isAccgAnkenSide} ? 'contentsSlidebarWrapper':_"
+			th:data-click-open="${isAccgAnkenSide} ? ${customerAnkenMenuOpenClickForSessionValue} : 'true' "
+			th:data-resize-open="${isAccgAnkenSide} ? ${customerAnkenMenuOpenResizeForSessionValue} : 'true' "
+			th:with="isAccgAnkenSide=${T(jp.loioz.common.utility.SessionUtils).getSessionVaule(T(jp.loioz.common.constant.SessionAttrKeyEnum).ACCG_ANKEN_SCREEN_BOOL.codeKey)}">
+
+			<!--/* 会計管理メニュー */-->
+			<th:block th:if="!${isAccgAnkenSide}">
+				<div id="accgMenuFragmentWrap" th:replace="common/accg/accgMenu::accgMenuFragment(${T(jp.loioz.common.constant.CommonConstant$AccgMenu).DEPOSIT_RECV.getCd()})"></div>
+			</th:block>
+			
+			<!--/* 案件軸の遷移の場合 ->案件メニュー */-->
+			<th:block th:if="${isAccgAnkenSide}">
+				<div th:replace="common/customerAnkenMenu::menuList(
+					sideMenuAnkenId=${ankenId},
+					sideMenuCustomerId=null,
+					selectedTabClass='is_deposit_recv',
+					focusPersonId=${personId})">
+				</div>
+			</th:block>
+			
+			<!--/* メインコンテンツの外側 */-->
+			<div class="contents_wrapper">
+				<div class="container-fluid">
+					<main class="content">
+						
+						<!--/* 明細画面 */-->
+						<div class="page_inner">
+						
+							<!--/* 通常のぱんくず */-->
+							<div th:if="!${isAccgAnkenSide}" class="breadcrumb_area">
+								<ul>
+									<li><span><a href="/user/depositRecvList/list">預り金／実費一覧</a></span></li>
+									<li><i class="fas fa-angle-right"></i></li>
+									<li><span class="selected_menu">預り金／実費明細</span></li>
+								</ul>
+							</div>
+							
+							<!--/* 案件軸の場合のぱんくず */-->
+							<th:block th:if="${isAccgAnkenSide}">
+								<div th:replace="common/wrapHeader::wrapHeader(
+									returnListScreen=${T(jp.loioz.common.utility.SessionUtils).getSessionVaule(T(jp.loioz.common.constant.SessionAttrKeyEnum).RETURN_LIST_SCREEN.codeKey)},
+									sideMenuAnkenId=${ankenId},
+									selectedTabClass = 'is_deposit_recv')"></div>
+							</th:block>
+							
+							<!--/* メッセージエリア */-->
+							<div th:replace="common/messageArea::messageArea"></div>
+							
+							<!--/* 詳細 */-->
+							<div id="depositRecvDetailFragmentWrap">
+								<div th:replace="user/depositRecvDetail/depositRecvDetailFragment::depositRecvDetailFragment(${depositRecvDetailViewForm})"></div>
+							</div>
+						</div>
+						
+					</main>
+				</div>
+			</div>
+		</div>
+	</div>
+</body>
+</html>

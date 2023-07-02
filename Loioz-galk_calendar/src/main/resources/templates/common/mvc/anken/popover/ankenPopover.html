@@ -1,0 +1,358 @@
+ <!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+<meta charset="utf-8" />
+</head>
+<body>
+	<!--/* 
+		【案件ポップオーバーの利用方法】
+
+			■ステップ１：
+				・以下のスクリプト/CSSを表示させたい画面の親HTMLに埋め込む
+					<script type="text/javascript" th:replace="common/mvc/anken/popover/ankenPopover::ankenInfoPopoverJs"></script>
+					<style type="text/css" th:replace="common/mvc/anken/popover/ankenPopover::ankenInfoPopoverStyle"></style>
+			
+			■ステップ２：
+				・子フラグメントのレンダリング時に、以下の関数を呼び出す
+					benzo.global.fragment.ankenInfoFragment.setUpAnkenPopover(@Nonnull targetObj, JsonObj popoverOptions);
+				
+				▼ 引数について
+					targetObj：
+						ポップオーバーをアタッチしたいセレクタ要素.
+						ルールとして、該当のセレクタには「data-person-id」のプロパティが必須
+						
+					popoverOptions：
+						bootstrapのポップオーバーのオプションJson型.
+						指定したパラメータが有効であれば、そちらが最上位となる
+						引数に指定しない場合は、関数内で定義したdefault値が適応される。
+						※ オブジェクトごとに個別に指定したい場合は、targetObjのdata-〇〇に指定すると個別に指定することが可能（優先順位は最下位）
+					
+					Bootstrap4.1.3 Popovers Doc
+					https://getbootstrap.jp/docs/4.1/components/popovers/
+
+			■例
+				・スクリプト
+				benzo.global.fragment.ankenInfoFragment.setUpAnkenPopover(".customerIdLabel");
+				
+				・ターゲットオブジェクト
+				<a class="customerIdLabel"  data-container="#〇〇Fragment"
+					th:data-person-id="1" href="javascript:void(0);">
+					名簿ID：１
+				</a>
+	 */-->
+	<th:block>
+		<style type="text/css" th:fragment="ankenInfoPopoverStyle">
+			.anken_detail_popover .anken_body {
+				width: 530px;
+				padding: 0;
+			}
+			.popover_anken_list {
+				padding: 0;
+				margin: 0;
+				overflow-y: auto;
+				overflow-x: hidden;
+				max-height: 350px;
+				max-width: 500px;
+				min-width: 500px;
+			}
+			ul.meibo_anken_list {
+				list-style: none;
+				margin: 0;
+				padding: 0;
+			}
+			ul.meibo_anken_list li {
+				border-bottom: 1px solid #dfdfdf;
+				white-space: normal;
+				margin-right: 0;
+			}
+			ul.meibo_anken_list li:hover {
+				background-color: var(--bg-color-edit);
+			}
+			ul.meibo_anken_list li label {
+				color: var(--text-color-title);
+				margin-bottom: 0;
+				padding: 0;
+				line-height: normal;
+				height: auto;
+				font-weight: normal;
+				font-size: 1.2rem;
+			}
+		</style>
+		<script type="text/javascript" th:fragment="ankenInfoPopoverJs" th:inline="javascript">
+			<!--/* ankenPopoverPagerの表示処理に必要なデータをメモリに保持しておく */-->
+			benzo.global.fragment.ankenInfoFragment = {};
+			
+			<!--/* 案件情報ポップオーバー用の案件情報取得処理をメモリの関数として定義し、共通化する */-->
+			benzo.global.fragment.ankenInfoFragment.getAnkenPopoverPromise = function(requestData) {
+				return new Promise((resolve, reject) => {
+					$.ajax({
+						type : "GET",
+						url : /*[[@{/common/mvc/anken/popover/getAnkenPopoverFragment}]]*/,
+						data : requestData,
+						dataType: 'html',
+					}).done(function(result, status, jqXHR) {
+						if (isAjaxProcSuccess(jqXHR)) {
+							<!--/* 処理成功 */-->
+							return resolve(result);
+						} else {
+							const errorMsg = getAjaxProcResutlMessage(jqXHR);
+							showErrorMessageForJs(errorMsg);
+							return reject(errorMsg);
+						}
+					})
+					.fail(function(jqXHR, status, errorThrown) {
+						showErrorMessageForJs(/*[[#{E00091}]]*/ "error");
+						return reject(jqXHR, status, errorThrown)
+					});
+				});
+			};
+			
+			benzo.global.fragment.ankenInfoFragment.buildAnkenPopoverPromise = function(target, options) {
+				const _$target = $(target);
+				
+				<!--/* ポッパーコンテンツの作成は最初のみなのでFnを無効化 */-->
+				_$target.off("click.ankenPopover");
+				
+				<!--/* ポッパーコンテンツの作成 */-->
+				_$target.popover(options);
+				
+				<!--/* 対象オブジェクトにクリック処理を付与 */-->
+				_$target.on("click.showPoper", function() {
+					
+					<!--/* 案件ポッパーが他にあれば閉じる */-->
+					$(".ankenInfoFragment").closest(".popover").popover("hide");
+					
+					<!--/* 対象モーダルを表示 */-->
+					_$target.popover("show");
+					
+					<!--/* 名簿IDをメモリに保存 */-->
+					benzo.global.fragment.ankenInfoFragment.personId = $(this).data("personId");
+					
+					<!--/* ポップオーバーの表示が完了したときに、閉じたときの関数を追加する */-->
+					_$target.one('shown.bs.popover',function() {
+						
+						<!--/* 別コンテンツを押下したときポップオーバーを閉じる処理を追加 */-->
+						$(document).on('click.ankenPoperHide touchend.ankenPoperHide', function(e) {
+							if (!$(e.target).closest('.popover').length && !$(e.target).is(".ankenInfoFragment") && !$(e.target).closest(_$target).length) {
+								_$target.popover('hide');
+							}
+						});
+						
+						<!--/* 閉じるボタン押下処理を追加 */-->
+						$(document).on('click', '.closeAnkenPopoverButton', function(e) {
+							_$target.popover('hide');
+						});
+						
+						<!--/* 該当コンテンツを閉じたときには、閉じるイベントをOFFにする */-->
+						_$target.one('hide.bs.popover', function() {
+							$(document).off('click.ankenPoperHide touchend.ankenPoperHide');
+						});
+					});
+					
+				}).trigger("click.showPoper");
+				
+				<!--/* 共有の要素セットアップ処理 */-->
+				commonSetUpElement();
+			};
+			
+			benzo.global.fragment.ankenInfoFragment.setUpAnkenPopover = (targetObj, popoverOptions) => {
+				
+				let ajaxRunning = false;
+				
+				<!--/* デフォルトオプション */-->
+				const defPoperOption = {
+						html: true,
+						trigger: "manual",
+						placement: "left",
+						template: '<div class="popover popover_box notAutoClose" role="tooltip"><div class="popover-body"></div></div>',
+						content: () => {}, <!--/* HTMLの取得結果を格納する。*/-->
+				};
+				
+				benzo.global.fragment.ankenInfoFragment.margedOptions = Object.assign(defPoperOption, popoverOptions);
+				$(targetObj).on("click.ankenPopover", function() {
+					if (ajaxRunning) {
+						return false;
+					}
+					<!--/* 名簿IDをメモリに保存 */-->
+					benzo.global.fragment.ankenInfoFragment.personId = $(this).data("personId");
+					const {personId} = benzo.global.fragment.ankenInfoFragment;
+					<!--/* リクエストパラメータ作成 */-->
+					const requestData = [
+						{name: "personId", value: personId}
+					];
+					ajaxRunning = true;
+					Promise.resolve(requestData)
+						.then(benzo.global.fragment.ankenInfoFragment.getAnkenPopoverPromise)
+						.then((result) => {
+							benzo.global.fragment.ankenInfoFragment.margedOptions["content"] = result;
+							benzo.global.fragment.ankenInfoFragment.buildAnkenPopoverPromise($(this), benzo.global.fragment.ankenInfoFragment.margedOptions);
+						})
+						.catch((errorObj) => console.log(errorObj))
+						.finally(() => ajaxRunning = false);
+				});
+			};
+		</script>
+	</th:block>
+	<div class="ankenInfoFragment cursor_default" th:fragment="ankenInfoFragment" th:object="${viewForm}" id="ankenInfoFragment">
+		<div class="popover_box_header pt-2">
+			<span class="fs19 fw600">
+				<i class="far fa-address-card mr-2 fc_sub"></i>[[*{personName}]]
+			</span>
+			<span class="fs12 ml-1">様の案件一覧</span>
+		</div>
+				
+		<!-- 案件情報 -->
+		<div class="popover_box_body">
+	<th:block th:if="*{ankenList.size() > 0}">
+			<div class="popover_anken_list hover_scroll">
+				<ul class="meibo_anken_list">
+					<li th:each="anken : *{ankenList}" th:object="${anken}" class="ankenLink" data-click-sync-for-descendants=".transitionAnken">
+						<a class="hidden transitionAnken" th:href="@{/user/ankenManagement/edit/{ankenId}/{personId}/(ankenId=*{ankenId.asLong()}, personId=${viewForm.personId})}"></a>
+						<div class="py-3 px-2">
+							<div class="relation_desc">
+								<span class="relation_desc__text" th:classappend="${anken.existsCustomer({viewForm.personId})} ? 'customer_person'">
+									<i class="fas fa-user-check"></i>
+		<th:block th:if="${anken.existsCustomer({viewForm.personId})}">[[${anken.getCustomerTitleLabel({viewForm.personId})}]]</th:block><!-- 顧客 -->
+		<th:block th:if="${anken.existsAitegata({viewForm.personId})}">[[${anken.getAitegataTitleLabel({viewForm.personId})}]]</th:block><!-- 相手方 -->
+		<th:block th:if="${anken.existsKyohansha({viewForm.personId})}">[[${anken.getKyohanshaTitleLabel({viewForm.personId})}]]</th:block><!-- 共犯者 -->
+		<th:block th:if="${anken.existsHigaisha({viewForm.personId})}">[[${anken.getHigaishaTitleLabel({viewForm.personId})}]]</th:block><!-- 被害者 -->
+		<th:block th:if="${anken.existsTojishaKanyosha({viewForm.personId})}">[[${anken.getTojishaKanyoshaTitleLabel({viewForm.personId})}]]</th:block><!-- 関与者 -->
+								</span><span class="fs13 ml-1">として登録されています</span>
+							</div>
+
+							<div class="popover_item_title">
+								<!--/* 画像 */-->
+								<div class="popover_item_title__img">
+									<div th:class="|case_image_wrapper*{ankenType?.cd}|">
+										<img class="img-thumbnail case_img_sm" th:src="@{/img/case_type{typeCd}.svg(typeCd=*{ankenType?.cd})}">
+									</div>
+								</div>
+								<div >
+									<!--/* 案件名 */-->
+									<div class="fs19 fw600 fc_main pt-1" th:text="*{ankenName}"></div>
+									<!--/* 案件ID */-->
+									<span class="app_id_link case_link fs12 py-0 mr-2" th:text="|案件ID：*{ankenId.asLong()}|"></span>
+									<span class="fs12 mr-2">
+		<!--/* 案件区分 */-->
+		<!--/* 事務所 */-->
+		<th:block th:if="*{T(jp.loioz.common.constant.CommonConstant$AnkenType).JIMUSHO.equalsByCode(ankenType?.cd)}">
+										<i class="far fa-building"></i>
+		</th:block>
+		<!--/* 個人 */-->
+		<th:block th:if="*{T(jp.loioz.common.constant.CommonConstant$AnkenType).KOJIN.equalsByCode(ankenType?.cd)}">
+										<i class="fas fa-briefcase"></i>
+		</th:block>
+										<span th:text="*{ankenType?.val}"></span>
+									</span>
+									<span class="fs12">
+										<!--/* 案件ステータス */-->
+										<i th:unless="*{#strings.isEmpty(ankenStatusName)}" th:class="|fas fa-circle fa-xs anken_status_*{ankenStatus}|"></i>
+										<span th:text="*{ankenStatusName}"></span>
+									</span>
+								</div>
+							</div>
+							<div class="pt-3 px-3">
+								<div class="row fs13">
+									<div class="col-6">
+										<div>
+											<span class="badge badge-pill badge_square_sm mnw50 fs12 py-1 badge_blue">顧客</span>
+		<th:block th:if="*{customerList.size() == 0}">
+											<div>-</div>
+		</th:block>
+		<th:block th:if="*{customerList.size() > 0}">
+											<div class="fs13 mt-2 char_ellipsis">
+												<span th:text="${anken.getCustomerName({viewForm.personId})}"></span>
+											</div>
+		</th:block>
+										</div>
+									</div>
+									<div class="col-6">
+		<!--/* 民事 */-->
+		<th:block th:if="${T(jp.loioz.common.constant.CommonConstant$BunyaType).MINJI.equalsByCode(anken.bunyaType)}">
+										<div>
+											<span class="badge badge-pill badge_square_sm mnw50 fs12 py-1 badge_green">相手方</span>
+			<th:block th:if="*{aitegataList.size() == 0}">
+											<div>-</div>
+			</th:block>
+			<th:block th:if="*{aitegataList.size() > 0}">
+											<div class="fs13 mt-2 char_ellipsis">
+												<span th:text="${anken.getAitegataName({viewForm.personId})}"></span>
+											</div>
+			</th:block>
+										</div>
+		</th:block>
+		<!--/* 民事 end */-->
+		
+		<!--/* 刑事 */-->
+		<th:block th:if="${T(jp.loioz.common.constant.CommonConstant$BunyaType).KEIJI.equalsByCode(anken.bunyaType)}">
+										<div>
+											<span class="badge badge-pill badge_square_sm mnw50 fs12 py-1 badge_green">被害者</span>
+			<th:block th:if="*{higaishaList.size() == 0}">
+											<div>-</div>
+			</th:block>
+			<th:block th:if="*{higaishaList.size() > 0}">
+											<div class="fs13 mt-2 char_ellipsis">
+												<span th:text="${anken.getHigaishaName({viewForm.personId})}"></span>
+											</div>
+			</th:block>
+										</div>
+		</th:block>
+									</div>
+								</div>
+							</div>
+						</div>
+					</li>
+				</ul>
+			</div>
+	</th:block>
+		</div>
+		
+		<div class="popover_box_footer">
+			<!--/* ページャー */-->
+			<div th:replace="::ankenPopoverPager(*{pager})"></div>
+			<button type="button" class="btn btn-light ml-auto closeAnkenPopoverButton"><i class="fas fa-times"></i>閉じる</button>
+		</div>
+	</div>
+
+<!--/* 案件ポップオーバー：独自共通ページャー */-->
+<th:block th:fragment="ankenPopoverPager(page)" th:with="
+	page=${page}?: ${T(org.springframework.data.domain.Page).empty()}">
+	
+	<div id="ankenPopoverPager" th:object="${page}">
+		<script type="text/javascript" th:inline="javascript">
+		$(function() {
+			
+			<!--/* 共有の要素セットアップ処理 */-->
+			commonSetUpElement();
+			
+			<!--/* ページング処理 */-->
+			$(".ankenInfoFragment").on("click", ".paging", function() {
+				<!--/* リクエストパラメータ */-->
+				const page = $(this).data("page");
+				const {personId} = benzo.global.fragment.ankenInfoFragment;
+				const requestData = [
+					{name: "personId", value: personId},
+					{name: "page", value: page}
+				]
+				Promise.resolve(requestData)
+					.then(benzo.global.fragment.ankenInfoFragment.getAnkenPopoverPromise)
+					.then((result) => {
+						$('.ankenInfoFragment').replaceWith(result);
+					})
+					.catch((errorObj) => console.log(errorObj))
+					.finally(() => {
+						
+					});
+			});
+			
+		});
+		</script>
+		
+		<!--/* 共通ページャレイアウト呼び出し */-->
+		<th:block th:insert="common/pagerAjax::pagerAjaxNextPrevStyle(${page})"></th:block>
+		
+	</div>
+</th:block>
+
+</body>
+</html>

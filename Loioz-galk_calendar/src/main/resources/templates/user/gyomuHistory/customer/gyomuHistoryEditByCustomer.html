@@ -1,0 +1,334 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+			xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+			layout:decorator="commonLayout">
+<head>
+<meta charset="utf-8" />
+	<script type="text/javascript" th:fragment ="gyomuHisoryEditByCustomerJs" th:inline="javascript">
+	$(function(){
+
+		<!-- /* ajax二重チェック変数 */ -->
+		let ajaxRuning = false;
+
+		<!-- /* モーダル表示処理 */ -->
+		$(document).on("click",".openGyomuHistoryModal",function(){
+
+			let path = "/user/gyomuHistory";
+			let gyomuHistorySeq = $(this).attr("data-gyomu_history_seq");
+			let customerId = $(this).attr('data-customer_id');
+			let ankenId = $(this).find(".transitionId").attr("data-anken-id");
+
+			let form = {
+				"gyomuHistorySeq":gyomuHistorySeq,
+				"customerId"         :customerId,
+				"ankenId"              :ankenId
+			}
+
+			/*
+			この案件IDは登録されている業務履歴が案件軸から登録された場合のみデータが取得できる想定
+			案件軸から登録されたものは案件軸のモーダルを表示する。
+			*/
+			if(ankenId){
+				path += "/anken"
+			}else{
+				path +="/customer";
+			}
+
+			if(gyomuHistorySeq){
+				path += "/edit";
+			}else{
+				path += "/create";
+			}
+			$.ajax({
+				url : path,
+				type : "POST",
+				data :form,
+			}).done(function(val) {
+				const newContents = $(val);
+				// モーダルの表示
+				$('.targetGyomuHistoryModalBody').html(newContents);
+				// datepickerの設定 
+				newContents.find(".btn_popcal").each((i,btn) => setUpDatepickerButton($(btn)));
+			}).fail(function(jqXHR, textStatus, errorThrown) {
+				window.location.href = "/error";
+			}).always(function() {
+			});
+		});
+
+		<!-- /* 登録処理 */ -->
+		$(document).on("click",".targetGyomuHistoryModalBody button[name='regist']",function(){
+
+			if(ajaxRuning){
+				return false
+			}
+
+			let path = "/user/gyomuHistory/customer/regist";
+			let modal = $(this).closest('.modal');
+			let params = $(modal).find("#inputForm").serializeArray();
+
+			CreateOrEditFunction(path,modal,params);
+		});
+
+		<!-- /* 更新処理 */ -->
+		$(document).on("click",".targetGyomuHistoryModalBody button[name='update']",function(){
+
+			if(ajaxRuning){
+				return false
+			}
+
+			let path = "/user/gyomuHistory";
+			let modal = $(this).closest('.modal');
+			let params = $(modal).find("#inputForm").serializeArray();
+
+			/*<![CDATA[*/
+			if(modal.find(".select-modal").attr("data-transition_type") ==/*[[${T(jp.loioz.common.constant.CommonConstant$TransitionType).ANKEN}]]*/null){
+				path += "/anken/update";
+			}else{
+				path += "/customer/update";
+			}
+			/*]]>*/
+
+			CreateOrEditFunction(path,modal,params);
+		});
+
+		<!-- /* ステータス更新処理 */ -->
+		$(document).on("click",".targetGyomuHistoryModalBody button[name='updateStatus']",function(){
+
+			if(ajaxRuning){
+				return false
+			}
+
+			let path = "/user/gyomuHistory";
+			let modal = $(this).closest('.modal');
+			let params = $(modal).find("#inputForm").serializeArray();
+
+			/*<![CDATA[*/
+			if(modal.find(".select-modal").attr("data-transition_type") ==/*[[${T(jp.loioz.common.constant.CommonConstant$TransitionType).ANKEN}]]*/null){
+				path += "/anken/updateStatus";
+			}else{
+				path += "/customer/updateStatus";
+			}
+			/*]]>*/
+
+			CreateOrEditFunction(path,modal,params);
+		});
+
+		<!-- /* 削除処理 */ -->
+		$(document).on("click",".targetGyomuHistoryModalBody button[name='delete']",function(){
+
+			if(ajaxRuning){
+				return false
+			}
+
+			/** 削除確認 TODO messagePropateisから取得 */
+			if(!window.confirm("紐づいているすべての顧客、案件から削除されます\nよろしいですか？")){
+				return false;
+			}
+
+			let path = "/user/gyomuHistory";
+			let modal = $(this).closest('.modal');
+			let params = $(modal).find("#inputForm").serializeArray();
+
+			/*<![CDATA[*/
+			if(modal.find(".select-modal").attr("data-transition_type") ==/*[[${T(jp.loioz.common.constant.CommonConstant$TransitionType).ANKEN}]]*/null){
+				path += "/anken/delete";
+			}else{
+				path += "/customer/delete";
+			}
+			/*]]>*/
+
+			CreateOrEditFunction(path,modal,params);
+		});
+
+		<!-- /* 登録・更新・削除ロジック */ -->
+		function CreateOrEditFunction(path,modal,params){
+
+			ajaxRuning = true;
+			$.ajax({
+				url : path,
+				type : "POST",
+				data : params,
+			}).done(function(result) {
+				if(result.succeeded){
+					alert(result.message);
+					location.reload();
+				} else {
+					showErrorMessage(result.message, modal, result.errors);
+				}
+			}).fail(function(jqXHR, textStatus, errorThrown) {
+				window.location.href = "/systemError";
+			}).always(function() {
+				/* DOM操作後にdatepikerを再設定 */
+				ajaxRuning = false;
+			});
+		}
+	});
+	</script>
+<style th:inline="css" type="text/css" th:fragment="gyomuHisoryEditByCustomerStyle">
+.title_color_black{
+	color:black!important;
+	font-weight:unset!important;
+	width: auto!important;
+}
+.disabled_border{
+	border : none!important;
+}
+
+/* アコーディオンの開閉リンク（アイコン含む） */
+.collapse_wrap {
+	display: block;
+	background-color: var(--lz-gray-200);
+	padding: 3px 13px;
+	border-radius: 3px;
+	font-size: 1.3rem;
+	cursor: pointer;
+}
+.collapse_wrap .icon_wrap {
+	display: inline-block;
+	font-size: 1.4rem;
+	transition-duration: 0.2s;
+}
+.collapse_wrap[aria-expanded=false] .icon_wrap {
+	transform: rotate(-90deg);
+}
+.collapse_wrap[aria-expanded=true] .icon_wrap {
+	transform: rotate(0deg);
+}
+
+</style>
+</head>
+<body>
+	<div th:fragment="select-modal" th:object="${gyomuHistoryEditByCustomerViewForm}"
+			th:id="*{isNew()} ? 'gyomuHistoryCreateByCustomerModal' : 'gyomuHistoryEditByCustomerModal'"
+			class="select-modal" th:data-transition_type=*{inputForm.transitionType}>
+		<form id="inputForm" th:autocomplete="off">
+			<input type="hidden" th:field="*{gyomuHistorySeq}">
+			<input type="hidden" th:field="*{customerId}">
+			<input type="hidden" th:field="*{inputForm.gyomuHistorySeq}">
+			<input type="hidden" th:field="*{inputForm.customerId}">
+			<div class="modal-header">
+				<h2 class="modalheader_title" th:text="*{isNew()} ? '業務履歴登録' : '業務履歴編集'">header_title</h2>
+				<ul class="navi_list mt-0">
+					<li>
+						<label class="checkbox_btn ml-4">
+						<input type="checkbox" class="checkbox_input" th:field ="*{inputForm.Important}">
+						<span class="checkbox_txt">重要</span> </label>
+						<div class="error_mag_point hidden" id="itemMsg_imputForm.Important"></div>
+					</li>
+					<li>
+						<label class="checkbox_btn ml-4">
+						<input type="checkbox" class="checkbox_input" th:field ="*{inputForm.Kotei}" />
+						<span class="checkbox_txt">固定</span> </label>
+						<div class="error_mag_point hidden" id="itemMsg_inputForm.Kotei"></div>
+					</li>
+				</ul>
+			</div>
+			<div class="modal-body">
+				<div th:replace="common/messageArea::jsMessageArea"></div>
+				<!--/* 入力エリア */-->
+				<div class="modal_input_area">
+					<!--/* 対応日時 */-->
+					<div class="form-row">
+						<div class="form-group col-md-12">
+							<label class="input_parts_label">対応日時</label>
+							<span class="mark_equired">必須</span>
+							<div class="d-flex">
+								<input type="text" class="form-control digit7 inputDateSlash mr-2" th:field="*{inputForm.supportedDate}" th:disabled="*{inputForm.SentDengon}" data-click-sync="[data-target-name='inputForm.supportedDate']" />
+								<button type="button" class="btn btn_popcal hidden" data-toggle="datepicker" data-target-name="inputForm.supportedDate" th:disabled="*{inputForm.SentDengon}">カレンダー</button>
+								<input type="time" class="form-control digit6" th:field="*{inputForm.supportedTime}" th:disabled="*{inputForm.SentDengon}">
+							</div>
+							<div class="error_mag_point hidden" id="itemMsg_inputForm.supportedDate"></div>
+							<div class="error_mag_point hidden" id="itemMsg_inputForm.supportedTime"></div>
+						</div>
+					</div>
+					<!--/* 関連フラグ */-->
+					<div class="form-row" th:if="*{ankenInfo.size() > 0 || ankenInfoCompleted.size() > 0}">
+						<div class="form-group col-md-12 mb-2">
+							<label>関連フラグ</label>
+							<div class="row row_list w-100">
+								<div class="mt-2 w-100">
+									<i class="far fa-file-alt mr-2"></i>案件情報
+									<!--/* 未完了（完了、不受任以外）の案件 */-->
+									<div class="mt-2" th:with="ankenNameMaxlength=20">
+										<label class="checkbox_btn relation_flg font-weight-normal" th:each=" anken : *{ankenInfo}">
+											<input class="checkbox_input" type="checkbox" th:value="${anken.ankenId.asLong()}" name="inputForm.ankenIdList" th:checked="${#lists.contains(gyomuHistoryEditByCustomerViewForm.inputForm.ankenIdList,anken.ankenId.asLong())}" th:disabled="*{inputForm.SentDengon}" />
+											<span class="checkbox_txt" th:text="${#strings.length(anken.ankenName)} > ${ankenNameMaxlength} ? ${#strings.substring(anken.ankenName, 0, ankenNameMaxlength)} + '...' : ${anken.ankenName}"></span>
+											<span class="checkbox_txt" th:text="|(${anken.ankenId})|"></span>
+										</label>
+									</div>
+									<!--/* 完了、不受任の案件 */-->
+									<th:block th:if="!*{#lists.isEmpty(ankenInfoCompleted)}">
+										<span class="fc_sub collapse_wrap" data-toggle="collapse" href="#completedAnkenWrap" aria-expanded="false" aria-controls="completedAnkenWrap">
+											<span class="icon_wrap">
+												<i class="fas fa-chevron-down"></i>
+											</span>
+											<span class="d-inline-block ml-1">完了済みの案件</span>
+										</span>
+										<div class="collapse" id="completedAnkenWrap">
+											<div class="mt-3 pl-3" th:with="ankenNameMaxlength=20">
+												<label class="checkbox_btn relation_flg font-weight-normal" th:each=" anken : *{ankenInfoCompleted}">
+													<input class="checkbox_input" type="checkbox" th:value="${anken.ankenId.asLong()}" name="inputForm.ankenIdList" th:checked="${#lists.contains(gyomuHistoryEditByCustomerViewForm.inputForm.ankenIdList,anken.ankenId.asLong())}" th:disabled="*{inputForm.SentDengon}" />
+													<span class="checkbox_txt" th:text="${#strings.length(anken.ankenName)} > ${ankenNameMaxlength} ? ${#strings.substring(anken.ankenName, 0, ankenNameMaxlength)} + '...' : ${anken.ankenName}"></span>
+													<span class="checkbox_txt" th:text="|(${anken.ankenId})|"></span>
+												</label>
+											</div>
+										</div>
+									</th:block>
+									<div class="error_mag_point hidden" id="itemMsg_inputForm.ankenIdList"></div>
+								</div>
+							</div>
+						</div>
+					</div>
+					<!--/* 件名 */-->
+					<div class="form-row">
+						<div class="form-group col-md-12">
+							<label class="input_parts_label">件名</label>
+							<span class="mark_equired">必須</span>
+							<input type="text" maxlength="30" class="form-control" th:field="*{inputForm.subject}" th:disabled="*{inputForm.SentDengon}" />
+							<div class="error_mag_point hidden" id="itemMsg_inputForm.subject"></div>
+						</div>
+					</div>
+					<!--/* 内容 */-->
+					<div class="form-row">
+						<div class="form-group col-md-12">
+							<label class="input_parts_label">内容</label>
+							<textarea class="form-control" rows="11" th:field="*{inputForm.mainText}" th:disabled="*{inputForm.SentDengon}" maxlength="10000"></textarea>
+							<div class="error_mag_point hidden" id="itemMsg_inputForm.mainText"></div>
+						</div>
+					</div>
+					<!--/* 登録・更新 */-->
+					<div class="form-row">
+						<div class="form-group col-md-6" th:if="*{inputForm.createDate}">
+							<label class="input_parts_label">登録者</label>
+							<div>
+								<span th:text="*{inputForm.createrName}">登録者名</span>
+								<span th:text="*{#temporals.format(inputForm.createDate,'yyyy/MM/dd HH:mm')}">登録日</span>
+							</div>
+						</div>
+						<div class="form-group col-md-6" th:if="*{inputForm.updateDate}">
+							<label class="input_parts_label">更新者</label>
+							<div>
+								<span th:text="*{inputForm.updaterName}">登録者名</span>
+								<span th:text="*{#temporals.format(inputForm.updateDate,'yyyy/MM/dd HH:mm')}">登録日</span>
+							</div>
+						</div>
+					</div>
+				</div>
+			</div>
+			<div class="modal-footer">
+				<th:block th:if="!*{gyomuHistorySeq}">
+					<button type="button" class="btn btn-info" name="regist"><i class="fas fa-check"></i>登録</button>
+				</th:block>
+				<th:block th:if="*{gyomuHistorySeq} AND *{inputForm.SentDengon}">
+					<button type="button" class="btn btn-info" name="updateStatus"><i class="fas fa-check"></i>保存</button>
+				</th:block>
+				<th:block th:if="*{gyomuHistorySeq} AND *{!inputForm.SentDengon}">
+					<button type="button" class="btn btn-light mr-auto" name="delete"><i class="far fa-trash-alt"></i>削除</button>
+					<button type="button" class="btn btn-info" name="update"><i class="fas fa-check"></i>保存</button>
+				</th:block>
+				<button type="button" class="btn btn-light" name="cancel" data-dismiss="modal"><i class="fas fa-times"></i>閉じる</button>
+			</div>
+		</form>
+	</div>
+</body>
+</html>

@@ -1,0 +1,2598 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+	xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+	xmlns:xtra="https://github.com/connect-group/thymeleaf-extras"
+	layout:decorator="commonLayout">
+<head>
+<meta charset="utf-8" th:remove="tag" />
+<title layout:fragment="title-contents">
+	[[${T(jp.loioz.common.utility.LoiozUtils).getHtmlTitle("タスク", T(jp.loioz.common.utility.SessionUtils).getTenantName())}]]
+</title>
+<th:block th:with="version=${@environment.getProperty('app.version')}">
+	<link th:href="@{/css/task/task.css?{ver}(ver=${version})}" rel="stylesheet" type="text/css"/>
+</th:block>
+<script type="text/javascript" th:replace="user/taskManagement/taskEditModal::taskModalJs"></script>
+<script type="text/javascript" th:inline="javascript">
+
+<!--/*
+ 二重送信防止対応用の値。
+ このHTMLに差し込まれるfragment内のScriptの処理も、共通してこの変数を利用する。
+*/-->
+let ajaxRunning = false;
+
+</script>
+<script type="text/javascript" th:inline = "javascript">
+<!--/* タスク一覧画面表示関数（タスク検索以外） */-->
+function renderTaskListInputForm(selectedTabClass, selectedTaskSeq, selectedAssignSeq, pageForSelectedTaskSeq, selectedTaskAnkenId) {
+	return new Promise((resolve, reject) => {
+
+		const param = {
+				"page" : 0,
+				"selectedTabClass" : selectedTabClass,
+				"selectedTaskSeq" : selectedTaskSeq,
+				"selectedAssignSeq" : selectedAssignSeq,
+				"pageForSelectedTaskSeq": pageForSelectedTaskSeq,
+				<!--/* サイドメニューの検索ワードを削除する */-->
+				"searchResultsTaskListSearchForm.searchWord" : "",
+				"selectedTaskAnkenId" : selectedTaskAnkenId
+			}
+
+		$.ajax({
+			url : '/user/taskManagement/displayAnyTaskList',
+			type : "GET",
+			data : param,
+			dataType: 'html',
+		})
+		.done(function(data, status, jqXHR) {
+			if (isAjaxProcSuccess(jqXHR)) {
+				<!--/* タスク一覧部分に描画 */-->
+				$('#taskListFragmentWrap').html(data);
+				<!--/* 全画面共通のためselectorは指定しない */-->
+				commonSetUpElement();
+			} else {
+				<!--/* 処理失敗 */-->
+				const errorMsg = getAjaxProcResutlMessage(jqXHR);
+				let sessionTimeOutKey = /*[[${T(jp.loioz.common.constant.MessageEnum).MSG_E00161.messageKey}]]*/'';
+				if (sessionTimeOutKey == errorMsg) {
+					window.location.href = '/user/taskManagement/list'
+				} else {
+					showErrorMessageForJs(errorMsg);
+				}
+			}
+			return resolve();
+		})
+		.fail(function(jqXHR, status, errorThrown) {
+			showErrorMessageForJs(/*[[#{E00091}]]*/ "error");
+			return reject();
+		});
+
+	});
+}
+
+<!--/* タスク検索の一覧画面表示関数 */-->
+function renderSearchTaskListInputForm(selectedTabClass, selectedTaskSeq, selectedAssignSeq, searchWord) {
+	return new Promise((resolve, reject) => {
+
+		const param = {
+				"page" : 0,
+				"selectedTabClass" : selectedTabClass,
+				"selectedTaskSeq" : selectedTaskSeq,
+				"selectedAssignSeq" : selectedAssignSeq,
+				"searchResultsTaskListSearchForm.searchWord" : searchWord,
+				"pageForSelectedTaskSeq" : 0,
+				"searchResultsTaskListSearchForm.page" : 0,
+				"selectedTaskAnkenId" : ''
+			}
+
+		$.ajax({
+			url : '/user/taskManagement/displayAnyTaskList',
+			type : "GET",
+			data : param,
+			dataType: 'html',
+		})
+		.done(function(data, status, jqXHR) {
+			if (isAjaxProcSuccess(jqXHR)) {
+				<!--/* タスク一覧部分に描画 */-->
+				$('#taskListFragmentWrap').html(data);
+			} else {
+				<!--/* 処理失敗 */-->
+				const errorMsg = getAjaxProcResutlMessage(jqXHR);
+				showErrorMessageForJs(errorMsg);
+			}
+			return resolve();
+		})
+		.fail(function(jqXHR, status, errorThrown) {
+			showErrorMessageForJs(/*[[#{E00091}]]*/ "error");
+			return reject();
+		});
+
+	});
+}
+
+<!--/* タスク詳細画面入力フォームの表示関数 */-->
+function renderTaskDetailInputForm(seq, selectedTabClass, selectedAssignSeq, isSelectedCommentTab) {
+	return new Promise((resolve, reject) => {
+
+		const param = {
+				"page" : 0,
+				"taskSeq" : seq,
+				"selectedTabClass" : selectedTabClass,
+				"selectedAssignSeq" : selectedAssignSeq
+			}
+
+		$.ajax({
+			url : '/user/taskManagement/taskDetail',
+			type : "GET",
+			data : param,
+			dataType: 'html',
+		})
+		.done(function(data, status, jqXHR) {
+			if (isAjaxProcSuccess(jqXHR)) {
+				<!--/* サブタスク上限件数 */-->
+				let checkItemAddLimit = /*[[${T(jp.loioz.common.constant.CommonConstant).TASK_CHECK_ITEM_ADD_LIMIT}]]*/ ''
+
+				$('#taskDetailFragmentWrap').removeClass("hidden");
+				let $taskDetailHtml = $(data);
+				<!--/* サブタスクの表示件数 */-->
+				let checkItemInputFormCount = $taskDetailHtml.find('#taskCheckList li').length;
+				<!--/* サブタスクが上限数より小さい場合は追加リンクを表示する、上限数に達している場合は追加リンクを非表示にする */-->
+				if (checkItemInputFormCount < checkItemAddLimit) {
+					$taskDetailHtml.find('.addCheckList').removeClass('hidden');
+				} else {
+					$taskDetailHtml.find('.addCheckList').addClass('hidden');
+				}
+				<!--/* タスク詳細部分に描画 */-->
+				$('#taskDetailFragmentWrap').html($taskDetailHtml);
+				<!--/* 詳細文のHTMLタグを有効にする */-->
+				enableHtmlForDetailContent();
+				<!--/* コメントのHTMLタグを有効にする */-->
+				enableHtmlForComment();
+				if (isSelectedCommentTab) {
+					<!--/* 選択タブの変更 */-->
+					$('#detail-tab').attr('aria-selected', false);
+					$('#detail-tab').removeClass('active');
+					$('#tabDetail').removeClass('active');
+					$('#tabDetail').removeClass('show');
+					$('#comment-tab').attr('aria-selected', true);
+					$('#comment-tab').addClass('active');
+					$('#tabComment').addClass('active');
+					$('#tabComment').addClass('show');
+				}
+				<!--/* ヘッダーの更新 */-->
+				headerRefresh();
+				<!--/* 一覧でexclamationマークを非表示にする */-->
+				$('.taskExclamation' + seq).addClass('hidden');
+
+			} else {
+				<!--/* 処理失敗 */-->
+				const errorMsg = getAjaxProcResutlMessage(jqXHR);
+				let sessionTimeOutKey = /*[[${T(jp.loioz.common.constant.MessageEnum).MSG_E00161.messageKey}]]*/'';
+				if (sessionTimeOutKey == errorMsg) {
+					window.location.href = '/user/taskManagement/list'
+				} else {
+					showErrorMessageForJs(errorMsg);
+				}
+			}
+			return resolve();
+		})
+		.fail(function(jqXHR, status, errorThrown) {
+			showErrorMessageForJs(/*[[#{E00091}]]*/ "error");
+			return reject();
+		});
+	});
+}
+
+<!--/* 詳細のHTMLタグ有効化関数 */-->
+function enableHtmlForDetailContent() {
+	$("#taskShortContent").html($("#taskShortContent").text());
+	$("#taskAllContent").html($("#taskAllContent").text());
+}
+
+<!--/* コメントのHTMLタグ有効化関数 */-->
+function enableHtmlForComment() {
+	<!--/* 詳細タブのコメントのHTMLタグ有効化 */-->
+	$('.commentView').each(function(idx, element){
+		$(element).html($(element).text());
+	});
+
+	<!--/* コメントタブのコメントのHTMLタグ有効化 */-->
+	$('.tabCommentView').each(function(idx, element){
+		$(element).html($(element).text());
+	});
+}
+
+<!--/* タスク最終行非表示関数 */-->
+function removeTaskLastRow(selectedTabClass) {
+	return new Promise((resolve, reject) => {
+
+		let todayTaskCd = /*[[${T(jp.loioz.common.constant.CommonConstant$TaskMenu).TODAY_TASK.cd}]]*/ '';
+		let futureTaskCd = /*[[${T(jp.loioz.common.constant.CommonConstant$TaskMenu).FUTURE_TASK.cd}]]*/ '';
+		let allTaskCd = /*[[${T(jp.loioz.common.constant.CommonConstant$TaskMenu).ALL_TASK.cd}]]*/ '';
+		let overdueTaskCd = /*[[${T(jp.loioz.common.constant.CommonConstant$TaskMenu).OVERDUE_TASK.cd}]]*/ '';
+		let assignedTaskCd = /*[[${T(jp.loioz.common.constant.CommonConstant$TaskMenu).ASSIGNED_TASK.cd}]]*/ '';
+		let assignTaskCd = /*[[${T(jp.loioz.common.constant.CommonConstant$TaskMenu).ASSIGN_TASK.cd}]]*/ '';
+		let closeTaskCd = /*[[${T(jp.loioz.common.constant.CommonConstant$TaskMenu).CLOSE_TASK.cd}]]*/ '';
+		let searchResultsTask = /*[[${T(jp.loioz.common.constant.CommonConstant$TaskMenu).SEARCH_RESULTS_TASK.cd}]]*/ '';
+		let taskAnkenCd = /*[[${T(jp.loioz.common.constant.CommonConstant$TaskMenu).TASK_ANKEN.cd}]]*/ '';
+		
+		switch (selectedTabClass) {
+			case todayTaskCd:
+			case allTaskCd:
+			case overdueTaskCd:
+			case closeTaskCd:
+			case searchResultsTask:
+			case taskAnkenCd:
+				<!-- /* 「今日のタスク」、「すべてのタスク」、「期限を過ぎたタスク」、「完了したタスク」、「検索結果タスク」、「案件タスク」メニューの場合 */ -->
+				const pageSize = $('#taskPageSize').val();
+				const taskListRows = $("#taskDataList li").length;
+				<!-- /* タスク数が1ページの表示件数を超えた場合最終行を削除 */ -->
+				if (pageSize < taskListRows) {
+					$('.taskListRow:last').remove();
+					<!-- /* ページングフラグメント更新 */ -->
+					renderTaskPager(selectedTabClass);
+				}
+				break;
+	
+			case futureTaskCd:
+			case assignedTaskCd:
+			case assignTaskCd:
+				<!-- /* 「期限付きのタスク」、「割り当てられたタスク」、「割り当てたタスク」メニューの場合 */ -->
+				<!-- /* 上記メニューはページングでないため、なにもしない */ -->
+				break;
+		
+			default:
+		}
+		return resolve();
+	});
+}
+
+<!--/* タスクメニューの表示関数 */-->
+function renderTaskMenu(tabName, selectedTaskAnkenId) {
+	return new Promise((resolve, reject) => {
+
+		const param = {
+				"page" : 0,
+				"selectedTabClass" : tabName,
+				"selectedTaskAnkenId" : selectedTaskAnkenId
+			}
+
+		$.ajax({
+			url : '/user/taskManagement/getTaskMenu',
+			type : "GET",
+			data : param,
+			dataType: 'html',
+		})
+		.done(function(data, status, jqXHR) {
+			if (isAjaxProcSuccess(jqXHR)) {
+				<!--/* タスクメニュー部分に描画 */-->
+				$('#taskMenuFragmentWrap').html(data);
+				<!--/* ヘッダーの更新 */-->
+				headerRefresh();
+			} else {
+				<!--/* 処理失敗 */-->
+				const errorMsg = getAjaxProcResutlMessage(jqXHR);
+				let sessionTimeOutKey = /*[[${T(jp.loioz.common.constant.MessageEnum).MSG_E00161.messageKey}]]*/'';
+				if (sessionTimeOutKey == errorMsg) {
+					window.location.href = '/user/taskManagement/list'
+				} else {
+					showErrorMessageForJs(errorMsg);
+					return reject();
+				}
+			}
+			return resolve();
+		})
+		.fail(function(jqXHR, status, errorThrown) {
+			showErrorMessageForJs(/*[[#{E00091}]]*/ "error");
+			return reject();
+		});
+	});
+}
+
+<!--/* タスクページャの表示関数 */-->
+function renderTaskPager(tabName) {
+	return new Promise((resolve, reject) => {
+
+		const param = {
+				"page" : 0,
+				"selectedTabClass" : tabName
+			}
+
+		$.ajax({
+			url : '/user/taskManagement/getTaskPager',
+			type : "GET",
+			data : param,
+			dataType: 'html',
+		})
+		.done(function(data, status, jqXHR) {
+			if (isAjaxProcSuccess(jqXHR)) {
+				<!--/* タスクページャ部分に描画 */-->
+				$('#taskListPagerFragmentWrap').html(data);
+			} else {
+				<!--/* 処理失敗 */-->
+				const errorMsg = getAjaxProcResutlMessage(jqXHR);
+				let sessionTimeOutKey = /*[[${T(jp.loioz.common.constant.MessageEnum).MSG_E00161.messageKey}]]*/'';
+				if (sessionTimeOutKey == errorMsg) {
+					window.location.href = '/user/taskManagement/list'
+				} else {
+					showErrorMessageForJs(errorMsg);
+				}
+			}
+			return resolve();
+		})
+		.fail(function(jqXHR, status, errorThrown) {
+			showErrorMessageForJs(/*[[#{E00091}]]*/ "error");
+			return reject();
+		});
+	});
+}
+
+<!--/* タスクステータス変更処理（一覧用） */-->
+function changeTaskStatus(selectedTaskSeq, selectedTabClass, selectedAssignSeq, taskSeq, taskStatus, selectedTaskAnkenId) {
+
+	let taskStatusCd = "";
+
+	<!-- /* 現在のステータスが完了ならステータスを未着手へ変更、それ以外は完了へ変更 */ -->
+	if (taskStatus === "COMPLETED") {
+		taskStatusCd = /*[[${T(jp.loioz.common.constant.CommonConstant$TaskStatus).PREPARING.cd}]]*/ '';
+		<!-- /* 完了タスクを未着手に戻す */ -->
+		$('.taskData' + taskSeq).find('.taskTitle').css('text-decoration', 'none');
+		$('.taskData' + taskSeq).find('.taskTitle').css('color', 'var(--text-color-main)');
+		$('.taskData' + taskSeq).find('.taskStatusComp').addClass('hidden');
+		$('.taskData' + taskSeq).find('.taskStatusPreparing').removeClass('hidden');
+		$('.taskData' + taskSeq).find('.taskCheckHoverComp').removeClass('taskCheckHoverComp');
+	} else {
+		taskStatusCd = /*[[${T(jp.loioz.common.constant.CommonConstant$TaskStatus).COMPLETED.cd}]]*/ '';
+		<!-- /* タスクを完了にして取り消し線をつける */ -->
+		$('.taskData' + taskSeq).find('.taskTitle').css('text-decoration', 'line-through');
+		$('.taskData' + taskSeq).find('.taskTitle').css('color', 'var(--text-color-title)');
+		$('.taskData' + taskSeq).find('.taskStatusPreparing').addClass('hidden');
+		$('.taskData' + taskSeq).find('.taskStatusComp').removeClass('hidden');
+		$('.taskData' + taskSeq).find('.taskCheckHover').removeClass('taskCheckHover');
+	}
+
+	$.ajax({
+		url : "/user/taskManagement/changeStatus",
+		type : "POST",
+		data : {
+			"page": 0,
+			"taskSeq": taskSeq,
+			"taskStatus" : taskStatusCd,
+			"selectedTabClass" : selectedTabClass,
+			"selectedTaskSeq" : selectedTaskSeq,
+			"selectedAssignSeq" : selectedAssignSeq,
+			"isChangeStatusInDetail" : false
+		},
+	}).done(function(data, status, jqXHR) {
+		
+		if (isAjaxProcSuccess(jqXHR)) {
+			<!-- /* 処理成功 */ -->
+			
+			<!-- /* サイドメニューを再描画（件数の表示を更新するため） */ -->
+			renderTaskMenu(selectedTabClass, selectedTaskAnkenId);
+			<!-- /* 完了or未完了の変更に合わせて、タスクの行を完了or未完了に移動させる */ -->
+			moveTaskComp(selectedTabClass, taskSeq, taskStatus, selectedTaskAnkenId);
+
+			if (selectedTabClass == /*[[${T(jp.loioz.common.constant.CommonConstant$TaskMenu).SEARCH_RESULTS_TASK.cd}]]*/'') {
+				<!-- /* 変更行を再描画する */ -->
+				refreshTaskListRow(selectedTabClass, taskSeq, selectedAssignSeq, selectedTaskSeq);
+			} else {
+				if ($('.taskListDataBlock').find('.taskListRow').length > 1) {
+					<!-- /* 最終行に次ページの先頭行を表示する */ -->
+					getTaskRowOnNextPage(selectedTabClass);
+				}
+			}
+
+		} else {
+			<!-- /* 処理失敗 */ -->
+			const errorMsg = getAjaxProcResutlMessage(jqXHR);
+			showErrorMessageForJs(errorMsg);
+		}
+
+	}).fail(function() {
+		showErrorMessageForJs(/*[[#{E00010}]]*/ "変更に失敗しました。");
+	}).always(function() {
+		ajaxRunning = false;
+	});
+}
+
+<!--/*
+ * 表示中のページ先頭行にタスクデータを追加する。1ページ目を表示中の場合は、新規登録したタスクデータなどを追加する。2ページ目以降を表示中の場合は、前ページのラスト行タスクデータを追加する。
+*/-->
+function addTaskFirstRow(selectedTabClass, taskSeq, selectedTaskAnkenId) {
+
+	return new Promise((resolve, reject) => {
+
+		let todayTaskCd = /*[[${T(jp.loioz.common.constant.CommonConstant$TaskMenu).TODAY_TASK.cd}]]*/ '';
+		let futureTaskCd = /*[[${T(jp.loioz.common.constant.CommonConstant$TaskMenu).FUTURE_TASK.cd}]]*/ '';
+		let allTaskCd = /*[[${T(jp.loioz.common.constant.CommonConstant$TaskMenu).ALL_TASK.cd}]]*/ '';
+		let overdueTaskCd = /*[[${T(jp.loioz.common.constant.CommonConstant$TaskMenu).OVERDUE_TASK.cd}]]*/ '';
+		let assignedTaskCd = /*[[${T(jp.loioz.common.constant.CommonConstant$TaskMenu).ASSIGNED_TASK.cd}]]*/ '';
+		let assignTaskCd = /*[[${T(jp.loioz.common.constant.CommonConstant$TaskMenu).ASSIGN_TASK.cd}]]*/ '';
+		let closeTaskCd = /*[[${T(jp.loioz.common.constant.CommonConstant$TaskMenu).CLOSE_TASK.cd}]]*/ '';
+		let searchResultsTask = /*[[${T(jp.loioz.common.constant.CommonConstant$TaskMenu).SEARCH_RESULTS_TASK.cd}]]*/ '';
+		let taskAnkenCd = /*[[${T(jp.loioz.common.constant.CommonConstant$TaskMenu).TASK_ANKEN.cd}]]*/ '';
+
+		<!-- /* ページで表示中のタスクSEQ */ -->
+		const dispPageTaskSeqList = [];
+		$('input[name="rowTaskSeq"]').map(function (index, el) {
+			dispPageTaskSeqList.push($(this).val());
+		});
+
+		const params = [];
+		params.push({name: "page", value: 0});
+		params.push({name: "selectedTabClass", value: selectedTabClass});
+		params.push({name: "selectedTaskSeq", value: taskSeq});
+		params.push({name: "selectedAssignSeq", value: ""});
+		params.push({name: "dispPageTaskSeqList", value: String(dispPageTaskSeqList)});
+
+		$.ajax({
+			url : "/user/taskManagement/addTaskFirstRow",
+			type : "GET",
+			data : params 
+		}).done(function(data, status, jqXHR) {
+
+			if (isAjaxProcSuccess(jqXHR)) {
+				<!--/* 処理成功 */-->
+
+				switch (selectedTabClass) {
+					case todayTaskCd:
+					case allTaskCd:
+					case taskAnkenCd:
+						<!-- /* 「今日のタスク」、「すべてのタスク」、「案件タスク」メニューの場合 */ -->
+
+						let $taskListDataBlock = $('.taskListDataBlock')
+
+						let allTaskCount = $taskListDataBlock.find('.taskListRow').length;
+						if (allTaskCount == 0) {
+							<!-- /* 初めての追加となる場合は画面を再描画（表示されている「タスクはありません」を非表示にするため） 選択中タスクSEQのページ番号は追加時は必ず1ページ目をセット */ -->
+							renderTaskListInputForm(selectedTabClass, taskSeq, null, 0, selectedTaskAnkenId);
+						} else {
+							<!-- /* 既に他のタスクが存在する場合はJSで追加 */ -->
+			 				$(data).removeClass('selected');
+			 				$taskListDataBlock.find('#taskDataList').prepend(data);
+							<!-- /* 一覧で選択中のタスクSEQ、ページ番号（追加時は必ず1ページ目）をセット, */ -->
+							$('#selectedTaskSeq').val(taskSeq);
+							$('#pageForSelectedTaskSeq').val(0);
+						}
+
+						break;
+
+					case futureTaskCd:
+						<!-- /* 「期限付きのタスク」メニューの場合 */ -->
+
+						<!-- /* 「今日」の領域を取得 */ -->
+						let taskListDataBlockAry = $('.taskListDataBlock')
+						let $futureTodayTaskListDataBlock = $(taskListDataBlockAry[0])
+						
+						let futureAllTaskCount = $('.taskListDataBlock').find('.taskListRow').length;
+						if (futureAllTaskCount == 0) {
+							<!-- /* 初めての追加となる場合は画面を再描画（表示されている「タスクはありません」を非表示にするため） */ -->
+							renderTaskListInputForm(selectedTabClass, null, null, null, null);
+						} else {
+							<!-- /* 既に他のタスクが存在する場合はJSで追加 */ -->
+							<!-- /* タスクを追加 */ -->
+							$(data).removeClass('selected');
+							$futureTodayTaskListDataBlock.find('#taskDataList').prepend(data);
+							<!-- /* タスクを表示 */ -->
+							$futureTodayTaskListDataBlock.removeClass('hidden');
+							let futureTodayTaskListDataBlockTaskCount = $futureTodayTaskListDataBlock.find('#taskDataList .taskListRow').length;
+							$futureTodayTaskListDataBlock.find('.taskCollapseCount').text(futureTodayTaskListDataBlockTaskCount)
+						}
+						
+						break;
+
+					case overdueTaskCd:
+					case assignedTaskCd:
+					case assignTaskCd:
+					case closeTaskCd:
+					case searchResultsTask:
+						<!-- /* 「期限を過ぎたタスク」、「割り当てられたタスク」、「割り当てたタスク」、「完了したタスク」、「検索結果」メニューの場合 */ -->
+						<!-- /* 上記メニューではタスクの追加は行えないので、なにもしない */ -->
+						break;
+
+					default:
+				}
+
+			} else {
+				<!--/* 処理失敗 */-->
+				const errorMsg = getAjaxProcResutlMessage(jqXHR);
+				let sessionTimeOutKey = /*[[${T(jp.loioz.common.constant.MessageEnum).MSG_E00161.messageKey}]]*/'';
+				if (sessionTimeOutKey == errorMsg) {
+					window.location.href = '/user/taskManagement/list'
+				} else {
+					showErrorMessageForJs(errorMsg);
+				}
+			}
+			return resolve();
+
+		}).fail(function() {
+			showErrorMessageForJs(/*[[#{E00012}]]*/ "登録に失敗しました。");
+		}).always(function() {
+			return reject();
+		});
+	});
+}
+
+<!--/* タスクステータス変更処理（詳細用） */-->
+function changeTaskStatusForDetail(selectedTabClass, selectedAssignSeq, taskSeq, taskStatusCd, taskRowHtml, selectedTaskAnkenId) {
+	
+	let todayTaskCd = /*[[${T(jp.loioz.common.constant.CommonConstant$TaskMenu).TODAY_TASK.cd}]]*/ '';
+	let futureTaskCd = /*[[${T(jp.loioz.common.constant.CommonConstant$TaskMenu).FUTURE_TASK.cd}]]*/ '';
+	let allTaskCd = /*[[${T(jp.loioz.common.constant.CommonConstant$TaskMenu).ALL_TASK.cd}]]*/ '';
+	let overdueTaskCd = /*[[${T(jp.loioz.common.constant.CommonConstant$TaskMenu).OVERDUE_TASK.cd}]]*/ '';
+	let assignedTaskCd = /*[[${T(jp.loioz.common.constant.CommonConstant$TaskMenu).ASSIGNED_TASK.cd}]]*/ '';
+	let assignTaskCd = /*[[${T(jp.loioz.common.constant.CommonConstant$TaskMenu).ASSIGN_TASK.cd}]]*/ '';
+	let closeTaskCd = /*[[${T(jp.loioz.common.constant.CommonConstant$TaskMenu).CLOSE_TASK.cd}]]*/ '';
+	let searchResultsTask = /*[[${T(jp.loioz.common.constant.CommonConstant$TaskMenu).SEARCH_RESULTS_TASK.cd}]]*/ '';
+	let taskAnkenCd = /*[[${T(jp.loioz.common.constant.CommonConstant$TaskMenu).TASK_ANKEN.cd}]]*/ '';
+
+	let completedStatusCd = /*[[${T(jp.loioz.common.constant.CommonConstant$TaskStatus).COMPLETED.cd}]]*/ '';
+	
+	<!-- /* ステータスを変更したタスクのli */ -->
+	let taskLi = $('.taskData' + taskSeq);
+	
+	switch (selectedTabClass) {
+		case todayTaskCd:
+		case allTaskCd:
+		case overdueTaskCd:
+			<!-- /* 「今日のタスク」、「すべてのタスク」、「期限を過ぎたタスク」メニューの場合 */ -->
+			
+			if (taskStatusCd == completedStatusCd) {
+				<!-- /* ステータスを「完了」にした場合 */ -->
+				
+				<!-- /* タスク行、詳細の更新 */ -->
+				processAfterChangeStatusToCompleteFromDetailWhenViewingPaging(taskLi, selectedTabClass, selectedAssignSeq, selectedTaskAnkenId);
+			} else {
+				<!-- /* ステータスを「未完了」「進行中」にした場合 */ -->
+				
+				<!-- /* 取得したタスクの行データを画面に表示 */ -->
+				replaceTaskRow(selectedTabClass, taskSeq, taskRowHtml);
+				<!-- /* 詳細部分を再表示（アクティビティを更新するため） */ -->
+				renderTaskDetailInputForm(taskSeq, selectedTabClass, selectedAssignSeq, false);
+			}
+			
+			break;
+		case futureTaskCd:
+		case assignedTaskCd:
+			<!-- /* 「期限付きのタスク」、「割り当てられたタスク」メニューの場合 */ -->
+			
+			if (taskStatusCd == completedStatusCd) {
+				<!-- /* ステータスを「完了」にした場合 */ -->
+				
+				<!-- /* タスク行、詳細の更新 */ -->
+				processAfterChangeStatusToCompleteFromDetailWhenViewingFutureTask(taskLi, selectedTabClass, selectedAssignSeq);
+			} else {
+				<!-- /* ステータスを「未完了」「進行中」にした場合 */ -->
+				
+				<!-- /* 取得したタスクの行データを画面に表示 */ -->
+				replaceTaskRow(selectedTabClass, taskSeq, taskRowHtml);
+				<!-- /* 詳細部分を再表示（アクティビティを更新するため） */ -->
+				renderTaskDetailInputForm(taskSeq, selectedTabClass, selectedAssignSeq, false);
+			}
+			
+			break;
+		case assignTaskCd:
+			<!-- /* 「割り当てたタスク」メニューの場合 */ -->
+			
+			if (taskStatusCd == completedStatusCd) {
+				<!-- /* ステータスを「完了」にした場合 */ -->
+				
+				<!-- /* タスク行、詳細の更新 */ -->
+				processAfterChangeStatusToCompleteFromDetailWhenViewingAssignTask(taskLi, selectedTabClass, selectedAssignSeq);
+			} else {
+				<!-- /* ステータスを「未完了」「進行中」にした場合 */ -->
+				
+				<!-- /* 取得したタスクの行データを画面に表示 */ -->
+				replaceTaskRow(selectedTabClass, taskSeq, taskRowHtml);
+				<!-- /* 詳細部分を再表示（アクティビティを更新するため） */ -->
+				renderTaskDetailInputForm(taskSeq, selectedTabClass, selectedAssignSeq, false);
+			}
+			
+			break;
+		case closeTaskCd:
+			<!-- /* 「完了したタスク」メニューの場合 */ -->
+			
+			if (taskStatusCd == completedStatusCd) {
+				<!-- /* ステータスを「完了」にした場合 */ -->
+				
+				<!-- /* もともと完了なので何もしない */ -->
+			} else {
+				<!-- /* ステータスを「未完了」「進行中」にした場合 */ -->
+				
+				<!-- /* タスク行、詳細の更新 */ -->
+				processAfterChangeStatusToIncompleteFromDetailWhenViewingCompletedData(taskLi, selectedTabClass, selectedAssignSeq, selectedTaskAnkenId);
+			}
+			break;
+		case searchResultsTask:
+			<!-- /* 「タスク検索」メニューの場合 */ -->
+			<!-- /* 変更行を再描画する */ -->
+			refreshTaskListRow(selectedTabClass, taskSeq, selectedAssignSeq, taskSeq, null);
+			break;
+		case taskAnkenCd:
+			<!-- /* 「案件タスク」メニューの場合 */ -->
+			
+			<!-- /* ステータスを「完了」にした場合 */ -->
+			if (taskStatusCd == completedStatusCd) {
+				<!-- /* タスク行、詳細の更新 */ -->
+				processAfterChangeStatusToCompleteFromDetailWhenViewingPaging(taskLi, selectedTabClass, selectedAssignSeq, selectedTaskAnkenId);
+			} else {
+				<!-- /* ステータスを「未完了」、「進行中」にした場合 */ -->
+				
+				const completeTaskDisp = $('#completeTaskDispFlg').val();
+				
+				<!-- /* 完了タスクを表示している場合 */ -->
+				if (completeTaskDisp === 'true') {
+					
+					<!-- /* タスク行、詳細の更新 */ -->
+					processAfterChangeStatusToIncompleteFromDetailWhenViewingCompletedData(taskLi, selectedTabClass, selectedAssignSeq, selectedTaskAnkenId);
+				<!-- /* 未完了タスクを表示している場合 */ -->
+				} else {
+					
+					<!-- /* 取得したタスクの行データを画面に表示 */ -->
+					replaceTaskRow(selectedTabClass, taskSeq, taskRowHtml);
+					<!-- /* 詳細部分を再表示（アクティビティを更新するため） */ -->
+					renderTaskDetailInputForm(taskSeq, selectedTabClass, selectedAssignSeq, false);
+				}
+			}
+			
+			break;
+		default:
+	}
+}
+
+<!-- /* タスクSEQの次のタスクSEQ（一覧画面の表示順）を取得する。次のタスクが無い場合は先頭のタスクSEQを取得する。 */ -->
+function setNextTaskSeqTaskDetailInputForm(taskSeq){
+	return new Promise((resolve, reject) => {
+
+		$.ajax({
+			url : "/user/taskManagement/getNextTaskSeq",
+			type : "GET",
+			data : {
+				"page": 0,
+				"taskSeq": taskSeq
+				},
+		}).done(function(result) {
+			$('#nextTaskSeq').val(result.nextTaskSeq)
+			return resolve();
+		}).fail(function(jqXHR, textStatus, errorThrown) {
+			showErrorMessageForJs(/*[[#{E00091}]]*/ "error");
+			return reject();
+		}).always(function() {
+		});
+	});
+}
+
+<!--/*
+ * 一覧でタスクの完了、未完了を変更した際に、タスクを完了、未完了に移動させる
+*/-->
+function moveTaskComp(selectedTabClass, taskSeq, taskStatus, selectedTaskAnkenId) {
+	
+	let todayTaskCd = /*[[${T(jp.loioz.common.constant.CommonConstant$TaskMenu).TODAY_TASK.cd}]]*/ '';
+	let futureTaskCd = /*[[${T(jp.loioz.common.constant.CommonConstant$TaskMenu).FUTURE_TASK.cd}]]*/ '';
+	let allTaskCd = /*[[${T(jp.loioz.common.constant.CommonConstant$TaskMenu).ALL_TASK.cd}]]*/ '';
+	let overdueTaskCd = /*[[${T(jp.loioz.common.constant.CommonConstant$TaskMenu).OVERDUE_TASK.cd}]]*/ '';
+	let assignedTaskCd = /*[[${T(jp.loioz.common.constant.CommonConstant$TaskMenu).ASSIGNED_TASK.cd}]]*/ '';
+	let assignTaskCd = /*[[${T(jp.loioz.common.constant.CommonConstant$TaskMenu).ASSIGN_TASK.cd}]]*/ '';
+	let closeTaskCd = /*[[${T(jp.loioz.common.constant.CommonConstant$TaskMenu).CLOSE_TASK.cd}]]*/ '';
+	let searchResultsTask = /*[[${T(jp.loioz.common.constant.CommonConstant$TaskMenu).SEARCH_RESULTS_TASK.cd}]]*/ '';
+	let taskAnkenCd = /*[[${T(jp.loioz.common.constant.CommonConstant$TaskMenu).TASK_ANKEN.cd}]]*/ '';
+	
+	<!-- /* ステータスを変更したタスクのli */ -->
+	let taskLi = $('.taskData' + taskSeq);
+	
+	switch (selectedTabClass) {
+		case todayTaskCd:
+		case allTaskCd:
+		case taskAnkenCd:
+			<!-- /* 「今日のタスク」、「すべてのタスク」、「案件タスク」メニューの場合 */ -->
+			
+			<!-- /* 完了に変更する */ -->
+			
+			<!-- /* 未完了タスクの領域 */ -->
+			let $taskListDataBlockUnComp = taskLi.closest('.taskListDataBlock');
+			
+			<!-- /* タスクを削除 */ -->
+			taskLi.remove();
+			
+			<!-- /* 未完了のタスク部分の更新 */ -->
+			let unComptaskCount = $taskListDataBlockUnComp.find('#taskDataList .taskListRow').length;
+			if (unComptaskCount == 0) {
+				<!-- /* 現在の画面の全てのタスクがなくなったら画面を再描画（「タスクはありません」を表示するため） */ -->
+				renderTaskListInputForm(selectedTabClass, null, null, null, selectedTaskAnkenId);
+			}
+			break;
+
+		case futureTaskCd:
+			<!-- /* 「期限付きのタスク」メニューの場合 */ -->
+			
+			<!-- /* 完了に変更する */ -->
+			
+			<!-- /* タスクが配置されていた領域 */ -->
+			let $taskListDataBlock = taskLi.closest('.taskListDataBlock');
+			
+			<!-- /* タスクを削除 */ -->
+			taskLi.remove();
+			
+			<!-- /* タスクが配置されていた領域の件数を変更 */ -->
+			let taskListDataBlockTaskCount = $taskListDataBlock.find('#taskDataList .taskListRow').length;
+			$taskListDataBlock.find('.taskCollapseCount').text(taskListDataBlockTaskCount);
+			if (taskListDataBlockTaskCount == 0) {
+				<!-- /* 領域の全タスクがなくなったらアコーディオン部分を非表示にする */ -->
+				$taskListDataBlock.addClass('hidden');
+			}
+			
+			let allFutureTaskkCount = $('.taskListDataBlock').find('.taskListRow').length;
+			if (allFutureTaskkCount == 0) {
+				<!-- /* 現在の画面の全てのタスクがなくなったら画面を再描画（「タスクはありません」を表示するため） */ -->
+				renderTaskListInputForm(selectedTabClass, null, null, null, null);
+			}
+			break;
+
+		case overdueTaskCd:
+			<!-- /* 「期限を過ぎたタスク」メニューの場合 */ -->
+			
+			<!-- /* 完了に変更する */ -->
+			
+			<!-- /* タスクを削除 */ -->
+			taskLi.remove();
+			
+			<!-- /* 未完了のタスク部分の更新 */ -->
+			let allOverdueTaskCount = $('.taskListDataBlock').find('.taskListRow').length;
+			if (allOverdueTaskCount == 0) {
+				<!-- /* 現在の画面の全てのタスクがなくなったら画面を再描画（「タスクはありません」を表示するため） */ -->
+				renderTaskListInputForm(selectedTabClass, null, null, null, null);
+			}
+			break;
+
+		case assignedTaskCd:
+			<!-- /* 「割り当てられたタスク」メニューの場合 */ -->
+			
+			<!-- /* 完了に変更する */ -->
+			
+			<!-- /* 未完了タスクの領域 */ -->
+			let $assignedTaskListDataBlockUnComp = taskLi.closest('.taskListDataBlock');
+			
+			<!-- /* タスクを削除 */ -->
+			taskLi.remove();
+			
+			<!-- /* 未完了のタスク部分の件数を更新 */ -->
+			let assignedTaskUnCompTaskCount = $assignedTaskListDataBlockUnComp.find('#taskDataList .taskListRow').length;
+			$assignedTaskListDataBlockUnComp.find('.taskCollapseParent .taskCollapseParentCount').text(assignedTaskUnCompTaskCount);
+			if (assignedTaskUnCompTaskCount == 0) {
+				<!-- /* 領域の全タスクがなくなったらアコーディオン部分を非表示にする */ -->
+				$assignedTaskListDataBlockUnComp.addClass('hidden');
+			}
+			
+			let allAssignedTaskCount = $('.taskListDataBlock').find('.taskListRow').length;
+			if (allAssignedTaskCount == 0) {
+				<!-- /* 現在の画面の全てのタスクがなくなったら画面を再描画（「タスクはありません」を表示するため） */ -->
+				renderTaskListInputForm(selectedTabClass, null, null, null, null);
+			}
+			break;
+		
+		case assignTaskCd:
+			<!-- /* 「割り当てたタスク」メニューの場合 */ -->
+			
+			<!-- /* 完了に変更する場合 */ -->
+			
+			taskLi.each(function(idx, taskLiElem){
+				
+				let $taskLiElem = $(taskLiElem);
+				
+				<!-- /* 未完了タスクの領域 */ -->
+				let $assignTaskListDataBlockUnComp = $taskLiElem.closest('.taskListDataBlock');
+				
+				<!-- /* タスクを削除 */ -->
+				$taskLiElem.remove();
+				
+				<!-- /* 未完了のタスク部分の件数を更新 */ -->
+				let assignTaskUnCompTaskCount = $assignTaskListDataBlockUnComp.find('#taskDataList .taskListRow').length;
+				$assignTaskListDataBlockUnComp.find('.taskCollapseParent .taskCollapseParentCount').text(assignTaskUnCompTaskCount);
+				if (assignTaskUnCompTaskCount == 0) {
+					<!-- /* 領域の全タスクがなくなったらアコーディオン部分を非表示にする */ -->
+					$assignTaskListDataBlockUnComp.addClass('hidden');
+				}
+				
+				let allAssignTaskCount = $('.taskListDataBlock').find('.taskListRow').length;
+				if (allAssignTaskCount == 0) {
+					<!-- /* 現在の画面の全てのタスクがなくなったら画面を再描画（「タスクはありません」を表示するため） */ -->
+					renderTaskListInputForm(selectedTabClass, null, null, null, null);
+				}
+			})
+			break;
+
+		case closeTaskCd:
+			<!-- /* 「完了したタスク」メニューの場合 */ -->
+			
+			<!-- /* 未完了に変更する */ -->
+			
+			<!-- /* 完了タスクの領域 */ -->
+			let $closeTaskListDataBlock = taskLi.closest('.taskListDataBlock');
+			
+			<!-- /* タスクを削除 */ -->
+			taskLi.remove();
+			
+			<!-- /* 未完了のタスク部分の更新 */ -->
+			let closeTaskCount = $closeTaskListDataBlock.find('#taskDataList .taskListRow').length;
+			if (closeTaskCount == 0) {
+				<!-- /* 現在の画面の全てのタスクがなくなったら画面を再描画（「タスクはありません」を表示するため） */ -->
+				renderTaskListInputForm(selectedTabClass, null, null, null, null);
+			}
+			break;
+
+		case searchResultsTask:
+			<!-- /* 「検索結果」メニューの場合 */ -->
+			
+			<!-- /* 未完了、完了の両方のタスクを表示するため何もしない */ -->
+			break;
+
+		default:
+	}
+	
+	<!-- /* ツールチップを全て消し、再設定 */ -->
+	$('.tooltip').remove();
+	commonSetUpElement();
+	
+	<!-- /* 対象のタスクが選択状態の場合は、選択を解除し、詳細を閉じる */ -->
+	if (taskLi.hasClass('selected')) {
+		taskLi.removeClass('selected');
+		<!-- /* 詳細領域は閉じる */ -->
+		$('#taskDetailFragmentWrap').addClass("hidden");
+		$('#taskDetailFragmentWrap').html('');
+	}
+}
+
+<!--/*
+ * 一覧に表示されている、指定のタスクseqの行の表示を更新する（表示の更新のみで、完了-未完了などの移動は行わない）
+*/-->
+function refreshTaskListRow(selectedTabClass, taskSeq, selectedAssignSeq, selectedTaskSeq) {
+	return new Promise((resolve, reject) => {
+
+		const param = {
+			"page" : 0,
+			"selectedTabClass" : selectedTabClass,
+			"taskSeq" : taskSeq,
+			"selectedAssignSeq" : selectedAssignSeq,
+			"selectedTaskSeq" : selectedTaskSeq,
+		}
+
+		$.ajax({
+			url : '/user/taskManagement/getTaskListRow',
+			type : "GET",
+			data : param,
+			dataType: 'html',
+		})
+		.done(function(data, status, jqXHR) {
+			if (isAjaxProcSuccess(jqXHR)) {
+				
+				<!-- /* 取得したタスクの行データを画面に表示 */ -->
+				replaceTaskRow(selectedTabClass, taskSeq, data);
+				commonSetUpElement();
+
+			} else {
+				<!-- /* 処理失敗 */ -->
+				const errorMsg = getAjaxProcResutlMessage(jqXHR);
+				showErrorMessageForJs(errorMsg);
+			}
+			return resolve();
+		})
+		.fail(function(jqXHR, status, errorThrown) {
+			showErrorMessageForJs(/*[[#{E00091}]]*/ "error");
+			return reject();
+		});
+
+	});
+}
+
+
+<!--/*
+ * 対象メニューの、対象タスクの行を、引数のHTML（タスクの行のHTML）で差し替える（変更分の反映）
+*/-->
+function replaceTaskRow(selectedTabClass, taskSeq, taskRowHtml) {
+	
+	let todayTaskCd = /*[[${T(jp.loioz.common.constant.CommonConstant$TaskMenu).TODAY_TASK.cd}]]*/ '';
+	let futureTaskCd = /*[[${T(jp.loioz.common.constant.CommonConstant$TaskMenu).FUTURE_TASK.cd}]]*/ '';
+	let allTaskCd = /*[[${T(jp.loioz.common.constant.CommonConstant$TaskMenu).ALL_TASK.cd}]]*/ '';
+	let overdueTaskCd = /*[[${T(jp.loioz.common.constant.CommonConstant$TaskMenu).OVERDUE_TASK.cd}]]*/ '';
+	let assignedTaskCd = /*[[${T(jp.loioz.common.constant.CommonConstant$TaskMenu).ASSIGNED_TASK.cd}]]*/ '';
+	let assignTaskCd = /*[[${T(jp.loioz.common.constant.CommonConstant$TaskMenu).ASSIGN_TASK.cd}]]*/ '';
+	let closeTaskCd = /*[[${T(jp.loioz.common.constant.CommonConstant$TaskMenu).CLOSE_TASK.cd}]]*/ '';
+	let searchResultsTask = /*[[${T(jp.loioz.common.constant.CommonConstant$TaskMenu).SEARCH_RESULTS_TASK.cd}]]*/ '';
+	let taskAnkenCd = /*[[${T(jp.loioz.common.constant.CommonConstant$TaskMenu).TASK_ANKEN.cd}]]*/ '';
+
+	switch (selectedTabClass) {
+		case todayTaskCd:
+			<!-- /* 「今日のタスク」メニューの場合 */ -->
+			
+			$('.taskListRow.taskData' + taskSeq).replaceWith($(taskRowHtml));
+			$('#taskDataList .sortableObj').addClass('ui-sortable-handle');
+			$('#selectedTaskSeq').val(taskSeq);
+
+			break;
+
+		case allTaskCd:
+			<!-- /* 「すべてのタスク」メニューの場合 */ -->
+			
+			$('.taskListRow.taskData' + taskSeq).replaceWith($(taskRowHtml));
+			$('#taskDataList .sortableObj').addClass('ui-sortable-handle');
+			$('#selectedTaskSeq').val(taskSeq);
+
+			break;
+
+		case futureTaskCd:
+			<!-- /* 「期限付きのタスク」メニューの場合 */ -->
+			
+			$('.taskListRow.taskData' + taskSeq).replaceWith($(taskRowHtml));
+
+			break;
+
+		case overdueTaskCd:
+			<!-- /* 「期限を過ぎたタスク」メニューの場合 */ -->
+			
+			let $overdueTaskRowHtml = $(taskRowHtml)
+			$overdueTaskRowHtml.find('.taskExclamation').remove();
+			
+			$('.taskListRow.taskData' + taskSeq).replaceWith($overdueTaskRowHtml);
+			$('#selectedTaskSeq').val(taskSeq);
+
+			break;
+
+		case assignedTaskCd:
+			<!-- /* 「割り当てられたタスク」メニューの場合 */ -->
+			
+			<!-- /* 対象要素の「assign-seq」の値 */ -->
+			let assignSeq = $('.taskListRow.taskData' + taskSeq).attr('data-assign-seq');
+			
+			let $taskRowHtml = $(taskRowHtml)
+			
+			<!-- /* 追加する要素に値を設定 */ -->
+			$taskRowHtml.attr('data-assign-seq', assignSeq);
+			$taskRowHtml.addClass('selected');
+			$taskRowHtml.find('.taskExclamation').remove();
+			
+			<!-- /* 画面に追加 */ -->
+			$('.taskListRow.taskData' + taskSeq).replaceWith($taskRowHtml);
+			
+			break;
+		
+		case assignTaskCd:
+			<!-- /* 「割り当てたタスク」メニューの場合 */ -->
+			
+			let taskLiAry = $('.taskListRow.taskData' + taskSeq);
+			
+			taskLiAry.each(function(idx, taskLiElem){
+				
+				$taskLiElem = $(taskLiElem);
+				
+				<!-- /* 対象要素の「assign-seq」の値と、選択状態 */ -->
+				let assignSeq = $taskLiElem.attr('data-assign-seq');
+				let isSeleted = $taskLiElem.hasClass('selected');
+				
+				<!-- /* 追加する要素のもとをコピー（オリジナルはそのままにし、コピーの値を変更して画面に追加するため） */ -->
+				let $taskRowHtml = $.extend(true,{},$(taskRowHtml))
+				
+				<!-- /* もとの値を反映 */ -->
+				$taskRowHtml.attr('data-assign-seq', assignSeq);
+				if (isSeleted) {
+					$taskRowHtml.addClass('selected');
+				}
+				
+				<!-- /* 画面に追加 */ -->
+				$taskLiElem.replaceWith($taskRowHtml);
+			})
+			
+			break;
+
+		case closeTaskCd:
+		case searchResultsTask:
+		case taskAnkenCd:
+			<!-- /* 「完了したタスク」、「検索結果」、「案件タスク」メニューの場合 */ -->
+			
+			$('.taskListRow.taskData' + taskSeq).replaceWith($(taskRowHtml));
+			$('#selectedTaskSeq').val(taskSeq);
+			
+			break;
+
+		default:
+	}
+	
+}
+
+<!--/*
+ * 詳細部分で、タスクの削除を行った場合に、一覧の対象タスクを削除する
+*/-->
+function deleteTaskRowForAfterDeleteTask(selectedTabClass, taskSeq, selectedTaskAnkenId) {
+	
+	let todayTaskCd = /*[[${T(jp.loioz.common.constant.CommonConstant$TaskMenu).TODAY_TASK.cd}]]*/ '';
+	let futureTaskCd = /*[[${T(jp.loioz.common.constant.CommonConstant$TaskMenu).FUTURE_TASK.cd}]]*/ '';
+	let allTaskCd = /*[[${T(jp.loioz.common.constant.CommonConstant$TaskMenu).ALL_TASK.cd}]]*/ '';
+	let overdueTaskCd = /*[[${T(jp.loioz.common.constant.CommonConstant$TaskMenu).OVERDUE_TASK.cd}]]*/ '';
+	let assignedTaskCd = /*[[${T(jp.loioz.common.constant.CommonConstant$TaskMenu).ASSIGNED_TASK.cd}]]*/ '';
+	let assignTaskCd = /*[[${T(jp.loioz.common.constant.CommonConstant$TaskMenu).ASSIGN_TASK.cd}]]*/ '';
+	let closeTaskCd = /*[[${T(jp.loioz.common.constant.CommonConstant$TaskMenu).CLOSE_TASK.cd}]]*/ '';
+	let searchResultsTask = /*[[${T(jp.loioz.common.constant.CommonConstant$TaskMenu).SEARCH_RESULTS_TASK.cd}]]*/ '';
+	let taskAnkenCd = /*[[${T(jp.loioz.common.constant.CommonConstant$TaskMenu).TASK_ANKEN.cd}]]*/ '';
+
+	<!-- /* 削除するタスクのli */ -->
+	let taskLi = $('.taskData' + taskSeq);
+	
+	switch (selectedTabClass) {
+		case todayTaskCd:
+		case allTaskCd:
+		case searchResultsTask:
+		case taskAnkenCd:
+			<!-- /* 「今日のタスク」、「すべてのタスク」、「検索結果」、「案件タスク」メニューの場合 */ -->
+			
+			<!-- /* 未完了のタスクを削除する */ -->
+			
+			<!-- /* 未完了タスクの領域 */ -->
+			let $taskListDataBlockUnComp = taskLi.closest('.taskListDataBlock');
+			
+			<!-- /* タスクを削除 */ -->
+			taskLi.remove();
+			
+			<!-- /* 未完了のタスク部分の更新 */ -->
+			let unComptaskCount = $taskListDataBlockUnComp.find('#taskDataList .taskListRow').length;
+			<!-- /* 最終行に次ページの先頭行を表示する */ -->
+			Promise.resolve()
+				<!--/* 次ページのタスク先頭行データを取得 */-->
+				.then(() => getTaskRowOnNextPage(selectedTabClass))
+				<!--/* ステータス変更行の削除、選択行の変更 */-->
+				.then(() => {
+					if (unComptaskCount == 0) {
+						<!-- /* 現在の画面の全てのタスクがなくなったら画面を再描画（「タスクはありません」を表示するため） */ -->
+						return renderTaskListInputForm(selectedTabClass, null, null, null, selectedTaskAnkenId);
+					}
+					return;
+				});
+			break;
+		
+		case futureTaskCd:
+			<!-- /* 「期限付きのタスク」メニューの場合 */ -->
+			
+			<!-- /* タスクが配置されていた領域 */ -->
+			let $taskListDataBlock = taskLi.closest('.taskListDataBlock');
+			
+			<!-- /* タスクを削除 */ -->
+			taskLi.remove();
+			
+			<!-- /* タスクが配置されていた領域の件数を変更 */ -->
+			let taskListDataBlockTaskCount = $taskListDataBlock.find('#taskDataList .taskListRow').length;
+			$taskListDataBlock.find('.taskCollapseCount').text(taskListDataBlockTaskCount);
+			if (taskListDataBlockTaskCount == 0) {
+				<!-- /* 領域の全タスクがなくなったらアコーディオン部分を非表示にする */ -->
+				$taskListDataBlock.addClass('hidden');
+			}
+			
+			let allAssignTaskCount = $('.taskListDataBlock').find('.taskListRow').length;
+			if (allAssignTaskCount == 0) {
+				<!-- /* 現在の画面の全てのタスクがなくなったら画面を再描画（「タスクはありません」を表示するため） */ -->
+				renderTaskListInputForm(selectedTabClass, null, null, null, null);
+			}
+			break;
+
+		case overdueTaskCd:
+			<!-- /* 「期限を過ぎたタスク」メニューの場合 */ -->
+			
+			<!-- /* タスクを削除 */ -->
+			taskLi.remove();
+			
+			let overdueTaskCount = $('.taskListDataBlock').find('.taskListRow').length;
+			<!-- /* 最終行に次ページの先頭行を表示する */ -->
+			Promise.resolve()
+				<!--/* 次ページのタスク先頭行データを取得 */-->
+				.then(() => getTaskRowOnNextPage(selectedTabClass))
+				<!--/* ステータス変更行の削除、選択行の変更 */-->
+				.then(() => {
+					if (overdueTaskCount == 0) {
+						<!-- /* 現在の画面の全てのタスクがなくなったら画面を再描画（「タスクはありません」を表示するため） */ -->
+						return renderTaskListInputForm(selectedTabClass, null, null, null, null);
+					}
+					return;
+				});
+			break;
+
+		case assignedTaskCd:
+			<!-- /* 「割り当てられたタスク」メニューの場合 */ -->
+			
+			<!-- /* 未完了のタスクを削除する場合 */ -->
+			
+			<!-- /* 未完了タスクの領域 */ -->
+			let $assignedTaskListDataBlockUnComp = taskLi.closest('.taskListDataBlock');
+			
+			<!-- /* タスクを削除 */ -->
+			taskLi.remove();
+			
+			<!-- /* 未完了のタスク部分の件数を更新 */ -->
+			let assignedTaskUnCompTaskCount = $assignedTaskListDataBlockUnComp.find('#taskDataList .taskListRow').length;
+			$assignedTaskListDataBlockUnComp.find('.taskCollapseParent .taskCollapseParentCount').text(assignedTaskUnCompTaskCount);
+			<!-- /* 未完了の全てのタスクが、削除によってなくなった場合 -> 対象領域を非表示 */ -->
+			if (assignedTaskUnCompTaskCount == 0) {
+				$assignedTaskListDataBlockUnComp.addClass('hidden');
+			}
+			
+			let assignedTaskCount = $('.taskListDataBlock').find('.taskListRow').length;
+			if (assignedTaskCount == 0) {
+				<!-- /* 現在の画面の全てのタスクがなくなったら画面を再描画（「タスクはありません」を表示するため） */ -->
+				renderTaskListInputForm(selectedTabClass, null, null, null, null);
+			}
+			break;
+		
+		case assignTaskCd:
+			<!-- /* 「割り当てたタスク」メニューの場合 */ -->
+			
+			<!-- /* 未完了のタスクを削除する場合 */ -->
+			
+			taskLi.each(function(idx, taskLiElem){
+				
+				let $taskLiElem = $(taskLiElem);
+				
+				<!-- /* 未完了タスクの領域 */ -->
+				let $assignTaskListDataBlockUnComp = $taskLiElem.closest('.taskListDataBlock');
+				
+				<!-- /* タスクを削除 */ -->
+				$taskLiElem.remove();
+				
+				<!-- /* 未完了のタスク部分の件数を更新 */ -->
+				let assignTaskUnCompTaskCount = $assignTaskListDataBlockUnComp.find('#taskDataList .taskListRow').length;
+				$assignTaskListDataBlockUnComp.find('.taskCollapseParent .taskCollapseParentCount').text(assignTaskUnCompTaskCount);
+				<!-- /* 未完了の全てのタスクが、削除によってなくなった場合 -> 対象領域を非表示 */ -->
+				if (assignTaskUnCompTaskCount == 0) {
+					$assignTaskListDataBlockUnComp.addClass('hidden');
+				}
+			})
+			
+			let assignTaskkCount = $('.taskListDataBlock').find('.taskListRow').length;
+			if (assignTaskkCount == 0) {
+				<!-- /* 画面の全てのタスクがなくなったら画面を再描画（「タスクはありません」を表示するため） */ -->
+				renderTaskListInputForm(selectedTabClass, null, null, null, null);
+			}
+			break;
+		case closeTaskCd:
+			<!-- /* 「完了したタスク」メニューの場合 */ -->
+			
+			<!-- /* 完了タスクの領域 */ -->
+			let $closeTaskListDataBlock = taskLi.closest('.taskListDataBlock');
+			
+			<!-- /* タスクを削除 */ -->
+			taskLi.remove();
+			
+			<!-- /* 完了のタスク部分の更新 */ -->
+			let closeTaskCount = $closeTaskListDataBlock.find('#taskDataList .taskListRow').length;
+			<!-- /* 最終行に次ページの先頭行を表示する */ -->
+			Promise.resolve()
+				<!--/* 次ページのタスク先頭行データを取得 */-->
+				.then(() => getTaskRowOnNextPage(selectedTabClass))
+				<!--/* ステータス変更行の削除、選択行の変更 */-->
+				.then(() => {
+					if (closeTaskCount == 0) {
+						<!-- /* 現在の画面の全てのタスクがなくなったら画面を再描画（「タスクはありません」を表示するため） */ -->
+						return renderTaskListInputForm(selectedTabClass, null, null, null, null);
+					}
+					return;
+				});
+			break;
+		default:
+	}
+
+}
+
+<!--/*
+ * 次ページの先頭行タスクデータがあれば取得し一覧の最終行に追加する（ページングをする画面で何らかの処理後、次ページの先頭行データが必要な場合使用）
+*/-->
+function getTaskRowOnNextPage(selectedTabClass) {
+
+	<!-- /* ページで表示中のタスクSEQ */ -->
+	const dispPageTaskSeqList = [];
+	$('input[name="rowTaskSeq"]').map(function (index, el) {
+		dispPageTaskSeqList.push($(this).val());
+	});
+
+	return new Promise((resolve, reject) => {
+
+		$.ajax({
+			url : "/user/taskManagement/getTaskRowOnNextPage",
+			type : "GET",
+			data : {
+				"page" : 0,
+				"selectedTabClass": selectedTabClass,
+				"dispPageTaskSeqList": String(dispPageTaskSeqList)
+			} 
+		}).done(function(data, status, jqXHR) {
+			<!-- /* 次ページの先頭行がデータがあれば最終行に追加する */ -->
+			if (data) {
+				$('#taskDataList').append(data);
+			}
+			<!-- /* ページングフラグメント更新 */ -->
+			renderTaskPager(selectedTabClass);
+			return resolve();
+		}).fail(function() {
+			showErrorMessageForJs(/*[[#{E00059}]]*/ "データの取得に失敗しました。");
+			return reject();
+		}).always(function() {
+		});
+	});
+}
+
+<!--/*
+ * 前ページの最終行タスクデータを取得し、一覧の先頭行に追加する（ページングをする画面で何らかの処理後、前ページの最終行データが必要な場合使用）
+*/-->
+function getTaskRowOnPrevPage(selectedTabClass, selectedTaskSeq, selectedAssignSeq) {
+	return new Promise((resolve, reject) => {
+
+		<!-- /* ページで表示中のタスクSEQ */ -->
+		const dispPageTaskSeqList = [];
+		$('input[name="rowTaskSeq"]').map(function (index, el) {
+			dispPageTaskSeqList.push($(this).val());
+		});
+
+		$.ajax({
+			url : "/user/taskManagement/getTaskRowOnPrevPage",
+			type : "GET",
+			data : {
+				"page" : 0,
+				"selectedTabClass": selectedTabClass,
+				"selectedTaskSeq":selectedTaskSeq,
+				"selectedAssignSeq":selectedAssignSeq,
+				"dispPageTaskSeqList":String(dispPageTaskSeqList)
+			} 
+		}).done(function(data, status, jqXHR) {
+			<!-- /* 前ページの最終行データがあれば先頭行に追加する */ -->
+			if (data) {
+				$('#taskDataList').prepend(data);
+				<!-- /* ページングフラグメント更新 */ -->
+				renderTaskPager(selectedTabClass);
+				return resolve();
+			}
+			<!-- /* 前ページの最終行データを取得できない */ -->
+			return reject();
+			// return resolve();
+		}).fail(function() {
+			showErrorMessageForJs(/*[[#{E00059}]]*/ "データの取得に失敗しました。");
+			return reject();
+		}).always(function() {
+		});
+	});
+}
+
+<!--/*
+ * 【案件解除後の表示用】対象メニューの対象タスクの行を引数のHTML（タスクの行のHTML）で差し替える（変更分の反映）
+*/-->
+function replaceTaskRowForDeleteTaskAnken(selectedTabClass, taskSeq, taskRowHtml, selectedTaskAnkenId) {
+	
+	let todayTaskCd = /*[[${T(jp.loioz.common.constant.CommonConstant$TaskMenu).TODAY_TASK.cd}]]*/ '';
+	let futureTaskCd = /*[[${T(jp.loioz.common.constant.CommonConstant$TaskMenu).FUTURE_TASK.cd}]]*/ '';
+	let allTaskCd = /*[[${T(jp.loioz.common.constant.CommonConstant$TaskMenu).ALL_TASK.cd}]]*/ '';
+	let overdueTaskCd = /*[[${T(jp.loioz.common.constant.CommonConstant$TaskMenu).OVERDUE_TASK.cd}]]*/ '';
+	let assignedTaskCd = /*[[${T(jp.loioz.common.constant.CommonConstant$TaskMenu).ASSIGNED_TASK.cd}]]*/ '';
+	let assignTaskCd = /*[[${T(jp.loioz.common.constant.CommonConstant$TaskMenu).ASSIGN_TASK.cd}]]*/ '';
+	let closeTaskCd = /*[[${T(jp.loioz.common.constant.CommonConstant$TaskMenu).CLOSE_TASK.cd}]]*/ '';
+	let searchResultsTask = /*[[${T(jp.loioz.common.constant.CommonConstant$TaskMenu).SEARCH_RESULTS_TASK.cd}]]*/ '';
+	let taskAnkenCd = /*[[${T(jp.loioz.common.constant.CommonConstant$TaskMenu).TASK_ANKEN.cd}]]*/ '';
+
+	<!-- /* 案件を解除したタスクのli */ -->
+	let taskLi = $('.taskData' + taskSeq);
+	
+	switch (selectedTabClass) {
+		case taskAnkenCd:
+			<!-- /* 「案件タスク」メニューの場合 */ -->
+			
+			<!-- /* 案件が解除された場合 -> 表示しない */ -->
+			if (taskLi.length > 0) {
+				<!-- /* 対象のタスクがあれば削除 */ -->
+				taskLi.remove();
+			}
+			<!-- /* 選択中のタスクSEQページが現在表示しているページより前であれば先頭行を削除する */ -->
+			if ($('#pageForSelectedTaskSeq').val() < $('#taskPage').val()) {
+				<!-- /* ページ先頭行を削除 */ -->
+				$('.taskListRow:first').remove();
+			}
+			
+			const pageSize = $('#taskPageSize').val();
+			let taskCount = $('.taskListDataBlock').find('.taskListRow').length;
+			if (taskCount == 0) {
+				<!-- /* 画面の全てのタスクがなくなったら画面を再描画（「タスクはありません」を表示するため） */ -->
+				renderTaskListInputForm(selectedTabClass, null, null, null, selectedTaskAnkenId);
+			} else if (pageSize > taskCount) {
+				<!--/* 次ページの1行目を取得し表示する */-->
+				getTaskRowOnNextPage(selectedTabClass);
+			}
+			<!-- /* ページングフラグメント更新 */ -->
+			renderTaskPager(selectedTabClass);
+			
+			break;
+
+		case todayTaskCd:
+		case futureTaskCd:
+		case allTaskCd:
+		case overdueTaskCd:
+		case assignedTaskCd:
+		case assignTaskCd:
+		case closeTaskCd:
+		case searchResultsTask:
+			<!-- /* 「今日のタスク」、「期限付きのタスク」、「すべてのタスク」、「期限を過ぎたタスク」、「割り当てられたタスク」、「割り当てたタスク」、「完了したタスク」、「検索結果」メニューの場合 */ -->
+			
+			<!-- /* 通常のタスク行の表示切り替えを行う */ -->
+			replaceTaskRow(selectedTabClass, taskSeq, taskRowHtml);
+			
+			break;
+		default:
+	}
+}
+
+<!--/*
+ * 【タスクに案件を設定後の表示用】対象メニューの対象タスクの行を引数のHTML（タスクの行のHTML）で差し替える（変更分の反映）
+*/-->
+function replaceTaskRowForAddTaskAnken(selectedTabClass, taskSeq, taskRowHtml, addAnkenId, selectedTaskAnkenId) {
+	
+	let todayTaskCd = /*[[${T(jp.loioz.common.constant.CommonConstant$TaskMenu).TODAY_TASK.cd}]]*/ '';
+	let futureTaskCd = /*[[${T(jp.loioz.common.constant.CommonConstant$TaskMenu).FUTURE_TASK.cd}]]*/ '';
+	let allTaskCd = /*[[${T(jp.loioz.common.constant.CommonConstant$TaskMenu).ALL_TASK.cd}]]*/ '';
+	let overdueTaskCd = /*[[${T(jp.loioz.common.constant.CommonConstant$TaskMenu).OVERDUE_TASK.cd}]]*/ '';
+	let assignedTaskCd = /*[[${T(jp.loioz.common.constant.CommonConstant$TaskMenu).ASSIGNED_TASK.cd}]]*/ '';
+	let assignTaskCd = /*[[${T(jp.loioz.common.constant.CommonConstant$TaskMenu).ASSIGN_TASK.cd}]]*/ '';
+	let closeTaskCd = /*[[${T(jp.loioz.common.constant.CommonConstant$TaskMenu).CLOSE_TASK.cd}]]*/ '';
+	let searchResultsTask = /*[[${T(jp.loioz.common.constant.CommonConstant$TaskMenu).SEARCH_RESULTS_TASK.cd}]]*/ '';
+	let taskAnkenCd = /*[[${T(jp.loioz.common.constant.CommonConstant$TaskMenu).TASK_ANKEN.cd}]]*/ '';
+
+	switch (selectedTabClass) {
+		case todayTaskCd:
+		case allTaskCd:
+		case futureTaskCd:
+		case overdueTaskCd:
+		case assignedTaskCd:
+		case assignTaskCd:
+		case closeTaskCd:
+		case searchResultsTask:
+			<!-- /* 「今日のタスク」、「期限付きのタスク」、「すべてのタスク」、「期限を過ぎたタスク」、「割り当てられたタスク」、「割り当てたタスク」、「完了したタスク」、「検索結果」メニューの場合 */ -->
+			
+			<!-- /* 通常のタスク行の表示切り替えを行う */ -->
+			replaceTaskRow(selectedTabClass, taskSeq, taskRowHtml);
+			
+			break;
+
+		case taskAnkenCd:
+			<!-- /* 「案件タスク」メニューの場合 */ -->
+			
+			if (addAnkenId === selectedTaskAnkenId) {
+				<!-- /* 一覧側の選択中のタスクSEQ、ページ番号（追加時は必ず1ページ目）をセット, */ -->
+				$('#selectedTaskSeq').val(taskSeq);
+				$('#pageForSelectedTaskSeq').val(0);
+				
+				let taskCount = $('.taskListDataBlock').find('.taskListRow').length;
+				const page = $('#taskPage').val();
+				if (taskCount == 0) {
+					<!-- /* 初めての追加となる場合は画面を再描画（表示されている「タスクはありません」を非表示にするため） 追加時のページ番号は必ず1ページ目をセット */ -->
+					renderTaskListInputForm(selectedTabClass, taskSeq, null, 0, selectedTaskAnkenId);
+				} else if (page == 0) {
+					<!-- /* 1ページ目で既に他のタスクが存在する場合はJSで追加 */ -->
+					$('#taskDataList').prepend($(taskRowHtml));
+					<!-- /* 現ページの最終行を削除する */ -->
+					removeTaskLastRow(selectedTabClass);
+				} else {
+					Promise.resolve()
+						<!-- /* 前ページの最終行を取得する */ -->
+						.then(() => getTaskRowOnPrevPage(selectedTabClass, taskSeq, null))
+						<!-- /* 現ページの最終行を削除する */ -->
+						.then(() => removeTaskLastRow(selectedTabClass))
+				}
+			}
+			break;
+
+		default:
+	}
+}
+
+<!--/*
+ * 【期限の変更後の表示用】対象メニューの、対象タスクの行を、引数のHTML（タスクの行のHTML）で差し替える（変更分の反映）
+*/-->
+function replaceTaskRowForChangeLimitDate(selectedTabClass, taskSeq, taskRowHtml, limitDate, beforeLimitDate) {
+	
+	let todayTaskCd = /*[[${T(jp.loioz.common.constant.CommonConstant$TaskMenu).TODAY_TASK.cd}]]*/ '';
+	let futureTaskCd = /*[[${T(jp.loioz.common.constant.CommonConstant$TaskMenu).FUTURE_TASK.cd}]]*/ '';
+	let allTaskCd = /*[[${T(jp.loioz.common.constant.CommonConstant$TaskMenu).ALL_TASK.cd}]]*/ '';
+	let overdueTaskCd = /*[[${T(jp.loioz.common.constant.CommonConstant$TaskMenu).OVERDUE_TASK.cd}]]*/ '';
+	let assignedTaskCd = /*[[${T(jp.loioz.common.constant.CommonConstant$TaskMenu).ASSIGNED_TASK.cd}]]*/ '';
+	let assignTaskCd = /*[[${T(jp.loioz.common.constant.CommonConstant$TaskMenu).ASSIGN_TASK.cd}]]*/ '';
+	let closeTaskCd = /*[[${T(jp.loioz.common.constant.CommonConstant$TaskMenu).CLOSE_TASK.cd}]]*/ '';
+	let searchResultsTask = /*[[${T(jp.loioz.common.constant.CommonConstant$TaskMenu).SEARCH_RESULTS_TASK.cd}]]*/ '';
+	let taskAnkenCd = /*[[${T(jp.loioz.common.constant.CommonConstant$TaskMenu).TASK_ANKEN.cd}]]*/ '';
+
+	<!-- /* ステータスを変更したタスクのli */ -->
+	let taskLi = $('.taskData' + taskSeq);
+	
+	<!-- /* 現在日 */ -->
+	let today = new Date();
+	today.setHours(0, 0, 0, 0);
+	<!-- /* 入力日 */ -->
+	let inputLimitDate = new Date(limitDate);
+	
+	switch (selectedTabClass) {
+		case futureTaskCd:
+			<!-- /* 「期限付きのタスク」メニューの場合 */ -->
+			
+			if (inputLimitDate >= today) {
+				<!-- /* 設定された期限が今日を含むそれ以降の日付の場合 -> 表示する */ -->
+				
+				if (taskLi.length > 0) {
+					
+					<!-- /* 更新したタスクの現在の表示領域の期日のカテゴリ値 */ -->
+					let $updateTaskListDataBlock = taskLi.closest('.taskListDataBlock');
+					let updateTaskListDataBlockCategoryDate = $updateTaskListDataBlock.data('category-date');
+					
+					if (updateTaskListDataBlockCategoryDate) {
+						<!-- /* カテゴリ値ある -> その他以外の領域の場合 */ -->
+						
+						if (updateTaskListDataBlockCategoryDate == limitDate) {
+							<!-- /* 現在のカテゴリ値と、入力された期日が同じ場合 -> なにもしない */ -->
+						} else {
+							<!-- /* 現在のカテゴリ値と、入力された期日が異なる場合 -> 移動させる */ -->
+							
+							<!-- /* もともとのは削除 */ -->
+							taskLi.remove();
+							<!-- /* もともとのタスクがあった領域の更新（件数更新も） */ -->
+							let taskCount = $updateTaskListDataBlock.find('#taskDataList .taskListRow').length;
+							$updateTaskListDataBlock.find('.taskCollapseCount').text(taskCount);
+							if (taskCount == 0) {
+								<!-- /* タスクがなくなった場合 -> 非表示 */ -->
+								$updateTaskListDataBlock.addClass('hidden');
+							}
+							
+							<!-- /* 保存された期日のカテゴリの領域を取得 */ -->
+							let $taskListDataBlock = $(".taskListDataBlock[data-category-date='" + limitDate + "']");
+							if ($taskListDataBlock.length > 0) {
+								<!-- /* 保存された期日のカテゴリの領域がある場合 */ -->
+								<!-- /* タスクを追加 */ -->
+								let $taskRowHtml = $(taskRowHtml);
+								$taskRowHtml.find('.taskExclamation').remove();	
+								$taskListDataBlock.find('#taskDataList').prepend($taskRowHtml);
+								<!-- /* タスクを表示 */ -->
+								$taskListDataBlock.removeClass('hidden');
+								let taskListDataBlockTaskCount = $taskListDataBlock.find('#taskDataList .taskListRow').length;
+								$taskListDataBlock.find('.taskCollapseCount').text(taskListDataBlockTaskCount);
+							} else {
+								<!-- /* 保存された期日のカテゴリの領域がない場合 */ -->
+								let dataBlockAry = $(".taskListDataBlock");
+								dataBlockAry.each(function(idx, dataBlockElem){
+									let $dataBlockElem = $(dataBlockElem)
+									let dataBlockElemCategoryDate = $dataBlockElem.data('category-date');
+									if (!dataBlockElemCategoryDate) {
+										<!-- /* 期日のカテゴリの属性が存在しない（その他）の領域に追加する */ -->
+										
+										<!-- /* タスクを追加 */ -->
+										let $taskRowHtml = $(taskRowHtml);
+										$taskRowHtml.find('.taskExclamation').remove();
+										$dataBlockElem.find('#taskDataList').prepend($taskRowHtml);
+										<!-- /* タスクを表示 */ -->
+										$dataBlockElem.removeClass('hidden');
+										let dataBlockElemTaskCount = $dataBlockElem.find('#taskDataList .taskListRow').length;
+										$dataBlockElem.find('.taskCollapseCount').text(dataBlockElemTaskCount);
+									}
+								})
+							}
+						}
+					} else {
+						<!-- /* カテゴリ値がない -> その他の領域の場合 */ -->
+						
+						<!-- /* 保存された期日のカテゴリの領域を取得 */ -->
+						let $taskListDataBlock = $(".taskListDataBlock[data-category-date='" + limitDate + "']");
+						if ($taskListDataBlock.length > 0) {
+							<!-- /* 保存された期日のカテゴリの領域がある場合 */ -->
+							
+							<!-- /* もともとのは削除 */ -->
+							taskLi.remove();
+							<!-- /* もともとのタスクがあった領域の更新（件数更新も） */ -->
+							let taskCount = $updateTaskListDataBlock.find('#taskDataList .taskListRow').length;
+							$updateTaskListDataBlock.find('.taskCollapseCount').text(taskCount);
+							if (taskCount == 0) {
+								<!-- /* タスクがなくなった場合 -> 非表示 */ -->
+								$updateTaskListDataBlock.addClass('hidden');
+							}
+							
+							<!-- /* タスクを追加 */ -->
+							let $taskRowHtml = $(taskRowHtml);
+							$taskRowHtml.find('.taskExclamation').remove();
+							$taskListDataBlock.find('#taskDataList').prepend($taskRowHtml);
+							<!-- /* タスクを表示 */ -->
+							$taskListDataBlock.removeClass('hidden');
+							let taskListDataBlockTaskCount = $taskListDataBlock.find('#taskDataList .taskListRow').length;
+							$taskListDataBlock.find('.taskCollapseCount').text(taskListDataBlockTaskCount)
+						} else {
+							<!-- /* 保存された期日のカテゴリの領域がない場合 -> 既にタスクの行はここにある */ -->
+							<!-- /* 日付情報を反映するため更新 */ -->
+							replaceTaskRow(selectedTabClass, taskSeq, taskRowHtml)
+						}
+					}
+				} else {
+					
+					<!-- /* 初めての追加となる場合は画面を再描画（表示されている「タスクはありません」を非表示にするため） */ -->
+					renderTaskListInputForm(selectedTabClass, taskSeq, null, null, null);
+				}
+			} else {
+				<!-- /* 設定された期限が今日を含むそれ以降の日付ではない場合 -> 表示しない */ -->
+				if (taskLi.length > 0) {
+					
+					<!-- /* 更新したタスクの現在の表示領域の期日のカテゴリ値 */ -->
+					let $updateTaskListDataBlock = taskLi.closest('.taskListDataBlock');
+					
+					<!-- /* もともとのは削除 */ -->
+					taskLi.remove();
+					
+					<!-- /* もともとのタスクがあった領域の更新（件数更新も） */ -->
+					let taskCount = $updateTaskListDataBlock.find('#taskDataList .taskListRow').length;
+					$updateTaskListDataBlock.find('.taskCollapseCount').text(taskCount);
+					if (taskCount == 0) {
+						<!-- /* タスクがなくなった場合 -> 非表示 */ -->
+						$updateTaskListDataBlock.addClass('hidden');
+					}
+				}
+			}
+			
+			break;
+		case overdueTaskCd:
+			<!-- /* 「期限を過ぎたタスク」メニューの場合 */ -->
+			
+			if (today > inputLimitDate) {
+				<!-- /* 設定された期限が過去日 -> 表示する */ -->
+				
+				if (taskLi.length > 0) {
+					<!-- /* 既に表示されている場合 -> 更新 */ -->
+					replaceTaskRow(selectedTabClass, taskSeq, taskRowHtml)
+				} else {
+					<!-- /* 表示されていない場合 -> */ -->
+					let beforeLimitDateType = new Date(beforeLimitDate);
+					<!-- /* 変更前の期限日が無い場合、変更前の期限日が未来日の場合 追加 */ -->
+					if (beforeLimitDate == null || today < beforeLimitDateType) {
+						
+						<!-- /* 一覧側の選択中のタスクSEQ、ページ番号（追加時は必ず1ページ目）をセット, */ -->
+						$('#selectedTaskSeq').val(taskSeq);
+						$('#pageForSelectedTaskSeq').val(0);
+						
+						let taskCount = $('.taskListDataBlock').find('.taskListRow').length;
+						const page = $('#taskPage').val();
+						if (taskCount == 0) {
+							<!-- /* 初めての追加となる場合は画面を再描画（表示されている「タスクはありません」を非表示にするため） 追加時のページ番号は必ず1ページ目をセット */ -->
+							renderTaskListInputForm(selectedTabClass, taskSeq, null, 0, null);
+						} else if (page == 0) {
+							<!-- /* 1ページ目で既に他のタスクが存在する場合はJSで追加 */ -->
+							$('#taskDataList').prepend($(taskRowHtml));
+							<!-- /* 現ページの最終行を削除する */ -->
+							removeTaskLastRow(selectedTabClass);
+						} else {
+							Promise.resolve()
+								<!-- /* 前ページの最終行を取得する */ -->
+								.then(() => getTaskRowOnPrevPage(selectedTabClass, taskSeq, null))
+								<!-- /* 現ページの最終行を削除する */ -->
+								.then(() => removeTaskLastRow(selectedTabClass))
+						}
+					} else {
+						<!-- /* 変更前の期限日も過去日なら一覧側の変更無し */ -->
+					}
+				}
+			} else {
+				<!-- /* 設定された期限が過去日ではない -> 表示しない */ -->
+				if (taskLi.length > 0) {
+					<!-- /* 対象のタスクがあれば削除 */ -->
+					taskLi.remove();
+				}
+				<!-- /* 選択中のタスクSEQページが現在表示しているページより前であれば先頭行を削除する */ -->
+				if ($('#pageForSelectedTaskSeq').val() < $('#taskPage').val()) {
+					<!-- /* ページ先頭行を削除 */ -->
+					$('.taskListRow:first').remove();
+				}
+				
+				const pageSize = $('#taskPageSize').val();
+				let taskCount = $('.taskListDataBlock').find('.taskListRow').length;
+				if (taskCount == 0) {
+					<!-- /* 画面の全てのタスクがなくなったら画面を再描画（「タスクはありません」を表示するため） */ -->
+					renderTaskListInputForm(selectedTabClass, null, null, null, null);
+				} else if (pageSize > taskCount) {
+					<!--/* 次ページの1行目を取得し表示する */-->
+					getTaskRowOnNextPage(selectedTabClass);
+				}
+				<!-- /* ページングフラグメント更新 */ -->
+				renderTaskPager(selectedTabClass);
+			}
+			
+			break;
+		
+		case todayTaskCd:
+		case allTaskCd:
+		case assignedTaskCd:
+		case assignTaskCd:
+		case closeTaskCd:
+		case searchResultsTask:
+		case taskAnkenCd:
+			<!-- /* 「今日のタスク」、「すべてのタスク」、「割り当てられたタスク」、「割り当てたタスク」、「完了したタスク」、「検索結果」、「案件タスク」メニューの場合 */ -->
+			
+			<!-- /* 通常のタスク行の表示切り替えを行う */ -->
+			replaceTaskRow(selectedTabClass, taskSeq, taskRowHtml);
+			
+			break;
+		default:
+	}
+}
+
+<!--/*
+ * 詳細部分で「今日のタスク」の設定を変更した場合に、今日のタスク画面の場合のみ、対象のタスクの表示を切り替える（要素の追加、削除）
+*/-->
+function addOrDeleteTaskRowForAfterChangeTodayTask(selectedTabClass, taskSeq, selectedAssignSeq, taskRowHtml, addTodayTask) {
+	return new Promise((resolve, reject) => {
+
+		let todayTaskCd = /*[[${T(jp.loioz.common.constant.CommonConstant$TaskMenu).TODAY_TASK.cd}]]*/ '';
+		let futureTaskCd = /*[[${T(jp.loioz.common.constant.CommonConstant$TaskMenu).FUTURE_TASK.cd}]]*/ '';
+		let allTaskCd = /*[[${T(jp.loioz.common.constant.CommonConstant$TaskMenu).ALL_TASK.cd}]]*/ '';
+		let overdueTaskCd = /*[[${T(jp.loioz.common.constant.CommonConstant$TaskMenu).OVERDUE_TASK.cd}]]*/ '';
+		let assignedTaskCd = /*[[${T(jp.loioz.common.constant.CommonConstant$TaskMenu).ASSIGNED_TASK.cd}]]*/ '';
+		let assignTaskCd = /*[[${T(jp.loioz.common.constant.CommonConstant$TaskMenu).ASSIGN_TASK.cd}]]*/ '';
+		let closeTaskCd = /*[[${T(jp.loioz.common.constant.CommonConstant$TaskMenu).CLOSE_TASK.cd}]]*/ '';
+		let searchResultsTask = /*[[${T(jp.loioz.common.constant.CommonConstant$TaskMenu).SEARCH_RESULTS_TASK.cd}]]*/ '';
+		let taskAnkenCd = /*[[${T(jp.loioz.common.constant.CommonConstant$TaskMenu).TASK_ANKEN.cd}]]*/ '';
+
+		switch (selectedTabClass) {
+			case todayTaskCd:
+				<!-- /* 「今日のタスク」メニューの場合 */ -->
+				
+				let taskStatus = $(taskRowHtml).find('.changeTaskStatus').data('status');
+				
+				let taskListDataBlockAry = $('.taskListDataBlock');
+				<!-- /* 未完了タスクの領域 */ -->
+				let $taskListDataBlockUnComp = $(taskListDataBlockAry[0])
+				
+				if (addTodayTask) {
+					<!-- /* 「今日のタスク」に追加した場合 */ -->
+					
+					<!-- /* 一覧で選択中のタスクSEQ、ページ番号（追加時は必ず1ページ目）をセット, */ -->
+					$('#selectedTaskSeq').val(taskSeq);
+					$('#pageForSelectedTaskSeq').val(0);
+					
+					let taskCount = $('.taskListDataBlock').find('.taskListRow').length;
+					const page = $('#taskPage').val();
+					if (taskCount == 0) {
+						<!-- /* 初めての追加となる場合は画面を再描画（表示されている「タスクはありません」を非表示にするため） 追加時のページ番号は必ず1ページ目をセット */ -->
+						renderTaskListInputForm(selectedTabClass, taskSeq, null, 0, null);
+					} else if (page == 0) {
+						<!-- /* 1ページ目で既に他のタスクが存在する場合はJSで追加 */ -->
+						$taskListDataBlockUnComp.find('#taskDataList').prepend($(taskRowHtml));
+						<!-- /* 現ページの最終行を削除する */ -->
+						removeTaskLastRow(selectedTabClass);
+					} else {
+						Promise.resolve()
+							<!-- /* 前ページの最終行を取得する */ -->
+							.then(() => getTaskRowOnPrevPage(selectedTabClass, taskSeq, selectedAssignSeq))
+							<!-- /* 現ページの最終行を削除する */ -->
+							.then(() => removeTaskLastRow(selectedTabClass))
+					}
+					
+				} else {
+					<!-- /* 「今日のタスク」から外した場合 */ -->
+					
+					<!-- /* 対象のタスク */ -->
+					let taskLi = $('.taskData' + taskSeq);
+					<!-- /* 対象のタスクがあれば削除 */ -->
+					if (taskLi.length) {
+						taskLi.remove();
+					}
+					<!-- /* 選択中のタスクSEQページが現在表示しているページより前であれば先頭行を削除する */ -->
+					if ($('#pageForSelectedTaskSeq').val() < $('#taskPage').val()) {
+						<!-- /* ページ先頭行を削除 */ -->
+						$('.taskListRow:first').remove();
+					}
+					
+					const pageSize = $('#taskPageSize').val();
+					let taskCount = $('.taskListDataBlock').find('.taskListRow').length;
+					if (taskCount == 0) {
+						<!-- /* 画面の全てのタスクがなくなったら画面を再描画（「タスクはありません」を表示するため） */ -->
+						renderTaskListInputForm(selectedTabClass, null, null, null, null);
+					} else if (pageSize > taskCount) {
+						<!--/* 次ページの1行目を取得し表示する */-->
+						getTaskRowOnNextPage(selectedTabClass);
+					}
+					<!-- /* ページングフラグメント更新 */ -->
+					renderTaskPager(selectedTabClass);
+				}
+				
+				break;
+			
+			case allTaskCd:
+			case futureTaskCd:
+			case overdueTaskCd:
+			case assignedTaskCd:
+			case assignTaskCd:
+			case closeTaskCd:
+			case searchResultsTask:
+			case taskAnkenCd:
+				<!-- /* 「今日のタスク」、「すべてのタスク」、「期限付きのタスク」、「期限を過ぎたタスク」、「割り当てられたタスク」、「割り当てたタスク」、「完了したタスク」、「検索結果」、「案件タスク」メニューの場合 */ -->
+				
+				<!-- /* 通常のタスク行の表示切り替えを行う */ -->
+				replaceTaskRow(selectedTabClass, taskSeq, taskRowHtml);
+				
+				break;
+				
+			default:
+				<!-- /* 「今日のタスク」以外のメニューの場合 */ -->
+			
+				<!-- /* 画面上、変更する必要はないため、何もしない */ -->
+		}
+		return resolve();
+	});
+}
+
+<!--/*
+ * 詳細部分で「割り当て」の設定を変更した場合に、対象のタスクの表示を更新する
+*/-->
+function updateTaskRowForChangeTaskTanto(selectedTabClass, selectedAssignSeq, taskSeq, workerAccountSeqAry, taskRowHtml) {
+	
+	let todayTaskCd = /*[[${T(jp.loioz.common.constant.CommonConstant$TaskMenu).TODAY_TASK.cd}]]*/ '';
+	let futureTaskCd = /*[[${T(jp.loioz.common.constant.CommonConstant$TaskMenu).FUTURE_TASK.cd}]]*/ '';
+	let allTaskCd = /*[[${T(jp.loioz.common.constant.CommonConstant$TaskMenu).ALL_TASK.cd}]]*/ '';
+	let overdueTaskCd = /*[[${T(jp.loioz.common.constant.CommonConstant$TaskMenu).OVERDUE_TASK.cd}]]*/ '';
+	let assignedTaskCd = /*[[${T(jp.loioz.common.constant.CommonConstant$TaskMenu).ASSIGNED_TASK.cd}]]*/ '';
+	let assignTaskCd = /*[[${T(jp.loioz.common.constant.CommonConstant$TaskMenu).ASSIGN_TASK.cd}]]*/ '';
+	let closeTaskCd = /*[[${T(jp.loioz.common.constant.CommonConstant$TaskMenu).CLOSE_TASK.cd}]]*/ '';
+	let searchResultsTask = /*[[${T(jp.loioz.common.constant.CommonConstant$TaskMenu).SEARCH_RESULTS_TASK.cd}]]*/ '';
+	let taskAnkenCd = /*[[${T(jp.loioz.common.constant.CommonConstant$TaskMenu).TASK_ANKEN.cd}]]*/ '';
+
+	let myAccountSeq = /*[[${T(jp.loioz.common.utility.SessionUtils).getLoginAccountSeq()}]]*/"";
+	
+	switch (selectedTabClass) {
+		case allTaskCd:
+			<!-- /* 「すべてのタスク」メニューの場合 */ -->
+			
+			if ($(taskRowHtml).find('[name=isAllTaskDisp]').val() === 'true') {
+				if ($('.taskListDataBlock').find('.taskListRow').length == 0) {
+					<!-- /* 初めての追加となる場合は画面を再描画（表示されている「タスクはありません」を非表示にするため） */ -->
+					renderTaskListInputForm(selectedTabClass, null, null, null, null);
+				} else {
+					
+					<!-- /* 割り当てを変更したタスクのli */ -->
+					let taskLi = $('.taskData' + taskSeq);
+					
+					if (taskLi.length > 0) {
+						<!-- /* 通常のタスク行の表示切り替えを行う */ -->
+						replaceTaskRow(selectedTabClass, taskSeq, taskRowHtml);
+					} else {
+						Promise.resolve()
+							<!--/* タスク一覧の先頭行にタスクデータを追加 */-->
+							.then(() => addTaskFirstRow(selectedTabClass, taskSeq, null))
+							<!--/* タスク一覧の最後行を削除 */-->
+							.then(() => removeTaskLastRow(selectedTabClass))
+					}
+
+				}
+			} else {
+				<!-- /* 割り当てを変更したタスクのli */ -->
+				let taskLi = $('.taskData' + taskSeq);
+				
+				if (taskLi.length > 0) {
+					<!-- /* 対象のタスクがあれば削除 */ -->
+					taskLi.remove();
+				}
+				
+				<!-- /* 選択中のタスクSEQページが現在表示しているページより前であれば先頭行を削除する */ -->
+				if ($('#pageForSelectedTaskSeq').val() < $('#taskPage').val()) {
+					<!-- /* ページ先頭行を削除 */ -->
+					$('.taskListRow:first').remove();
+				}
+				
+				const pageSize = $('#taskPageSize').val();
+				let taskCount = $('.taskListDataBlock').find('.taskListRow').length;
+				if (taskCount == 0) {
+					<!-- /* 画面の全てのタスクがなくなったら画面を再描画（「タスクはありません」を表示するため） */ -->
+					renderTaskListInputForm(selectedTabClass, null, null, null, null);
+				} else if (pageSize > taskCount) {
+					<!--/* 次ページの1行目を取得し表示する */-->
+					getTaskRowOnNextPage(selectedTabClass);
+				}
+				<!-- /* ページングフラグメント更新 */ -->
+				renderTaskPager(selectedTabClass);
+			}
+			
+			break;
+		
+		case todayTaskCd:
+		case futureTaskCd:
+		case overdueTaskCd:
+		case closeTaskCd:
+		case searchResultsTask:
+		case taskAnkenCd:
+			<!-- /* 「今日のタスク」、「期限付きのタスク」、「期限を過ぎたタスク」、「完了したタスク」、「タスク検索」、「案件タスク」メニューの場合 */ -->
+			
+			<!-- /* 通常のタスク行の表示切り替えを行う */ -->
+			replaceTaskRow(selectedTabClass, taskSeq, taskRowHtml);
+			
+			break;
+
+		case assignedTaskCd:
+			<!-- /* 「割り当てられたタスク」メニューの場合 */ -->
+			
+			<!-- /* 担当を変更したタスクのli */ -->
+			let taskLi = $('.taskData' + taskSeq);
+			let myAccountIsTanto = workerAccountSeqAry.includes(String(myAccountSeq));
+			
+			if (taskLi.length > 0) {
+				<!-- /* 一覧に対象タスクが存在する場合 */ -->
+				if (!myAccountIsTanto) {
+					<!-- /* 自分を担当から外した場合 -> タスクを削除 */ -->
+
+					<!-- /* タスクの領域 */ -->
+					let $assignedTaskListDataBlock = taskLi.closest('.taskListDataBlock');
+					
+					<!-- /* タスクを削除 */ -->
+					taskLi.remove();
+					
+					<!-- /* タスクの件数を更新 */ -->
+					let assignedTaskCount = $assignedTaskListDataBlock.find('#taskDataList .taskListRow').length;
+					$assignedTaskListDataBlock.find('.taskCollapseParent .taskCollapseParentCount').text(assignedTaskCount);
+					if (assignedTaskCount == 0) {
+						<!-- /* 領域の全タスクがなくなったらアコーディオン部分を非表示にする */ -->
+						$assignedTaskListDataBlock.addClass('hidden');
+					}
+				} else {
+					<!-- /* 自分が担当のままの場合 -> タスク行更新（変更後の担当者を表示） */ -->
+					replaceTaskRow(selectedTabClass, taskSeq, taskRowHtml);
+				}
+			} else {
+				if ($('.taskListDataBlock').find('.taskListRow').length == 0) {
+					<!-- /* 初めての追加となる場合は画面を再描画（表示されている「タスクはありません」を非表示にするため） */ -->
+					renderTaskListInputForm(selectedTabClass, null, null, null, null);
+				} else if (myAccountIsTanto) {
+					<!-- /* 一覧に対象タスクが存在しない場合 */ -->
+					<!-- /* 自分を担当に追加した場合 -> タスクを追加 */ -->
+
+					<!-- /* タスクを追加する領域 */ -->
+					let $assignedTaskListDataBlock = $($(".taskListDataBlock[data-assign-seq='" + selectedAssignSeq + "']")[0]);
+					
+					let $taskRowHtml = $(taskRowHtml);
+					$taskRowHtml.find('.taskExclamation').remove();
+					$taskRowHtml.attr('data-assign-seq', selectedAssignSeq);
+					
+					<!-- /* タスクを追加 */ -->
+					$assignedTaskListDataBlock.find('#taskDataList').prepend($taskRowHtml);
+					<!-- /* タスクを表示 */ -->
+					$assignedTaskListDataBlock.removeClass('hidden');
+					let assignedTaskListDataBlockTaskCount = $assignedTaskListDataBlock.find('#taskDataList .taskListRow').length;
+					$assignedTaskListDataBlock.find('.taskCollapseParent .taskCollapseParentCount').text(assignedTaskListDataBlockTaskCount);
+				}
+			}
+			
+			break;
+		
+		case assignTaskCd:
+			<!-- /* 「割り当てたタスク」メニューの場合 */ -->
+			
+			<!-- /* タスクの領域 */ -->
+			let assignTaskListDataBlockAry = $('.taskListDataBlock');
+			
+			<!-- /* タスクを削除し、タスクがあった各領域の表示を更新 */ -->
+			assignTaskListDataBlockAry.each(function(idx, assignTaskListDataBlock){
+				
+				<!-- /* タスクの領域 */ -->
+				let $assignTaskListDataBlock = $(assignTaskListDataBlock);
+				<!-- /* タスクのassignSeq */ -->
+				let dataBlockAssignSeq = $assignTaskListDataBlock.attr('data-assign-seq');
+				
+				<!-- /* その領域の人が担当に指定されているかどうか */ -->
+				let dataBlockAssignSeqIsTanto = workerAccountSeqAry.includes(String(dataBlockAssignSeq));
+				<!-- /* その領域の対象のタスク */ -->
+				let targetTaskLi = $assignTaskListDataBlock.find('.taskData' + taskSeq);
+				
+				if (targetTaskLi.length > 0) {
+					<!-- /* 領域に対象タスクが存在する場合 */ -->
+					if (!dataBlockAssignSeqIsTanto) {
+						<!-- /* 対象領域の人を担当から外した場合 -> タスクを削除 */ -->
+						
+						<!-- /* タスクを削除 */ -->
+						targetTaskLi.remove();
+						
+						<!-- /* タスクの件数を更新 */ -->
+						let assignTaskCount = $assignTaskListDataBlock.find('#taskDataList .taskListRow').length;
+						$assignTaskListDataBlock.find('.taskCollapseParent .taskCollapseParentCount').text(assignTaskCount);
+						if (assignTaskCount == 0) {
+							<!-- /* 領域の全タスクがなくなったらアコーディオン部分を非表示にする */ -->
+							$assignTaskListDataBlock.addClass('hidden');
+						}
+					} else {
+						<!-- /* 対象領域の人は担当のまま -> タスク行更新（変更後の担当者を表示） */ -->
+						replaceTaskRow(selectedTabClass, taskSeq, taskRowHtml);
+					}
+				} else {
+					if ($('.taskListDataBlock').find('.taskListRow').length == 0) {
+						<!-- /* 初めての追加となる場合は画面を再描画（表示されている「タスクはありません」を非表示にするため） */ -->
+						renderTaskListInputForm(selectedTabClass, null, null, null, null);
+					} else if (dataBlockAssignSeqIsTanto) {
+						<!-- /* 一覧に対象タスクが存在しない場合 */ -->
+						<!-- /* 対象領域の人を担当に追加した場合 -> タスクを追加 */ -->
+						
+						let $taskRowHtml = $(taskRowHtml);
+						$taskRowHtml.find('.taskExclamation').remove();
+						$taskRowHtml.attr('data-assign-seq', selectedAssignSeq);
+						
+						<!-- /* タスクを追加 */ -->
+						$assignTaskListDataBlock.find('#taskDataList').prepend($taskRowHtml);
+						<!-- /* タスクを表示 */ -->
+						$assignTaskListDataBlock.removeClass('hidden');
+						let assignTaskListDataBlockTaskCount = $assignTaskListDataBlock.find('#taskDataList .taskListRow').length;
+						$assignTaskListDataBlock.find('.taskCollapseParent .taskCollapseParentCount').text(assignTaskListDataBlockTaskCount);
+					}
+				}
+			})
+			
+			break;
+		default:
+	}
+}
+
+<!--/* タスク追加処理 */-->
+function addTask(formData, selectedTabClass, selectedTaskSeq, selectedAssignSeq, selectedTaskAnkenId) {
+
+	formData.push({name: "page", value: 0});
+	formData.push({name: "selectedTabClass", value: selectedTabClass});
+	formData.push({name: "selectedTaskSeq", value: selectedTaskSeq});
+	formData.push({name: "selectedAssignSeq", value: selectedAssignSeq});
+	formData.push({name: "selectedTaskAnkenId", value: selectedTaskAnkenId});
+
+	$.ajax({
+		url : "/user/taskManagement/addTask",
+		type : "POST",
+		data : formData 
+	}).done(function(result) {
+
+		if(result.succeeded){
+			<!--/* 処理成功 */-->
+			$('.taskListRow').removeClass('selected');
+			<!--/* 新規登録したタスクSEQ */-->
+			const newTaskSeq = result.newTaskSeq;
+			Promise.resolve()
+				<!--/* サイドメニュー更新 */-->
+				.then(() => renderTaskMenu(selectedTabClass, selectedTaskAnkenId))
+				<!--/* タスク一覧の先頭行にタスクデータを追加 */-->
+				.then(() => addTaskFirstRow(selectedTabClass, newTaskSeq, selectedTaskAnkenId))
+				<!--/* タスク一覧の最後行を削除 */-->
+				.then(() => removeTaskLastRow(selectedTabClass))
+				<!--/* ページャ更新 */-->
+				.then(() => renderTaskPager(selectedTabClass))
+				<!--/* タスク詳細更新 */-->
+				.then(() => renderTaskDetailInputForm(newTaskSeq, selectedTabClass, selectedAssignSeq, false))
+
+			if (result.message != '') {
+				showInfoMessageForJs(result.message);
+			}
+			<!--/* タスク名入力フォームを空にしてフォーカスをあてる */-->
+			$('.addTask').val('');
+			$('.addTask').focus();
+
+		} else {
+			showErrorMessageForJs(result.message);
+			showErrorMessage(result.message, true, result.errors);
+		}
+
+	}).fail(function() {
+		showErrorMessageForJs(/*[[#{E00012}]]*/ "登録に失敗しました。");
+	}).always(function() {
+		ajaxRunning = false;
+	});
+}
+
+<!--/* タスクの完了チェックにマウスカーソル重なった時の処理【未処理->完了】 */-->
+function viewTaskStatusCheckOn(obj) {
+	$(obj).children('.taskStatusPreparing').addClass('hidden');
+	$(obj).children('.taskStatusComp').removeClass('hidden');
+}
+<!--/* タスクの完了チェックにマウスカーソル重なった時の処理【完了->未処理】 */-->
+function viewTaskStatusCheckOff(obj) {
+	$(obj).children('.taskStatusPreparing').removeClass('hidden');
+	$(obj).children('.taskStatusComp').addClass('hidden');
+}
+
+<!--/* タスク行にマウスカーソルが重なった時に並び替えマークの表示処理 */-->
+function viewSortableObjOn(obj) {
+	$(obj).find('.icon_drag_indicator').removeClass('hidden');
+	$(obj).find('.sortable_obj_space').addClass('hidden');
+}
+<!--/* タスク行からマウスカーソルが離れた時に並び替えマークの非表示処理 */-->
+function viewSortableObjOff(obj) {
+	$(obj).find('.icon_drag_indicator').addClass('hidden');
+	$(obj).find('.sortable_obj_space').removeClass('hidden');
+}
+
+<!--/* タスク完了アコーディオン処理 */-->
+function completedTaskCollapse(taskCollapse) {
+	const className = taskCollapse.attr("class");
+	const index = taskCollapse.data("index");
+	if (className.match('task_collapse_open')) {
+		<!--/* アコーディオンが開いている状態であれば閉じる */-->
+		taskCollapse.removeClass('task_collapse_open');
+		$('#collapseClose' + index).removeClass('hidden');
+		$('#collapseOpen' + index).addClass('hidden');
+	} else {
+		<!--/* アコーディオンが閉じている状態であれば開く */-->
+		taskCollapse.addClass('task_collapse_open');
+		$('#collapseClose' + index).addClass('hidden');
+		$('#collapseOpen' + index).removeClass('hidden');
+	}
+}
+
+<!--/* タスク未完了アコーディオン処理 */-->
+function incompleteTaskCollapse(taskCollapse) {
+	const className = taskCollapse.attr("class");
+	const index = taskCollapse.data("index");
+	if (className.match('task_collapse_open')) {
+		<!--/* アコーディオンが開いている状態であれば閉じる */-->
+		taskCollapse.removeClass('task_collapse_open');
+		$('#collapseClose' + index).removeClass('hidden');
+		$('#collapseOpen' + index).addClass('hidden');
+		if (taskCollapse.data("completedTaskCount") > 0) {
+			<!--/* 完了分のタスクがある場合は、完了分アコーディオンも閉じる、完了分は未完了分の次に表示されているのでindex+1で指定 */-->
+			$('#taskCollapse' + (index + 1)).removeClass('task_collapse_open');
+			$('#collapseClose' + (index + 1)).removeClass('hidden');
+			$('#collapseOpen' + (index + 1)).addClass('hidden');
+			$('#collapseTaskType' + (index + 1)).removeClass('show');
+		}
+	} else {
+		<!--/* アコーディオンが閉じている状態であれば開く */-->
+		taskCollapse.addClass('task_collapse_open');
+		$('#collapseClose' + index).addClass('hidden');
+		$('#collapseOpen' + index).removeClass('hidden');
+	}
+}
+
+<!--/* タスク一覧画面ページング処理 */-->
+function getListOfPageNumber(pageNumber) {
+
+	const selectedTabClass = $('#selectedTabClass').val();
+	const selectedTaskSeq = $('#selectedTaskSeq').val();
+	const pageForSelectedTaskSeq = $('#pageForSelectedTaskSeq').val();
+
+	<!--/* 案件一覧画面ページング処理 */-->
+	$.ajax({
+		url : "/user/taskManagement/pager",
+		type : "GET",
+		data : {
+			"page": pageNumber,
+			"selectedTabClass": selectedTabClass,
+			"selectedTaskSeq": selectedTaskSeq,
+			"pageForSelectedTaskSeq": pageForSelectedTaskSeq
+		},
+		dataType: 'html',
+	}).done(function(data, status, jqXHR) {
+		<!--/* ツールチップを非表示にする */-->
+		$('[data-toggle="tooltip"]').tooltip('hide');
+
+		if (isAjaxProcSuccess(jqXHR)) {
+			<!--/* 処理成功 */-->
+			$('#taskListFragmentWrap').html(data);
+
+			<!-- /* メニュー更新（件数の変更があれば反映する） */ -->
+			renderTaskMenu(selectedTabClass, null);
+		} else {
+			<!--/* 処理失敗 */-->
+			const errorMsg = getAjaxProcResutlMessage(jqXHR);
+			let sessionTimeOutKey = /*[[${T(jp.loioz.common.constant.MessageEnum).MSG_E00161.messageKey}]]*/'';
+			if (sessionTimeOutKey == errorMsg) {
+				window.location.href = '/user/taskManagement/list'
+			} else {
+				showErrorMessageForJs(errorMsg);
+			}
+		}
+	}).fail(function() {
+		showErrorMessageForJs(/*[[#{E00059}]]*/ "データの取得に失敗しました。");
+	}).always(function() {
+	});	
+}
+
+<!--/* 案件タスク追加モーダル表示 */-->
+function openAnkenTaskAddModal() {
+	if (ajaxRunning) {
+		return false;
+	}
+	
+	ajaxRunning = true;
+	$.ajax({
+		url : /*[[@{/user/taskManagement/openTaskAnkenAddModal}]]*/"",
+		type : "GET",
+		dataType: 'html',
+	})
+	.done(function(data, status, jqXHR) {
+		if (isAjaxProcSuccess(jqXHR)) {
+			<!--/* 親HTMLのID */-->
+			$('#taskAnkenAddModalFragmentWrap').html(data);
+			$("#taskAnkenAddModal").modal("show");
+		} else {
+			<!--/* 処理失敗 */-->
+			const errorMsg = getAjaxProcResutlMessage(jqXHR);
+			showErrorMessageForJs(errorMsg);
+		}
+	})
+	.fail(function(jqXHR, status, errorThrown) {
+		showErrorMessageForJs(/*[[#{E00091}]]*/ "error");
+	})
+	.always(function(){
+		ajaxRunning = false;
+	});
+	
+}
+
+<!--/* 案件タスク追加一覧画面検索処理 */-->
+function searchTaskAnkenAddList(formData) {
+	if (ajaxRunning) {
+		return false;
+	}
+	
+	ajaxRunning = true;
+	$.ajax({
+		url : /*[[@{/user/taskManagement/searchTaskAnkenAddList}]]*/"",
+		type : "GET",
+		data : formData,
+		dataType: 'html',
+	})
+	.done(function(data, status, jqXHR) {
+		if (isAjaxProcSuccess(jqXHR)) {
+			<!--/* 親HTMLのID */-->
+			$('#taskAnkenAddModalFragmentWrap').html(data);
+			$("#taskAnkenAddModal").modal("show");
+		} else {
+			<!--/* 処理失敗 */-->
+			const errorMsg = getAjaxProcResutlMessage(jqXHR);
+			showErrorMessageForJs(errorMsg);
+		}
+	})
+	.fail(function(jqXHR, status, errorThrown) {
+		showErrorMessageForJs(/*[[#{E00091}]]*/ "error");
+	})
+	.always(function(){
+		ajaxRunning = false;
+	});
+}
+
+<!--/* 案件タスク登録処理 */-->
+function registAnkenTaskAdd(ankenId) {
+	return new Promise((resolve, reject) => {
+		$.ajax({
+			url : /*[[@{/user/taskManagement/registAnkenTaskAdd}]]*/"",
+			type : "POST",
+			data : {
+				"ankenId": ankenId
+			},
+			dataType: 'html',
+		})
+		.done(function(data, status, jqXHR) {
+			if (isAjaxProcSuccess(jqXHR)) {
+				<!--/* 処理成功 */-->
+				alert(getAjaxProcResutlMessage(jqXHR));
+				$("#taskAnkenAddModal").modal("hide");
+			} else {
+				<!--/* 処理失敗 */-->
+				const errorMsg = getAjaxProcResutlMessage(jqXHR);
+				showErrorMessage(errorMsg, $("#taskAnkenAddModal"));
+				return reject();
+			}
+			return resolve();
+		})
+		.fail(function(jqXHR, status, errorThrown) {
+			showErrorMessageForJs(/*[[#{E00091}]]*/ "error");
+			return reject();
+		})
+	});
+}
+
+<!--/* ページングの一覧を表示時に、タスク詳細からステータスを完了へ変更した後の処理 */-->
+function processAfterChangeStatusToCompleteFromDetailWhenViewingPaging(taskLi, selectedTabClass, selectedAssignSeq, selectedTaskAnkenId) {
+	if (taskLi.length) {
+		<!-- /* 削除タスクSEQが一覧に有る場合 */ -->
+		
+		<!-- /* 最終行に次ページの先頭行を表示する */ -->
+		Promise.resolve()
+			<!--/* 次ページのタスク先頭行データを取得 */-->
+			.then(() => getTaskRowOnNextPage(selectedTabClass))
+			<!--/* ステータス変更行の削除、選択行の変更 */-->
+			.then(() => {
+				let $nextRow = taskLi.next('.taskListRow');
+				if ($nextRow.length) {
+					<!-- /* 次の行（タスク）がある場合 */ -->
+					
+					<!-- /* 完了にしたタスクを削除*/ -->
+					taskLi.remove();
+					
+					<!-- /* 次の行を選択状態にして、詳細部分を次の行のタスクの内容で再表示*/ -->
+					$nextRow.addClass('selected')
+					let nextTaskRowTaskSeq = $nextRow.data('seq');
+					$('#selectedTaskSeq').val(nextTaskRowTaskSeq);
+					return renderTaskDetailInputForm(nextTaskRowTaskSeq, selectedTabClass, selectedAssignSeq, false);
+				} else {
+					<!-- /* 次の行（タスク）がない場合 */ -->
+					
+					<!-- /* 完了にしたタスクを削除*/ -->
+					taskLi.remove();
+					
+					if ($('.taskListDataBlock').find('.taskListRow').length == 0) {
+						<!-- /* タスクが1件もない場合 */ -->
+						
+						<!-- /* 詳細領域は閉じる */ -->
+						$('#taskDetailFragmentWrap').addClass("hidden");
+						$('#taskDetailFragmentWrap').html('');
+						
+						<!-- /* 現在の画面の全てのタスクがなくなったら画面を再描画（「タスクはありません」を表示するため） */ -->
+						return renderTaskListInputForm(selectedTabClass, null, null, null, selectedTaskAnkenId);
+					} else {
+						<!-- /* タスクが残っている場合 */ -->
+						
+						<!-- /* 先頭のタスクを選択状態にして、詳細部分を次の行のタスクの内容で再表示 */ -->
+						let $firstTaskListRow = $($('.taskListDataBlock').find('.taskListRow')[0]);
+						$firstTaskListRow.addClass('selected')
+						let firstTaskListRowTaskSeq = $firstTaskListRow.data('seq');
+						$('#selectedTaskSeq').val(firstTaskListRowTaskSeq);
+						return renderTaskDetailInputForm(firstTaskListRowTaskSeq, selectedTabClass, selectedAssignSeq, false);
+					}
+				}
+			});
+	} else {
+		<!-- /* 削除タスクSEQが一覧に無い場合 */ -->
+
+		<!-- /* 次のタスク行があれば選択中タスクSEQをセット*/ -->
+		const nextTaskSeq = $('#nextTaskSeq').val();
+
+		<!-- /* 選択中のタスクSEQページが現在表示しているページより前であれば先頭行を削除し次ページタスク行データを取得する */ -->
+		if ($('#pageForSelectedTaskSeq').val() < $('#taskPage').val()) {
+			<!-- /* 最終行に次ページの先頭行を表示する */ -->
+			Promise.resolve()
+				<!--/* 次ページのタスク先頭行データを取得 */-->
+				.then(() => getTaskRowOnNextPage(selectedTabClass))
+				<!-- /* ページ先頭行を削除 */ -->
+				.then(() => $('.taskListRow:first').remove())
+				.then(() => {
+					let taskCount = $('.taskListDataBlock').find('.taskListRow').length;
+					if (taskCount == 0) {
+						<!-- /* 画面の全てのタスクがなくなったら画面を再描画（「タスクはありません」を表示するため） */ -->
+						const nextTaskSeq = $('#nextTaskSeq').val();
+						renderTaskListInputForm(selectedTabClass, nextTaskSeq, null, null, selectedTaskAnkenId);
+					}
+				});
+		}
+
+		if (nextTaskSeq >= 0) {
+			<!-- /* 選択中タスクSEQの変更 */ -->
+			$('#selectedTaskSeq').val(nextTaskSeq);
+			let taskLi = $('.taskData' + nextTaskSeq);
+			if (taskLi.length) {
+				refreshTaskListRow(selectedTabClass, nextTaskSeq, selectedAssignSeq, nextTaskSeq)
+			}
+			<!-- /* 詳細フラグメント更新 */ -->
+			renderTaskDetailInputForm(nextTaskSeq, selectedTabClass, selectedAssignSeq, false);
+		} else {
+			<!-- /* 詳細領域は閉じる */ -->
+			$('#taskDetailFragmentWrap').addClass("hidden");
+			$('#taskDetailFragmentWrap').html('');
+		}
+		<!-- /* ページングフラグメント更新 */ -->
+		renderTaskPager(selectedTabClass);
+	}
+}
+
+<!--/* 完了タスクを表示時に、タスク詳細からステータスを未完了へ変更した後の処理*/-->
+function processAfterChangeStatusToIncompleteFromDetailWhenViewingCompletedData(taskLi, selectedTabClass, selectedAssignSeq, selectedTaskAnkenId) {
+	if (taskLi.length) {
+		<!-- /* 完了タスクSEQが一覧に有る場合 */ -->
+		
+		<!-- /* 最終行に次ページの先頭行を表示する */ -->
+		Promise.resolve()
+			<!--/* 次ページのタスク先頭行データを取得 */-->
+			.then(() => getTaskRowOnNextPage(selectedTabClass))
+			<!--/* ステータス変更行の削除、選択行の変更 */-->
+			.then(() => {
+				let $nextRow = taskLi.next('.taskListRow');
+				if ($nextRow.length) {
+					<!-- /* 次の行（タスク）がある場合 */ -->
+					
+					<!-- /* ステータスを変更したタスクを削除*/ -->
+					taskLi.remove();
+					
+					<!-- /* 次の行を選択状態にして、詳細部分を次の行のタスクの内容で再表示*/ -->
+					$nextRow.addClass('selected')
+					let nextTaskRowTaskSeq = $nextRow.data('seq');
+					$('#selectedTaskSeq').val(nextTaskRowTaskSeq);
+					return renderTaskDetailInputForm(nextTaskRowTaskSeq, selectedTabClass, selectedAssignSeq, false);
+				} else {
+					<!-- /* 次の行（タスク）がない場合 */ -->
+					
+					<!-- /* 完了にしたタスクを削除*/ -->
+					taskLi.remove();
+					
+					if ($('.taskListDataBlock').find('.taskListRow').length == 0) {
+						<!-- /* タスクが1件もない場合 */ -->
+						
+						<!-- /* 詳細領域は閉じる */ -->
+						$('#taskDetailFragmentWrap').addClass("hidden");
+						$('#taskDetailFragmentWrap').html('');
+						
+						<!-- /* 現在の画面の全てのタスクがなくなったら画面を再描画（「タスクはありません」を表示するため） */ -->
+						return renderTaskListInputForm(selectedTabClass, null, null, null, selectedTaskAnkenId);
+					} else {
+						<!-- /* タスクが残っている場合 */ -->
+						
+						<!-- /* 先頭のタスクを選択状態にして、詳細部分を次の行のタスクの内容で再表示 */ -->
+						let $firstTaskListRow = $($('.taskListDataBlock').find('.taskListRow')[0]);
+						$firstTaskListRow.addClass('selected')
+						let firstTaskListRowTaskSeq = $firstTaskListRow.data('seq');
+						$('#selectedTaskSeq').val(firstTaskListRowTaskSeq);
+						return renderTaskDetailInputForm(firstTaskListRowTaskSeq, selectedTabClass, selectedAssignSeq, false);
+					}
+				}
+			});
+	} else {
+		<!-- /* 削除タスクSEQが一覧に無い場合 */ -->
+
+		<!-- /* 次のタスク行があれば選択中タスクSEQをセット*/ -->
+		const nextTaskSeq = $('#nextTaskSeq').val();
+
+		<!-- /* 選択中のタスクSEQページが現在表示しているページより前であれば先頭行を削除し次ページタスク行データを取得する */ -->
+		if ($('#pageForSelectedTaskSeq').val() < $('#taskPage').val()) {
+			<!-- /* 最終行に次ページの先頭行を表示する */ -->
+			Promise.resolve()
+				<!--/* 次ページのタスク先頭行データを取得 */-->
+				.then(() => getTaskRowOnNextPage(selectedTabClass))
+				<!-- /* ページ先頭行を削除 */ -->
+				.then(() => $('.taskListRow:first').remove())
+				.then(() => {
+					let taskCount = $('.taskListDataBlock').find('.taskListRow').length;
+					if (taskCount == 0) {
+						<!-- /* 画面の全てのタスクがなくなったら画面を再描画（「タスクはありません」を表示するため） */ -->
+						const nextTaskSeq = $('#nextTaskSeq').val();
+						renderTaskListInputForm(selectedTabClass, nextTaskSeq, null, null, selectedTaskAnkenId);
+					}
+				});
+		}
+
+		if (nextTaskSeq >= 0) {
+			<!-- /* 選択中タスクSEQの変更 */ -->
+			$('#selectedTaskSeq').val(nextTaskSeq);
+			let taskLi = $('.taskData' + nextTaskSeq);
+			if (taskLi.length) {
+				refreshTaskListRow(selectedTabClass, nextTaskSeq, selectedAssignSeq, nextTaskSeq)
+			}
+			<!-- /* 詳細フラグメント更新 */ -->
+			renderTaskDetailInputForm(nextTaskSeq, selectedTabClass, selectedAssignSeq, false);
+		} else {
+			<!-- /* 詳細領域は閉じる */ -->
+			$('#taskDetailFragmentWrap').addClass("hidden");
+			$('#taskDetailFragmentWrap').html('');
+		}
+		<!-- /* ページングフラグメント更新 */ -->
+		renderTaskPager(selectedTabClass);
+	}	
+}
+
+<!-- /* 期限付きのタスク、割り当てられたタスクを表示時に、タスク詳細からステータスを完了へ変更した後の処理 */ -->
+function processAfterChangeStatusToCompleteFromDetailWhenViewingFutureTask(taskLi, selectedTabClass, selectedAssignSeq) {
+	let $taskListDataBlock = taskLi.closest('.taskListDataBlock');
+	let $nextRow = taskLi.next('.taskListRow');
+	
+	if ($nextRow.length > 0) {
+		<!-- /* 次の行（タスク）がある場合 */ -->
+		
+		<!-- /* 完了にしたタスクを削除*/ -->
+		taskLi.remove();
+		
+		<!-- /* タスクの件数を更新 */ -->
+		let taskListDataBlockTaskCount = $taskListDataBlock.find('#taskDataList .taskListRow').length;
+		$taskListDataBlock.find('.taskCollapseParent .taskCollapseParentCount').text(taskListDataBlockTaskCount);
+		
+		<!-- /* 次の行を選択状態にして、詳細部分を次の行のタスクの内容で再表示*/ -->
+		$nextRow.addClass('selected')
+		let nextTaskRowTaskSeq = $nextRow.data('seq');
+		renderTaskDetailInputForm(nextTaskRowTaskSeq, selectedTabClass, selectedAssignSeq, false);
+	} else {
+		<!-- /* 次の行（タスク）がない場合 */ -->
+		
+		<!-- /* 完了にしたタスクを削除*/ -->
+		taskLi.remove();
+		
+		<!-- /* 完了にしたタスクのあった領域の件数を更新 */ -->
+		let taskListDataBlockTaskCount = $taskListDataBlock.find('#taskDataList .taskListRow').length;
+		$taskListDataBlock.find('.taskCollapseParent .taskCollapseParentCount').text(taskListDataBlockTaskCount);
+		
+		if (taskListDataBlockTaskCount == 0) {
+			<!-- /* 対象の領域のタスクがなくなった場合 */ -->
+			
+			<!-- /* 対象の領域は非表示 */ -->
+			$taskListDataBlock.addClass('hidden');
+			
+			let allTaskCount = $('.taskListDataBlock').find('.taskListRow').length;
+			if (allTaskCount == 0) {
+				<!-- /* 全体のタスクが1件もない場合 */ -->
+				
+				<!-- /* 現在の画面の全てのタスクがなくなったら画面を再描画（「タスクはありません」を表示するため） */ -->
+				renderTaskListInputForm(selectedTabClass, null, null, null, null);
+				<!-- /* 詳細領域は閉じる */ -->
+				$('#taskDetailFragmentWrap').addClass("hidden");
+				$('#taskDetailFragmentWrap').html('');
+			} else {
+				<!-- /* タスクが残っている場合 */ -->
+				
+				<!-- /* 先頭のタスクを選択状態にして、詳細部分を次の行のタスクの内容で再表示 */ -->
+				let $firstTaskListRow = $($('.taskListDataBlock').find('.taskListRow')[0]);
+				$firstTaskListRow.addClass('selected')
+				let firstTaskListRowTaskSeq = $firstTaskListRow.data('seq');
+				renderTaskDetailInputForm(firstTaskListRowTaskSeq, selectedTabClass, selectedAssignSeq, false);
+			}
+		} else {
+			<!-- /* 対象の領域のタスクがまだある場合 */ -->
+			
+			<!-- /* 対象の領域の先頭のタスクを選択状態にして、詳細部分を次の行のタスクの内容で再表示 */ -->
+			let $dataBlockFirstTaskListRow = $($taskListDataBlock.find('#taskDataList .taskListRow')[0]);
+			$dataBlockFirstTaskListRow.addClass('selected')
+			let dataBlockFirstTaskListRowTaskSeq = $dataBlockFirstTaskListRow.data('seq');
+			renderTaskDetailInputForm(dataBlockFirstTaskListRowTaskSeq, selectedTabClass, selectedAssignSeq, false);
+		}
+	}
+}
+
+<!-- /* 割り当てたタスクを表示時に、タスク詳細からステータスを完了へ変更した後の処理 */ -->
+function processAfterChangeStatusToCompleteFromDetailWhenViewingAssignTask(taskLi, selectedTabClass, selectedAssignSeq) {
+	<!-- /* 現在選択中のタスクの行と、その領域 */ -->
+	let $selectedTaskRow = $('.taskListDataBlock').find('.taskListRow.selected');
+	let $selectedTaskListDataBlock = $selectedTaskRow.closest('.taskListDataBlock');
+	
+	let $nextRow = $selectedTaskRow.next('.taskListRow');
+	
+	<!-- /* タスクを削除し、タスクがあった各領域の表示を更新 */ -->
+	taskLi.each(function(idx, taskLiElem){
+		
+		let $taskLiElem = $(taskLiElem);
+		
+		<!-- /* タスクの領域 */ -->
+		let $assignTaskListDataBlock = $taskLiElem.closest('.taskListDataBlock');
+		
+		<!-- /* タスクを削除 */ -->
+		$taskLiElem.remove();
+		
+		<!-- /* タスクの件数を更新 */ -->
+		let assignTaskCount = $assignTaskListDataBlock.find('#taskDataList .taskListRow').length;
+		$assignTaskListDataBlock.find('.taskCollapseParent .taskCollapseParentCount').text(assignTaskCount);
+		if (assignTaskCount == 0) {
+			<!-- /* 領域の全タスクがなくなったらアコーディオン部分を非表示にする */ -->
+			$assignTaskListDataBlock.addClass('hidden');
+		}
+	})
+	
+	if ($nextRow.length > 0) {
+		<!-- /* 次の行（タスク）がある場合 */ -->
+		
+		<!-- /* 次の行を選択状態にして、詳細部分を次の行のタスクの内容で再表示*/ -->
+		$nextRow.addClass('selected')
+		let nextTaskRowTaskSeq = $nextRow.data('seq');
+		renderTaskDetailInputForm(nextTaskRowTaskSeq, selectedTabClass, selectedAssignSeq, false);
+		
+	} else {
+		<!-- /* 次の行（タスク）がない場合 */ -->
+		
+		<!-- /* 選択状態のタスクのあった領域の件数を取得 */ -->
+		let selectedTaskListDataBlockTaskCount = $selectedTaskListDataBlock.find('#taskDataList .taskListRow').length;
+		
+		if (selectedTaskListDataBlockTaskCount == 0) {
+			<!-- /* 対象領域のタスクがなくなった場合 */ -->
+			
+			let allTaskCount = $('.taskListDataBlock').find('.taskListRow').length;
+			if (allTaskCount == 0) {
+				<!-- /* 全体のタスクが1件もない場合 */ -->
+				
+				<!-- /* 現在の画面の全てのタスクがなくなったら画面を再描画（「タスクはありません」を表示するため） */ -->
+				renderTaskListInputForm(selectedTabClass, null, null, null, null);
+				<!-- /* 詳細領域は閉じる */ -->
+				$('#taskDetailFragmentWrap').addClass("hidden");
+				$('#taskDetailFragmentWrap').html('');
+			} else {
+				<!-- /* タスクが残っている場合 */ -->
+				
+				<!-- /* 先頭のタスクを選択状態にして、詳細部分を次の行のタスクの内容で再表示 */ -->
+				let $firstTaskListRow = $($('.taskListDataBlock').find('.taskListRow')[0]);
+				$firstTaskListRow.addClass('selected')
+				let firstTaskListRowTaskSeq = $firstTaskListRow.data('seq');
+				renderTaskDetailInputForm(firstTaskListRowTaskSeq, selectedTabClass, selectedAssignSeq, false);
+			}
+			
+		} else {
+			<!-- /* 対象の領域のタスクがまだある場合 */ -->
+			
+			<!-- /* 対象の領域の先頭のタスクを選択状態にして、詳細部分を次の行のタスクの内容で再表示 */ -->
+			let $dataBlockFirstTaskListRow = $($selectedTaskListDataBlock.find('#taskDataList .taskListRow')[0]);
+			$dataBlockFirstTaskListRow.addClass('selected')
+			let dataBlockFirstTaskListRowTaskSeq = $dataBlockFirstTaskListRow.data('seq');
+			renderTaskDetailInputForm(dataBlockFirstTaskListRowTaskSeq, selectedTabClass, selectedAssignSeq, false);
+		}
+	}
+}
+
+</script>
+<style type="text/css">
+<!-- /*ドラッグ中のcss*/ -->
+.sortable-chosen {
+	border-radius:10px;
+	background-color : rgba(74,173,203,0.5);
+}
+.sortable-ghost {
+}
+</style>
+</head>
+<body class="">
+
+	<!-- ヘッダーここまで -->
+	<div layout:fragment="main-contents" th:remove="tag">
+
+		<div class="contents_sidebar_wrapper_user contentsSlidebarWrapper" th:data-click-open=${customerAnkenMenuOpenClickForSessionValue} th:data-resize-open=${customerAnkenMenuOpenResizeForSessionValue}>
+
+			<!-- /* タスクサイドメニュー */-->
+			<div id="taskMenuFragmentWrap" th:insert="user/taskManagement/taskFragment::menuList(
+				selectedTabClass=${selectedTabClass}
+				)">
+			</div>
+
+			<!--/* ③メインコンテンツの外側 */-->
+			<div class="contents_wrapper">
+				<div class="container-fluid">
+					<main class="content">
+
+						<!--/* メッセージエリア */-->
+						<div th:replace="common/messageArea::messageArea"></div>
+
+						<div class="d-flex">
+							<!--/* タスクリスト */-->
+							<th:block th:if="${selectedTabClass=='is_today_task'}">
+								<!--/* 今日のタスク */-->
+								<div id="taskListFragmentWrap" class="task_list_block" th:insert="user/taskManagement/taskFragment::todayTaskListInputFragment(${taskListInputForm},${taskListSearchForm})"></div>
+							</th:block>
+							<th:block th:if="${selectedTabClass=='is_future_task'}">
+								<!--/* 期限付きのタスク */-->
+								<div id="taskListFragmentWrap" class="task_list_block" th:insert="user/taskManagement/taskFragment::futureTaskListInputFragment(${taskListInputForm})"></div>
+							</th:block>
+							<th:block th:if="${selectedTabClass=='is_all_task'}">
+								<!--/* すべてのタスク */-->
+								<div id="taskListFragmentWrap" class="task_list_block" th:insert="user/taskManagement/taskFragment::allTaskListInputFragment(${taskListInputForm}, ${taskListSearchForm})"></div>
+							</th:block>
+							<th:block th:if="${selectedTabClass=='is_overdue_task'}">
+								<!--/* 期限を過ぎたタスク */-->
+								<div id="taskListFragmentWrap" class="task_list_block" th:insert="user/taskManagement/taskFragment::overdueTaskListInputFragment(${taskListInputForm})"></div>
+							</th:block>
+							<th:block th:if="${selectedTabClass=='is_assigned_task'}">
+								<!--/* 割り当てられたタスク */-->
+								<div id="taskListFragmentWrap" class="task_list_block" th:insert="user/taskManagement/taskFragment::assignedTaskListInputFragment(${taskListInputForm})"></div>
+							</th:block>
+							<th:block th:if="${selectedTabClass=='is_assign_task'}">
+								<!--/* 割り当てたタスク */-->
+								<div id="taskListFragmentWrap" class="task_list_block" th:insert="user/taskManagement/taskFragment::assignTaskListInputFragment(${taskListInputForm})"></div>
+							</th:block>
+							<th:block th:if="${selectedTabClass=='is_close_task'}">
+								<!--/* 完了したタスク */-->
+								<div id="taskListFragmentWrap" class="task_list_block" th:insert="user/taskManagement/taskFragment::closeTaskListInputFragment(${taskListInputForm})"></div>
+							</th:block>
+							<th:block th:if="${selectedTabClass=='is_search_results_task'}">
+								<!--/* 検索結果タスク */-->
+								<div id="taskListFragmentWrap" class="task_list_block" th:insert="user/taskManagement/taskFragment::searchResultsTaskListInputFragment(${taskListInputForm}, ${taskListSearchForm})"></div>
+							</th:block>
+							<th:block th:if="${selectedTabClass=='is_task_anken'}">
+								<!--/* 案件タスク */-->
+								<div id="taskListFragmentWrap" class="task_list_block" th:insert="user/taskManagement/taskFragment::taskAnkenListInputFragment(${taskListInputForm}, ${taskListSearchForm})"></div>
+							</th:block>
+
+							<!--/* タスク詳細 */-->
+							<div id="taskDetailFragmentWrap" class="task_detail_block hidden"></div>
+						</div>
+
+					</main>
+				</div>
+			</div>
+		</div>
+
+		<!--/* 案件タスク追加モーダル */-->
+		<div id="taskAnkenAddModal" class="modal fade" tabindex="-1" role="dialog" aria-hidden="true" data-backdrop="static">
+			<div class="modal-dialog modal_task_anken_add modal-dialog-centered resizeToggleClassTarget" role="document">
+				<div class="modal-content">
+					<div id="taskAnkenAddModalFragmentWrap"></div>
+				</div>
+			</div>
+		</div>
+
+	</div>
+
+</body>
+</html>

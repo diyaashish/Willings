@@ -1,0 +1,381 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+<meta charset="utf-8" />
+</head>
+<body>
+	<!--/* 本処理は、モーダルを扱うFragment領域で定義する */-->
+	<script type="text/javascript" th:inline="javascript" th:fragment="shiharaiPlanEditFragmentJs">
+		benzo.global.fragment.shiharaiPlanEditFragment = {
+			<!--/* 呼び出し元で定義が可能な処理 */-->
+			setUpObj : {
+				
+				// 登録側
+				registSuccessAction: () => {
+					throw new Error('registActionのセットアップ処理がされていません');
+				},
+			},
+			
+			<!--/* フラグメントのパラメータに関連する処理 */-->
+			paramObj : {
+			},
+			
+			<!--/* 
+				本フラグメント以外でも扱う処理
+				基本的には書き換えを行わない。
+			*/-->
+			commonFn : {
+			},
+		};
+	</script>
+
+	<!--/* 支払計画モーダル */-->
+	<div th:fragment="shiharaiPlanEditFragment" th:id="shiharaiPlanEditFragment" th:object="${editForm}"
+		th:with="completed=${editForm.SeisanCompleted}">
+		<script type="text/javascript" th:inline="javascript">
+		$(function() {
+			
+			const shiharaiPlanEditFragment = $('#shiharaiPlanEditFragment');
+			const modal = shiharaiPlanEditFragment.closest('.modal');
+			
+			<!--/* 共有の要素セットアップ処理 */-->
+			commonSetUpElement("#shiharaiPlanEditFragment");
+			formattedComma();
+			
+			<!--/* 保存処理 */-->
+			shiharaiPlanEditFragment.find('.save').on('click', function() {
+				if (ajaxRunning) {
+					return false;
+				}
+				
+				const formData = getFormParams();
+				
+				displayIcon($('.paymentPlanSaveIcon'), $('.paymentPlanSaveSpinerIcon'));
+				
+				ajaxRunning = true;
+				Promise.resolve(formData)
+					.then((params) => {
+						return new Promise((resolve, reject) => {
+							$.ajax({
+								url : '/common/mvc/accgInvoiceStatementPaymentPlanEdit/saveShiharaiPlan',
+								type : "POST" ,
+								data : params,
+							})
+							.done(function(data, status, jqXHR) {
+								if (isAjaxProcSuccess(jqXHR)) {
+									// 正常終了
+									showInfoMessageForJs(getAjaxProcResutlMessage(jqXHR));
+									return resolve();
+								} else {
+									// 処理失敗
+									if (data) {
+										shiharaiPlanEditFragment.replaceWith(data);
+									}
+									const errorMsg = getAjaxProcResutlMessage(jqXHR);
+									showErrorMessageForJs(errorMsg);
+									return reject();
+								}
+							})
+							.fail(function(jqXHR, status, errorThrown) {
+								showErrorMessageForJs(/*[[#{E00091}]]*/"error");
+								return reject();
+							});
+						});
+					})
+					.then(() => {
+						return new Promise((resolve) => {
+							modal.one('hidden.bs.modal', function() {
+								resolve();
+							});
+							modal.modal("hide");
+						});
+					})
+					.then(() => {
+						benzo.global.fragment.shiharaiPlanEditFragment.setUpObj.registSuccessAction();
+					})
+					.catch((errorObj) => {/* なにもしない */})
+					.finally(() => {
+						ajaxRunning = false;
+						hiddenIcon($('.paymentPlanSaveIcon'), $('.paymentPlanSaveSpinerIcon'));
+					});
+			});
+			
+			<!--/* 支払計画の追加 */-->
+			shiharaiPlanEditFragment.find('#shiharaiPlanAdd').on('click', function(e) {
+				if (ajaxRunning) {
+					return false;
+				}
+				
+				if (getPlanSize() >= /*[[${T(jp.loioz.common.constant.AccgConstant).ACCG_PAYMENT_PLAN_LIMIT}]]*/'60') {
+					return false;
+				}
+				
+				ajaxRunning = true;
+				Promise.resolve()
+					.then(() => {
+						return new Promise((resolve, reject) => {
+							$.ajax({
+								url : '/common/mvc/accgInvoiceStatementPaymentPlanEdit/getPlanAddRowFragment',
+								type : "GET" ,
+							})
+							.done(function(data, status, jqXHR) {
+								if (isAjaxProcSuccess(jqXHR)) {
+									// 正常終了
+									shiharaiPlanEditFragment.find('#shiharaiPlanYoteiTable tbody').append(data);
+									return resolve();
+								} else {
+									// 処理失敗
+									const errorMsg = getAjaxProcResutlMessage(jqXHR);
+									showErrorMessageForJs(errorMsg);
+									return reject();
+								}
+							})
+							.fail(function(jqXHR, status, errorThrown) {
+								showErrorMessageForJs(/*[[#{E00091}]]*/"error");
+								return reject();
+							});
+						});
+					})
+					.then(() => {
+						<!--/* 追加処理後の並列可能処理 */-->
+						renderPlanCountLabel();
+						renderUpdateSagaku();
+					})
+					.catch((errorObj) => {/* なにもしない */})
+					.finally(() => {
+						ajaxRunning = false;
+					});
+			});
+			
+			<!--/* 支払計画の金額変更 */-->
+			shiharaiPlanEditFragment.on('change', '[name="paymentScheduleAmount"]', function(e) {
+				setTimeout(renderUpdateSagaku, 100);
+			});
+			
+			<!--/* 支払計画の行削除 */-->
+			shiharaiPlanEditFragment.on('click', '.removeRow', function(e) {
+					$(this).closest('tr').remove();
+					renderUpdateSagaku();
+					renderPlanCountLabel();
+					shiharaiPlanEditFragment.find('#shiharaiPlanAdd').prop( 'disabled', false )
+			});
+			
+			<!--/* 入力値にカンマ付与 */-->
+			function formattedComma() {
+				<!--/* カンマを付与 */-->
+				shiharaiPlanEditFragment.find('#shiharaiPlanYoteiTable tbody tr .commaFormat').each(function() {
+					$(this).formatComma();
+				});
+			}
+			
+			<!--/* 支払計画件数を取得 */-->
+			function getPlanSize() {
+				return shiharaiPlanEditFragment.find('#shiharaiPlanYoteiTable tbody tr').length;
+			}
+			
+			<!--/* 差額の計算 */-->
+			function renderUpdateSagaku() {
+				const seikyugaku = /*[[*{invoiceAmount}]]*/'0';
+				const sagaku = Number(unformatComma(seikyugaku)) - getInputPlanAmountTotal();
+				shiharaiPlanEditFragment.find('.sagakuLabel').text(formatComma(sagaku));
+			}
+			
+			<!--/* 支払計画入力金額の合計計算 */-->
+			function getInputPlanAmountTotal() {
+				<!--/* 一度カンマを外す */-->
+				shiharaiPlanEditFragment.find('#shiharaiPlanYoteiTable tbody tr .commaFormat').each(function() {
+					$(this).unformatComma();
+				});
+				
+				const amountList = shiharaiPlanEditFragment.find('#shiharaiPlanYoteiTable tbody tr').map((idx, elem) => {
+					return Number($(elem).find("[name='paymentScheduleAmount']").val());
+				}).get();
+				
+				const total = amountList.reduce((sum, elem) => sum + elem, 0);
+				
+				formattedComma();
+				return total;
+			}
+			
+			<!--/* 支払計画の回数を振り直す */-->
+			function renderPlanCountLabel() {
+				$.each(shiharaiPlanEditFragment.find('#shiharaiPlanYoteiTable tbody tr'), function(index, elem) {
+					$(elem).find(".planCount").text(index + 1);
+				});
+			};
+			
+			<!--/* 入力パラメータの取得 */-->
+			function getFormParams() {
+				
+				<!--/* 一度カンマを外す */-->
+				shiharaiPlanEditFragment.find('#shiharaiPlanYoteiTable tbody tr .commaFormat').each(function() {
+					$(this).unformatComma();
+				});
+				
+				let seralizeArray = shiharaiPlanEditFragment.find('#shiharaiPlanYoteiForm').serializeArray();
+				
+				<!--/* テーブルデータの送信時には表示した配列順になるようにnameパラメータにindexを付与する */-->
+				$.each(shiharaiPlanEditFragment.find('#shiharaiPlanYoteiTable tbody tr'), function(index, elem) {
+					const rowFieldPrependName = "paymentPlanList[" + $(elem).index() + "].";
+					$.each($(elem).find("input"), function(idx, inputObj) {
+						seralizeArray.push({
+							'name' : rowFieldPrependName + $(inputObj).prop("name"),
+							'value' : $(inputObj).val(),
+						})
+					});
+				});
+				
+				formattedComma();
+				return seralizeArray;
+			}
+			
+		});
+		</script>
+		<div class="modal-header">
+			<h2 class="modalheader_title">分割予定</h2>
+		</div>
+		
+		<div class="modal-body">
+			<!--/* メッセージ表示領域 */-->
+			<div th:replace="common/messageArea::jsMessageArea"></div>
+			
+			<form id="shiharaiPlanYoteiForm" th:autocomplete="off">
+			
+				<!--/* Hiddenパラメータ */-->
+				<input type="hidden" th:field="*{invoiceSeq}">
+			
+				<!--/* モーダル上部 */-->
+				<div class="shiharai_plan_top">
+					<div class="row">
+						<div id="shiharaiSummaryArea" class="col-md-7">
+							<div class="shiharai_summary_block">
+								<div class="row">
+									<div class="col-4 summary_title">請求額</div>
+									<div class="col-8 d-flex align-items-center justify-content-end">
+										<div class="summary_money" th:classappend="*{T(jp.loioz.common.utility.StringUtils).isMinusDicimalStr(invoiceAmount)}? 'minus_money_text':_" 
+											th:text="*{invoiceAmount}">
+										</div>
+										<div class="" th:classappend="*{T(jp.loioz.common.utility.StringUtils).isMinusDicimalStr(invoiceAmount)}? 'minus_money_text':_">円</div>
+									</div>
+								</div>
+							</div>
+						</div>
+					</div>
+				</div>
+				<!-- モーダル上部 end -->
+			</form>
+				
+			<!-- モーダル下部 -->
+			<div class="d-flex align-items-center justify-content-end mb-5">
+				<div class="sagaku_block">
+					<div class="sagaku_label">差額</div>
+					<div class="sagaku_detail_label">(請求額-入金予定額合計)</div>
+					<div class="summary_money ml-2 sagakuLabel" th:text="*{getSagaku()}" th:classappend="*{T(jp.loioz.common.utility.StringUtils).isMinusDicimalStr(sagaku)}? 'minus_money_text':_"></div>
+					<div class="ml-2" th:classappend="*{T(jp.loioz.common.utility.StringUtils).isMinusDicimalStr(sagaku)}? 'minus_money_text':_">円</div>
+				</div>
+				<div class="bunkatsuItem">
+					<button type="button" id="shiharaiPlanAdd" class="btn btn-primary planAdd" 
+						th:disabled="*{SeisanCompleted || paymentPlanList.size() >= T(jp.loioz.common.constant.CommonConstant).BUNKATU_LIMIT_COUNT}">
+							<i class="fas fa-plus mr-2"></i>支払回数の追加</button>
+				</div>
+			</div>
+			<div class="shiharaiPlanScrollArea header_fixed_table_wrapper table_shiharai_plan">
+				<table id="shiharaiPlanYoteiTable" class="table-hover">
+					<thead>
+						<tr>
+							<th class="col_shiharai_idx">回数</th>
+							<th class="col_shiharai_date">お支払期限</th>
+							<th class="col_shiharai_money">ご請求金額</th>
+<!--						現在では摘要を利用する箇所がないので一旦削除
+							<th class="col_shiharai_tekiyo">摘要</th>
+-->
+							<th class="col_del">　</th>
+						</tr>
+					</thead>
+					<tbody>
+						<tr th:each="plan, stat : *{paymentPlanList}" th:classappend="${completed}?'row_completed'">
+							<td class="col_shiharai_idx text-right pr-3">
+								<span class='shiharaiPlan_num planCount' th:text="${stat.count}"></span>
+							</td>
+							<td class="col_shiharai_date">
+								<input type='text' th:id="|paymentScheduleDatePickerInput-${stat.count}|" class="form-control" th:value="${plan.paymentScheduleDate}" th:name="paymentScheduleDate" 
+									th:data-click-sync="|[id='paymentScheduleDatePicker-${stat.count}']|" autocomplete="off" />
+								<button type='button' th:id="|paymentScheduleDatePicker-${stat.count}|" class='btn btn_popcal hidden' data-toggle="datepicker" th:data-target="|[id='paymentScheduleDatePickerInput-${stat.count}']|">カレンダー</button>
+								<div th:if="*{#fields.hasErrors('paymentPlanList[__${stat.index}__].paymentScheduleDate')}" th:errors="*{paymentPlanList[__${stat.index}__].paymentScheduleDate}" class="error_mag_point">error</div>
+							</td>
+							<td class="col_shiharai_money">
+								<input type='text' class="form-control input_money commaFormat inputNumberOnly"
+									th:value="${plan.paymentScheduleAmount}" th:name="paymentScheduleAmount" th:maxlength="${T(jp.loioz.common.constant.CommonConstant).MAX_KINGAKU_INPUT_DIGIT}"
+									th:data-target="|[name='paymentScheduleAmount_${stat.count}']|" autocomplete="off" />
+								<div th:if="*{#fields.hasErrors('paymentPlanList[__${stat.index}__].paymentScheduleAmount')}" th:errors="*{paymentPlanList[__${stat.index}__].paymentScheduleAmount}" class="error_mag_point">error</div>
+							</td>
+							
+<!--						現在では摘要を入力しても利用する箇所がないので一旦削除
+							<td class="col_shiharai_tekiyo">
+								<input type='text' class="form-control fw_full" th:value="${plan.sumText}" th:name="sumText">
+								<div th:if="*{#fields.hasErrors('paymentPlanList[__${stat.index}__].sumText')}" th:errors="*{paymentPlanList[__${stat.index}__].sumText}" class="error_mag_point">error</div>
+							</td>
+-->
+
+							<td class="col_del">
+								<button th:unless="${completed}" type="button" class="btn btn-light btn_icon_only text-primary removeRow"><i class="fas fa-minus-circle"></i></button>
+							</td>
+						</tr>
+					</tbody>
+				</table>
+			</div>
+			<div th:if="*{#fields.hasErrors('paymentPlanList')}" th:errors="*{paymentPlanList}" class="error_mag_point">error</div>
+			<!-- モーダル下部 end -->
+			
+		</div>
+
+		<!-- フッター -->
+		<div class="modal-footer">
+			<button type="button" th:unless="${completed}" class="btn btn-info save">
+				<i class="fas fa-check paymentPlanSaveIcon mr-2"></i>
+				<i class="fas fa-spinner faa-spin animated paymentPlanSaveSpinerIcon mr-2 hidden"></i>
+				保存
+			</button>
+			<button type="button" class="btn btn-light" data-dismiss="modal"><i class="fas fa-times"></i>閉じる</button>
+		</div>
+		<!-- フッター end -->
+	</div>
+	<!-- 支払計画モーダル end -->
+	
+	<!--/* 支払計画追加行フラグメント */-->
+	<th:block th:fragment="paymentPlanAddRowFragment" th:object="${paymentPlanRowInputForm}" th:with="uuid=${T(java.util.UUID).randomUUID().toString()}">
+		<tr th:id="|NR-${uuid}|">
+			<script type="text/javascript" th:inline="javascript">
+			$(function() {
+				<!--/* 共有の要素セットアップ処理 */-->
+				commonSetUpElement("#NR-"+/*[[${uuid}]]*/'');
+			})
+			</script>
+			<td class="col_shiharai_idx text-right pr-3">
+				<span class='shiharaiPlan_num planCount'></span>
+			</td>
+			<td class="col_shiharai_date">
+				<input type='text' th:id="|DatePicker-Input-${uuid}|" class="form-control" name="paymentScheduleDate" th:data-click-sync="|[id='DatePicker-${uuid}']|" autocomplete="off" />
+				<button type='button' th:id="|DatePicker-${uuid}|" class='btn btn_popcal hidden' data-toggle="datepicker"
+					th:data-target="|[id='DatePicker-Input-${uuid}']|">カレンダー</button>
+			</td>
+			<td class="col_shiharai_money">
+				<input type='text' class="form-control input_money commaFormat input_number_only dispDicimalInput"
+					name="paymentScheduleAmount" th:maxlength="${T(jp.loioz.common.constant.CommonConstant).MAX_KINGAKU_INPUT_DIGIT}"
+					th:data-target="|[name='paymentScheduleAmount_${uuid}']|" autocomplete="off" />
+			</td>
+<!--		現在では摘要を入力しても利用する箇所がないので一旦削除
+			<td class="col_shiharai_tekiyo">
+				<input type='text' class="form-control fw_full" name="sumText">
+			</td>
+-->
+			<td class="col_del">
+				<button type="button" class="btn btn-light btn_icon_only text-primary removeRow"><i class="fas fa-minus-circle"></i></button>
+			</td>
+		</tr>
+	</th:block>
+	
+	<!--/* 支払計画一覧行フラグメント end */-->
+	
+</body>
+</html>

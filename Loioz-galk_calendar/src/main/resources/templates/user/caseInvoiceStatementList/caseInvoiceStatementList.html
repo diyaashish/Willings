@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+	xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+	layout:decorator="commonLayout">
+<head>
+<meta charset="utf-8" />
+<title layout:fragment="title-contents">
+	[[${T(jp.loioz.common.utility.LoiozUtils).getHtmlTitle("請求書／精算書", T(jp.loioz.common.utility.SessionUtils).getTenantName())}]]
+</title>
+<th:block th:with="version=${@environment.getProperty('app.version')}">
+	<link href="./css/accg/accg.css" th:href="@{/css/accg/accg.css?{ver}(ver=${version})}" rel="stylesheet" type="text/css" />
+	<script th:src="@{/js/accg/accg.js?{ver}(ver=${version})}" type="text/javascript"></script>
+</th:block>
+
+<script type="text/javascript" th:inline="javascript">
+<!--/*
+ 二重送信防止対応用の値。
+ このHTMLに差し込まれるfragment内のScriptの処理も、共通してこの変数を利用する。
+*/-->
+let ajaxRunning = false;
+
+</script>
+<script type="text/javascript" th:inline = "javascript">
+</script>
+
+</head>
+<body>
+	<div layout:fragment="main-contents" th:remove="tag">
+		
+		<!--/* ①サイドメニューあり */-->
+		<div class="contents_sidebar_wrapper contentsSlidebarWrapper" th:classappend="${isAccgAnkenSide}? 'contentsSlidebarWrapper':_"
+			th:data-click-open=${customerAnkenMenuOpenClickForSessionValue} 
+			th:data-resize-open=${customerAnkenMenuOpenResizeForSessionValue}
+			th:with="isAccgAnkenSide=${T(jp.loioz.common.utility.SessionUtils).getSessionVaule(T(jp.loioz.common.constant.SessionAttrKeyEnum).ACCG_ANKEN_SCREEN_BOOL.codeKey)}">
+			
+			<!--/* 案件軸の遷移の場合 ->案件メニュー */-->
+			<div th:replace="common/customerAnkenMenu::menuList(
+				sideMenuAnkenId=${ankenId},
+				sideMenuCustomerId=null,
+				selectedTabClass='is_invoice_statement',
+				focusPersonId=${personId})">
+			</div>
+			
+			<!--/* メインコンテンツの外側 */-->
+			<div class="contents_wrapper">
+				<div class="container-fluid">
+					<main class="content">
+						
+						<!--/* ぱんくず */-->
+						<div th:replace="common/wrapHeader::wrapHeader(
+							returnListScreen=${T(jp.loioz.common.utility.SessionUtils).getSessionVaule(T(jp.loioz.common.constant.SessionAttrKeyEnum).RETURN_LIST_SCREEN.codeKey)},
+							sideMenuAnkenId=${ankenId},
+							selectedTabClass = 'is_invoice_statement')"></div>
+						
+						<!--/* メッセージエリア */-->
+						<div th:replace="common/messageArea::messageArea"></div>
+						
+						<!--/* 詳細 */-->
+						<div id="caseInvoiceStatementListFragmentWrap">
+							<div th:replace="user/caseInvoiceStatementList/caseInvoiceStatementListFragment::caseInvoiceStatementListFragment(${caseInvoiceStatementListViewForm})"></div>
+						</div>
+						
+					</main>
+				</div>
+			</div>
+		</div>
+	</div>
+</body>
+</html>

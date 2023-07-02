@@ -1,0 +1,1266 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+	xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+	layout:decorator="commonLayout">
+<head>
+	<meta charset="utf-8" />
+</head>
+<body>
+
+<!--/* 詳細データ */-->
+<div th:fragment="feeDetailFragment(feeDetailViewForm)" id="feeDetailFragment" th:object="${viewForm}">
+	<script type="text/javascript" th:inline="javascript">
+	$(function() {
+		<!--/* 共有の要素セットアップ処理 */-->
+		commonSetUpElement("#feeDetailFragment");
+		
+		const feeDetailFragment = $('#feeDetailFragment');
+		
+		<!--/* チェックボックス全選択・全解除 */-->
+		feeDetailFragment.on('click', '.checkBoxAllCheck', function(){
+			$('.targetCheck').prop("checked", $(this).prop("checked"));
+		});
+		
+		<!--/* チェックボックスのチェック数を反映 */-->
+		feeDetailFragment.on("click", '.checkBoxAllCheck, .targetCheck', function(){
+			let checkCnt = $('.targetCheck:checked').length;
+			$('.checkCnt').html(checkCnt);
+		});
+		
+		<!--/* 明細出力をクリック */-->
+		feeDetailFragment.on("click", '.excelOutput', function(){
+			const personId = /*[[${personId}]]*/;
+			const ankenId = /*[[${ankenId}]]*/;
+			
+			const url = "/user/feeDetail/" + personId + "/" + ankenId + "/outputFeeDetailExcel";
+			const button = $(this);
+			let formData = {};
+			downloadFileAjax(url, button, formData);
+			
+			return false;
+		});
+		
+		<!--/* 追加のリンクをクリック */-->
+		feeDetailFragment.on("click", '.addFee', function(){
+			const personId = /*[[${personId}]]*/;
+			const ankenId = /*[[${ankenId}]]*/;
+			
+			<!--/* 2重押下防止 */-->
+			if(ajaxRunning){
+				return false;
+			}
+			
+			ajaxRunning = true;
+			$.ajax({
+				url : "/user/feeDetail/" + personId + "/" + ankenId + "/getFeeDetailInputRow",
+				type : "GET"
+			})
+			.done(function(data, status, jqXHR) {
+				if (isAjaxProcSuccess(jqXHR)) {
+					<!--/* 処理成功 */-->
+					$('#feeDetailInputRowFragmentWrap').html(data);
+					<!--/* 画面の表示位置を報酬の入力フラグメントまでスクロール（画面上部から50px下へ） */-->
+					const adjust = 50;
+					const position = $('#feeDetailInputRowFragmentWrap').position().top - adjust;
+					$(window).scrollTop(position);
+				} else {
+					<!--/* 処理失敗 */-->
+					const errorMsg = getAjaxProcResutlMessage(jqXHR);
+					showErrorMessageForJs(errorMsg);
+				}
+			})
+			.fail(function(jqXHR, status, errorThrown) {
+				showErrorMessageForJs(/*[[#{E00091}]]*/ "error");
+			})
+			.always(function(){
+				ajaxRunning = false;
+			});
+		});
+		
+		<!--/* 登録フォーム閉じる処理 */-->
+		feeDetailFragment.on("click", '.closeAddRow', function(){
+			$('#feeDetailInputRowFragmentWrap').html('');
+		});
+		
+		<!--/* ソート処理 */-->
+		feeDetailFragment.find('.feeDetailSort').on('click', function(){
+			const asc = /*[[${T(jp.loioz.common.constant.SortConstant$SortOrder).ASC.getCd()}]]*/'';
+			const desc = /*[[${T(jp.loioz.common.constant.SortConstant$SortOrder).DESC.getCd()}]]*/'';
+			
+			const currentSortItem = /*[[${feeDetailSearchForm.feeDetailSortItem}]]*/'';
+			const currentSortOrder = /*[[${feeDetailSearchForm.feeDetailSortOrder}]]*/'';
+			let optionParam = [];
+			
+			const sortKey = $(this).data('sortKey');
+			if (sortKey != currentSortItem) {
+				optionParam = [
+					{name:"feeDetailSortItem", value:sortKey},
+					{name:"feeDetailSortOrder", value:desc},
+				];
+			} else {
+				if (currentSortOrder === asc) {
+					optionParam = [
+						{name:"feeDetailSortOrder", value:desc},
+					];
+				} 
+				
+				if (currentSortOrder === desc) {
+					optionParam = [
+						{name:"feeDetailSortOrder", value:asc},
+					]
+				} 
+			}
+			
+			if (ajaxRunning) {
+				return false;
+			}
+			ajaxRunning = true;
+			Promise.resolve(optionParam)
+				.then(sortFeeDetailListFunc)
+				.catch((errorObj) => console.log(errorObj))
+				.finally(() => ajaxRunning = false);
+		});
+		
+		<!--/* 編集用フラグメント表示処理 */-->
+		feeDetailFragment.on("click", '.openEditFeeFragment', function(){
+			
+			const personId = /*[[${personId}]]*/;
+			const ankenId = /*[[${ankenId}]]*/;
+			const feeSeq = $(this).data("feeSeq");
+			let isChecked = $(this).closest('#feeRow_' + feeSeq).find('.targetCheck').prop('checked');
+			if (isChecked == null) {
+				isChecked = false;
+			}
+			const param = {
+				"feeSeq": feeSeq,
+				"isChecked": isChecked
+			}
+			
+			<!--/* 2重押下防止 */-->
+			if(ajaxRunning){
+				return false;
+			}
+			ajaxRunning = true;
+			
+			Promise.resolve(param)
+				.then(openEditFeeFragmentFunc)
+				.catch((errorObj) => console.log(errorObj))
+				.finally(() => ajaxRunning = false);
+		});
+		
+		<!--/* 削除処理 */-->
+		feeDetailFragment.on("click", '.deleteFee', function(){
+			
+			const personId = /*[[${personId}]]*/;
+			const ankenId = /*[[${ankenId}]]*/;
+			const feeSeq = $(this).data("feeSeq");
+			const param = {
+				"feeSeq": feeSeq
+			}
+			
+			<!--/* 2重押下防止 */-->
+			if(ajaxRunning){
+				return false;
+			}
+			ajaxRunning = true;
+			
+			Promise.resolve(param)
+				.then(checkOfBeforeDeleteFeeFunc)
+				.then(deleteFeeFunc)
+				.catch((errorObj) => console.log(errorObj))
+				.finally(() => ajaxRunning = false);
+		});
+		
+		<!--/* 請求書番号をクリック */-->
+		feeDetailFragment.on("click", '.transitionInvoice', function(e){
+			e.stopPropagation();
+			const invoiceSeq = $(this).data("invoiceSeq");
+			
+			<!--/* 請求書詳細画面へ遷移 */-->
+			window.location.href = "/user/invoiceDetail/" + invoiceSeq + "/?isAccgAnkenSide=" + isAccgAnkenSide();
+		});
+		
+		<!--/* 精算書番号をクリック */-->
+		feeDetailFragment.on("click", '.transitionStatement', function(e){
+			e.stopPropagation();
+			const statementSeq = $(this).data("statementSeq");
+			<!--/* 精算書詳細画面へ遷移 */-->
+			window.location.href = "/user/statementDetail/" + statementSeq + "/?isAccgAnkenSide=" + isAccgAnkenSide();
+		});
+		
+		<!--/* 請求書ボタンをクリック */-->
+		feeDetailFragment.on("click", '.registInvoice', function(e){
+			<!--/* 2重押下防止 */-->
+			if(ajaxRunning){
+				return false;
+			}
+			
+			if(!confirm(/*[[#{confirm.C00001(請求書)}]]*/'')) {
+				return false;
+			}
+			
+			ajaxRunning = true;
+			
+			<!--/* リクエストパラメータ */-->
+			const personId = /*[[${personId}]]*/;
+			const ankenId = /*[[${ankenId}]]*/;
+			const feeSeqArray = $(".targetCheck:checked").map(function(){
+				return $(this).data('feeSeq');
+			}).get();
+			const requestParam = [
+				{name:"personId", value:personId},
+				{name:"ankenId", value:ankenId},
+				{name:"feeSeqList", value:feeSeqArray}
+			];
+			
+			$.ajax({
+				type : "POST",
+				url : "/common/mvc/accgDocRegist/registInvoiceAndLinkFeeAndDeposit",
+				data : requestParam,
+			}).done(function(result, status, jqXHR) {
+				if (getAjaxProcResutl(jqXHR) == /*[[${T(jp.loioz.app.common.mvc.accgDocRegist.controller.AccgDocRegistCommonController).HEADER_VALUE_OF_AJAX_PROC_RESULT_ACCG_DOC_REGIST_REDIRECT}]]*/'100') {
+					$('.checkbox_input').removeAttr("checked").prop("checked", false).change();
+					window.location.href = getAjaxProcResutlMessage(jqXHR) + "&isAccgAnkenSide=" + isAccgAnkenSide();
+				} else {
+					const errorMsg = getAjaxProcResutlMessage(jqXHR);
+					showErrorMessageForJs(errorMsg);
+				}
+			})
+			.fail(function(jqXHR, status, errorThrown) {
+				showErrorMessageForJs(/*[[#{E00091}]]*/ "error");
+			})
+			.always(function() {
+				ajaxRunning = false;
+			});
+		});
+		
+		<!--/* 精算書ボタンをクリック */-->
+		feeDetailFragment.on("click", '.registStatement', function(e){
+			<!--/* 2重押下防止 */-->
+			if(ajaxRunning){
+				return false;
+			}
+			
+			if(!confirm(/*[[#{confirm.C00001(精算書)}]]*/'')) {
+				return false;
+			}
+			
+			ajaxRunning = true;
+			
+			<!--/* リクエストパラメータ */-->
+			const personId = /*[[${personId}]]*/;
+			const ankenId = /*[[${ankenId}]]*/;
+			const feeSeqArray = $(".targetCheck:checked").map(function(){
+				return $(this).data('feeSeq');
+			}).get();
+			const requestParam = [
+				{name:"personId", value:personId},
+				{name:"ankenId", value:ankenId},
+				{name:"feeSeqList", value:feeSeqArray}
+			];
+			
+			$.ajax({
+				type : "POST",
+				url : "/common/mvc/accgDocRegist/registStatementAndLinkFeeAndDeposit",
+				data : requestParam,
+			}).done(function(result, status, jqXHR) {
+				if (getAjaxProcResutl(jqXHR) == /*[[${T(jp.loioz.app.common.mvc.accgDocRegist.controller.AccgDocRegistCommonController).HEADER_VALUE_OF_AJAX_PROC_RESULT_ACCG_DOC_REGIST_REDIRECT}]]*/'100') {
+					$('.checkbox_input').removeAttr("checked").prop("checked", false).change();
+					window.location.href = getAjaxProcResutlMessage(jqXHR) + "&isAccgAnkenSide=" + isAccgAnkenSide();
+				} else {
+					const errorMsg = getAjaxProcResutlMessage(jqXHR);
+					showErrorMessageForJs(errorMsg);
+				}
+			})
+			.fail(function(jqXHR, status, errorThrown) {
+				showErrorMessageForJs(/*[[#{E00091}]]*/ "error");
+			})
+			.always(function() {
+				ajaxRunning = false;
+			});
+		});
+		
+	});
+	</script>
+
+	<div class="accg_main_split">
+		
+		<div class="accg_main_split__left">
+			
+			<div class="accg_main_top_split">
+				<!--/* 会計管理用の案件情報 */-->
+				<div id="accgCaseFragmentWrap" class="accg_main_top_split__case"
+					th:insert="common/accg/accgCase::accgCaseFragment(accgCaseForm=${viewForm.getAccgCaseForm()}, isFee=true)">
+				</div>
+				
+				<!--/* 会計サマリ */-->
+				<div id="accgCaseSummaryFragmentWrap" class="accg_main_top_split__total"
+					th:insert="common/accg/accgCaseSummary::accgCaseSummaryFragment(accgCaseSummaryForm=${viewForm.getAccgCaseSummaryForm()}, isFee=true)">
+				</div>
+			</div>
+			
+			<!--/* 詳細一覧 */-->
+			<section class="mt-1">
+				<div class="section_header">
+					<div class="section_header__title">
+						<span class="ml-4 mr-3">
+							<span class="fs20 checkCnt">0</span><span class="fs14 fw0 mx-1">件</span><span class="fs14 fw0">選択中</span>
+						</span>
+						<span class="section_header__title__btn">
+							<button type="button" class="btn btn-light text-info registInvoice">請求書作成</button>
+							<button type="button" class="btn btn-light text-info registStatement">精算書作成</button>
+						</span>
+					</div>
+					<div class="section_header__action">
+						<a href="javascript:void(0);" class="mr-3 excelOutput">
+							<i class="fas fa-download mr-1"></i>
+							<i class="fas fa-spinner mr-1 faa-spin animated hidden"></i>明細出力
+						</a>
+	<th:block th:with="feeAddRegistLimit=${(T(jp.loioz.common.constant.CommonConstant).FEE_ADD_REGIST_LIMIT)}">
+						<a href="javascript:void(0);" th:if="${viewForm.getFeeDetailList().size() < feeAddRegistLimit}"
+							class="fs15 pr-4 addFee"><i class="fas fa-plus-square mr-2"></i>報酬を追加</a>
+	</th:block>
+						
+					</div>
+				</div>
+				<div class="section_body">
+					<div class="section_body__contents p-0">
+	<!--/* 報酬登録なし */-->
+	<th:block th:if="${viewForm.getFeeDetailList().size() == 0}">
+						<div class="py-3 px-4">
+							<span>報酬の登録がありません。</span>
+						</div>
+	</th:block>
+	
+	<!--/* 報酬登録あり */-->
+	<th:block th:if="${viewForm.getFeeDetailList().size() > 0}">
+						<div class="hover_scroll of_x_scroll">
+							<table class="table table_standard fee_detail_list">
+								<thead>
+									<tr>
+										<th class="th_fee_item_check text-center">
+											<label class="checkbox_btn no_text">
+												<input type="checkbox" class="checkbox_input checkBoxAllCheck">
+												<span class="checkbox_txt"></span>
+											</label>
+										</th>
+										<th class="th_fee_item_name sort_column feeDetailSort"
+											th:with="sortItem=${(T(jp.loioz.common.constant.SortConstant$FeeDetailSortItem).ITEM)}"
+											th:data-sort-key="${sortItem.getCd()}">
+											項目
+											<th:block th:if="${sortItem == feeDetailSearchForm.feeDetailSortItem}" th:fragment="feeDetailColumn">
+												<th:block th:if="${feeDetailSearchForm.feeDetailSortOrder == T(jp.loioz.common.constant.SortConstant$SortOrder).ASC}">
+													<i class="fas fa-chevron-up"></i>
+												</th:block>
+												<th:block th:if="${feeDetailSearchForm.feeDetailSortOrder == T(jp.loioz.common.constant.SortConstant$SortOrder).DESC}">
+													<i class="fas fa-chevron-down"></i>
+												</th:block>
+											</th:block>
+										</th>
+										<th class="th_fee_date sort_column feeDetailSort"
+											th:with="sortItem=${(T(jp.loioz.common.constant.SortConstant$FeeDetailSortItem).FEE_DATE)}"
+											th:data-sort-key="${sortItem.getCd()}">
+											発生日
+											<th:block th:replace="::feeDetailColumn"></th:block>
+										</th>
+										<th class="th_fee_payment_status sort_column feeDetailSort"
+											th:with="sortItem=${(T(jp.loioz.common.constant.SortConstant$FeeDetailSortItem).FEE_STATUS)}"
+											th:data-sort-key="${sortItem.getCd()}">
+											ステータス
+											<th:block th:replace="::feeDetailColumn"></th:block>
+										</th>
+										<th class="th_fee sort_column text-right feeDetailSort"
+											th:with="sortItem=${(T(jp.loioz.common.constant.SortConstant$FeeDetailSortItem).FEE_AMOUNT)}"
+											th:data-sort-key="${sortItem.getCd()}">
+											報酬額(税込)
+											<span class="mnw15 d-inline-block" th:insert="::feeDetailColumn"></span>
+										</th>
+										<th class="th_sum_text">摘要</th>
+										<th class="th_fee_memo">内部メモ</th>
+										<th class="th_doc">請求書／精算書</th>
+										<th class="th_operation">編集／削除</th>
+									</tr>
+								</thead>
+								<tbody>
+									<th:block th:each="feeDetail : ${viewForm.getFeeDetailList()}">
+										<!--/* 報酬明細の1行 */-->
+										<tr th:insert="::feeDetailViewRowFragment(${feeDetail})" th:id="|feeRow_${feeDetail.feeSeq}|" class="accg_row"></tr>
+									</th:block>
+								</tbody>
+							</table>
+						</div>
+	</th:block>
+					</div>
+				</div>
+			</section>
+			<!--/* 報酬追加入力用 */-->
+			<div id="feeDetailInputRowFragmentWrap"></div>
+		</div>
+		
+		<!--/* 会計サマリ、案件-顧客一覧 */-->
+		<div class="accg_main_split__right" th:if="${viewForm.getAccgCasePersonForm().Clients}">
+			<!--/* 会計サマリ */-->
+			<div id="accgCasePersonFragmentWrap" 
+				th:insert="common/accg/accgCasePerson::accgCasePersonFragment(accgCasePersonForm=${viewForm.getAccgCasePersonForm()}, isFee=true)">
+			</div>
+		</div>
+		<!--/* 会計サマリ、案件-顧客一覧 end */-->
+		
+	</div>
+</div>
+<!--/* 詳細エリア end */-->
+
+<!--/* 報酬明細表示用フラグメント - 1行分のHTML start */-->
+<th:block th:fragment="feeDetailViewRowFragment(feeDetail)" id="feeDetailViewRowFragment">
+	<input type="hidden" class="rowFeeSeq" th:value="${feeDetail.feeSeq}">
+	<!--/* チェックボックス（ステータスが未請求かつ請求書番号、精算書番号が無い場合に表示） */-->
+	<td class="text-center">
+		<th:block th:if="${T(jp.loioz.common.constant.CommonConstant$FeePaymentStatus).UNCLAIMED.equalsByCode(feeDetail.feePaymentStatus) and #strings.isEmpty(feeDetail.invoiceNo) and #strings.isEmpty(feeDetail.statementNo)}">
+			<label class="checkbox_btn no_text">
+				<input type="checkbox" class="checkbox_input targetCheck" th:checked="${feeDetail.checked}" th:data-fee-seq="${feeDetail.feeSeq}">
+				<span class="checkbox_txt"></span>
+			</label>
+		</th:block>
+	</td>
+	<!--/* 報酬項目 */-->
+	<td>
+		<div class="char_ellipsis mxw180 fw600" th:text="${feeDetail.feeItemName}">着手金</div>
+		<div th:if="${feeDetail.timeCharge}">
+			<i class="fas fa-check-square fs14 mr-2 text-primary"></i><span class="fs13">タイムチャージ報酬</span>
+		</div>
+	</td>
+	<!--/* 発生日 */-->
+	<td class="fs15" th:text="${#strings.isEmpty(feeDetail.feeDate)} ? '-' : ${feeDetail.feeDate}">2022-01-08</td>
+	<!--/* ステータス */-->
+	<td>
+		<th:block th:if="${T(jp.loioz.common.constant.CommonConstant$FeePaymentStatus).UNCLAIMED.equalsByCode(feeDetail.feePaymentStatus)}">
+			<span class="status_unclaimed"
+				th:text="${T(jp.loioz.common.constant.CommonConstant$FeePaymentStatus).UNCLAIMED.getVal()}">未請求</span>
+			<th:block th:if="${T(jp.loioz.common.constant.CommonConstant$SystemFlg).FLG_ON.equalsByCode(feeDetail.uncollectibleFlg)}">
+				<div class="text-danger">
+					<i class="fas fa-exclamation-circle"></i>
+					<span>[[#{W00022}]]</span>
+				</div>
+			</th:block>
+		</th:block>
+		<th:block th:if="${T(jp.loioz.common.constant.CommonConstant$FeePaymentStatus).AWAITING_PAYMENT.equalsByCode(feeDetail.feePaymentStatus)}">
+			<div class="status_awaiting_payment">
+				<span th:text="${T(jp.loioz.common.constant.CommonConstant$FeePaymentStatus).AWAITING_PAYMENT.getVal()}">入金待ち</span>
+			</div>
+			<th:block th:if="${T(jp.loioz.common.constant.CommonConstant$SystemFlg).FLG_ON.equalsByCode(feeDetail.uncollectibleFlg)}">
+				<div class="text-danger">
+					<i class="fas fa-exclamation-circle"></i>
+					<span>[[#{W00022}]]</span>
+				</div>
+			</th:block>
+		</th:block>
+		<th:block th:if="${T(jp.loioz.common.constant.CommonConstant$FeePaymentStatus).DEPOSITED.equalsByCode(feeDetail.feePaymentStatus)}">
+			<div class="status_deposited">
+				<i class="fas fa-check-circle"></i>
+				<span th:text="${T(jp.loioz.common.constant.CommonConstant$FeePaymentStatus).DEPOSITED.getVal()}">入金済み</span>
+			</div>
+		</th:block>
+		<th:block th:if="${T(jp.loioz.common.constant.CommonConstant$FeePaymentStatus).PARTIAL_DEPOSIT.equalsByCode(feeDetail.feePaymentStatus)}">
+			<div class="status_partial_deposit">
+				<i class="fas fa-exclamation-circle"></i>
+				<span th:text="${T(jp.loioz.common.constant.CommonConstant$FeePaymentStatus).PARTIAL_DEPOSIT.getVal()}">一部入金</span>
+			</div>
+			<th:block th:if="${T(jp.loioz.common.constant.CommonConstant$SystemFlg).FLG_ON.equalsByCode(feeDetail.uncollectibleFlg)}">
+				<div class="text-danger">
+					<i class="fas fa-exclamation-circle"></i>
+					<span>[[#{W00022}]]</span>
+				</div>
+			</th:block>
+		</th:block>
+	</td>
+	<!--/* 報酬額 */-->
+	<td class="text-right">
+		<div class="fs16 fw600 lh1_2" th:text="${#strings.isEmpty(feeDetail.feeAmountTaxIn)} ? '-' : ${feeDetail.feeAmountTaxIn}">110,000</div>
+		<div th:if="${feeDetail.withholdingChecked}">
+			<i class="fas fa-check-square fs14 mr-2 text-info"></i><span class="fs13">源泉あり</span>
+		</div>
+	</td>
+	<!--/* 摘要 */-->
+	<td th:text="${feeDetail.sumText}">〇〇〇〇〇〇〇〇〇〇〇〇</td>
+	<!--/* 内部メモ */-->
+	<td th:text="${feeDetail.feeMemo}"/>
+	<td>
+		<!--/* 請求書／精算書 */-->
+		
+		<!--/* 請求番号 */-->
+		<th:block th:unless="${#strings.isEmpty(feeDetail.invoiceNo)}">
+			<div th:id="|invoiceNo_${feeDetail.feeSeq}|">
+				<span class="badge badge_square_sm py-1 badge_orange fs12">請求</span>
+				<a href="javascript:void(0);" class="transitionInvoice" th:data-container="|#invoiceNo_${feeDetail.feeSeq}|"
+					th:data-invoice-seq="${feeDetail.invoiceSeq}" th:text="${feeDetail.invoiceNo}" data-toggle="tooltip" title="請求書を確認する" data-trigger="hover">20220908-114</a>
+			</div>
+		</th:block>
+		
+		<!--/* 精算番号 */-->
+		<th:block th:unless="${#strings.isEmpty(feeDetail.statementNo)}">
+			<div th:id="|statementNo_${feeDetail.feeSeq}|">
+				<span  class="badge badge_square_sm py-1 badge_blue  fs12">精算</span>
+				<a href="javascript:void(0);" class="transitionStatement" th:data-container="|#statementNo_${feeDetail.feeSeq}|"
+					th:data-statement-seq="${feeDetail.statementSeq}" th:text="${feeDetail.statementNo}" data-toggle="tooltip" title="精算書を確認する" data-trigger="hover">20220908-114</a>
+			</div>
+		</th:block>
+		
+	</td>
+	<!--/* 編集削除 */-->
+	<td th:id="|feeOperation_${feeDetail.feeSeq}|" class="py-0 td_operation">
+		<div class="row_btn">
+			<button type="button" class="btn btn-sm btn-light btn_icon_edit accg_row__edit openEditFeeFragment" th:data-fee-seq="${feeDetail.feeSeq}"
+				th:data-container="|#feeOperation_${feeDetail.feeSeq}|" data-toggle="tooltip" title="編集" data-trigger="hover">
+				<i class="fas fa-edit mr-2"></i>編集
+			</button>
+			<button type="button" class="btn btn-sm btn-light btn_icon_only accg_row__delete deleteFee" th:data-fee-seq="${feeDetail.feeSeq}"
+				th:data-container="|#feeOperation_${feeDetail.feeSeq}|" data-toggle="tooltip" title="削除" data-trigger="hover">
+				<i class="far fa-trash-alt"></i>
+			</button>
+		</div>
+	</td>
+</th:block>
+<!--/* 報酬明細表示用フラグメント - 1行分のHTML end */-->
+
+<!--/* 報酬明細編集用フラグメント - 1行分のHTML start */-->
+<th:block th:fragment="feeDetailEditRowFragment" id="feeDetailEditRowFragment" th:object="${editForm}">
+	<td th:id="|feeDetailEditRowFragment_${editForm.feeSeq}|" colspan="9" class="p-0">
+		<div class="accg_edit_row editFeeRow">
+			<script type="text/javascript" th:inline="javascript">
+			$(function() {
+				<!--/* 共有の要素セットアップ処理 */-->
+				commonSetUpElement("#feeDetailEditRowFragment_" + /*[[${editForm.feeSeq}]]*/);
+				
+				const feeDetailEditRowFragment = $('#feeDetailEditRowFragment_' + /*[[${editForm.feeSeq}]]*/);
+				
+				$(".feeDate").datepicker();
+				
+				<!--/* 項目入力検索 */-->
+				feeDetailEditRowFragment.on('focus change keydown paste cut', '.feeDataList', function(e) {
+					$('[data-toggle="tooltip"]').tooltip('hide');
+					timeoutId = lazyQueueFn(searchFeeDataListEdit, {"clearQueueId":timeoutId}, /*[[${editForm.feeSeq}]]*/, e.which);
+				});
+				
+				<!--/* 編集フォーム閉じる処理 */-->
+				feeDetailEditRowFragment.on("click", '.closeEditRow', function(){
+					closeEditFeeFragment($(this).data("feeSeq"), $(this).closest('.feeEditForm').find('#checked').val());
+				});
+				
+				<!--/* 編集フォーム登録処理 */-->
+				feeDetailEditRowFragment.on('click', '.editFee', function(e) {
+					
+					<!--/* 金額のカンマを除去する */-->
+					feeDetailUnformatComma();
+					
+					<!--/*リクエストパラメータ取得のため発行時にdisabledになる要素のdisabledを外す */-->
+					$(this).closest('.feeEditForm').find('.invalidAfterIssued').prop('disabled', false);
+					
+					<!--/* リクエストパラメータ */-->
+					let formData = $(this).closest('.feeEditForm').serializeArray();
+					
+					const feeSeq = $(this).data("feeSeq");
+					const feeDate = $(this).closest('.feeEditForm').find('.feeDate').val();
+					formData.push(
+							{name:'feeSeq', value:feeSeq},
+							{name:'feeDate', value:feeDate}
+					);
+					
+					<!--/* 発行時にdisabledになる要素にdisabledを設定する */-->
+					if ($(this).closest('.feeEditForm').find('.issued').val() === 'true') {
+						$(this).closest('.feeEditForm').find('.invalidAfterIssued').prop('disabled', true);
+					}
+					
+					<!--/* タイムチャージチェックボックスのチェック状態 */-->
+					const feeTimeChargeFlg = $(this).closest('.feeEditForm').find('.feeTimeChargeFlg').prop('checked');
+					
+					<!--/* タイムチャージチェックボックスにチェックが有る場合は、報酬額、税区分を非活性にする */-->
+					if (feeTimeChargeFlg) {
+						$(this).closest('.feeEditForm').find('#feeAmount').prop('disabled', true);
+						$(this).closest('.feeEditForm').find('.taxFlg').prop('disabled', true);
+					}
+					
+					<!--/* ステータスが非活性の場合にセット */-->
+					if ($(this).closest('.feeEditForm').find('#feePaymentStatus').prop('disabled')) {
+						const feePaymentStatus = $(this).closest('.feeEditForm').find('#feePaymentStatus').val();
+						formData.push(
+							{name:'feePaymentStatus', value:feePaymentStatus}
+						);
+					}
+					
+					if (ajaxRunning) {
+						return false;
+					}
+					ajaxRunning = true;
+					Promise.resolve(formData)
+						.then(feeTimeChargeFlg? editFeeTimeChargeFunc : editFeeFunc)
+						.catch((errorObj) => console.log(errorObj))
+						.finally(() => ajaxRunning = false);
+				});
+				
+				<!--/* タイムチャージチェックボックス */-->
+				feeDetailEditRowFragment.on('change', '.feeTimeChargeFlg', function(e) {
+					
+					const feeTimeChargeFlg = $(this).prop('checked');
+					
+					if (feeTimeChargeFlg) {
+						<!--/* タイムチャージ入力時は、報酬、税フラグを初期化して変更不可にする */-->
+						$(this).closest('.feeEditForm').find('#feeAmount').val('')
+						$(this).closest('.feeEditForm').find('.taxFlg').val(/*[[${T(jp.loioz.common.constant.CommonConstant$TaxFlg).FOREIGN_TAX.cd}]]*/)
+						$(this).closest('.feeEditForm').find('#feeAmount').prop("disabled", true);
+						$(this).closest('.feeEditForm').find('.taxFlg').prop("disabled", true);
+						<!--/* 単価、時間の入力フィールドを表示する */-->
+						$(this).closest('.feeEditForm').find('.feeTimeCharge').removeClass('hidden');
+						return;
+					} else {
+						<!--/* タイムチャージをやめる時は、報酬、税フラグを変更可能にする */-->
+						$(this).closest('.feeEditForm').find('#feeAmount').prop("disabled", false);
+						$(this).closest('.feeEditForm').find('.taxFlg').prop("disabled", false);
+						<!--/* 単価、時間を空にする */-->
+						$(this).closest('.feeEditForm').find('#timeChargeTanka').val('');
+						$(this).closest('.feeEditForm').find('#timeChargeTime').val('');
+						<!--/* 単価、時間の入力フィールドを非表示にする */-->
+						$(this).closest('.feeEditForm').find('.feeTimeCharge').addClass('hidden');
+					}
+				});
+				
+				<!--/* 単価、時間入力フィールド Enterでタイムチャージ計算 */-->
+				feeDetailEditRowFragment.on('keydown', '.feeTimeChargeInput', function(e) {
+					
+					<!--/* Enterキー以外は処理終了 */-->
+					if (e.keyCode != 13) {
+						return;
+					}
+					<!--/* 本来設定されているキーイベントを外す */-->
+					e.preventDefault();
+					
+					<!--/* 金額のカンマを除去する */-->
+					feeDetailUnformatComma();
+					
+					const timeChargeTanka = $(this).closest('.feeEditForm').find('#timeChargeTanka').val();
+					const timeChargeTime = $(this).closest('.feeEditForm').find('#timeChargeTime').val();
+					
+					<!--/* 単価か時間のどちらかが空の場合、報酬額を空にして処理終了 */-->
+					if (timeChargeTanka.trim() === '' || timeChargeTime.trim() === '') {
+						$(this).closest('.feeEditForm').find('#feeAmount').val('')
+						<!--/* 金額をカンマ区切りに変換 */-->
+						feeDetailFormatComma();
+						return;
+					}
+					
+					<!--/* 単価か時間のどちらかがマイナスの場合、報酬額を空にして処理終了 */-->
+					if (timeChargeTanka.trim() < 0 || timeChargeTime.trim() < 0) {
+						$(this).closest('.feeEditForm').find('#feeAmount').val('')
+						<!--/* 金額をカンマ区切りに変換 */-->
+						feeDetailFormatComma();
+						return;
+					}
+					
+					<!--/* リクエストパラメータ */-->
+					const requestParam = {
+						'timeChargeTanka' : $(this).closest('.feeEditForm').find('#timeChargeTanka').val(),
+						'timeChargeTime' : $(this).closest('.feeEditForm').find('#timeChargeTime').val(),
+						'feeSeq' : $(this).closest('.feeEditForm').find('.rowFeeSeq').val()
+					}
+					
+					<!--/* 2重押下防止 */-->
+					if(ajaxRunning){
+						return false;
+					}
+					
+					ajaxRunning = true;
+					
+					Promise.resolve(requestParam)
+						.then(calculateEditTimeChargeFunc)
+						.catch((errorObj) => console.log(errorObj))
+						.finally(() => ajaxRunning = false);
+				});
+				
+				<!--/* 単価、時間入力フィールド フォーカスアウトでタイムチャージ計算 */-->
+				feeDetailEditRowFragment.on('blur', '.feeTimeChargeInput', function() {
+					
+					<!--/* 金額のカンマを除去する */-->
+					feeDetailUnformatComma();
+					
+					const timeChargeTanka = $(this).closest('.feeEditForm').find('#timeChargeTanka').val();
+					const timeChargeTime = $(this).closest('.feeEditForm').find('#timeChargeTime').val();
+					
+					<!--/* 単価か時間のどちらかが空の場合、報酬額を空にして処理終了 */-->
+					if (timeChargeTanka.trim() === '' || timeChargeTime.trim() === '') {
+						$(this).closest('.feeEditForm').find('#feeAmount').val('')
+						<!--/* 金額をカンマ区切りに変換 */-->
+						feeDetailFormatComma();
+						return;
+					}
+					
+					<!--/* 単価か時間のどちらかがマイナスの場合、報酬額を空にして処理終了 */-->
+					if (timeChargeTanka.trim() < 0 || timeChargeTime.trim() < 0) {
+						$(this).closest('.feeEditForm').find('#feeAmount').val('')
+						<!--/* 金額をカンマ区切りに変換 */-->
+						feeDetailFormatComma();
+						return;
+					}
+					
+					<!--/* リクエストパラメータ */-->
+					const requestParam = {
+						'timeChargeTanka' : $(this).closest('.feeEditForm').find('#timeChargeTanka').val(),
+						'timeChargeTime' : $(this).closest('.feeEditForm').find('#timeChargeTime').val(),
+						'feeSeq' : $(this).closest('.feeEditForm').find('.rowFeeSeq').val()
+					}
+					
+					<!--/* 2重押下防止 */-->
+					if(ajaxRunning){
+						return false;
+					}
+					
+					ajaxRunning = true;
+					
+					Promise.resolve(requestParam)
+						.then(calculateEditTimeChargeFunc)
+						.catch((errorObj) => console.log(errorObj))
+						.finally(() => ajaxRunning = false);
+				});
+				
+				<!--/* タイムチャージ額計算 */-->
+				const calculateEditTimeChargeFunc = (requestParam) => {
+					return new Promise((resolve, reject) => {
+						const personId = /*[[${personId}]]*/;
+						const ankenId = /*[[${ankenId}]]*/;
+						
+						$.ajax({
+							url : "/user/feeDetail/" + personId + "/" + ankenId + "/calculateTimeCharge",
+							type : "GET",
+							data : requestParam
+						})
+						.done(function(response) {
+							if (response.succeeded) {
+								<!--/* 処理成功 */-->
+								const feeAmount = response.feeAmount;
+								const feeSeq = response.feeSeq;
+								$('#feeRow_' + feeSeq).find('#feeAmount').val(feeAmount);
+								<!--/* 金額をカンマ区切りに変換 */-->
+								feeDetailFormatComma();
+								return resolve();
+							} else {
+								<!--/* 処理失敗 */-->
+								const feeSeq = response.feeSeq;
+								$('#feeRow_' + feeSeq).find('#feeAmount').val('');
+								<!--/* 金額をカンマ区切りに変換 */-->
+								feeDetailFormatComma();
+								return reject();
+							}
+						})
+						.fail(function(jqXHR, status, errorThrown) {
+							showErrorMessageForJs(/*[[#{E00091}]]*/ "error");
+							return reject();
+						})
+					});
+				}
+				
+			});
+			</script>
+			<form class="feeEditForm">
+				<input type="hidden" class="issued" th:field="*{issued}">
+				<input type="hidden" class="checked" th:field="*{checked}">
+				<input type="hidden" class="rowFeeSeq" th:value="${editForm.feeSeq}">
+				<input type="hidden" class="invoiceNo" th:field="*{invoiceNo}">
+				<input type="hidden" class="statementNo" th:field="*{statementNo}">
+				<input type="hidden" class="issuedMessage" th:field="*{issuedMessage}">
+				<input type="hidden" class="createdByName" th:field="*{createdByName}">
+				<input type="hidden" class="createdAtStr" th:field="*{createdAtStr}">
+				<input type="hidden" class="updatedByName" th:field="*{updatedByName}">
+				<input type="hidden" class="updatedAtStr" th:field="*{updatedAtStr}">
+				
+				<!--/* 発行時に変更できない旨のメッセージ表示 */-->
+				<th:block th:if="*{issued}">
+					<div class="edit_inner_msg mb-2">
+						<span class="text-danger">
+							<i class="fas fa-exclamation-circle mr-2"></i><span th:text="*{issuedMessage}"></span>
+						</span>
+					</div>
+				</th:block>
+				
+				<div class="form-row">
+					<div class="form-group col-md-auto feeItemInput">
+						<label class="input_parts_label">項目</label>
+						<span class="mark_equired">必須</span>
+						<input type="text" class="form-control feeDataList invalidAfterIssued" maxlength="30" autocomplete="off" th:field="*{feeItemName}"
+							placeholder="着手金、成功報酬など" th:disabled="*{issued}">
+						<div th:id="|feeDataListEditFragment_${editForm.feeSeq}|" class="feeDataListFragmentWrap">
+							<!--/* 初期状態は空のまま */-->
+						</div>
+						<div th:if="*{#fields.hasErrors('feeItemName')}" th:errors="*{feeItemName}" class="error_mag_point">error</div>
+						<div class="d-flex pt-2">
+							<label class="checkbox_btn">
+								<input type="checkbox" class="checkbox_input feeTimeChargeFlg invalidAfterIssued" th:field="*{feeTimeChargeFlg}" th:disabled="*{issued}">
+								<span class="checkbox_txt fs13">タイムチャージ報酬</span>
+							</label>
+							<div th:if="*{#fields.hasErrors('feeTimeChargeFlg')}" th:errors="*{feeTimeChargeFlg}" class="error_mag_point">error</div>
+						</div>
+					</div>
+					<div class="form-group col-md-auto">
+						<label class="input_parts_label">発生日</label>
+						<input type="text" class="form-control digit8 inputDateSlash inputDate feeDate invalidAfterIssued" maxlength="10" autocomplete="off"
+							th:value="*{feeDate}" th:disabled="*{issued}">
+						<div th:if="*{#fields.hasErrors('feeDate')}" th:errors="*{feeDate}" class="error_mag_point">error</div>
+					</div>
+					<div class="form-group col-md-auto">
+						<label class="input_parts_label">ステータス</label>
+						<span class="mark_equired">必須</span>
+						<select class="form-control" th:field="*{feePaymentStatus}" th:disabled="*{createdInvoiceStatement()}">
+							<option th:each="status : *{feePaymentStatusList}" th:value="${status.value}"
+								th:text="${status.label}">
+							</option>
+						</select>
+						<div th:if="*{#fields.hasErrors('feePaymentStatus')}" th:errors="*{feePaymentStatus}" class="error_mag_point">error</div>
+					</div>
+					<div class="form-group col-md-auto">
+						<label class="input_parts_label">報酬額</label>
+						<span class="mark_equired">必須</span>
+						<input type="text" class="form-control text-right digit8 fs14 commaFormat inputNumberOnly invalidAfterIssued" maxlength="9"
+							autocomplete="off" th:field="*{feeAmount}" th:disabled="*{feeTimeChargeFlg} or *{issued}">
+						<div th:if="*{#fields.hasErrors('feeAmount')}" th:errors="*{feeAmount}" class="error_mag_point">error</div>
+						
+						<!--/* タイムチャージ単価 */-->
+						<div class="feeTimeCharge" th:classappend="*{feeTimeChargeFlg}? '' : 'hidden'">
+							<label class="input_parts_label">単価</label>
+							<input type="text" class="form-control text-right digit8 fs14 commaFormat inputNumberOnly feeTimeChargeInput invalidAfterIssued"
+								maxlength="9" autocomplete="off" th:field="*{timeChargeTanka}" th:disabled="*{issued}">
+							<div th:if="*{#fields.hasErrors('timeChargeTanka')}" th:errors="*{timeChargeTanka}" class="error_mag_point">error</div>
+						</div>
+						
+					</div>
+					<!-- 税抜、税込の選択 -->
+					<div class="form-group col-md-auto">
+						<label class="input_parts_label">　</label>
+						<select id="taxFlgSelect" class="form-control taxFlg invalidAfterIssued" th:field="*{taxFlg}" th:disabled="*{feeTimeChargeFlg} or *{issued}">
+							<option id="foreignTaxOption" th:value="${T(jp.loioz.common.constant.CommonConstant$TaxFlg).FOREIGN_TAX.cd}">(税抜)</option>
+							<option id="internalTaxOption" th:value="${T(jp.loioz.common.constant.CommonConstant$TaxFlg).INTERNAL_TAX.cd}">(税込)</option>
+						</select>
+						<div th:if="*{#fields.hasErrors('taxFlg')}" th:errors="*{taxFlg}" class="error_mag_point">error</div>
+						
+						<!--/* タイムチャージ時間（分） */-->
+						<div class="feeTimeCharge" th:classappend="*{feeTimeChargeFlg}? '' : 'hidden'">
+							<label class="input_parts_label">時間</label>
+							<div class="d-flex align-items-center">
+								<input type="text" class="form-control text-right digit4 fs14 inputNumberOnly feeTimeChargeInput invalidAfterIssued" maxlength="5"
+									autocomplete="off" th:field="*{timeChargeTime}" th:disabled="*{issued}">
+								<div class="ml-1">分</div>
+							</div>
+							<div th:if="*{#fields.hasErrors('timeChargeTime')}" th:errors="*{timeChargeTime}" class="error_mag_point">error</div>
+						</div>
+						
+					</div>
+					<div class="form-group col-md-auto">
+						<label class="input_parts_label">消費税</label>
+						<select class="form-control invalidAfterIssued" th:field="*{taxRateType}" th:disabled="*{issued}">
+							<option th:each="enum : ${T(jp.loioz.common.constant.CommonConstant$TaxRate).values()}" th:value="${enum.cd}">
+								<th:block th:unless="${enum == T(jp.loioz.common.constant.CommonConstant$TaxRate).TAX_FREE}" th:text="|${enum.val}%|"></th:block>
+								<th:block th:if="${enum == T(jp.loioz.common.constant.CommonConstant$TaxRate).TAX_FREE}" th:text="なし"></th:block>
+							</option>
+						</select>
+						<div th:if="*{#fields.hasErrors('taxRateType')}" th:errors="*{taxRateType}" class="error_mag_point">error</div>
+					</div>
+					<div class="form-group col-md-auto">
+						<label class="input_parts_label">源泉徴収税</label>
+						<div class="mt-1">
+							<label class="radio_btn" th:classappend="*{issued} ? 'radio_btn_disabled'" th:each="enum : ${T(jp.loioz.common.constant.CommonConstant$WithholdingFlg).values()}">
+								<input type="radio" class="radio_input invalidAfterIssued" th:value="${enum.cd}" th:field="*{withholdingFlg}" th:disabled="*{issued}">
+								<span class="radio_txt" th:text="${enum.val}"></span>
+							</label>
+						</div>
+						<div th:if="*{#fields.hasErrors('withholdingFlg')}" th:errors="*{withholdingFlg}" class="error_mag_point">error</div>
+					</div>
+					<div class="form-group col-md-auto">
+						<label class="input_parts_label">摘要</label>
+						<input type="text" class="form-control digit19 invalidAfterIssued" th:maxlength="${(T(jp.loioz.common.constant.AccgConstant).MX_LEN_INVOICE_SUM_TEXT)}"
+							autocomplete="off" th:field="*{sumText}" th:disabled="*{issued}">
+						<div th:if="*{#fields.hasErrors('sumText')}" th:errors="*{sumText}" class="error_mag_point">error</div>
+					</div>
+					<div class="form-group col-md-auto">
+						<label class="input_parts_label">内部メモ</label>
+						<input type="text" class="form-control digit19" th:field="*{feeMemo}" autocomplete="off"
+							th:maxlength="${(T(jp.loioz.common.constant.AccgConstant).MX_LEN_MEMO)}" placeholder="書類に印字等はされません">
+						<div th:if="*{#fields.hasErrors('feeMemo')}" th:errors="*{feeMemo}" class="error_mag_point">error</div>
+					</div>
+					<div class="form-group col-md-auto">
+						<label class="input_parts_label">登録者</label>
+						<div>
+							<span th:text="*{createdByName}"></span>
+							<div th:text="*{createdAtStr}"></div>
+						</div>
+					</div>
+					<div class="form-group col-md-auto">
+						<label class="input_parts_label">更新者</label>
+						<div>
+							<span th:text="*{updatedByName}"></span>
+							<div th:text="*{updatedAtStr}"></div>
+						</div>
+					</div>
+				</div>
+				<div class="form-row">
+					<div class="form-group col-md-12 mt-auto">
+						<div class="text-right">
+							<button type="button" class="btn btn-info mr-4 editFee" th:data-fee-seq=${editForm.feeSeq}><i class="fas fa-check"></i>保存</button>
+							<button type="button" class="btn btn-light closeEditRow" th:data-fee-seq=${editForm.feeSeq}><i class="fas fa-times"></i>閉じる</button>
+						</div>
+					</div>
+				</div>
+			</form>
+		</div>
+	</td>
+</th:block>
+<!--/* 報酬明細編集用フラグメント - 1行分のHTML end */-->
+
+<!--/* 報酬明細登録用フラグメント start */-->
+<div th:fragment="feeDetailInputRowFragment" id="feeDetailInputRowFragment" class="accg_edit_row addFeeRow mb-3 mt-3" th:object="${inputForm}">
+	<script type="text/javascript" th:inline="javascript">
+	$(function() {
+		<!--/* 共有の要素セットアップ処理 */-->
+		commonSetUpElement("#feeDetailInputRowFragment");
+		
+		$(".feeDate").datepicker();
+		
+		<!--/* 登録ボタンをクリック */-->
+		$("#feeDetailInputRowFragment").on("click", '.registFee', function(){
+			
+			<!--/* 金額のカンマを除去する */-->
+			feeDetailUnformatComma();
+			
+			<!--/* リクエストパラメータ */-->
+			const formData = $('#feeInputForm').serializeArray();
+			const feeDate = $(this).closest('#feeInputForm').find('.feeDate').val();
+			formData.push(
+					{name:'feeDate', value:feeDate}
+			);
+			const feeTimeChargeFlg = $('#feeInputForm').find('.feeTimeChargeFlg').prop('checked');
+			<!--/* タイムチャージチェックボックスにチェックが有る場合は、非活性項目を個別にセット */-->
+			if (feeTimeChargeFlg) {
+				const feeAmount = $('#feeInputForm').find('#feeAmount').val();
+				const taxFlg = $('#feeInputForm').find('.taxFlg').val();
+				formData.push(
+						{name:'feeAmount', value:feeAmount},
+						{name:'taxFlg', value:taxFlg}
+				);
+			}
+			
+			<!--/* 2重押下防止 */-->
+			if(ajaxRunning){
+				return false;
+			}
+			ajaxRunning = true;
+			Promise.resolve(formData)
+				.then(feeTimeChargeFlg? registFeeTimeChargeFunc : registFeeFunc)
+				.catch((errorObj) => console.log(errorObj))
+				.finally(() => ajaxRunning = false);
+		});
+		
+		<!--/* 項目入力検索 */-->
+		$('#feeDetailInputRowFragment').on('focus change keydown paste cut', '.feeDataList', function(e) {
+			$('[data-toggle="tooltip"]').tooltip('hide');
+			timeoutId = lazyQueueFn(searchFeeDataList, {"clearQueueId":timeoutId}, e.which);
+		});
+		
+		<!--/* タイムチャージチェックボックス */-->
+		$('#feeDetailInputRowFragment').on('change', '.feeTimeChargeFlg', function(e) {
+			
+			const feeTimeChargeFlg = $('#feeInputForm').find('.feeTimeChargeFlg').prop('checked');
+			
+			if (feeTimeChargeFlg) {
+				<!--/* タイムチャージ入力時は、報酬、税フラグを初期化して変更不可にする */-->
+				$('#feeInputForm').find('#feeAmount').val('')
+				$('#feeInputForm').find('.taxFlg').val(/*[[${T(jp.loioz.common.constant.CommonConstant$TaxFlg).FOREIGN_TAX.cd}]]*/)
+				$('#feeInputForm').find('#feeAmount').prop("disabled", true);
+				$('#feeInputForm').find('.taxFlg').prop("disabled", true);
+				<!--/* 単価、時間の入力フィールドを表示する */-->
+				$('#feeInputForm').find('.feeTimeCharge').removeClass('hidden');
+			} else {
+				<!--/* タイムチャージをやめる時は、報酬、税フラグを変更可能にする */-->
+				$('#feeInputForm').find('#feeAmount').prop("disabled", false);
+				$('#feeInputForm').find('.taxFlg').prop("disabled", false);
+				<!--/* 単価、時間を空にする */-->
+				$('#feeInputForm').find('#timeChargeTanka').val('');
+				$('#feeInputForm').find('#timeChargeTime').val('');
+				<!--/* 単価、時間の入力フィールドを非表示にする */-->
+				$('#feeInputForm').find('.feeTimeCharge').addClass('hidden');
+			}
+		});
+		
+		<!--/* 単価、時間入力フィールド Enterでタイムチャージ計算 */-->
+		$('#feeDetailInputRowFragment').on('keydown', '.feeTimeChargeInput', function(e) {
+			
+			<!--/* Enterキー以外は処理終了 */-->
+			if (e.keyCode != 13) {
+				return;
+			}
+			<!--/* 本来設定されているキーイベントを外す */-->
+			e.preventDefault();
+			
+			<!--/* 金額のカンマを除去する */-->
+			feeDetailUnformatComma();
+			
+			const timeChargeTanka = $('#feeInputForm').find('#timeChargeTanka').val();
+			const timeChargeTime = $('#feeInputForm').find('#timeChargeTime').val();
+			
+			<!--/* 単価か時間のどちらかが空の場合、報酬額を空にして処理終了 */-->
+			if (timeChargeTanka.trim() === '' || timeChargeTime.trim() === '') {
+				$('#feeInputForm').find('#feeAmount').val('')
+				<!--/* 金額をカンマ区切りに変換 */-->
+				feeDetailFormatComma();
+				return;
+			}
+			
+			<!--/* 単価か時間のどちらかがマイナスの場合、報酬額を空にして処理終了 */-->
+			if (timeChargeTanka.trim() < 0 || timeChargeTime.trim() < 0) {
+				$('#feeInputForm').find('#feeAmount').val('')
+				<!--/* 金額をカンマ区切りに変換 */-->
+				feeDetailFormatComma();
+				return;
+			}
+			
+			<!--/* リクエストパラメータ */-->
+			const requestParam = {
+				'timeChargeTanka' : $('#feeInputForm').find('#timeChargeTanka').val(),
+				'timeChargeTime' : $('#feeInputForm').find('#timeChargeTime').val(),
+				'feeSeq' : ''
+			}
+			
+			<!--/* 2重押下防止 */-->
+			if(ajaxRunning){
+				return false;
+			}
+			
+			ajaxRunning = true;
+			
+			Promise.resolve(requestParam)
+				.then(calculateInputTimeChargeFunc)
+				.catch((errorObj) => console.log(errorObj))
+				.finally(() => ajaxRunning = false);
+		});
+		
+		<!--/* 単価、時間入力フィールド フォーカスアウトでタイムチャージ計算 */-->
+		$('#feeDetailInputRowFragment').on('blur', '.feeTimeChargeInput', function() {
+			
+			<!--/* 金額のカンマを除去する */-->
+			feeDetailUnformatComma();
+			
+			const timeChargeTanka = $('#feeInputForm').find('#timeChargeTanka').val();
+			const timeChargeTime = $('#feeInputForm').find('#timeChargeTime').val();
+			
+			<!--/* 単価か時間のどちらかが空の場合、報酬額を空にして処理終了 */-->
+			if (timeChargeTanka.trim() === '' || timeChargeTime.trim() === '') {
+				$('#feeInputForm').find('#feeAmount').val('')
+				<!--/* 金額をカンマ区切りに変換 */-->
+				feeDetailFormatComma();
+				return;
+			}
+			
+			<!--/* 単価か時間のどちらかがマイナスの場合、報酬額を空にして処理終了 */-->
+			if (timeChargeTanka.trim() < 0 || timeChargeTime.trim() < 0) {
+				$('#feeInputForm').find('#feeAmount').val('')
+				<!--/* 金額をカンマ区切りに変換 */-->
+				feeDetailFormatComma();
+				return;
+			}
+			
+			<!--/* リクエストパラメータ */-->
+			const requestParam = {
+				'timeChargeTanka' : $('#feeInputForm').find('#timeChargeTanka').val(),
+				'timeChargeTime' : $('#feeInputForm').find('#timeChargeTime').val(),
+				'feeSeq' : ''
+			}
+			
+			<!--/* 2重押下防止 */-->
+			if(ajaxRunning){
+				return false;
+			}
+			
+			ajaxRunning = true;
+			
+			Promise.resolve(requestParam)
+				.then(calculateInputTimeChargeFunc)
+				.catch((errorObj) => console.log(errorObj))
+				.finally(() => ajaxRunning = false);
+		});
+		
+		<!--/* タイムチャージ額計算 */-->
+		const calculateInputTimeChargeFunc = (requestParam) => {
+			return new Promise((resolve, reject) => {
+				const personId = /*[[${personId}]]*/;
+				const ankenId = /*[[${ankenId}]]*/;
+				
+				$.ajax({
+					url : "/user/feeDetail/" + personId + "/" + ankenId + "/calculateTimeCharge",
+					type : "GET",
+					data : requestParam
+				})
+				.done(function(response) {
+					if (response.succeeded) {
+						<!--/* 処理成功 */-->
+						const feeAmount = response.feeAmount;
+						$('#feeInputForm').find('#feeAmount').val(feeAmount);
+						<!--/* 金額をカンマ区切りに変換 */-->
+						feeDetailFormatComma();
+						return resolve();
+					} else {
+						<!--/* 処理失敗 */-->
+						$('#feeInputForm').find('#feeAmount').val('');
+						<!--/* 金額をカンマ区切りに変換 */-->
+						feeDetailFormatComma();
+						return reject();
+					}
+				})
+				.fail(function(jqXHR, status, errorThrown) {
+					showErrorMessageForJs(/*[[#{E00091}]]*/ "error");
+					return reject();
+				})
+			});
+		}
+		
+	});
+	</script>
+	<form id="feeInputForm">
+		<div class="fs18 fw600 fc_sub">報酬-新規追加</div>
+		<div class="form-row">
+			<div class="form-group col-md-auto feeItemInput">
+				<!--/* 報酬項目 */-->
+				<label class="input_parts_label">項目</label>
+				<span class="mark_equired">必須</span>
+				<input type="text" class="form-control feeDataList" maxlength="30" autocomplete="off" th:field="*{feeItemName}"
+					placeholder="着手金、成功報酬など">
+				<div id="feeDataListRegistFragment" class="feeDataListFragmentWrap">
+					<!--/* 初期状態は空のまま */-->
+				</div>
+				<div th:if="*{#fields.hasErrors('feeItemName')}" th:errors="*{feeItemName}" class="error_mag_point">error</div>
+				
+				<!--/* タイムチャージ報酬 */-->
+				<div class="d-flex pt-2">
+					<label class="checkbox_btn">
+						<input type="checkbox" class="checkbox_input feeTimeChargeFlg" th:field="*{feeTimeChargeFlg}">
+						<span class="checkbox_txt fs13">タイムチャージ報酬</span>
+					</label>
+					<div th:if="*{#fields.hasErrors('feeTimeChargeFlg')}" th:errors="*{feeTimeChargeFlg}" class="error_mag_point">error</div>
+				</div>
+				
+			</div>
+			<div class="form-group col-md-auto">
+				<label class="input_parts_label">発生日</label>
+				<input type="text" class="form-control digit8 inputDateSlash inputDate feeDate" maxlength="10" autocomplete="off" th:value="*{feeDate}">
+				<div th:if="*{#fields.hasErrors('feeDate')}" th:errors="*{feeDate}" class="error_mag_point">error</div>
+			</div>
+			<div class="form-group col-md-auto">
+				<label class="input_parts_label">ステータス</label>
+				<span class="mark_equired">必須</span>
+				<select class="form-control" th:field="*{feePaymentStatus}">
+					<option th:each="status : *{feePaymentStatusList}" th:value="${status.value}"
+						th:text="${status.label}">
+					</option>
+				</select>
+				<div th:if="*{#fields.hasErrors('feePaymentStatus')}" th:errors="*{feePaymentStatus}" class="error_mag_point">error</div>
+			</div>
+			<div class="form-group col-md-auto">
+				<label class="input_parts_label">報酬額</label>
+				<span class="mark_equired">必須</span>
+				<input type="text" class="form-control text-right digit8 fs15 commaFormat inputNumberOnly" maxlength="9" autocomplete="off" th:field="*{feeAmount}" th:disabled="*{feeTimeChargeFlg}">
+				<div th:if="*{#fields.hasErrors('feeAmount')}" th:errors="*{feeAmount}" class="error_mag_point">error</div>
+				
+				<!--/* タイムチャージ単価 */-->
+				<div class="feeTimeCharge" th:classappend="*{feeTimeChargeFlg}? '' : 'hidden'">
+					<label class="input_parts_label">単価</label>
+					<input type="text" class="form-control text-right digit8 fs14 commaFormat inputNumberOnly feeTimeChargeInput" maxlength="9" autocomplete="off" th:field="*{timeChargeTanka}">
+					<div th:if="*{#fields.hasErrors('timeChargeTanka')}" th:errors="*{timeChargeTanka}" class="error_mag_point">error</div>
+				</div>
+				
+			</div>
+			<!-- 税抜、税込の選択 -->
+			<div class="form-group col-md-auto">
+				<label class="input_parts_label">　</label>
+				<select id="taxFlgSelect" class="form-control taxFlg" th:field="*{taxFlg}" th:disabled="*{feeTimeChargeFlg}">
+					<option id="foreignTaxOption" th:value="${T(jp.loioz.common.constant.CommonConstant$TaxFlg).FOREIGN_TAX.cd}">(税抜)</option>
+					<option id="internalTaxOption" th:value="${T(jp.loioz.common.constant.CommonConstant$TaxFlg).INTERNAL_TAX.cd}">(税込)</option>
+				</select>
+				<div th:if="*{#fields.hasErrors('taxFlg')}" th:errors="*{taxFlg}" class="error_mag_point">error</div>
+				
+				<!--/* タイムチャージ時間（分） */-->
+				<div class="feeTimeCharge" th:classappend="*{feeTimeChargeFlg}? '' : 'hidden'">
+					<label class="input_parts_label">時間</label>
+					<div class="d-flex align-items-center">
+						<input type="text" class="form-control text-right digit4 fs14 inputNumberOnly feeTimeChargeInput" maxlength="5" autocomplete="off" th:field="*{timeChargeTime}">
+						<div class="ml-1">分</div>
+					</div>
+					<div th:if="*{#fields.hasErrors('timeChargeTime')}" th:errors="*{timeChargeTime}" class="error_mag_point">error</div>
+				</div>
+				
+			</div>
+			<div class="form-group col-md-auto">
+				<label class="input_parts_label">消費税</label>
+				<select class="form-control" th:field="*{taxRateType}">
+					<option th:each="enum : ${T(jp.loioz.common.constant.CommonConstant$TaxRate).values()}" th:value="${enum.cd}">
+						<th:block th:unless="${enum == T(jp.loioz.common.constant.CommonConstant$TaxRate).TAX_FREE}" th:text="|${enum.val}%|"></th:block>
+						<th:block th:if="${enum == T(jp.loioz.common.constant.CommonConstant$TaxRate).TAX_FREE}" th:text="なし"></th:block>
+					</option>
+				</select>
+				<div th:if="*{#fields.hasErrors('taxRateType')}" th:errors="*{taxRateType}" class="error_mag_point">error</div>
+			</div>
+			<div class="form-group col-md-auto">
+				<label class="input_parts_label">源泉徴収税</label>
+				<div class="mt-1">
+					<label class="radio_btn" th:each="enum : ${T(jp.loioz.common.constant.CommonConstant$WithholdingFlg).values()}">
+						<input type="radio" class="radio_input" th:value="${enum.cd}" th:field="*{withholdingFlg}">
+						<span class="radio_txt" th:text="${enum.val}"></span>
+					</label>
+				</div>
+				<div th:if="*{#fields.hasErrors('withholdingFlg')}" th:errors="*{withholdingFlg}" class="error_mag_point">error</div>
+			</div>
+			<div class="form-group col-md-auto">
+				<label class="input_parts_label">摘要</label>
+				<input type="text" class="form-control digit19" th:maxlength="${(T(jp.loioz.common.constant.AccgConstant).MX_LEN_INVOICE_SUM_TEXT)}" autocomplete="off" th:field="*{sumText}">
+				<div th:if="*{#fields.hasErrors('sumText')}" th:errors="*{sumText}" class="error_mag_point">error</div>
+			</div>
+			<div class="form-group col-md-auto">
+				<label class="input_parts_label">内部メモ</label>
+				<input type="text" class="form-control digit19" th:field="*{feeMemo}" 
+					th:maxlength="${(T(jp.loioz.common.constant.AccgConstant).MX_LEN_MEMO)}" autocomplete="off" placeholder="書類に印字等はされません">
+				<div th:if="*{#fields.hasErrors('feeMemo')}" th:errors="*{feeMemo}" class="error_mag_point">error</div>
+			</div>
+		</div>
+		<div class="form-row">
+			<div class="form-group col-md-12 mt-auto">
+				<div class="text-right">
+					<button type="button" class="btn btn-info mr-4 registFee"><i class="fas fa-check"></i>登録</button>
+					<button type="button" class="btn btn-light closeAddRow"><i class="fas fa-times"></i>閉じる</button>
+				</div>
+			</div>
+		</div>
+	</form>
+</div>
+<!--/* 報酬明細登録用フラグメント end */-->
+
+
+<!--/* 項目データリストフラグメント start */-->
+<div th:fragment="feeItemFragment" id="feeItemFragment">
+	<script type="text/javascript" th:inline="javascript">
+	$(function() {
+		const feeItemFragment = $('#feeItemFragment');
+		feeItemFragment.find('.feeItem').on('click', function() {
+			const feeItemName = $(this).data("name");
+			$(this).closest('.feeItemInput').find('#feeItemName').val(feeItemName);
+			$('.feeDataListFragmentWrap').html('');
+		});
+	});
+	</script>
+	<th:block th:unless="${#lists.isEmpty(feeItemList)}">
+		<div class="popover_box_list popoverBox notAutoClose feeItemSearchPopover">
+			<div class="popover_box_list__wm mxh300 of_y_scroll hover_scroll">
+				<ul class="list-group">
+					<li class="list-group-item item_search_data_list p-3 feeItem" th:each="item : ${feeItemList}"
+						th:text="${item.label}" th:data-fee-item-seq="${item.value}" th:data-name="${item.label}">
+					</li>
+				</ul>
+			</div>
+		</div>
+	</th:block>
+</div>
+<!--/* 項目データリストフラグメント end */-->
+
+</body>
+</html>

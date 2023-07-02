@@ -1,0 +1,1496 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Created with Jaspersoft Studio version 6.19.1.final using JasperReports Library version 6.19.1-867c00bf88cd4d784d404379d6c05e1b419e8a4c  -->
+<jasperReport xmlns="http://jasperreports.sourceforge.net/jasperreports" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://jasperreports.sourceforge.net/jasperreports http://jasperreports.sourceforge.net/xsd/jasperreport.xsd" name="P0001" pageWidth="595" pageHeight="842" columnWidth="525" leftMargin="35" rightMargin="35" topMargin="48" bottomMargin="48" uuid="d04a0ff9-82e4-4e87-a88a-7a087fb37588">
+	<property name="com.jaspersoft.studio.data.defaultdataadapter" value="One Empty Record"/>
+	<style name="defaultStype" isDefault="true" forecolor="#333333" fontName="BIZUDP明朝"/>
+	<style name="moneyStyle" fontName="IPAex明朝"/>
+	<style name="tableHeader" mode="Opaque" forecolor="#FFFFFF" backcolor="#002060">
+		<box>
+			<pen lineWidth="2.5" lineColor="#FFFFFF"/>
+			<topPen lineWidth="2.5" lineColor="#FFFFFF"/>
+			<leftPen lineWidth="2.5" lineColor="#FFFFFF"/>
+			<bottomPen lineWidth="2.5" lineColor="#FFFFFF"/>
+			<rightPen lineWidth="2.5" lineColor="#FFFFFF"/>
+		</box>
+	</style>
+	<style name="tableColumnHeader" mode="Opaque" forecolor="#002060" backcolor="#FFFFFF" isBold="true">
+		<box>
+			<pen lineWidth="2.5" lineColor="#FFFFFF"/>
+			<topPen lineWidth="2.5" lineColor="#FFFFFF"/>
+			<leftPen lineWidth="2.5" lineColor="#FFFFFF"/>
+			<bottomPen lineWidth="2.5" lineColor="#FFFFFF"/>
+			<rightPen lineWidth="2.5" lineColor="#FFFFFF"/>
+		</box>
+	</style>
+	<style name="tableBody" mode="Opaque" backcolor="#FFFFFF">
+		<box>
+			<pen lineWidth="2.5" lineColor="#FFFFFF"/>
+			<topPen lineWidth="2.5" lineColor="#FFFFFF"/>
+			<leftPen lineWidth="2.5" lineColor="#FFFFFF"/>
+			<bottomPen lineWidth="2.5" lineColor="#FFFFFF"/>
+			<rightPen lineWidth="2.5" lineColor="#FFFFFF"/>
+		</box>
+		<conditionalStyle>
+			<conditionExpression><![CDATA[$V{REPORT_COUNT} % 2 != 0]]></conditionExpression>
+			<style backcolor="#F2F2F2"/>
+		</conditionalStyle>
+	</style>
+	<style name="tableFooterLabel" mode="Opaque" forecolor="#333333" backcolor="#FFFFFF">
+		<box>
+			<pen lineWidth="2.5" lineColor="#FFFFFF"/>
+			<topPen lineWidth="2.5" lineColor="#FFFFFF"/>
+			<leftPen lineWidth="2.5" lineColor="#FFFFFF"/>
+			<bottomPen lineWidth="2.5" lineColor="#FFFFFF"/>
+			<rightPen lineWidth="2.5" lineColor="#FFFFFF"/>
+		</box>
+	</style>
+	<style name="tableFooterValue" style="moneyStyle" mode="Opaque" forecolor="#333333" backcolor="#F2F2F2">
+		<box>
+			<pen lineWidth="2.5" lineColor="#FFFFFF"/>
+			<topPen lineWidth="2.5" lineColor="#FFFFFF"/>
+			<leftPen lineWidth="2.5" lineColor="#FFFFFF"/>
+			<bottomPen lineWidth="2.5" lineColor="#FFFFFF"/>
+			<rightPen lineWidth="2.5" lineColor="#FFFFFF"/>
+		</box>
+	</style>
+	<subDataset name="azukariKingakuDataset" uuid="a73233a0-4694-4af4-9a06-c94ab138788e">
+		<queryString>
+			<![CDATA[]]>
+		</queryString>
+		<field name="azukariDate" class="java.lang.String"/>
+		<field name="azukariKingakuName" class="java.lang.String"/>
+		<field name="azukariKingakuDetail" class="java.lang.String"/>
+		<field name="kingaku" class="java.lang.String"/>
+		<group name="Group1"/>
+	</subDataset>
+	<subDataset name="hoshuJippiKingakuDataset" uuid="5f27f29f-ab4c-46b5-b9b1-2c4a09c403bc">
+		<property name="com.jaspersoft.studio.data.defaultdataadapter" value="One Empty Record"/>
+		<parameter name="isAzukariEmpty" class="java.lang.Boolean"/>
+		<queryString>
+			<![CDATA[]]>
+		</queryString>
+		<field name="hoshuJippiDate" class="java.lang.String"/>
+		<field name="hoshuJippiKingakuName" class="java.lang.String"/>
+		<field name="hoshuJippiKingakuDetail" class="java.lang.String"/>
+		<field name="kingaku" class="java.lang.String"/>
+		<group name="Group1"/>
+	</subDataset>
+	<parameter name="title" class="java.lang.String">
+		<defaultValueExpression><![CDATA[""]]></defaultValueExpression>
+	</parameter>
+	<parameter name="outputDate" class="java.lang.String">
+		<defaultValueExpression><![CDATA[""]]></defaultValueExpression>
+	</parameter>
+	<parameter name="seikyuNo" class="java.lang.String">
+		<defaultValueExpression><![CDATA[""]]></defaultValueExpression>
+	</parameter>
+	<parameter name="atesakiName" class="java.lang.String">
+		<defaultValueExpression><![CDATA[""]]></defaultValueExpression>
+	</parameter>
+	<parameter name="atesakiDetail" class="java.lang.String">
+		<defaultValueExpression><![CDATA[""]]></defaultValueExpression>
+	</parameter>
+	<parameter name="subTitle" class="java.lang.String">
+		<defaultValueExpression><![CDATA[""]]></defaultValueExpression>
+	</parameter>
+	<parameter name="jimushoName" class="java.lang.String">
+		<defaultValueExpression><![CDATA[""]]></defaultValueExpression>
+	</parameter>
+	<parameter name="lawyerName" class="java.lang.String">
+		<defaultValueExpression><![CDATA[""]]></defaultValueExpression>
+	</parameter>
+	<parameter name="sofumotoDetail" class="java.lang.String">
+		<defaultValueExpression><![CDATA[""]]></defaultValueExpression>
+	</parameter>
+	<parameter name="stamp" class="java.lang.Object"/>
+	<parameter name="ankenName" class="java.lang.String">
+		<defaultValueExpression><![CDATA[""]]></defaultValueExpression>
+	</parameter>
+	<parameter name="seikyuKingaku" class="java.lang.String">
+		<defaultValueExpression><![CDATA[""]]></defaultValueExpression>
+	</parameter>
+	<parameter name="shiharaiLimitDate" class="java.lang.String">
+		<defaultValueExpression><![CDATA[""]]></defaultValueExpression>
+	</parameter>
+	<parameter name="azukariKingakuList" class="java.util.List"/>
+	<parameter name="azukariKingakuTotal" class="java.lang.String">
+		<defaultValueExpression><![CDATA[""]]></defaultValueExpression>
+	</parameter>
+	<parameter name="hideAzukariDate" class="java.lang.Boolean"/>
+	<parameter name="hoshuJippiKingakuList" class="java.util.List"/>
+	<parameter name="hideHoshuJippiDate" class="java.lang.Boolean"/>
+	<parameter name="hoshuJippiSubTotal" class="java.lang.String">
+		<defaultValueExpression><![CDATA[""]]></defaultValueExpression>
+	</parameter>
+	<parameter name="hoshuJippiTaxTotal" class="java.lang.String">
+		<defaultValueExpression><![CDATA[""]]></defaultValueExpression>
+	</parameter>
+	<parameter name="hoshuJippiGensenTotal" class="java.lang.String">
+		<defaultValueExpression><![CDATA[""]]></defaultValueExpression>
+	</parameter>
+	<parameter name="hoshuJippiTotal" class="java.lang.String">
+		<defaultValueExpression><![CDATA[""]]></defaultValueExpression>
+	</parameter>
+	<parameter name="seisanTotal" class="java.lang.String">
+		<defaultValueExpression><![CDATA[""]]></defaultValueExpression>
+	</parameter>
+	<parameter name="tenPercentTotal" class="java.lang.String">
+		<defaultValueExpression><![CDATA[""]]></defaultValueExpression>
+	</parameter>
+	<parameter name="tenPercentTaxTotal" class="java.lang.String">
+		<defaultValueExpression><![CDATA[""]]></defaultValueExpression>
+	</parameter>
+	<parameter name="eightPercentTotal" class="java.lang.String">
+		<defaultValueExpression><![CDATA[""]]></defaultValueExpression>
+	</parameter>
+	<parameter name="eightPercentTaxTotal" class="java.lang.String">
+		<defaultValueExpression><![CDATA[""]]></defaultValueExpression>
+	</parameter>
+	<parameter name="paymentDestination" class="java.lang.String">
+		<defaultValueExpression><![CDATA[""]]></defaultValueExpression>
+	</parameter>
+	<parameter name="remarks" class="java.lang.String">
+		<defaultValueExpression><![CDATA[""]]></defaultValueExpression>
+	</parameter>
+	<parameter name="hasTenPercentTax" class="java.lang.Boolean"/>
+	<parameter name="hasEightPercentTax" class="java.lang.Boolean"/>
+	<variable name="tabSet" class="java.lang.String">
+		<variableExpression><![CDATA["&#09;&#09;&#09;&#09;&#09;"]]></variableExpression>
+		<initialValueExpression><![CDATA["&#09;&#09;&#09;&#09;&#09;"]]></initialValueExpression>
+	</variable>
+	<title>
+		<band height="50">
+			<property name="com.jaspersoft.studio.unit.height" value="px"/>
+			<textField>
+				<reportElement x="0" y="0" width="525" height="20" forecolor="#002060" uuid="47b83b03-b60e-42f2-8d63-4a95470cef0e">
+					<property name="com.jaspersoft.studio.unit.height" value="pixel"/>
+				</reportElement>
+				<textElement textAlignment="Center" verticalAlignment="Middle">
+					<font size="20" isBold="true"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$P{title}]]></textFieldExpression>
+			</textField>
+		</band>
+	</title>
+	<detail>
+		<band height="110">
+			<property name="com.jaspersoft.studio.unit.height" value="px"/>
+			<staticText>
+				<reportElement x="362" y="0" width="40" height="9" uuid="933226dd-0ffd-44f7-b4f5-b0c88f502a92">
+					<property name="com.jaspersoft.studio.unit.height" value="px"/>
+					<property name="com.jaspersoft.studio.unit.width" value="px"/>
+					<property name="com.jaspersoft.studio.unit.x" value="px"/>
+				</reportElement>
+				<textElement textAlignment="Left">
+					<font size="9"/>
+				</textElement>
+				<text><![CDATA[請求日]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="402" y="0" width="8" height="9" uuid="d00f632c-b5ce-4741-9350-d9efa4ac43e7">
+					<property name="com.jaspersoft.studio.unit.height" value="px"/>
+					<property name="com.jaspersoft.studio.unit.width" value="px"/>
+					<property name="com.jaspersoft.studio.unit.x" value="px"/>
+				</reportElement>
+				<textElement textAlignment="Left">
+					<font size="9"/>
+				</textElement>
+				<text><![CDATA[：]]></text>
+			</staticText>
+			<textField textAdjust="StretchHeight" isBlankWhenNull="true">
+				<reportElement x="410" y="0" width="115" height="9" uuid="57587fa3-7421-46b7-8698-cfd582c16ccc">
+					<property name="com.jaspersoft.studio.unit.height" value="px"/>
+				</reportElement>
+				<textElement textAlignment="Left">
+					<font size="9"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$P{outputDate}]]></textFieldExpression>
+			</textField>
+			<staticText>
+				<reportElement x="362" y="12" width="40" height="9" uuid="e79e6ea2-7792-49f8-9628-3193d01a4095">
+					<property name="com.jaspersoft.studio.unit.height" value="px"/>
+					<property name="com.jaspersoft.studio.unit.y" value="px"/>
+					<property name="com.jaspersoft.studio.unit.width" value="px"/>
+					<property name="com.jaspersoft.studio.unit.x" value="px"/>
+				</reportElement>
+				<textElement textAlignment="Left">
+					<font size="9"/>
+				</textElement>
+				<text><![CDATA[請求番号]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="402" y="12" width="8" height="9" uuid="a9895401-6db8-43ae-8fb6-45b732db44ca">
+					<property name="com.jaspersoft.studio.unit.height" value="px"/>
+					<property name="com.jaspersoft.studio.unit.width" value="px"/>
+					<property name="com.jaspersoft.studio.unit.x" value="px"/>
+				</reportElement>
+				<textElement textAlignment="Left">
+					<font size="9"/>
+				</textElement>
+				<text><![CDATA[：]]></text>
+			</staticText>
+			<textField textAdjust="StretchHeight" isBlankWhenNull="true">
+				<reportElement x="410" y="12" width="115" height="18" uuid="5f33ace2-1abe-4efe-beb6-9d9ba299d916">
+					<property name="com.jaspersoft.studio.unit.height" value="px"/>
+					<property name="com.jaspersoft.studio.unit.y" value="px"/>
+				</reportElement>
+				<textElement textAlignment="Left">
+					<font size="9"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$P{seikyuNo}]]></textFieldExpression>
+			</textField>
+			<textField textAdjust="StretchHeight" isBlankWhenNull="true">
+				<reportElement x="0" y="0" width="270" height="12" uuid="77632f90-b6af-4659-8662-3104adaccc55">
+					<property name="com.jaspersoft.studio.unit.height" value="px"/>
+				</reportElement>
+				<textElement>
+					<font size="12" isBold="true"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$P{atesakiName}]]></textFieldExpression>
+			</textField>
+			<textField textAdjust="StretchHeight" isBlankWhenNull="true">
+				<reportElement positionType="Float" x="0" y="20" width="270" height="9" uuid="b6d5a033-0aa4-4ec4-bb45-b20c1d9e19ee">
+					<property name="com.jaspersoft.studio.unit.height" value="px"/>
+				</reportElement>
+				<textElement markup="styled">
+					<font size="9"/>
+					<paragraph lineSpacing="Proportional" lineSpacingSize="1.5"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$P{atesakiDetail}]]></textFieldExpression>
+			</textField>
+			<image scaleImage="RealSize" hAlign="Right" onErrorType="Blank">
+				<reportElement x="435" y="57" width="53" height="53" uuid="68712588-5dc7-49f2-895e-ead1a2c266a1">
+					<property name="com.jaspersoft.studio.unit.width" value="px"/>
+					<property name="com.jaspersoft.studio.unit.height" value="px"/>
+					<property name="com.jaspersoft.studio.unit.x" value="px"/>
+					<property name="com.jaspersoft.studio.unit.y" value="px"/>
+				</reportElement>
+				<imageExpression><![CDATA[$P{stamp}]]></imageExpression>
+			</image>
+			<textField textAdjust="StretchHeight" isBlankWhenNull="true">
+				<reportElement positionType="Float" x="305" y="37" width="220" height="9" uuid="338f739c-1314-46ff-b734-db51e0ac7804">
+					<property name="com.jaspersoft.studio.unit.height" value="px"/>
+					<property name="com.jaspersoft.studio.unit.width" value="px"/>
+				</reportElement>
+				<textElement>
+					<font size="9"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$P{jimushoName}]]></textFieldExpression>
+			</textField>
+			<textField textAdjust="StretchHeight" isBlankWhenNull="true">
+				<reportElement positionType="Float" x="305" y="55" width="220" height="0" uuid="cfa80779-2bb9-40b4-9044-028fd308487b">
+					<property name="com.jaspersoft.studio.unit.height" value="px"/>
+					<property name="com.jaspersoft.studio.unit.y" value="px"/>
+					<property name="com.jaspersoft.studio.unit.x" value="px"/>
+					<property name="com.jaspersoft.studio.unit.width" value="px"/>
+				</reportElement>
+				<box bottomPadding="8"/>
+				<textElement>
+					<font size="9"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$P{lawyerName}]]></textFieldExpression>
+			</textField>
+			<textField textAdjust="StretchHeight" isBlankWhenNull="true">
+				<reportElement positionType="Float" x="305" y="56" width="220" height="0" uuid="1f42a66c-d91c-4cfb-ae03-8a110085b794">
+					<property name="com.jaspersoft.studio.unit.height" value="px"/>
+					<property name="com.jaspersoft.studio.unit.y" value="px"/>
+				</reportElement>
+				<box bottomPadding="8"/>
+				<textElement markup="styled">
+					<font size="9"/>
+					<paragraph lineSpacing="Proportional" lineSpacingSize="1.5"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$P{sofumotoDetail}]]></textFieldExpression>
+			</textField>
+			<textField textAdjust="StretchHeight" isBlankWhenNull="true">
+				<reportElement positionType="Float" x="0" y="37" width="270" height="0" uuid="339cb862-96d9-4bc9-a8e4-b0c8db79ab9d">
+					<property name="com.jaspersoft.studio.unit.height" value="px"/>
+					<property name="com.jaspersoft.studio.unit.y" value="px"/>
+					<property name="com.jaspersoft.studio.unit.width" value="px"/>
+				</reportElement>
+				<box bottomPadding="8"/>
+				<textElement textAlignment="Left" verticalAlignment="Middle">
+					<font size="9"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$P{subTitle}]]></textFieldExpression>
+			</textField>
+			<textField textAdjust="StretchHeight" isBlankWhenNull="true">
+				<reportElement positionType="Float" x="0" y="38" width="270" height="0" uuid="eff7dceb-1788-4578-80dc-33069ee10422">
+					<property name="com.jaspersoft.studio.unit.height" value="px"/>
+					<property name="com.jaspersoft.studio.unit.y" value="px"/>
+					<property name="com.jaspersoft.studio.unit.width" value="px"/>
+				</reportElement>
+				<box bottomPadding="8"/>
+				<textElement>
+					<font size="9"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$P{ankenName}]]></textFieldExpression>
+			</textField>
+			<staticText>
+				<reportElement positionType="Float" x="0" y="39" width="80" height="32" forecolor="#002060" uuid="0f337071-d432-45d3-98b9-a423dbf0b313">
+					<property name="com.jaspersoft.studio.unit.height" value="px"/>
+					<property name="com.jaspersoft.studio.unit.y" value="px"/>
+				</reportElement>
+				<box topPadding="0" leftPadding="5" bottomPadding="8">
+					<bottomPen lineWidth="1.0" lineColor="#002060"/>
+				</box>
+				<textElement textAlignment="Left" verticalAlignment="Bottom">
+					<font size="14" isBold="true"/>
+				</textElement>
+				<text><![CDATA[ご請求金額]]></text>
+			</staticText>
+			<textField textAdjust="ScaleFont" isBlankWhenNull="true">
+				<reportElement style="moneyStyle" positionType="Float" x="80" y="39" width="160" height="32" forecolor="#002060" uuid="357bddb2-288a-4a01-b3f8-5c506733289a">
+					<property name="com.jaspersoft.studio.unit.height" value="px"/>
+					<property name="com.jaspersoft.studio.unit.y" value="px"/>
+					<property name="com.jaspersoft.studio.unit.width" value="px"/>
+				</reportElement>
+				<box bottomPadding="8" rightPadding="5">
+					<bottomPen lineWidth="1.0" lineColor="#002060"/>
+				</box>
+				<textElement textAlignment="Right" verticalAlignment="Bottom">
+					<font size="20" isBold="true"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$P{seikyuKingaku}]]></textFieldExpression>
+			</textField>
+			<frame>
+				<reportElement positionType="Float" x="0" y="77" width="238" height="0" uuid="9e31cbad-0788-4a73-bbad-05b562c7b64f">
+					<property name="com.jaspersoft.studio.unit.width" value="px"/>
+					<printWhenExpression><![CDATA[$P{shiharaiLimitDate} != null && !$P{shiharaiLimitDate}.isEmpty()]]></printWhenExpression>
+				</reportElement>
+				<textField textAdjust="StretchHeight">
+					<reportElement stretchType="RelativeToBandHeight" x="0" y="0" width="50" height="0" uuid="9996c8ae-6c46-4b09-8b82-08e18376aac6">
+						<property name="com.jaspersoft.studio.unit.height" value="px"/>
+						<property name="com.jaspersoft.studio.unit.width" value="px"/>
+						<property name="com.jaspersoft.studio.unit.x" value="px"/>
+					</reportElement>
+					<box bottomPadding="8"/>
+					<textElement textAlignment="Left">
+						<font size="9"/>
+					</textElement>
+					<textFieldExpression><![CDATA["お支払期限"]]></textFieldExpression>
+				</textField>
+				<textField textAdjust="StretchHeight">
+					<reportElement stretchType="RelativeToBandHeight" x="50" y="0" width="8" height="0" uuid="b0f12bed-baba-4c6b-b935-b1d6ebd4ffc4">
+						<property name="com.jaspersoft.studio.unit.height" value="px"/>
+						<property name="com.jaspersoft.studio.unit.x" value="px"/>
+					</reportElement>
+					<box bottomPadding="8"/>
+					<textElement textAlignment="Left">
+						<font size="9"/>
+					</textElement>
+					<textFieldExpression><![CDATA["："]]></textFieldExpression>
+				</textField>
+				<textField textAdjust="StretchHeight" isBlankWhenNull="true">
+					<reportElement stretchType="RelativeToBandHeight" x="58" y="0" width="180" height="0" uuid="98118cb9-88e8-4c6e-bc82-43c5590c82fa">
+						<property name="com.jaspersoft.studio.unit.height" value="px"/>
+						<property name="com.jaspersoft.studio.unit.y" value="px"/>
+						<property name="com.jaspersoft.studio.unit.x" value="px"/>
+					</reportElement>
+					<box bottomPadding="8"/>
+					<textElement>
+						<font size="9"/>
+					</textElement>
+					<textFieldExpression><![CDATA[$P{shiharaiLimitDate}]]></textFieldExpression>
+				</textField>
+			</frame>
+			<frame>
+				<reportElement positionType="Float" x="0" y="78" width="238" height="0" uuid="82a734df-99bd-4910-8525-5b513fc1dff2">
+					<property name="com.jaspersoft.studio.unit.width" value="px"/>
+					<property name="com.jaspersoft.studio.unit.x" value="px"/>
+					<property name="com.jaspersoft.studio.unit.y" value="px"/>
+					<property name="com.jaspersoft.studio.unit.height" value="px"/>
+					<printWhenExpression><![CDATA[$P{paymentDestination} != null && !$P{paymentDestination}.isEmpty()]]></printWhenExpression>
+				</reportElement>
+				<textField textAdjust="StretchHeight">
+					<reportElement stretchType="RelativeToBandHeight" x="0" y="0" width="50" height="0" uuid="0c7c19fa-7190-4ab8-8502-15cdd34896d8">
+						<property name="com.jaspersoft.studio.unit.height" value="px"/>
+						<property name="com.jaspersoft.studio.unit.width" value="px"/>
+						<property name="com.jaspersoft.studio.unit.x" value="px"/>
+					</reportElement>
+					<box bottomPadding="8"/>
+					<textElement textAlignment="Left">
+						<font size="9"/>
+					</textElement>
+					<textFieldExpression><![CDATA["お振込先"]]></textFieldExpression>
+				</textField>
+				<textField textAdjust="StretchHeight">
+					<reportElement stretchType="RelativeToBandHeight" x="50" y="0" width="8" height="0" uuid="304a5baf-6707-41c6-ba74-f476ecd5a0b4">
+						<property name="com.jaspersoft.studio.unit.height" value="px"/>
+						<property name="com.jaspersoft.studio.unit.x" value="px"/>
+					</reportElement>
+					<box bottomPadding="8"/>
+					<textElement textAlignment="Left">
+						<font size="9"/>
+					</textElement>
+					<textFieldExpression><![CDATA["："]]></textFieldExpression>
+				</textField>
+				<textField textAdjust="StretchHeight" isBlankWhenNull="true">
+					<reportElement stretchType="RelativeToBandHeight" x="58" y="0" width="180" height="0" uuid="ff49ef7a-0434-420e-b800-805580d3ba51">
+						<property name="com.jaspersoft.studio.unit.height" value="px"/>
+						<property name="com.jaspersoft.studio.unit.y" value="px"/>
+						<property name="com.jaspersoft.studio.unit.x" value="px"/>
+					</reportElement>
+					<box bottomPadding="8"/>
+					<textElement markup="html">
+						<font size="9"/>
+						<paragraph lineSpacing="Proportional" lineSpacingSize="1.5"/>
+					</textElement>
+					<textFieldExpression><![CDATA[$P{paymentDestination}]]></textFieldExpression>
+				</textField>
+			</frame>
+		</band>
+		<band height="90">
+			<printWhenExpression><![CDATA[$P{azukariKingakuList} !=null && !$P{azukariKingakuList}.isEmpty() && !$P{hideAzukariDate}]]></printWhenExpression>
+			<componentElement>
+				<reportElement x="0" y="0" width="525" height="60" uuid="3d366961-41a4-4782-bdc0-b18ce127ffa2">
+					<property name="com.jaspersoft.studio.layout" value="com.jaspersoft.studio.editor.layout.VerticalRowLayout"/>
+					<property name="com.jaspersoft.studio.table.style.table_header" value="tableHeader"/>
+					<property name="com.jaspersoft.studio.table.style.column_header" value="tableColumnHeader"/>
+					<property name="com.jaspersoft.studio.table.style.detail" value="tableBody"/>
+					<property name="com.jaspersoft.studio.unit.width" value="px"/>
+				</reportElement>
+				<jr:table xmlns:jr="http://jasperreports.sourceforge.net/jasperreports/components" xsi:schemaLocation="http://jasperreports.sourceforge.net/jasperreports/components http://jasperreports.sourceforge.net/xsd/components.xsd">
+					<datasetRun subDataset="azukariKingakuDataset" uuid="2c7e7fe6-d759-493a-be92-1fff0a80f1f5">
+						<dataSourceExpression><![CDATA[new net.sf.jasperreports.engine.data.JRBeanCollectionDataSource($P{azukariKingakuList})]]></dataSourceExpression>
+					</datasetRun>
+					<jr:columnGroup width="525" uuid="4063f6b4-d716-474e-bfdd-2615f6ce2dd9">
+						<property name="com.jaspersoft.studio.components.table.model.column.name" value="Columns [2]"/>
+						<jr:tableHeader style="tableHeader" height="20" rowSpan="1">
+							<property name="com.jaspersoft.studio.unit.width" value="px"/>
+							<staticText>
+								<reportElement x="0" y="0" width="525" height="20" forecolor="#FFFFFF" uuid="2c097a34-ee68-42e8-b165-47f0063b79d1"/>
+								<box leftPadding="10"/>
+								<textElement verticalAlignment="Middle">
+									<font size="9" isBold="true"/>
+								</textElement>
+								<text><![CDATA[内訳① お預り金]]></text>
+							</staticText>
+						</jr:tableHeader>
+						<jr:column width="95" uuid="e41659d1-7ee7-48ba-aec4-4c9c856f244a">
+							<property name="com.jaspersoft.studio.components.table.model.column.name" value="Column0"/>
+							<property name="com.jaspersoft.studio.unit.width" value="px"/>
+							<jr:groupHeader groupName="Group1">
+								<jr:cell style="tableColumnHeader" height="20" rowSpan="1">
+									<property name="com.jaspersoft.studio.unit.width" value="px"/>
+									<staticText>
+										<reportElement x="0" y="0" width="95" height="20" forecolor="#002060" uuid="40eba88c-591e-439e-a354-edcf182a3a42"/>
+										<box leftPadding="10"/>
+										<textElement textAlignment="Left" verticalAlignment="Middle">
+											<font size="8" isBold="true"/>
+										</textElement>
+										<text><![CDATA[日付]]></text>
+									</staticText>
+								</jr:cell>
+							</jr:groupHeader>
+							<jr:detailCell style="tableBody" height="20">
+								<textField textAdjust="StretchHeight" isBlankWhenNull="true">
+									<reportElement stretchType="RelativeToBandHeight" x="0" y="0" width="95" height="20" uuid="d1ce7eaa-a27e-4af1-82fb-a89dcd234ce2"/>
+									<box leftPadding="10"/>
+									<textElement verticalAlignment="Middle">
+										<font size="9"/>
+									</textElement>
+									<textFieldExpression><![CDATA[$F{azukariDate}]]></textFieldExpression>
+								</textField>
+							</jr:detailCell>
+						</jr:column>
+						<jr:column width="345" uuid="c76c247d-b567-4695-8954-5ebdad415eb5">
+							<property name="com.jaspersoft.studio.components.table.model.column.name" value="Column1"/>
+							<property name="com.jaspersoft.studio.unit.width" value="px"/>
+							<jr:groupHeader groupName="Group1">
+								<jr:cell style="tableColumnHeader" height="20" rowSpan="1">
+									<property name="com.jaspersoft.studio.unit.width" value="px"/>
+									<staticText>
+										<reportElement x="0" y="0" width="345" height="20" forecolor="#002060" uuid="6fb8249e-f345-4204-8b8c-51398c2b70d2"/>
+										<box leftPadding="10"/>
+										<textElement verticalAlignment="Middle">
+											<font size="8" isBold="true"/>
+										</textElement>
+										<text><![CDATA[内容]]></text>
+									</staticText>
+								</jr:cell>
+							</jr:groupHeader>
+							<jr:detailCell style="tableBody" height="20">
+								<property name="com.jaspersoft.studio.unit.width" value="px"/>
+								<frame>
+									<reportElement stretchType="RelativeToBandHeight" x="0" y="0" width="345" height="20" uuid="1c1cee7f-dec3-4031-8554-cc894fb498b7"/>
+									<textField textAdjust="StretchHeight" isBlankWhenNull="true">
+										<reportElement x="0" y="0" width="345" height="20" uuid="07983b0e-6429-4e29-b033-d45bfeb05e08">
+											<property name="com.jaspersoft.studio.unit.width" value="px"/>
+										</reportElement>
+										<box leftPadding="10"/>
+										<textElement verticalAlignment="Middle">
+											<font size="9"/>
+										</textElement>
+										<textFieldExpression><![CDATA[$F{azukariKingakuName}]]></textFieldExpression>
+									</textField>
+									<textField textAdjust="StretchHeight">
+										<reportElement x="0" y="20" width="345" height="7" uuid="dc6a0df4-7636-4ef9-aaee-f68b73512d2f">
+											<property name="com.jaspersoft.studio.unit.x" value="px"/>
+											<property name="com.jaspersoft.studio.unit.y" value="px"/>
+											<property name="com.jaspersoft.studio.unit.height" value="px"/>
+											<property name="com.jaspersoft.studio.unit.width" value="px"/>
+											<printWhenExpression><![CDATA[$F{azukariKingakuDetail} != null && !$F{azukariKingakuDetail}.isEmpty()]]></printWhenExpression>
+										</reportElement>
+										<box leftPadding="10" bottomPadding="6"/>
+										<textElement verticalAlignment="Top">
+											<font size="7"/>
+										</textElement>
+										<textFieldExpression><![CDATA[$F{azukariKingakuDetail}]]></textFieldExpression>
+									</textField>
+								</frame>
+							</jr:detailCell>
+						</jr:column>
+						<jr:column width="85" uuid="62d4d03e-f547-461f-933b-6fc36cc90fd3">
+							<property name="com.jaspersoft.studio.components.table.model.column.name" value="Column2"/>
+							<property name="com.jaspersoft.studio.unit.width" value="px"/>
+							<jr:groupHeader groupName="Group1">
+								<jr:cell style="tableColumnHeader" height="20" rowSpan="1">
+									<property name="com.jaspersoft.studio.unit.width" value="px"/>
+									<staticText>
+										<reportElement x="0" y="0" width="85" height="20" forecolor="#002060" uuid="0f19dceb-6bc6-44f2-a8e4-f2483d0e09b1"/>
+										<box rightPadding="10"/>
+										<textElement textAlignment="Right" verticalAlignment="Middle">
+											<font size="8" isBold="true"/>
+										</textElement>
+										<text><![CDATA[金額]]></text>
+									</staticText>
+								</jr:cell>
+							</jr:groupHeader>
+							<jr:detailCell style="tableBody" height="20">
+								<property name="com.jaspersoft.studio.unit.width" value="px"/>
+								<textField textAdjust="ScaleFont" isBlankWhenNull="true">
+									<reportElement style="moneyStyle" stretchType="RelativeToBandHeight" x="0" y="0" width="85" height="20" uuid="60300f69-c3d6-41e7-97b7-9428f7ac4d9c"/>
+									<box rightPadding="10"/>
+									<textElement textAlignment="Right" verticalAlignment="Middle">
+										<font size="9"/>
+									</textElement>
+									<textFieldExpression><![CDATA[$F{kingaku}]]></textFieldExpression>
+								</textField>
+							</jr:detailCell>
+						</jr:column>
+					</jr:columnGroup>
+				</jr:table>
+			</componentElement>
+			<staticText>
+				<reportElement style="tableFooterLabel" positionType="Float" x="355" y="60" width="85" height="20" uuid="aee2b489-eddc-48db-b1ff-7d53e1106207">
+					<property name="com.jaspersoft.studio.unit.width" value="px"/>
+				</reportElement>
+				<box rightPadding="5"/>
+				<textElement textAlignment="Right" verticalAlignment="Middle">
+					<font size="8"/>
+				</textElement>
+				<text><![CDATA[合計①]]></text>
+			</staticText>
+			<textField textAdjust="ScaleFont" isBlankWhenNull="true">
+				<reportElement style="tableFooterValue" positionType="Float" x="440" y="60" width="85" height="20" uuid="88d8c334-f7bb-42da-8cd9-57c317c7204b">
+					<property name="com.jaspersoft.studio.unit.width" value="px"/>
+				</reportElement>
+				<box rightPadding="10"/>
+				<textElement textAlignment="Right" verticalAlignment="Middle">
+					<font size="9"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$P{azukariKingakuTotal}]]></textFieldExpression>
+			</textField>
+		</band>
+		<band height="90">
+			<property name="com.jaspersoft.studio.unit.height" value="px"/>
+			<printWhenExpression><![CDATA[$P{azukariKingakuList} !=null && !$P{azukariKingakuList}.isEmpty() && $P{hideAzukariDate}]]></printWhenExpression>
+			<componentElement>
+				<reportElement x="0" y="0" width="525" height="60" uuid="35898c3d-2751-49d5-ba8f-591a8ff74e8e">
+					<property name="com.jaspersoft.studio.layout" value="com.jaspersoft.studio.editor.layout.VerticalRowLayout"/>
+					<property name="com.jaspersoft.studio.table.style.table_header" value="tableHeader"/>
+					<property name="com.jaspersoft.studio.table.style.column_header" value="tableColumnHeader"/>
+					<property name="com.jaspersoft.studio.table.style.detail" value="tableBody"/>
+					<property name="com.jaspersoft.studio.unit.width" value="px"/>
+				</reportElement>
+				<jr:table xmlns:jr="http://jasperreports.sourceforge.net/jasperreports/components" xsi:schemaLocation="http://jasperreports.sourceforge.net/jasperreports/components http://jasperreports.sourceforge.net/xsd/components.xsd">
+					<datasetRun subDataset="azukariKingakuDataset" uuid="4db53705-ad89-4644-a611-19f58ada2558">
+						<dataSourceExpression><![CDATA[new net.sf.jasperreports.engine.data.JRBeanCollectionDataSource($P{azukariKingakuList})]]></dataSourceExpression>
+					</datasetRun>
+					<jr:columnGroup width="524" uuid="5d5a4a63-a7e9-4a83-bf12-1e920ba77692">
+						<property name="com.jaspersoft.studio.components.table.model.column.name" value="Columns [2]"/>
+						<jr:tableHeader style="tableHeader" height="20" rowSpan="1">
+							<property name="com.jaspersoft.studio.unit.width" value="px"/>
+							<staticText>
+								<reportElement x="0" y="0" width="524" height="20" forecolor="#FFFFFF" uuid="09b2bd1f-62d1-427f-9e5a-2a9f6175b4b4">
+									<property name="com.jaspersoft.studio.unit.width" value="px"/>
+								</reportElement>
+								<box leftPadding="10"/>
+								<textElement verticalAlignment="Middle">
+									<font size="9" isBold="true"/>
+								</textElement>
+								<text><![CDATA[内訳① お預り金]]></text>
+							</staticText>
+						</jr:tableHeader>
+						<jr:column width="439" uuid="1be05fa9-4b15-4b56-83e9-660817caa6af">
+							<property name="com.jaspersoft.studio.components.table.model.column.name" value="Column1"/>
+							<property name="com.jaspersoft.studio.unit.width" value="px"/>
+							<jr:groupHeader groupName="Group1">
+								<jr:cell style="tableColumnHeader" height="20" rowSpan="1">
+									<property name="com.jaspersoft.studio.unit.width" value="px"/>
+									<staticText>
+										<reportElement x="0" y="0" width="439" height="20" forecolor="#002060" uuid="695c35b4-8d72-4893-9afd-7ae928582dcf"/>
+										<box leftPadding="10"/>
+										<textElement verticalAlignment="Middle">
+											<font size="8" isBold="true"/>
+										</textElement>
+										<text><![CDATA[内容]]></text>
+									</staticText>
+								</jr:cell>
+							</jr:groupHeader>
+							<jr:detailCell style="tableBody" height="20">
+								<property name="com.jaspersoft.studio.unit.width" value="px"/>
+								<frame>
+									<reportElement stretchType="RelativeToBandHeight" x="0" y="0" width="439" height="20" uuid="4de59c9f-4a34-4c44-8933-8da6e4cce535"/>
+									<textField textAdjust="StretchHeight">
+										<reportElement x="0" y="0" width="439" height="20" uuid="ef473118-5124-420e-871d-573cbb80a383">
+											<property name="com.jaspersoft.studio.unit.width" value="px"/>
+										</reportElement>
+										<box leftPadding="10"/>
+										<textElement verticalAlignment="Middle">
+											<font size="9"/>
+										</textElement>
+										<textFieldExpression><![CDATA[$F{azukariKingakuName}]]></textFieldExpression>
+									</textField>
+									<textField textAdjust="StretchHeight">
+										<reportElement x="0" y="20" width="439" height="7" uuid="46ebecae-e514-483d-b246-86e36a07b84b">
+											<property name="com.jaspersoft.studio.unit.x" value="px"/>
+											<property name="com.jaspersoft.studio.unit.y" value="px"/>
+											<property name="com.jaspersoft.studio.unit.height" value="px"/>
+											<property name="com.jaspersoft.studio.unit.width" value="px"/>
+											<printWhenExpression><![CDATA[$F{azukariKingakuDetail} != null && !$F{azukariKingakuDetail}.isEmpty()]]></printWhenExpression>
+										</reportElement>
+										<box leftPadding="10" bottomPadding="6"/>
+										<textElement verticalAlignment="Top">
+											<font size="7"/>
+										</textElement>
+										<textFieldExpression><![CDATA[$F{azukariKingakuDetail}]]></textFieldExpression>
+									</textField>
+								</frame>
+							</jr:detailCell>
+						</jr:column>
+						<jr:column width="85" uuid="dfe30466-d7c8-40a1-a36d-da10f00ed1f6">
+							<property name="com.jaspersoft.studio.components.table.model.column.name" value="Column2"/>
+							<property name="com.jaspersoft.studio.unit.width" value="px"/>
+							<jr:groupHeader groupName="Group1">
+								<jr:cell style="tableColumnHeader" height="20" rowSpan="1">
+									<property name="com.jaspersoft.studio.unit.width" value="px"/>
+									<staticText>
+										<reportElement x="0" y="0" width="85" height="20" forecolor="#002060" uuid="10bd1b06-328a-42ef-a9b1-b9739715e440"/>
+										<box rightPadding="10"/>
+										<textElement textAlignment="Right" verticalAlignment="Middle">
+											<font size="8" isBold="true"/>
+										</textElement>
+										<text><![CDATA[金額]]></text>
+									</staticText>
+								</jr:cell>
+							</jr:groupHeader>
+							<jr:detailCell style="tableBody" height="20">
+								<property name="com.jaspersoft.studio.unit.width" value="px"/>
+								<textField textAdjust="ScaleFont">
+									<reportElement style="moneyStyle" stretchType="RelativeToBandHeight" x="0" y="0" width="85" height="20" uuid="3a825864-ffb9-4df3-a563-b3b8132000be"/>
+									<box rightPadding="10"/>
+									<textElement textAlignment="Right" verticalAlignment="Middle">
+										<font size="9"/>
+									</textElement>
+									<textFieldExpression><![CDATA[$F{kingaku}]]></textFieldExpression>
+								</textField>
+							</jr:detailCell>
+						</jr:column>
+					</jr:columnGroup>
+				</jr:table>
+			</componentElement>
+			<staticText>
+				<reportElement style="tableFooterLabel" positionType="Float" x="355" y="60" width="85" height="20" uuid="6733c0dd-affd-4705-838c-dda7efc82662">
+					<property name="com.jaspersoft.studio.unit.width" value="px"/>
+				</reportElement>
+				<box rightPadding="5"/>
+				<textElement textAlignment="Right" verticalAlignment="Middle">
+					<font size="8"/>
+				</textElement>
+				<text><![CDATA[合計①]]></text>
+			</staticText>
+			<textField textAdjust="ScaleFont" isBlankWhenNull="true">
+				<reportElement style="tableFooterValue" positionType="Float" x="440" y="60" width="85" height="20" uuid="0dd7d135-abfe-4da4-9a6f-2d3942c836dc">
+					<property name="com.jaspersoft.studio.unit.width" value="px"/>
+				</reportElement>
+				<box rightPadding="10"/>
+				<textElement textAlignment="Right" verticalAlignment="Middle">
+					<font size="9"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$P{azukariKingakuTotal}]]></textFieldExpression>
+			</textField>
+		</band>
+		<band height="60">
+			<printWhenExpression><![CDATA[!$P{hideHoshuJippiDate}]]></printWhenExpression>
+			<componentElement>
+				<reportElement x="0" y="0" width="525" height="60" uuid="2e3e8151-74a4-46e2-8e1b-63df93324323">
+					<property name="com.jaspersoft.studio.layout" value="com.jaspersoft.studio.editor.layout.VerticalRowLayout"/>
+					<property name="com.jaspersoft.studio.table.style.table_header" value="tableHeader"/>
+					<property name="com.jaspersoft.studio.table.style.column_header" value="tableColumnHeader"/>
+					<property name="com.jaspersoft.studio.table.style.detail" value="tableBody"/>
+					<property name="com.jaspersoft.studio.unit.width" value="px"/>
+				</reportElement>
+				<jr:table xmlns:jr="http://jasperreports.sourceforge.net/jasperreports/components" xsi:schemaLocation="http://jasperreports.sourceforge.net/jasperreports/components http://jasperreports.sourceforge.net/xsd/components.xsd">
+					<datasetRun subDataset="hoshuJippiKingakuDataset" uuid="98fe53ca-43e0-4d6d-aa92-48255889a498">
+						<datasetParameter name="isAzukariEmpty">
+							<datasetParameterExpression><![CDATA[$P{azukariKingakuList} == null || $P{azukariKingakuList}.isEmpty()]]></datasetParameterExpression>
+						</datasetParameter>
+						<dataSourceExpression><![CDATA[new net.sf.jasperreports.engine.data.JRBeanCollectionDataSource($P{hoshuJippiKingakuList})]]></dataSourceExpression>
+					</datasetRun>
+					<jr:columnGroup width="525" uuid="42e99097-9d7a-4903-bef5-40b856e9cacb">
+						<property name="com.jaspersoft.studio.components.table.model.column.name" value="Columns [2]"/>
+						<jr:tableHeader style="tableHeader" height="20" rowSpan="1">
+							<property name="com.jaspersoft.studio.unit.width" value="px"/>
+							<textField>
+								<reportElement x="0" y="0" width="525" height="20" forecolor="#FFFFFF" uuid="e39e4997-1ac3-4a11-a95f-cc9ff97e2bd7"/>
+								<box leftPadding="10"/>
+								<textElement verticalAlignment="Middle">
+									<font size="9" isBold="true"/>
+								</textElement>
+								<textFieldExpression><![CDATA[$P{isAzukariEmpty} ? "内訳 報酬/実費" : "内訳② 報酬/実費"]]></textFieldExpression>
+							</textField>
+						</jr:tableHeader>
+						<jr:column width="95" uuid="1f45e6c8-6b35-46a8-b19c-54d03b9b5973">
+							<property name="com.jaspersoft.studio.components.table.model.column.name" value="Column0"/>
+							<jr:columnHeader style="tableColumnHeader" height="20" rowSpan="1">
+								<property name="com.jaspersoft.studio.unit.width" value="px"/>
+								<staticText>
+									<reportElement x="0" y="0" width="95" height="20" forecolor="#002060" uuid="86201121-796a-4cdd-acb2-2b689d63302e"/>
+									<box leftPadding="10"/>
+									<textElement textAlignment="Left" verticalAlignment="Middle">
+										<font size="8" isBold="true"/>
+									</textElement>
+									<text><![CDATA[日付]]></text>
+								</staticText>
+							</jr:columnHeader>
+							<jr:detailCell style="tableBody" height="20">
+								<textField textAdjust="StretchHeight" isBlankWhenNull="true">
+									<reportElement stretchType="RelativeToBandHeight" x="0" y="0" width="95" height="20" uuid="c0f0ee62-4ebb-4f10-bf24-8df590164162"/>
+									<box leftPadding="10"/>
+									<textElement verticalAlignment="Middle">
+										<font size="9"/>
+									</textElement>
+									<textFieldExpression><![CDATA[$F{hoshuJippiDate}]]></textFieldExpression>
+								</textField>
+							</jr:detailCell>
+						</jr:column>
+						<jr:column width="345" uuid="8de704b1-0f6b-4e96-967e-a9fa69eb66dd">
+							<property name="com.jaspersoft.studio.components.table.model.column.name" value="Column1"/>
+							<jr:columnHeader style="tableColumnHeader" height="20" rowSpan="1">
+								<property name="com.jaspersoft.studio.unit.width" value="px"/>
+								<staticText>
+									<reportElement x="0" y="0" width="345" height="20" forecolor="#002060" uuid="0b3f634e-99ea-435a-a6e8-980329ba6dc0"/>
+									<box leftPadding="10"/>
+									<textElement textAlignment="Left" verticalAlignment="Middle">
+										<font size="8" isBold="true"/>
+									</textElement>
+									<text><![CDATA[内容]]></text>
+								</staticText>
+							</jr:columnHeader>
+							<jr:detailCell style="tableBody" height="20">
+								<frame>
+									<reportElement stretchType="RelativeToBandHeight" x="0" y="0" width="345" height="20" uuid="96838a4b-3d5e-4ddb-bd9c-a46ea5909a40"/>
+									<textField textAdjust="StretchHeight" isBlankWhenNull="true">
+										<reportElement x="0" y="0" width="345" height="20" uuid="6253b2a3-95a1-44ab-9452-5bd3aee49419">
+											<property name="com.jaspersoft.studio.unit.height" value="px"/>
+											<property name="com.jaspersoft.studio.unit.y" value="px"/>
+											<property name="com.jaspersoft.studio.unit.width" value="px"/>
+										</reportElement>
+										<box leftPadding="10"/>
+										<textElement verticalAlignment="Middle">
+											<font size="9"/>
+										</textElement>
+										<textFieldExpression><![CDATA[$F{hoshuJippiKingakuName}]]></textFieldExpression>
+									</textField>
+									<textField textAdjust="StretchHeight" isBlankWhenNull="true">
+										<reportElement positionType="Float" x="0" y="20" width="345" height="7" uuid="2b5be33a-a0a3-41a8-af7d-2f31df8e6697">
+											<property name="com.jaspersoft.studio.unit.x" value="px"/>
+											<property name="com.jaspersoft.studio.unit.height" value="px"/>
+											<property name="com.jaspersoft.studio.unit.y" value="px"/>
+											<property name="com.jaspersoft.studio.unit.width" value="px"/>
+											<printWhenExpression><![CDATA[$F{hoshuJippiKingakuDetail} != null && !$F{hoshuJippiKingakuDetail}.isEmpty()]]></printWhenExpression>
+										</reportElement>
+										<box leftPadding="10" bottomPadding="6"/>
+										<textElement verticalAlignment="Top">
+											<font size="7"/>
+										</textElement>
+										<textFieldExpression><![CDATA[$F{hoshuJippiKingakuDetail}]]></textFieldExpression>
+									</textField>
+								</frame>
+							</jr:detailCell>
+						</jr:column>
+						<jr:column width="85" uuid="95f826c1-893c-401a-9bf2-5ca7052a1311">
+							<property name="com.jaspersoft.studio.components.table.model.column.name" value="Column2"/>
+							<jr:columnHeader style="tableColumnHeader" height="20" rowSpan="1">
+								<property name="com.jaspersoft.studio.unit.width" value="px"/>
+								<staticText>
+									<reportElement x="0" y="0" width="85" height="20" forecolor="#002060" uuid="0dc34fa4-322e-4283-a9b8-93faa3904913"/>
+									<box rightPadding="10"/>
+									<textElement textAlignment="Right" verticalAlignment="Middle">
+										<font size="8" isBold="true"/>
+									</textElement>
+									<text><![CDATA[金額]]></text>
+								</staticText>
+							</jr:columnHeader>
+							<jr:detailCell style="tableBody" height="20">
+								<textField textAdjust="ScaleFont" isBlankWhenNull="true">
+									<reportElement style="moneyStyle" stretchType="RelativeToBandHeight" x="0" y="0" width="85" height="20" uuid="f2dd9e44-9a89-4588-b233-0cbb083a48a0"/>
+									<box rightPadding="10"/>
+									<textElement textAlignment="Right" verticalAlignment="Middle">
+										<font size="9"/>
+									</textElement>
+									<textFieldExpression><![CDATA[$F{kingaku}]]></textFieldExpression>
+								</textField>
+							</jr:detailCell>
+						</jr:column>
+					</jr:columnGroup>
+				</jr:table>
+			</componentElement>
+		</band>
+		<band height="60">
+			<property name="com.jaspersoft.studio.unit.height" value="px"/>
+			<printWhenExpression><![CDATA[$P{hideHoshuJippiDate}]]></printWhenExpression>
+			<componentElement>
+				<reportElement x="0" y="0" width="525" height="60" uuid="25fbe2c1-3528-4ff9-8459-8c4ee169be32">
+					<property name="com.jaspersoft.studio.layout" value="com.jaspersoft.studio.editor.layout.VerticalRowLayout"/>
+					<property name="com.jaspersoft.studio.table.style.table_header" value="tableHeader"/>
+					<property name="com.jaspersoft.studio.table.style.column_header" value="tableColumnHeader"/>
+					<property name="com.jaspersoft.studio.table.style.detail" value="tableBody"/>
+					<property name="com.jaspersoft.studio.unit.width" value="px"/>
+				</reportElement>
+				<jr:table xmlns:jr="http://jasperreports.sourceforge.net/jasperreports/components" xsi:schemaLocation="http://jasperreports.sourceforge.net/jasperreports/components http://jasperreports.sourceforge.net/xsd/components.xsd">
+					<datasetRun subDataset="hoshuJippiKingakuDataset" uuid="5cd0f874-612f-4eba-bc5f-0741c12e5acc">
+						<datasetParameter name="isAzukariEmpty">
+							<datasetParameterExpression><![CDATA[$P{azukariKingakuList} == null || $P{azukariKingakuList}.isEmpty()]]></datasetParameterExpression>
+						</datasetParameter>
+						<dataSourceExpression><![CDATA[new net.sf.jasperreports.engine.data.JRBeanCollectionDataSource($P{hoshuJippiKingakuList})]]></dataSourceExpression>
+					</datasetRun>
+					<jr:columnGroup width="524" uuid="fb5fec59-3d1b-4012-9792-b0655838ac2d">
+						<property name="com.jaspersoft.studio.components.table.model.column.name" value="Columns [2]"/>
+						<jr:tableHeader style="tableHeader" height="20" rowSpan="1">
+							<property name="com.jaspersoft.studio.unit.width" value="px"/>
+							<textField>
+								<reportElement x="0" y="0" width="524" height="20" forecolor="#FFFFFF" uuid="b8e1c789-3896-4dc4-b39f-fa16cf8ac5b1"/>
+								<box leftPadding="10"/>
+								<textElement verticalAlignment="Middle">
+									<font size="9" isBold="true"/>
+								</textElement>
+								<textFieldExpression><![CDATA[$P{isAzukariEmpty} ? "内訳 報酬/実費" : "内訳② 報酬/実費"]]></textFieldExpression>
+							</textField>
+						</jr:tableHeader>
+						<jr:column width="439" uuid="4a5931f7-1a98-4641-80fa-73e67708e574">
+							<property name="com.jaspersoft.studio.components.table.model.column.name" value="Column1"/>
+							<jr:columnHeader style="tableColumnHeader" height="20" rowSpan="1">
+								<property name="com.jaspersoft.studio.unit.width" value="px"/>
+								<staticText>
+									<reportElement x="0" y="0" width="439" height="20" forecolor="#002060" uuid="94863b74-3796-47df-897b-54a45e8b5762"/>
+									<box leftPadding="10"/>
+									<textElement textAlignment="Left" verticalAlignment="Middle">
+										<font size="8" isBold="true"/>
+									</textElement>
+									<text><![CDATA[内容]]></text>
+								</staticText>
+							</jr:columnHeader>
+							<jr:detailCell style="tableBody" height="20">
+								<frame>
+									<reportElement stretchType="RelativeToBandHeight" x="0" y="0" width="439" height="20" uuid="714c36c7-043e-4090-b3c9-6e0ebd239377"/>
+									<textField textAdjust="StretchHeight" isBlankWhenNull="true">
+										<reportElement x="0" y="0" width="439" height="20" uuid="041eeb4d-2220-42d2-a484-1d2749c42748">
+											<property name="com.jaspersoft.studio.unit.height" value="px"/>
+											<property name="com.jaspersoft.studio.unit.y" value="px"/>
+											<property name="com.jaspersoft.studio.unit.width" value="px"/>
+										</reportElement>
+										<box leftPadding="10"/>
+										<textElement verticalAlignment="Middle">
+											<font size="9"/>
+										</textElement>
+										<textFieldExpression><![CDATA[$F{hoshuJippiKingakuName}]]></textFieldExpression>
+									</textField>
+									<textField textAdjust="StretchHeight" isBlankWhenNull="true">
+										<reportElement positionType="Float" x="0" y="20" width="439" height="7" uuid="d5deb667-5b0d-43d3-ba1f-16559fbe5db1">
+											<property name="com.jaspersoft.studio.unit.x" value="px"/>
+											<property name="com.jaspersoft.studio.unit.height" value="px"/>
+											<property name="com.jaspersoft.studio.unit.y" value="px"/>
+											<property name="com.jaspersoft.studio.unit.width" value="px"/>
+											<printWhenExpression><![CDATA[$F{hoshuJippiKingakuDetail} != null && !$F{hoshuJippiKingakuDetail}.isEmpty()]]></printWhenExpression>
+										</reportElement>
+										<box leftPadding="10" bottomPadding="6"/>
+										<textElement verticalAlignment="Top">
+											<font size="7"/>
+										</textElement>
+										<textFieldExpression><![CDATA[$F{hoshuJippiKingakuDetail}]]></textFieldExpression>
+									</textField>
+								</frame>
+							</jr:detailCell>
+						</jr:column>
+						<jr:column width="85" uuid="50d172a1-9c03-49af-920d-2d3e29e07750">
+							<property name="com.jaspersoft.studio.components.table.model.column.name" value="Column2"/>
+							<jr:columnHeader style="tableColumnHeader" height="20" rowSpan="1">
+								<property name="com.jaspersoft.studio.unit.width" value="px"/>
+								<staticText>
+									<reportElement x="0" y="0" width="85" height="20" forecolor="#002060" uuid="716eb69e-4111-4f43-970d-13aef178e1bb"/>
+									<box rightPadding="10"/>
+									<textElement textAlignment="Right" verticalAlignment="Middle">
+										<font size="8" isBold="true"/>
+									</textElement>
+									<text><![CDATA[金額]]></text>
+								</staticText>
+							</jr:columnHeader>
+							<jr:detailCell style="tableBody" height="20">
+								<textField textAdjust="ScaleFont" isBlankWhenNull="true">
+									<reportElement style="moneyStyle" stretchType="RelativeToBandHeight" x="0" y="0" width="85" height="20" uuid="1787c2a4-42a7-4e09-b07a-cb561e5a08f0"/>
+									<box rightPadding="10"/>
+									<textElement textAlignment="Right" verticalAlignment="Middle">
+										<font size="9"/>
+									</textElement>
+									<textFieldExpression><![CDATA[$F{kingaku}]]></textFieldExpression>
+								</textField>
+							</jr:detailCell>
+						</jr:column>
+					</jr:columnGroup>
+				</jr:table>
+			</componentElement>
+		</band>
+		<band height="110">
+			<property name="com.jaspersoft.studio.unit.height" value="px"/>
+			<printWhenExpression><![CDATA[$P{azukariKingakuList} != null && !$P{azukariKingakuList}.isEmpty()]]></printWhenExpression>
+			<staticText>
+				<reportElement style="tableFooterLabel" positionType="Float" x="355" y="0" width="85" height="20" uuid="ea4e16c0-db74-4d61-a2ca-e014ded633cd">
+					<property name="com.jaspersoft.studio.unit.width" value="px"/>
+					<property name="com.jaspersoft.studio.unit.x" value="px"/>
+				</reportElement>
+				<box rightPadding="5"/>
+				<textElement textAlignment="Right" verticalAlignment="Middle">
+					<font size="8"/>
+				</textElement>
+				<text><![CDATA[小計]]></text>
+			</staticText>
+			<textField textAdjust="ScaleFont" isBlankWhenNull="true">
+				<reportElement style="tableFooterValue" positionType="Float" x="440" y="0" width="85" height="20" uuid="ed6838a8-aecf-44f4-bd1d-d1174c83dd7e">
+					<property name="com.jaspersoft.studio.unit.x" value="px"/>
+				</reportElement>
+				<box rightPadding="10"/>
+				<textElement textAlignment="Right" verticalAlignment="Middle">
+					<font size="9"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$P{hoshuJippiSubTotal}]]></textFieldExpression>
+			</textField>
+			<staticText>
+				<reportElement style="tableFooterLabel" positionType="Float" x="355" y="20" width="85" height="20" uuid="76b82b25-7535-408e-be04-b90e469af324">
+					<property name="com.jaspersoft.studio.unit.x" value="px"/>
+				</reportElement>
+				<box rightPadding="5"/>
+				<textElement textAlignment="Right" verticalAlignment="Middle">
+					<font size="8"/>
+				</textElement>
+				<text><![CDATA[消費税]]></text>
+			</staticText>
+			<textField textAdjust="ScaleFont" isBlankWhenNull="true">
+				<reportElement style="tableFooterValue" positionType="Float" x="440" y="20" width="85" height="20" uuid="8ec5396e-f84d-4a5e-b837-827561760850">
+					<property name="com.jaspersoft.studio.unit.x" value="px"/>
+					<property name="com.jaspersoft.studio.unit.width" value="px"/>
+				</reportElement>
+				<box rightPadding="10"/>
+				<textElement textAlignment="Right" verticalAlignment="Middle">
+					<font size="9"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$P{hoshuJippiTaxTotal}]]></textFieldExpression>
+			</textField>
+			<staticText>
+				<reportElement style="tableFooterLabel" positionType="Float" x="355" y="40" width="85" height="20" uuid="dcefb6a1-95cd-4d14-96d3-1243927c3e21">
+					<property name="com.jaspersoft.studio.unit.x" value="px"/>
+					<property name="com.jaspersoft.studio.unit.y" value="px"/>
+				</reportElement>
+				<box rightPadding="5"/>
+				<textElement textAlignment="Right" verticalAlignment="Middle">
+					<font size="8"/>
+				</textElement>
+				<text><![CDATA[源泉徴収税]]></text>
+			</staticText>
+			<textField textAdjust="ScaleFont" isBlankWhenNull="true">
+				<reportElement style="tableFooterValue" positionType="Float" x="440" y="40" width="85" height="20" uuid="61de6096-cc2b-4c71-a3ac-e9d71071df96">
+					<property name="com.jaspersoft.studio.unit.x" value="px"/>
+					<property name="com.jaspersoft.studio.unit.width" value="px"/>
+					<property name="com.jaspersoft.studio.unit.y" value="px"/>
+				</reportElement>
+				<box rightPadding="10"/>
+				<textElement textAlignment="Right" verticalAlignment="Middle">
+					<font size="9"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$P{hoshuJippiGensenTotal}]]></textFieldExpression>
+			</textField>
+			<staticText>
+				<reportElement style="tableFooterLabel" positionType="Float" x="355" y="60" width="85" height="20" uuid="c23a121d-61f8-4a1b-80bd-9122f25dfe66">
+					<property name="com.jaspersoft.studio.unit.x" value="px"/>
+					<property name="com.jaspersoft.studio.unit.y" value="px"/>
+				</reportElement>
+				<box rightPadding="5"/>
+				<textElement textAlignment="Right" verticalAlignment="Middle">
+					<font size="8"/>
+				</textElement>
+				<text><![CDATA[合計②]]></text>
+			</staticText>
+			<textField textAdjust="ScaleFont" isBlankWhenNull="true">
+				<reportElement style="tableFooterValue" positionType="Float" x="440" y="60" width="85" height="20" uuid="9616dede-f021-4523-9ac9-799909d16ba5">
+					<property name="com.jaspersoft.studio.unit.x" value="px"/>
+					<property name="com.jaspersoft.studio.unit.width" value="px"/>
+					<property name="com.jaspersoft.studio.unit.y" value="px"/>
+				</reportElement>
+				<box rightPadding="10"/>
+				<textElement textAlignment="Right" verticalAlignment="Middle">
+					<font size="9"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$P{hoshuJippiTotal}]]></textFieldExpression>
+			</textField>
+			<frame>
+				<reportElement positionType="Float" x="340" y="80" width="185" height="0" uuid="ea57ff92-bcfc-4295-a54d-6b33729bf444">
+					<property name="com.jaspersoft.studio.unit.y" value="px"/>
+					<property name="com.jaspersoft.studio.unit.width" value="px"/>
+					<property name="com.jaspersoft.studio.unit.x" value="px"/>
+					<property name="com.jaspersoft.studio.unit.height" value="px"/>
+					<printWhenExpression><![CDATA[$P{hasTenPercentTax}]]></printWhenExpression>
+				</reportElement>
+				<textField textAdjust="StretchHeight">
+					<reportElement style="tableFooterLabel" stretchType="RelativeToBandHeight" x="0" y="0" width="40" height="0" uuid="cbf7b4be-25d7-42f0-9cff-afc922d51e70">
+						<property name="com.jaspersoft.studio.unit.width" value="px"/>
+						<property name="com.jaspersoft.studio.unit.height" value="px"/>
+					</reportElement>
+					<box topPadding="6" bottomPadding="6" rightPadding="0"/>
+					<textElement textAlignment="Left" verticalAlignment="Middle">
+						<font size="8"/>
+					</textElement>
+					<textFieldExpression><![CDATA["（10％対象"]]></textFieldExpression>
+				</textField>
+				<textField textAdjust="StretchHeight" isBlankWhenNull="true">
+					<reportElement style="tableFooterValue" stretchType="RelativeToBandHeight" x="40" y="0" width="55" height="0" uuid="264cdd14-6613-4151-89b7-f1b5e3d79bf6">
+						<property name="com.jaspersoft.studio.unit.width" value="px"/>
+						<property name="com.jaspersoft.studio.unit.height" value="px"/>
+						<property name="com.jaspersoft.studio.unit.x" value="px"/>
+						<property name="com.jaspersoft.studio.unit.y" value="px"/>
+					</reportElement>
+					<box topPadding="6" bottomPadding="6" rightPadding="5"/>
+					<textElement textAlignment="Right" verticalAlignment="Middle">
+						<font size="8"/>
+					</textElement>
+					<textFieldExpression><![CDATA[$P{tenPercentTotal}]]></textFieldExpression>
+				</textField>
+				<textField textAdjust="StretchHeight">
+					<reportElement style="tableFooterLabel" stretchType="RelativeToBandHeight" x="95" y="0" width="30" height="0" uuid="c2303e29-ac8a-4693-b354-4a43b14b5e0d">
+						<property name="com.jaspersoft.studio.unit.width" value="px"/>
+						<property name="com.jaspersoft.studio.unit.height" value="px"/>
+						<property name="com.jaspersoft.studio.unit.x" value="px"/>
+						<property name="com.jaspersoft.studio.unit.y" value="px"/>
+					</reportElement>
+					<box topPadding="6" bottomPadding="6" rightPadding="0"/>
+					<textElement textAlignment="Center" verticalAlignment="Middle">
+						<font size="8"/>
+					</textElement>
+					<textFieldExpression><![CDATA["消費税"]]></textFieldExpression>
+				</textField>
+				<textField textAdjust="StretchHeight" isBlankWhenNull="true">
+					<reportElement style="tableFooterValue" stretchType="RelativeToBandHeight" x="125" y="0" width="55" height="0" uuid="f8079f33-406f-49a3-bbaa-6299088efa92">
+						<property name="com.jaspersoft.studio.unit.width" value="px"/>
+						<property name="com.jaspersoft.studio.unit.height" value="px"/>
+						<property name="com.jaspersoft.studio.unit.x" value="px"/>
+						<property name="com.jaspersoft.studio.unit.y" value="px"/>
+					</reportElement>
+					<box topPadding="6" bottomPadding="6" rightPadding="5"/>
+					<textElement textAlignment="Right" verticalAlignment="Middle">
+						<font size="8"/>
+					</textElement>
+					<textFieldExpression><![CDATA[$P{tenPercentTaxTotal}]]></textFieldExpression>
+				</textField>
+				<textField textAdjust="StretchHeight">
+					<reportElement style="tableFooterLabel" stretchType="RelativeToBandHeight" x="180" y="0" width="5" height="0" uuid="9e206c2e-8025-4d68-86e2-99a09c3118ac">
+						<property name="com.jaspersoft.studio.unit.height" value="px"/>
+						<property name="com.jaspersoft.studio.unit.x" value="px"/>
+						<property name="com.jaspersoft.studio.unit.y" value="px"/>
+						<property name="com.jaspersoft.studio.unit.width" value="px"/>
+					</reportElement>
+					<box topPadding="6" bottomPadding="6">
+						<pen lineWidth="0.5"/>
+					</box>
+					<textElement textAlignment="Left" verticalAlignment="Middle">
+						<font size="8"/>
+					</textElement>
+					<textFieldExpression><![CDATA["）"]]></textFieldExpression>
+				</textField>
+			</frame>
+			<frame>
+				<reportElement positionType="Float" x="340" y="81" width="185" height="0" uuid="8a419a7c-45bd-468e-ad22-836f83b54297">
+					<property name="com.jaspersoft.studio.unit.width" value="px"/>
+					<property name="com.jaspersoft.studio.unit.y" value="px"/>
+					<property name="com.jaspersoft.studio.unit.x" value="px"/>
+					<property name="com.jaspersoft.studio.unit.height" value="px"/>
+					<printWhenExpression><![CDATA[$P{hasEightPercentTax}]]></printWhenExpression>
+				</reportElement>
+				<textField textAdjust="StretchHeight">
+					<reportElement style="tableFooterLabel" positionType="Float" stretchType="RelativeToBandHeight" x="0" y="0" width="40" height="0" uuid="090c3d83-8930-4f89-80bb-40c0f31194d5">
+						<property name="com.jaspersoft.studio.unit.width" value="px"/>
+						<property name="com.jaspersoft.studio.unit.height" value="px"/>
+					</reportElement>
+					<box topPadding="6" bottomPadding="6" rightPadding="0"/>
+					<textElement textAlignment="Left" verticalAlignment="Middle">
+						<font size="8"/>
+					</textElement>
+					<textFieldExpression><![CDATA["（8％対象"]]></textFieldExpression>
+				</textField>
+				<textField textAdjust="StretchHeight" isBlankWhenNull="true">
+					<reportElement style="tableFooterValue" positionType="Float" stretchType="RelativeToBandHeight" x="40" y="0" width="55" height="0" uuid="52096c07-e043-47f7-9e11-6de39f71cb6d">
+						<property name="com.jaspersoft.studio.unit.width" value="px"/>
+						<property name="com.jaspersoft.studio.unit.x" value="px"/>
+						<property name="com.jaspersoft.studio.unit.y" value="px"/>
+					</reportElement>
+					<box topPadding="6" bottomPadding="6" rightPadding="5"/>
+					<textElement textAlignment="Right" verticalAlignment="Middle">
+						<font size="8"/>
+					</textElement>
+					<textFieldExpression><![CDATA[$P{eightPercentTotal}]]></textFieldExpression>
+				</textField>
+				<textField textAdjust="StretchHeight">
+					<reportElement style="tableFooterLabel" positionType="Float" stretchType="RelativeToBandHeight" x="95" y="0" width="30" height="0" uuid="02732a98-36b8-4552-b7ff-0ee5d8380b2b">
+						<property name="com.jaspersoft.studio.unit.width" value="px"/>
+						<property name="com.jaspersoft.studio.unit.x" value="px"/>
+						<property name="com.jaspersoft.studio.unit.y" value="px"/>
+						<property name="com.jaspersoft.studio.unit.height" value="px"/>
+					</reportElement>
+					<box topPadding="6" bottomPadding="6" rightPadding="0"/>
+					<textElement textAlignment="Center" verticalAlignment="Middle">
+						<font size="8"/>
+					</textElement>
+					<textFieldExpression><![CDATA["消費税"]]></textFieldExpression>
+				</textField>
+				<textField textAdjust="StretchHeight" isBlankWhenNull="true">
+					<reportElement style="tableFooterValue" positionType="Float" stretchType="RelativeToBandHeight" x="125" y="0" width="55" height="0" uuid="fd468b97-da47-4aae-a5d7-d7d8174cd3c1">
+						<property name="com.jaspersoft.studio.unit.width" value="px"/>
+						<property name="com.jaspersoft.studio.unit.x" value="px"/>
+						<property name="com.jaspersoft.studio.unit.y" value="px"/>
+					</reportElement>
+					<box topPadding="6" bottomPadding="6" rightPadding="5"/>
+					<textElement textAlignment="Right" verticalAlignment="Middle">
+						<font size="8"/>
+					</textElement>
+					<textFieldExpression><![CDATA[$P{eightPercentTaxTotal}]]></textFieldExpression>
+				</textField>
+				<textField textAdjust="StretchHeight">
+					<reportElement style="tableFooterLabel" positionType="Float" stretchType="RelativeToBandHeight" x="180" y="0" width="5" height="0" uuid="1da3e8a3-4bb4-4d6a-a409-980d980d2b63">
+						<property name="com.jaspersoft.studio.unit.width" value="px"/>
+						<property name="com.jaspersoft.studio.unit.x" value="px"/>
+						<property name="com.jaspersoft.studio.unit.y" value="px"/>
+						<property name="com.jaspersoft.studio.unit.height" value="px"/>
+					</reportElement>
+					<box topPadding="6" bottomPadding="6" rightPadding="0">
+						<pen lineWidth="0.5"/>
+					</box>
+					<textElement textAlignment="Left" verticalAlignment="Middle">
+						<font size="8"/>
+					</textElement>
+					<textFieldExpression><![CDATA["）"]]></textFieldExpression>
+				</textField>
+			</frame>
+			<frame>
+				<reportElement positionType="Float" mode="Transparent" x="355" y="81" width="170" height="20" uuid="dbe64bfe-666b-435d-bf83-69194fcbb87c">
+					<property name="com.jaspersoft.studio.unit.width" value="px"/>
+					<property name="com.jaspersoft.studio.unit.height" value="px"/>
+					<property name="com.jaspersoft.studio.unit.x" value="px"/>
+					<property name="com.jaspersoft.studio.unit.y" value="px"/>
+				</reportElement>
+				<staticText>
+					<reportElement style="tableFooterLabel" positionType="Float" x="0" y="0" width="85" height="20" uuid="ae0b9bff-9479-4b04-8bc0-bc26362b2c3f">
+						<property name="com.jaspersoft.studio.unit.width" value="px"/>
+						<property name="com.jaspersoft.studio.unit.height" value="px"/>
+						<property name="com.jaspersoft.studio.unit.x" value="px"/>
+						<property name="com.jaspersoft.studio.unit.y" value="px"/>
+					</reportElement>
+					<box rightPadding="5"/>
+					<textElement textAlignment="Right" verticalAlignment="Middle">
+						<font size="8"/>
+					</textElement>
+					<text><![CDATA[ご請求額①-②]]></text>
+				</staticText>
+				<textField textAdjust="ScaleFont" isBlankWhenNull="true">
+					<reportElement style="tableFooterValue" positionType="Float" x="85" y="0" width="85" height="20" forecolor="#333333" uuid="09a399d2-330d-4d4a-a847-cd789fcd77ae">
+						<property name="com.jaspersoft.studio.unit.height" value="px"/>
+						<property name="com.jaspersoft.studio.unit.y" value="px"/>
+						<property name="com.jaspersoft.studio.unit.width" value="px"/>
+						<property name="com.jaspersoft.studio.unit.x" value="px"/>
+					</reportElement>
+					<box rightPadding="10"/>
+					<textElement textAlignment="Right" verticalAlignment="Middle">
+						<font size="9" isBold="true"/>
+					</textElement>
+					<textFieldExpression><![CDATA[$P{seisanTotal}]]></textFieldExpression>
+				</textField>
+			</frame>
+		</band>
+		<band height="91">
+			<property name="com.jaspersoft.studio.unit.height" value="px"/>
+			<printWhenExpression><![CDATA[$P{azukariKingakuList} == null || $P{azukariKingakuList}.isEmpty()]]></printWhenExpression>
+			<staticText>
+				<reportElement style="tableFooterLabel" positionType="Float" x="355" y="0" width="85" height="20" uuid="d152714a-e326-471d-8059-be3ed0525b33">
+					<property name="com.jaspersoft.studio.unit.width" value="px"/>
+					<property name="com.jaspersoft.studio.unit.x" value="px"/>
+				</reportElement>
+				<box rightPadding="5"/>
+				<textElement textAlignment="Right" verticalAlignment="Middle">
+					<font size="8"/>
+				</textElement>
+				<text><![CDATA[小計]]></text>
+			</staticText>
+			<textField textAdjust="ScaleFont" isBlankWhenNull="true">
+				<reportElement style="tableFooterValue" positionType="Float" x="440" y="0" width="85" height="20" uuid="ff737d6c-54c6-4cca-9428-e67ad3375974">
+					<property name="com.jaspersoft.studio.unit.x" value="px"/>
+				</reportElement>
+				<box rightPadding="10"/>
+				<textElement textAlignment="Right" verticalAlignment="Middle">
+					<font size="9"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$P{hoshuJippiSubTotal}]]></textFieldExpression>
+			</textField>
+			<staticText>
+				<reportElement style="tableFooterLabel" positionType="Float" x="355" y="20" width="85" height="20" uuid="64820b34-c8ac-43e1-ae8f-c8dcf1c0934e"/>
+				<box rightPadding="5"/>
+				<textElement textAlignment="Right" verticalAlignment="Middle">
+					<font size="8"/>
+				</textElement>
+				<text><![CDATA[消費税]]></text>
+			</staticText>
+			<textField textAdjust="ScaleFont" isBlankWhenNull="true">
+				<reportElement style="tableFooterValue" positionType="Float" x="440" y="20" width="85" height="20" uuid="1ae56b2b-bec7-4b89-87a6-617d1b40d2e2">
+					<property name="com.jaspersoft.studio.unit.width" value="px"/>
+				</reportElement>
+				<box rightPadding="10"/>
+				<textElement textAlignment="Right" verticalAlignment="Middle">
+					<font size="9"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$P{hoshuJippiTaxTotal}]]></textFieldExpression>
+			</textField>
+			<staticText>
+				<reportElement style="tableFooterLabel" positionType="Float" x="355" y="40" width="85" height="20" uuid="ddbe3109-0215-47f7-917c-75dc7a1e6293">
+					<property name="com.jaspersoft.studio.unit.y" value="px"/>
+				</reportElement>
+				<box rightPadding="5"/>
+				<textElement textAlignment="Right" verticalAlignment="Middle">
+					<font size="8"/>
+				</textElement>
+				<text><![CDATA[源泉徴収税]]></text>
+			</staticText>
+			<textField textAdjust="ScaleFont" isBlankWhenNull="true">
+				<reportElement style="tableFooterValue" positionType="Float" x="440" y="40" width="85" height="20" uuid="0afd2f1d-8728-4027-afa2-f70d88648c2d">
+					<property name="com.jaspersoft.studio.unit.width" value="px"/>
+					<property name="com.jaspersoft.studio.unit.y" value="px"/>
+				</reportElement>
+				<box rightPadding="10"/>
+				<textElement textAlignment="Right" verticalAlignment="Middle">
+					<font size="9"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$P{hoshuJippiGensenTotal}]]></textFieldExpression>
+			</textField>
+			<staticText>
+				<reportElement style="tableFooterLabel" positionType="Float" x="355" y="60" width="85" height="20" uuid="5f5252f9-dd68-40bf-b57f-ca84646f7307">
+					<property name="com.jaspersoft.studio.unit.y" value="px"/>
+				</reportElement>
+				<box rightPadding="5"/>
+				<textElement textAlignment="Right" verticalAlignment="Middle">
+					<font size="8"/>
+				</textElement>
+				<text><![CDATA[合計]]></text>
+			</staticText>
+			<textField textAdjust="ScaleFont" isBlankWhenNull="true">
+				<reportElement style="tableFooterValue" positionType="Float" x="440" y="60" width="85" height="20" uuid="80ee7c65-0d44-4377-8894-e0de1220f081">
+					<property name="com.jaspersoft.studio.unit.width" value="px"/>
+					<property name="com.jaspersoft.studio.unit.y" value="px"/>
+				</reportElement>
+				<box rightPadding="10"/>
+				<textElement textAlignment="Right" verticalAlignment="Middle">
+					<font size="9"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$P{hoshuJippiTotal}]]></textFieldExpression>
+			</textField>
+			<frame>
+				<reportElement positionType="Float" x="340" y="80" width="185" height="0" uuid="685e431b-7e6e-4678-af0d-79aa028dd6a4">
+					<property name="com.jaspersoft.studio.unit.y" value="px"/>
+					<property name="com.jaspersoft.studio.unit.width" value="px"/>
+					<property name="com.jaspersoft.studio.unit.x" value="px"/>
+					<property name="com.jaspersoft.studio.unit.height" value="px"/>
+					<printWhenExpression><![CDATA[$P{hasTenPercentTax}]]></printWhenExpression>
+				</reportElement>
+				<textField textAdjust="StretchHeight">
+					<reportElement style="tableFooterLabel" stretchType="RelativeToBandHeight" x="0" y="0" width="40" height="0" uuid="6ac19a06-845b-49f8-80b2-12d8d1a09034">
+						<property name="com.jaspersoft.studio.unit.width" value="px"/>
+						<property name="com.jaspersoft.studio.unit.height" value="px"/>
+					</reportElement>
+					<box topPadding="6" bottomPadding="6" rightPadding="0"/>
+					<textElement textAlignment="Left" verticalAlignment="Middle">
+						<font size="8"/>
+					</textElement>
+					<textFieldExpression><![CDATA["（10％対象"]]></textFieldExpression>
+				</textField>
+				<textField textAdjust="StretchHeight" isBlankWhenNull="true">
+					<reportElement style="tableFooterValue" stretchType="RelativeToBandHeight" x="40" y="0" width="55" height="0" uuid="6db25a4b-7b3f-4cfe-a12e-0672bd42579b">
+						<property name="com.jaspersoft.studio.unit.width" value="px"/>
+						<property name="com.jaspersoft.studio.unit.y" value="px"/>
+						<property name="com.jaspersoft.studio.unit.x" value="px"/>
+					</reportElement>
+					<box topPadding="6" bottomPadding="6" rightPadding="5"/>
+					<textElement textAlignment="Right" verticalAlignment="Middle">
+						<font size="8"/>
+					</textElement>
+					<textFieldExpression><![CDATA[$P{tenPercentTotal}]]></textFieldExpression>
+				</textField>
+				<textField textAdjust="StretchHeight">
+					<reportElement style="tableFooterLabel" stretchType="RelativeToBandHeight" x="95" y="0" width="30" height="0" uuid="ba4b8de8-4e2c-416a-b2e3-3ab810304b14">
+						<property name="com.jaspersoft.studio.unit.x" value="px"/>
+						<property name="com.jaspersoft.studio.unit.y" value="px"/>
+						<property name="com.jaspersoft.studio.unit.width" value="px"/>
+						<property name="com.jaspersoft.studio.unit.height" value="px"/>
+					</reportElement>
+					<box topPadding="6" bottomPadding="6" rightPadding="0"/>
+					<textElement textAlignment="Center" verticalAlignment="Middle">
+						<font size="8"/>
+					</textElement>
+					<textFieldExpression><![CDATA["消費税"]]></textFieldExpression>
+				</textField>
+				<textField textAdjust="StretchHeight" isBlankWhenNull="true">
+					<reportElement style="tableFooterValue" stretchType="RelativeToBandHeight" x="125" y="0" width="55" height="0" uuid="7836a5af-b067-4cb6-a29f-3f7e7d088a1a">
+						<property name="com.jaspersoft.studio.unit.x" value="px"/>
+						<property name="com.jaspersoft.studio.unit.y" value="px"/>
+					</reportElement>
+					<box topPadding="6" bottomPadding="6" rightPadding="5"/>
+					<textElement textAlignment="Right" verticalAlignment="Middle">
+						<font size="8"/>
+					</textElement>
+					<textFieldExpression><![CDATA[$P{tenPercentTaxTotal}]]></textFieldExpression>
+				</textField>
+				<textField textAdjust="StretchHeight">
+					<reportElement style="tableFooterLabel" stretchType="RelativeToBandHeight" x="180" y="0" width="5" height="0" uuid="8d00504d-c458-411f-8b7d-ca8eac169d76">
+						<property name="com.jaspersoft.studio.unit.width" value="px"/>
+						<property name="com.jaspersoft.studio.unit.x" value="px"/>
+						<property name="com.jaspersoft.studio.unit.y" value="px"/>
+						<property name="com.jaspersoft.studio.unit.height" value="px"/>
+					</reportElement>
+					<box topPadding="6" bottomPadding="6" rightPadding="0">
+						<pen lineWidth="0.5"/>
+					</box>
+					<textElement textAlignment="Left" verticalAlignment="Middle">
+						<font size="8"/>
+					</textElement>
+					<textFieldExpression><![CDATA["）"]]></textFieldExpression>
+				</textField>
+			</frame>
+			<frame>
+				<reportElement positionType="Float" x="340" y="81" width="185" height="0" uuid="0019a499-4fee-4c9f-83b2-c65402ddb827">
+					<property name="com.jaspersoft.studio.unit.width" value="px"/>
+					<property name="com.jaspersoft.studio.unit.y" value="px"/>
+					<property name="com.jaspersoft.studio.unit.x" value="px"/>
+					<property name="com.jaspersoft.studio.unit.height" value="px"/>
+					<printWhenExpression><![CDATA[$P{hasEightPercentTax}]]></printWhenExpression>
+				</reportElement>
+				<textField textAdjust="StretchHeight">
+					<reportElement style="tableFooterLabel" positionType="Float" stretchType="RelativeToBandHeight" x="0" y="0" width="40" height="0" uuid="c58f0d99-068a-4bcd-8b00-e4d079c6735e">
+						<property name="com.jaspersoft.studio.unit.height" value="px"/>
+						<property name="com.jaspersoft.studio.unit.width" value="px"/>
+					</reportElement>
+					<box topPadding="6" bottomPadding="6" rightPadding="0"/>
+					<textElement textAlignment="Left" verticalAlignment="Middle">
+						<font size="8"/>
+					</textElement>
+					<textFieldExpression><![CDATA["（8％対象"]]></textFieldExpression>
+				</textField>
+				<textField textAdjust="StretchHeight" isBlankWhenNull="true">
+					<reportElement style="tableFooterValue" positionType="Float" stretchType="RelativeToBandHeight" x="40" y="0" width="55" height="0" uuid="1fb7a264-727f-433a-9809-823d7a3e90d8">
+						<property name="com.jaspersoft.studio.unit.x" value="px"/>
+						<property name="com.jaspersoft.studio.unit.y" value="px"/>
+					</reportElement>
+					<box topPadding="6" bottomPadding="6" rightPadding="5"/>
+					<textElement textAlignment="Right" verticalAlignment="Middle">
+						<font size="8"/>
+					</textElement>
+					<textFieldExpression><![CDATA[$P{eightPercentTotal}]]></textFieldExpression>
+				</textField>
+				<textField textAdjust="StretchHeight">
+					<reportElement style="tableFooterLabel" positionType="Float" stretchType="RelativeToBandHeight" x="95" y="0" width="30" height="0" uuid="f27b9ee5-720f-4c93-aa5c-a7084ba0a751">
+						<property name="com.jaspersoft.studio.unit.y" value="px"/>
+						<property name="com.jaspersoft.studio.unit.width" value="px"/>
+						<property name="com.jaspersoft.studio.unit.height" value="px"/>
+					</reportElement>
+					<box topPadding="6" bottomPadding="6" rightPadding="0"/>
+					<textElement textAlignment="Center" verticalAlignment="Middle">
+						<font size="8"/>
+					</textElement>
+					<textFieldExpression><![CDATA["消費税"]]></textFieldExpression>
+				</textField>
+				<textField textAdjust="StretchHeight" isBlankWhenNull="true">
+					<reportElement style="tableFooterValue" positionType="Float" stretchType="RelativeToBandHeight" x="125" y="0" width="55" height="0" uuid="a264037e-ffaa-44b0-b9a1-499c821afd0e">
+						<property name="com.jaspersoft.studio.unit.y" value="px"/>
+						<property name="com.jaspersoft.studio.unit.x" value="px"/>
+					</reportElement>
+					<box topPadding="6" bottomPadding="6" rightPadding="5"/>
+					<textElement textAlignment="Right" verticalAlignment="Middle">
+						<font size="8"/>
+					</textElement>
+					<textFieldExpression><![CDATA[$P{eightPercentTaxTotal}]]></textFieldExpression>
+				</textField>
+				<textField textAdjust="StretchHeight">
+					<reportElement style="tableFooterLabel" positionType="Float" stretchType="RelativeToBandHeight" x="180" y="0" width="5" height="0" uuid="0929b4fc-ac5c-4fb7-9684-85ce2fbdcbc5">
+						<property name="com.jaspersoft.studio.unit.x" value="px"/>
+						<property name="com.jaspersoft.studio.unit.y" value="px"/>
+						<property name="com.jaspersoft.studio.unit.height" value="px"/>
+					</reportElement>
+					<box topPadding="6" bottomPadding="6" rightPadding="0">
+						<pen lineWidth="0.5"/>
+					</box>
+					<textElement textAlignment="Left" verticalAlignment="Middle">
+						<font size="8" isBold="false"/>
+					</textElement>
+					<textFieldExpression><![CDATA["）"]]></textFieldExpression>
+				</textField>
+			</frame>
+		</band>
+		<band height="90">
+			<frame>
+				<reportElement x="0" y="0" width="525" height="80" uuid="4aa7d894-b00d-4a77-b2e1-8fd2960d62a7"/>
+				<box>
+					<pen lineWidth="0.25" lineColor="#F2F2F2"/>
+					<topPen lineWidth="0.5" lineStyle="Solid" lineColor="#F2F2F2"/>
+					<leftPen lineWidth="0.5" lineStyle="Solid" lineColor="#F2F2F2"/>
+					<bottomPen lineWidth="0.5" lineStyle="Solid" lineColor="#F2F2F2"/>
+					<rightPen lineWidth="0.5" lineStyle="Solid" lineColor="#F2F2F2"/>
+				</box>
+				<staticText>
+					<reportElement x="0" y="0" width="525" height="20" forecolor="#002060" uuid="422ab08c-3bed-4070-a4f7-25e1e944342e"/>
+					<box leftPadding="5"/>
+					<textElement verticalAlignment="Middle">
+						<font size="9" isBold="true"/>
+					</textElement>
+					<text><![CDATA[【備考欄】]]></text>
+				</staticText>
+				<textField textAdjust="StretchHeight" isBlankWhenNull="true">
+					<reportElement x="0" y="20" width="525" height="60" uuid="3bf463c5-9686-4ad8-bbc9-c36d5aeb951b"/>
+					<box topPadding="0" leftPadding="5" bottomPadding="5" rightPadding="5"/>
+					<textElement markup="html">
+						<font size="9"/>
+						<paragraph lineSpacing="Proportional" lineSpacingSize="1.5"/>
+					</textElement>
+					<textFieldExpression><![CDATA[$P{remarks}]]></textFieldExpression>
+				</textField>
+			</frame>
+		</band>
+	</detail>
+	<pageFooter>
+		<band height="8">
+			<textField>
+				<reportElement x="0" y="0" width="525" height="8" uuid="3a81046e-95a4-43fc-ab5f-56fc385993e7">
+					<property name="com.jaspersoft.studio.unit.height" value="px"/>
+					<printWhenExpression><![CDATA[1 != 1]]></printWhenExpression>
+				</reportElement>
+				<textElement textAlignment="Center" verticalAlignment="Middle">
+					<font size="8"/>
+				</textElement>
+				<textFieldExpression><![CDATA["PAGE_NUMBER"]]></textFieldExpression>
+			</textField>
+		</band>
+	</pageFooter>
+</jasperReport>

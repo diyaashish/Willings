@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html  xmlns:th="http://www.thymeleaf.org"
+	xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+	layout:decorator="noLoginCommonLayout">
+<head>
+<title layout:fragment="title-contents">
+	[[${T(jp.loioz.common.utility.LoiozUtils).getHtmlTitle("アカウント登録", T(jp.loioz.common.utility.SessionUtils).getTenantName())}]]
+</title>
+
+<script th:inline="javascript">
+
+<!--/*
+ 二重送信防止対応用の値。
+ このHTMLに差し込まれるfragment内のScriptの処理も、共通してこの変数を利用する。
+*/-->
+let ajaxRunning = false;
+
+<!--/* Ajax通信時のCSRFトークン設定 */-->
+$(function() {
+	let token = /*[[(${_csrf.token})]]*/ "";
+	let headerName = /*[[(${_csrf.headerName})]]*/ "";
+	$(document).ajaxSend(function(e, xhr, options) {
+		xhr.setRequestHeader(headerName, token);
+	});
+});
+</script>
+
+</head>
+<body class="body_one_block">
+	<!--/* ヘッダーなし */-->
+	<header layout:fragment="header-contents" th:remove="all"></header>
+
+	<main layout:fragment="main-contents">
+
+		<div id="invitedAccountLoginForm" class="invited_account_login_form">
+		
+			<div class="loioz_logo">
+				<img th:src="@{/img/logo_1.png}">
+			</div>
+			
+			<div id="invitedAccountRegistFormFragmentWrap" th:insert="user/invitedAccountRegist/invitedAccountRegistFragment::invitedAccountRegistFormFragment(${inputForm})">
+				<!-- 招待アカウント登録の入力部分の表示 -->
+			</div>
+			
+			<div id="invitedAccountLoginFormFragmentWrap">
+				<!-- ログインフォームの表示（非表示フォーム） -->
+			</div>
+			
+		</div>
+	</main>
+</body>
+</html>

@@ -1,0 +1,518 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+<meta charset="utf-8" />
+
+<script type="text/javascript" th:fragment ="ageCalculationJs" th:inline = "javascript">
+	
+	/**********************************************
+	 * 生年月日の日付処理
+	 **********************************************/
+
+	// 年号毎の開始日付
+	let meiji = new Date(/*[[${T(jp.loioz.common.constant.CommonConstant$EraEpoch).MEIJI.getFrom()}]]*/ '1868-09-08'); //　1868年9月8日～
+	let taisho = new Date(/*[[${T(jp.loioz.common.constant.CommonConstant$EraEpoch).TAISHO.getFrom()}]]*/ '1912-07-30'); //　1912年7月30日～
+	let showa = new Date(/*[[${T(jp.loioz.common.constant.CommonConstant$EraEpoch).SHOWA.getFrom()}]]*/ '1926-12-25'); //　1926年12月25日～
+	let heisei = new Date(/*[[${T(jp.loioz.common.constant.CommonConstant$EraEpoch).HEISEI.getFrom()}]]*/ '1989-01-08'); //　1989年1月8日～
+	let reiwa = new Date(/*[[${T(jp.loioz.common.constant.CommonConstant$EraEpoch).REIWA.getFrom()}]]*/ '2019-05-01'); //　2019年5月1日～
+
+	// 西暦、和暦（年号）の紀元CD値（EraType）
+	const seirekiCd = Number(/*[[${T(jp.loioz.common.constant.CommonConstant$EraType).SEIREKI.getCd()}]]*/ '0');
+	const meijiCd = Number(/*[[${T(jp.loioz.common.constant.CommonConstant$EraType).MEIJI.getCd()}]]*/ '1');
+	const taishoCd = Number(/*[[${T(jp.loioz.common.constant.CommonConstant$EraType).TAISHO.getCd()}]]*/ '2');
+	const showaCd = Number(/*[[${T(jp.loioz.common.constant.CommonConstant$EraType).SHOWA.getCd()}]]*/ '3');
+	const heiseiCd = Number(/*[[${T(jp.loioz.common.constant.CommonConstant$EraType).HEISEI.getCd()}]]*/ '4');
+	const reiwaCd = Number(/*[[${T(jp.loioz.common.constant.CommonConstant$EraType).REIWA.getCd()}]]*/ '5');
+
+	// 年号毎の期間
+	const meijiPeriod = Number(/*[[${T(jp.loioz.common.constant.CommonConstant$EraEpoch).MEIJI.getVal()}]]*/ '45'); // 45年
+	const taishoPeriod = Number(/*[[${T(jp.loioz.common.constant.CommonConstant$EraEpoch).TAISHO.getVal()}]]*/ '15'); // 15年
+	const showaPeriod = Number(/*[[${T(jp.loioz.common.constant.CommonConstant$EraEpoch).SHOWA.getVal()}]]*/ '64'); // 64年
+	const heiseiPeriod = Number(/*[[${T(jp.loioz.common.constant.CommonConstant$EraEpoch).HEISEI.getVal()}]]*/ '31'); // 31年
+	const reiwaPeriod = Number(/*[[${T(jp.loioz.common.constant.CommonConstant$EraEpoch).REIWA.getVal()}]]*/ '0'); // 現経過年数
+
+	// 現在の西暦
+	let currentYear = new Date().getFullYear();
+
+	// 西暦年と月から日数を取得する
+	function getMonthDays() {
+		return new Date(getSeirekiYear(), $('#birthMonth').val(), 0).getDate();
+	};
+
+	// 変換された西暦を取得する
+	function getSeirekiYear() {
+		// 西暦を選択している場合その値を返す
+		if (Number($('#birthEra').val()) === seirekiCd) {
+			return Number($('#birthYear').val());
+		}
+	
+		let warekiYear = Number($('#birthYear').val());
+		let eraType = Number($('#birthEra').val());
+	
+		// 元号判定
+		if (eraType === meijiCd) {
+			warekiYear += meiji.getFullYear();
+		} else if (eraType === taishoCd) {
+			warekiYear += taisho.getFullYear();
+		} else if (eraType === showaCd) {
+			warekiYear += showa.getFullYear();
+		} else if (eraType === heiseiCd) {
+			warekiYear += heisei.getFullYear();
+		} else if (eraType === reiwaCd) {
+			warekiYear += reiwa.getFullYear();
+		}
+		return warekiYear - 1;
+	}
+
+	// 年 or 月を変更した場合に日プルダウンを変更する(うるう年対応)
+	$(document).on('change', '#birthYear, #birthMonth', function() {
+		let selectedDay = $('#birthDay').val();
+		$('select#birthDay option').remove();
+		$('select#birthDay').append("<option value=''>-</option>");
+		for (let i=1; i<=getMonthDays(); i++) {
+			$('select#birthDay').append("<option value='" + i + "'>" + i + "日</option>");
+		}
+	
+		// 同じ日付が含まれるなら設定する
+		if (selectedDay <= $('select#birthDay option').length) {
+			$('select#birthDay').val(selectedDay);
+		}
+	});
+	
+	// 生年月日の西暦・和暦を変更した場合に年プルダウン及び月日を変更する
+	$(document).on('change', '#birthEra', function() {
+		eraType = Number($('#birthEra').val());
+		$('select#birthYear option').remove();
+		$('select#birthYear').append("<option value=''>-</option>");
+	
+		let yearStart = 1900;
+		let yearEnd = new Date().getFullYear();
+	
+		// 元号判定
+		if (eraType === seirekiCd) {
+			// 西暦の場合
+			for (let i=yearEnd; yearStart<=i; i--) {
+				$('select#birthYear').append("<option value='" + i + "'>" + i + "年</option>");
+			}
+			$('select#birthYear option:first').prop('selected', true);
+		} else {
+			// 和暦の場合
+			let selectedEraStartDate;
+			if (eraType === meijiCd) {
+				yearEnd = meijiPeriod;
+				selectedEraStartDate = meiji;
+			} else if (eraType === taishoCd) {
+				yearEnd = taishoPeriod;
+				selectedEraStartDate = taisho;
+			} else if (eraType === showaCd) {
+				yearEnd = showaPeriod;
+				selectedEraStartDate = showa;
+			} else if (eraType === heiseiCd) {
+				yearEnd = heiseiPeriod;
+				selectedEraStartDate = heisei;
+			} else if (eraType === reiwaCd) {
+				yearEnd = currentYear - reiwa.getFullYear() + 1;// 当年を選択肢に含めるため +1する
+				selectedEraStartDate = reiwa;
+			}
+	
+			for (let i=yearEnd; 1<i; i--) {
+				$('select#birthYear').append("<option value='" + i + "'>" + i + "年</option>");
+			}
+			$('select#birthYear').append("<option value='" + 1 + "' selected>元年</option>");
+			$('select#birthYear option:first').prop('selected', true);
+		}
+	});
+	
+	//西暦・和暦を変更した場合に年プルダウン及び月日を変更する関数
+	function changeEraTypeFn() {
+		eraType = Number($('#birthEra').val());
+		$('select#birthYear option').remove();
+		$('select#birthYear').append("<option value=''>-</option>");
+	
+		let yearStart = 1900;
+		let yearEnd = new Date().getFullYear();
+	
+		// 元号判定
+		if (eraType === seirekiCd) {
+			// 西暦の場合
+			for (let i=yearEnd; yearStart<=i; i--) {
+				$('select#birthYear').append("<option value='" + i + "'>" + i + "年</option>");
+			}
+			$('select#birthYear option:first').prop('selected', true);
+		} else {
+			// 和暦の場合
+			let selectedEraStartDate;
+			if (eraType === meijiCd) {
+				yearEnd = meijiPeriod;
+				selectedEraStartDate = meiji;
+			} else if (eraType === taishoCd) {
+				yearEnd = taishoPeriod;
+				selectedEraStartDate = taisho;
+			} else if (eraType === showaCd) {
+				yearEnd = showaPeriod;
+				selectedEraStartDate = showa;
+			} else if (eraType === heiseiCd) {
+				yearEnd = heiseiPeriod;
+				selectedEraStartDate = heisei;
+			} else if (eraType === reiwaCd) {
+				yearEnd = currentYear - reiwa.getFullYear() + 1;// 当年を選択肢に含めるため +1する
+				selectedEraStartDate = reiwa;
+			}
+	
+			for (let i=yearEnd; 1<i; i--) {
+				$('select#birthYear').append("<option value='" + i + "'>" + i + "年</option>");
+			}
+			$('select#birthYear').append("<option value='" + 1 + "' selected>元年</option>");
+			$('select#birthYear option:first').prop('selected', true);
+		}
+	}
+	
+	$(document).on('change', '#birthYear', function() {
+		if(Number($(this).val()) && !checkWarekiDatePattern()) {
+			$('select#birthMonth option:first').prop('selected', true);
+			$('select#birthDay option:first').prop('selected', true);
+		}
+	});
+	
+	$(document).on('focus', '#birthMonth, #birthDay', function() {
+		let eraType = Number($('#birthEra').val());
+		let eraYear = Number($('#birthYear').val());
+		
+		$('#birthMonth option').each((idx, obj) => $(obj).prop('disabled', false));
+		$('#birthDay option').each((idx, obj) => $(obj).prop('disabled', false));
+		if (eraType === seirekiCd || eraYear === 0) {
+			return false;
+		}
+		
+		if (eraType === meijiCd) {
+			// 明治の場合
+			let endDate = new Date(taisho);
+			endDate.setDate(endDate.getDate() - 1)
+			
+			seirekiInvalid(meiji, endDate);
+			
+		} else if (eraType === taishoCd) {
+			// 大正の場合
+			let endDate = new Date(showa);
+			endDate.setDate(endDate.getDate() - 1)
+			
+			seirekiInvalid(taisho, endDate);
+			
+		} else if (eraType === showaCd) {
+			// 昭和の場合
+			let endDate = new Date(heisei);
+			endDate.setDate(endDate.getDate() - 1)
+	
+			seirekiInvalid(showa, endDate);
+	
+		} else if (eraType === heiseiCd) {
+			// 平成の場合
+			let endDate = new Date(reiwa);
+			endDate.setDate(endDate.getDate() - 1)
+	
+			seirekiInvalid(heisei, endDate);
+		
+		} else if (eraType === reiwaCd) {
+			// 令和の場合
+			let endDate = new Date("9999/12/31"); //次の元号が来たら変更
+			endDate.setDate(endDate.getDate() - 1)
+	
+			seirekiInvalid(reiwa, endDate);
+		
+		} else {
+			// それ以外
+		}
+		
+		function seirekiInvalid(startDate, endDate) {
+			
+			const selectedMonth = Number($('#birthMonth').val());
+			if (getSeirekiYear() === startDate.getFullYear()) {
+				// 初月以前をdisabled
+				let month = startDate.getMonth() + 1;
+				let date = startDate.getDate();
+				$('#birthMonth option').each((idx, obj) => {
+					if($(obj).val() < month) {
+						$(obj).prop("disabled", true);
+					}
+				});
+				
+				// 初日以前をdisabled
+				if (selectedMonth == month) {
+					$('#birthDay option').each((idx, obj) => {
+						if($(obj).val() < date) {
+							$(obj).prop("disabled", true);
+						}
+					});
+				}
+				
+			} else if (getSeirekiYear() === endDate.getFullYear()) {
+				// 最終月以降をdisabled
+				let month = endDate.getMonth() + 1;
+				let date = endDate.getDate();
+				$('#birthMonth option').each((idx, obj) => {
+					if($(obj).val() > month) {
+						$(obj).prop("disabled", true);
+					}
+				});
+				
+				// 最終日以降をdisabled
+				if (selectedMonth == month) {
+					$('#birthDay option').each((idx, obj) => {
+						if($(obj).val() > date) {
+							$(obj).prop("disabled", true);
+						}
+					});
+				}
+				
+			}
+		};
+		
+	});
+	
+	// 和暦の場合に日付が不正でないか確認する
+	function checkWarekiDatePattern() {
+	
+		let selectedDate = new Date(getSeirekiYear(), $('#birthMonth').val() - 1, $('#birthDay').val());
+		let eraType = Number($('#birthEra').val());
+	
+		var errorMsg = $('div.output_birthage').prev('.error_mag_point');
+		errorMsg.hide();
+	
+		if (eraType == seirekiCd) {
+		} else if (eraType === meijiCd && meiji <= selectedDate && selectedDate < taisho) {
+		} else if (eraType === taishoCd && taisho <= selectedDate && selectedDate < showa) {
+		} else if (eraType === showaCd && showa <= selectedDate && selectedDate < heisei) {
+		} else if (eraType === heiseiCd && heisei <= selectedDate && selectedDate < reiwa) {
+		} else if (eraType === reiwaCd && reiwa <= selectedDate) {
+		} else {
+			errorMsg.show();
+			return false;
+		}
+	
+		return true;
+	}
+
+	<!--/* 死亡日の西暦年と月から日数を取得する */-->
+	function getDeathDateMonthDays() {
+		return new Date(getDeathDateSeirekiYear(), $('#deathMonth').val(), 0).getDate();
+	};
+
+	<!--/* 変換された死亡日の西暦を取得する */-->
+	function getDeathDateSeirekiYear() {
+		<!--/* 西暦を選択している場合その値を返す */-->
+		if (Number($('#deathEra').val()) === seirekiCd) {
+			return Number($('#deathYear').val());
+		}
+	
+		let warekiYear = Number($('#deathYear').val());
+		let eraType = Number($('#deathEra').val());
+	
+		<!--/* 元号判定 */-->
+		if (eraType === meijiCd) {
+			warekiYear += meiji.getFullYear();
+		} else if (eraType === taishoCd) {
+			warekiYear += taisho.getFullYear();
+		} else if (eraType === showaCd) {
+			warekiYear += showa.getFullYear();
+		} else if (eraType === heiseiCd) {
+			warekiYear += heisei.getFullYear();
+		} else if (eraType === reiwaCd) {
+			warekiYear += reiwa.getFullYear();
+		}
+		return warekiYear - 1;
+	}
+
+	
+	<!--/* 死亡日の 年 or 月を変更した場合に日プルダウンを変更する(うるう年対応) */-->
+	$(document).on('change', '#deathYear, #deathMonth', function() {
+		let selectedDay = $('#deathDay').val();
+		$('select#deathDay option').remove();
+		$('select#deathDay').append("<option value=''>-</option>");
+		for (let i=1; i<=getDeathDateMonthDays(); i++) {
+			$('select#deathDay').append("<option value='" + i + "'>" + i + "日</option>");
+		}
+	
+		<!--/* 同じ日付が含まれるなら設定する */-->
+		if (selectedDay <= $('select#deathDay option').length) {
+			$('select#deathDay').val(selectedDay);
+		}
+	});
+	
+	<!--/* 死亡日の西暦・和暦を変更した場合に年プルダウン及び月日を変更する */-->
+	$(document).on('change', '#deathEra', function() {
+		eraType = Number($('#deathEra').val());
+		$('select#deathYear option').remove();
+		$('select#deathYear').append("<option value=''>-</option>");
+	
+		let yearStart = 1900;
+		let yearEnd = new Date().getFullYear();
+	
+		// 元号判定
+		if (eraType === seirekiCd) {
+			// 西暦の場合
+			for (let i=yearEnd; yearStart<=i; i--) {
+				$('select#deathYear').append("<option value='" + i + "'>" + i + "年</option>");
+			}
+			$('select#deathYear option:first').prop('selected', true);
+		} else {
+			// 和暦の場合
+			let selectedEraStartDate;
+			if (eraType === meijiCd) {
+				yearEnd = meijiPeriod;
+				selectedEraStartDate = meiji;
+			} else if (eraType === taishoCd) {
+				yearEnd = taishoPeriod;
+				selectedEraStartDate = taisho;
+			} else if (eraType === showaCd) {
+				yearEnd = showaPeriod;
+				selectedEraStartDate = showa;
+			} else if (eraType === heiseiCd) {
+				yearEnd = heiseiPeriod;
+				selectedEraStartDate = heisei;
+			} else if (eraType === reiwaCd) {
+				yearEnd = currentYear - reiwa.getFullYear() + 1;// 当年を選択肢に含めるため +1する
+				selectedEraStartDate = reiwa;
+			}
+	
+			for (let i=yearEnd; 1<i; i--) {
+				$('select#deathYear').append("<option value='" + i + "'>" + i + "年</option>");
+			}
+			$('select#deathYear').append("<option value='" + 1 + "' selected>元年</option>");
+			$('select#deathYear option:first').prop('selected', true);
+		}
+	});
+	
+	<!--/* 死亡日の月と日にフォーカスを当てた時に、無効な月、日のプルダウンのオプションをdisabledにする */-->
+	$(document).on('focus', '#deathMonth, #deathDay', function() {
+		let eraType = Number($('#deathEra').val());
+		let eraYear = Number($('#deathYear').val());
+		
+		$('#deathMonth option').each((idx, obj) => $(obj).prop('disabled', false));
+		$('#deathDay option').each((idx, obj) => $(obj).prop('disabled', false));
+		if (eraType === seirekiCd || eraYear === 0) {
+			return false;
+		}
+		
+		if (eraType === meijiCd) {
+			<!--/* 明治の場合 */-->
+			let endDate = new Date(taisho);
+			endDate.setDate(endDate.getDate() - 1)
+			
+			seirekiInvalid(meiji, endDate);
+			
+		} else if (eraType === taishoCd) {
+			<!--/* 大正の場合 */-->
+			let endDate = new Date(showa);
+			endDate.setDate(endDate.getDate() - 1)
+			
+			seirekiInvalid(taisho, endDate);
+			
+		} else if (eraType === showaCd) {
+			<!--/* 昭和の場合 */-->
+			let endDate = new Date(heisei);
+			endDate.setDate(endDate.getDate() - 1)
+	
+			seirekiInvalid(showa, endDate);
+	
+		} else if (eraType === heiseiCd) {
+			<!--/* 平成の場合 */-->
+			let endDate = new Date(reiwa);
+			endDate.setDate(endDate.getDate() - 1)
+	
+			seirekiInvalid(heisei, endDate);
+		
+		} else if (eraType === reiwaCd) {
+			<!--/* 令和の場合 */-->
+			let endDate = new Date("9999/12/31");
+			<!--/* 次の元号が来たら変更 */-->
+			endDate.setDate(endDate.getDate() - 1)
+	
+			seirekiInvalid(reiwa, endDate);
+		
+		} else {
+			<!--/* それ以外 */-->
+		}
+		
+		function seirekiInvalid(startDate, endDate) {
+			
+			const selectedMonth = Number($('#deathMonth').val());
+			if (getDeathDateSeirekiYear() === startDate.getFullYear()) {
+				<!--/* 初月以前をdisabled */-->
+				let month = startDate.getMonth() + 1;
+				let date = startDate.getDate();
+				$('#deathMonth option').each((idx, obj) => {
+					if($(obj).val() < month) {
+						$(obj).prop("disabled", true);
+					}
+				});
+				
+				<!--/* 初日以前をdisabled */-->
+				if (selectedMonth == month) {
+					$('#deathDay option').each((idx, obj) => {
+						if($(obj).val() < date) {
+							$(obj).prop("disabled", true);
+						}
+					});
+				}
+				
+			} else if (getDeathDateSeirekiYear() === endDate.getFullYear()) {
+				<!--/* 最終月以降をdisabled */-->
+				let month = endDate.getMonth() + 1;
+				let date = endDate.getDate();
+				$('#deathMonth option').each((idx, obj) => {
+					if($(obj).val() > month) {
+						$(obj).prop("disabled", true);
+					}
+				});
+				
+				<!--/* 最終日以降をdisabled */-->
+				if (selectedMonth == month) {
+					$('#deathDay option').each((idx, obj) => {
+						if($(obj).val() > date) {
+							$(obj).prop("disabled", true);
+						}
+					});
+				}
+				
+			}
+		};
+		
+	});
+	
+	<!--/* 和暦の場合に日付が不正でないか確認する */-->
+	function checkWarekiDeathDatePattern() {
+	
+		let selectedDate = new Date(getDeathDateSeirekiYear(), $('#deathMonth').val() - 1, $('#deathDay').val());
+		let eraType = Number($('#deathEra').val());
+	
+		var errorMsg = $('div.output_birthage').prev('.error_mag_point');
+		errorMsg.hide();
+	
+		if (eraType == seirekiCd) {
+		} else if (eraType === meijiCd && meiji <= selectedDate && selectedDate < taisho) {
+		} else if (eraType === taishoCd && taisho <= selectedDate && selectedDate < showa) {
+		} else if (eraType === showaCd && showa <= selectedDate && selectedDate < heisei) {
+		} else if (eraType === heiseiCd && heisei <= selectedDate && selectedDate < reiwa) {
+		} else if (eraType === reiwaCd && reiwa <= selectedDate) {
+		} else {
+			errorMsg.show();
+			return false;
+		}
+	
+		return true;
+	}
+	
+	<!--/* 死亡日の 年を変更した場合に月と日のプルダウンの先頭を選択する */-->
+	$(document).on('change', '#deathYear', function() {
+		if(Number($(this).val()) && !checkWarekiDeathDatePattern()) {
+			$('select#deathMonth option:first').prop('selected', true);
+			$('select#deathDay option:first').prop('selected', true);
+		}
+	});
+	
+</script>
+</head>
+<body>
+	
+</body>
+</html>

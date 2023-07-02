@@ -1,0 +1,275 @@
+@charset "UTF-8";
+
+/********************************************************
+ * モーダル
+********************************************************/
+.modalheader_title {
+	color: #4f5f6f;
+	font-weight: 600;
+}
+.modal_description {
+	background-color: #fffef8;
+	border: 1px solid var(--lz-yellow);
+	border-radius: 3px;
+	margin-bottom: 10px;
+	padding: 10px;
+}
+.modal_description p {
+	margin-bottom: 0;
+}
+.modal_kanyosha_info {
+	padding: 10px 5px;
+}
+.kanyosha_info__name {
+	font-size: 1.7rem;
+	font-weight: 600;
+}
+.kanyosha_info__address {
+	margin-bottom: 5px;
+}
+
+/* モーダルの幅 */
+.modal_s_wide {
+	width: 610px;
+	max-width: 96%;
+}
+.modal_w_wide {
+	width: 1360px;
+	max-width: 96%;
+}
+/* 案件検索モーダル */
+.modal_ankenSearch {
+	width: 950px;
+	max-width: 96%;
+}
+/* 顧客検索モーダル */
+.modal_customerSearch {
+	width: 700px;
+	max-width: 96%;
+}
+/* 顧客選択モーダル */
+.modal_customerSelect {
+	width: 950px;
+	max-width: 96%;
+}
+/* スケジュール登録モーダル */
+.modal_schedule {
+	width: 570px;
+	max-width: 100%;
+}
+/* スケジュール登録モーダル */
+.modal_calender_edit {
+	width: 850px;
+	max-width: 98%;
+}
+
+/* メール作成モーダル */
+.modal_mail_edit {
+	width: 705px;
+	max-width: 96%;
+}
+/* プール案件選択モーダル */
+.modal_pool_anken_select {
+	width: 700px;
+	max-width: 98%;
+}
+/* タスクモーダル */
+.modal_task {
+	width: 590px !important;
+	max-width: 100%;
+}
+/* アカウントモーダル */
+.modal_account {
+	width: 563px !important;
+	max-width: 100%;
+}
+/* 送付書選択（対象のみ選択ver）モーダル */
+.modal_souhushoSelect_simple {
+	width: 480px;
+	max-width: 96%;
+}
+/* 関与者 送付書選択モーダル */
+.modal_souhushoSelect {
+	width: 810px;
+	max-width: 96%;
+}
+/* 関与者編集既存選択モーダル */
+.modal_kanyosha_customer_select {
+	width: 750px;
+	max-width: 98%;
+}
+/* 関与者モーダル独自 エラーメッセージ */
+.modal_kanyosha_customer_select .error_msg_edit {
+	margin: 10px;
+}
+/* 関与者モーダル独自 検索条件ブロック */
+.modal_kanyosha_customer_select .searchform_block_main {
+	padding: 0;
+}
+/* 会計管理 報酬明細モーダル */
+.modal_hoshu_meisai {
+	width: 1350px;
+	max-width: 96%;
+}
+/* 会計管理 支払計画モーダル */
+.modal_shiharai_plan {
+	width: 885px;
+	max-width: 96%;
+}
+/* 会計管理 入出金予定モーダル */
+.modal_nyukin_shukkin_yotei {
+	width: 500px;
+	max-width: 96%;
+}
+/* 会計管理 入出金予定モーダル 項目幅 */
+.modal_nyukin_shukkin_yotei .form_block .form_col_title {
+	width: 140px;
+}
+/* ファイル管理関連モーダル */
+.modal_file_manage_act {
+	width: 520px !important;
+	max-width: 98%;
+}
+/* 銀行口座モーダル */
+.modal_ginko_koza {
+	width: 420px !important;
+	max-width: 98%;
+}
+/* 裁判-当事者選択モーダル */
+.modal_tojishaSelect {
+	width: 960px !important;
+	max-width: 98%;
+}
+/* 裁判-業務履歴モーダル */
+.modal_gyoreki {
+	width: 700px !important;
+	max-width: 98%;
+}
+/* 裁判所部モーダル */
+.modal_keizokubu_list {
+	width: 1050px !important;
+	max-width: 96%;
+}
+/* 請求履歴モーダル */
+.modal_seikyu_rireki {
+	width: 850px;
+	max-width: 96%;
+}
+/* プランの保存内容確認モーダル */
+/* プランの解約確認モーダル */
+.modal_plan_save_confirm, .modal_plan_cancel_confirm {
+	width: 650px;
+	max-width: 96%;
+}
+/* 顧問契約保存モーダル */
+.modal_advisor_contract {
+	width: 920px;
+	max-width: 96%;
+}
+/* 入金実績登録モーダル */
+.modal_invoice_deposit {
+	width: 600px!important;
+	max-width: 100%;
+}
+/* メール送信モーダル */
+.modal_send_mail {
+	width: 1024px;
+	max-width: 96%;
+}
+/* モーダル2分割 */
+.modal_split {
+	display: -ms-flexbox;
+	display: flex;
+	-ms-flex-pack: justify;
+	justify-content: space-between;
+}
+.modal_split__left {
+	flex: 0 0 45%;
+}
+.modal_split__right {
+	flex: 0 0 50%;
+}
+
+/* モーダル2分割-予定登録 */
+.modal_calender_edit .modal_split {
+	display: -ms-flexbox;
+	display: flex;
+	-ms-flex-pack: justify;
+	justify-content: space-between;
+	column-gap: 30px;
+	flex-wrap: wrap;
+}
+.modal_calender_edit .modal_split__left {
+	flex: 1 0 55%;
+}
+.modal_calender_edit .modal_split__right {
+	flex: 1 0 330px;
+}
+
+
+/*********** 確認モーダル *************/
+.modal_confirm {
+	width: 540px;
+	max-width: 96%;
+}
+/* 確認モーダル-タイトル */
+.confirm_title {
+	color: var(--text-color-title);
+	font-size: 2rem;
+	margin-bottom: 10px;
+	text-align: center;
+	width: 100%;
+}
+/* 確認モーダル-メッセージ */
+.confirm_msg {
+	width: 100%;
+}
+.confirm_btn_left {
+	flex: 1 1 100%;
+}
+.confirm_btn_right {
+	flex: 1 1 100%;
+}
+.confirm_btn_left > button, .confirm_btn_right > button {
+	width: 100%;
+}
+.modal-footer>:not(:last-child).confirm_btn_left, .modal-footer>:not(:first-child).confirm_btn_right {
+	margin-right: 0; 
+	margin-left: 0; 
+}
+
+/********** モーダル（カレンダーで使用 ）**********/
+.modeless-open .modal-backdrop {
+	display: none;
+	transition: none;
+}
+#scheduleModal.modeless {
+	bottom: auto;
+	right: auto;
+	padding-right: initial !important;
+}
+#scheduleModal.modeless .modal-dialog {
+	margin: 0;
+}
+.modeless .modal-dialog.modal_w_wide {
+	max-width: 100%;
+}
+.ui-draggable-handle {
+	cursor: move;
+}
+
+/********** モーダル（タスク ）**********/
+.button_container {
+	margin-top: .5rem;
+	display: flex;
+}
+.button_container>:not(:first-child) {
+	margin-left: .5rem;
+}
+/* スタイルをdisable化 */
+.input_disabled {
+	background-color: #e8e8e8;
+	border: 1px solid #bababa;
+	outline: 0;
+}
+

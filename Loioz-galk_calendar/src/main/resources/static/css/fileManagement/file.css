@@ -1,0 +1,476 @@
+@charset "UTF-8";
+
+/********************************************************
+ * ファイル（一覧）
+*********************************************************/
+.file_manage_contents_block {
+	height: 80vh;
+}
+
+.dz_upload_file.dropzone.dropzone-previews {
+	width: 500px;
+	position: fixed;
+	right: 14px;
+	z-index: 999;
+	min-height: 0;
+	bottom: 100px;
+	border: 1px solid rgb(0,0,0, 0.2);
+	border-radius: 2px;
+	padding: 0;
+	border-bottom: 0px;
+	background: #fff;
+	max-height: 500px;
+	overflow-y: scroll;
+}
+.dz_file_list_head {
+	height: 45px;
+	background: var(--loioz-blue);
+	text-align: left;
+	padding: 11px 20px 0 16px;
+	color: #fff;
+	z-index: 9999;
+	width: 499px;
+	position: fixed;
+	margin-top: -45px;
+}
+.dz_file_list_close {
+	background: #fff;
+	border-radius: 15px;
+	padding: 0 5px;
+	height: 22px;
+	width: 22px;
+	cursor: pointer;
+}
+<!--/* ファイル・フォルダ移動先選択モーダル START */-->
+.destination_list {
+	margin-bottom: 0px;
+	padding-left: 0px;
+}
+.destination_cell {
+    border-top-left-radius: .25rem;
+    border-top-right-radius: .25rem;
+	position: relative;
+    display: block;
+    padding: .75rem 1.25rem;
+    margin-bottom: -1px;
+    background-color: #fff;
+    border: 1px solid rgba(0,0,0,.125);
+}
+.selected_cell {
+	color: #FFFFFF;
+	background-color: var(--loioz-blue);
+}
+.cell_open_icon {
+	cursor: pointer;
+	padding-right: 1rem;
+}
+.cell_close_icon {
+	cursor: pointer;
+	padding-right: 1rem;
+}
+.list_cell_hover {
+	cursor: pointer;
+	background-color: #F5F5F5;
+}
+.fill_in_gaps_icon_area {
+	margin-right: 2.17rem;
+}
+.indent {
+	margin-left: 10px;
+	margin-right: 10px;
+}
+.upload_Message {
+	color:#969696;
+    margin-top: 20px;
+}
+p.forJs {
+    margin-bottom: 0rem;
+}
+.bread_crumbs_icon{
+	margin-right: 6px;
+	margin-top: -3px;
+}
+.bread_crumbs_text {
+    max-width : 210px;
+    user-select: none;
+}
+.span_customer_Id {
+    display: inline-block;
+    width: 50px;
+    user-select: none;
+}
+.span_customer_Name{
+    user-select: none;
+}
+.subfolderpath_name{
+    max-width : 210px;
+    user-select: none;
+}
+.span_anken_Id {
+	display: inline-block;
+	width: 50px;
+	user-select: none;
+	margin-left: 15px;
+}
+.span_anken_Name{
+    user-select: none;
+}
+.progress-bar.progress-bar-striped.progress-bar-animated {
+    font-size: 8px;
+}
+.form_msg_clear {
+    width: 53px;
+    height: 24px;
+    border-radius: 4px 4px 4px 4px;
+    background-color: #119590;
+    border-color: #119590;
+    color: #fff!important;
+    border: 1px solid #fff;
+}
+.header_fixed_table_wrapper.file_manage_List {
+    max-height: 65.5vh;
+    overflow-x: hidden;
+}
+.fileName{
+	user-select: none;
+	margin-left: 10px;
+}
+.file_list_row_style{
+	height:43px;
+}
+.popover-body {
+    padding: unset;
+    color: #212529;
+}
+.file_mentenance_menu {
+	z-index: 99;
+	width: 180px;
+	padding: 10px;
+}
+.popover-body {
+    color: #212529;
+}
+.popover .arrow {
+	top: -6px !important;
+}
+<!--/* ファイル・フォルダ移動先選択モーダル END */-->
+
+.col_fileName{
+	width: 400px;
+	max-width: 400px;
+}
+.col_filePath{
+	width:500px;
+	max-width:500px;
+}
+.col_botton{
+	width:100px;
+	max-width:100px;
+	min-width: 100px;
+}
+.col_uploadUser{
+	width:100px;
+	max-width:140px;
+}
+.col_uploadDate{
+	width: 120px;
+	max-width: 120px;
+}
+.col_fileSize {
+	width:130px;
+	max-width:130px;
+}
+.col_mentenance{
+	width: 55px;
+	max-width: 55px;
+	z-index:1;
+}
+
+
+<!--/* フォルダパス関連 START */-->
+.select_tab_folderpath_area {
+  display: flex;
+  text-align: left;
+  margin-top: 0.5rem;
+  padding: 10px;
+  align-items: center;
+  background-color: white;
+}
+.select_tab_folderpath_area > dt {
+  font-size: 1.7rem;
+  color: #165257;
+  font-weight: bold;
+  padding: 0 5px;
+}
+.select_tab_folderpath_area > dd {
+  margin: 0 0 0 20px;
+  flex: 1;
+}
+.select_tab_folderpath_list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+}
+.select_tab_folderpath_list li {
+  margin: 0 5px 0 0;
+}
+.select_tab_folderpath_list li.col_more{
+  margin-left: auto;
+}
+.folderpath_list_btn {
+	position: relative;
+	font-size: 1.5rem;
+	top: 0px;
+}
+.folderpath_list_btn svg {
+	font-size: 1.6rem;
+}
+.anken_folder {
+	color: rgb(0, 49, 113);
+	font-size: 1.9rem;
+	position: relative;
+}
+.meibo_folder {
+	color: var(--loioz-blue);
+	font-size: 1.9rem;
+	position: relative;
+}
+.nomal_folder {
+	color: #f6bf28;
+	font-size: 1.9rem;
+	position: relative;
+}
+.folderpath_name::before{
+  content: "";
+  display: block;
+  position: absolute;
+  top: 50%;
+  right: 8px;
+  margin-top: -6px;
+  width: 1px;
+  height: 1px;
+  border-left: 6px solid #63595c;
+  border-top: 5px solid transparent;
+  border-bottom: 5px solid transparent;
+}
+
+.folderpath_name {
+   position: relative;
+   transition: all 0.3s;
+   padding: 5px 20px 1px 10px;
+   cursor: pointer;
+}
+.folderpath_name:hover {
+	background: var(--white);
+	border-radius: 1px;
+}
+.current_location {
+	cursor: default;
+}
+.current_location:hover {
+	background: inherit;
+}
+<!--/* フォルダパス関連 END */-->
+
+<!--/* ゴミ箱・アップロード容量ボタン等のヘッダー列項目関連 SRART */-->
+.header_left_contents {
+  margin-left: 10px;
+}
+.header_button_list {
+	list-style: none;
+    padding: 0;
+    margin-top: 0px;
+    text-align: left;
+    line-height: 30px;
+}
+.header_button_list a,
+.storage_status_area a {
+	cursor:pointer;
+}
+.header_button_list a:hover,
+.storage_status_area a:hover {
+	text-decoration: underline!important;
+}
+.header_button_list li, .storage_status_area .link_wrap {
+  color:var(--text-color-link);
+}
+.header_button_list li:first-child {
+  margin-left: 0;
+}
+.trash_box_btn_icon {
+  background-color: #63595C;
+  color: #fff;
+  display: inline-block;
+  width: 3rem;
+  height: 3rem;
+  position: relative;
+  border-radius: 50%;
+  vertical-align: middle;
+  font-size: 1.6rem;
+}
+.trash_box_mark {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  font-size: 1.6rem;
+}
+.noborder_btn {
+  border: 0;
+  background: none;
+}
+.upload_capacity_btn_icon {
+  background-color: #63595C;
+  color: #fff;
+  display: inline-block;
+  width: 3rem;
+  height: 3rem;
+  position: relative;
+  border-radius: 50%;
+  vertical-align: middle;
+  font-size: 1.6rem;
+}
+.upload_capacity_mark {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  font-size: 1.6rem;
+}
+<!--/* ゴミ箱・アップロード容量ボタン等のヘッダー列項目関連 END */-->
+
+<!--/* アップロードモーダル関連 START */-->
+.dropzone {
+	border-radius: 5px;
+}
+.file_loading {
+	margin-left: 10px;
+}
+
+.uploadContent .dropzone {
+	background-color: var(--white);
+	border-style: dashed;
+	min-height: 150px;
+	width: 288px;
+}
+.dropzone .dz-preview.dz-success .dz-success-mark {
+	opacity: 1;
+	-webkit-animation: slide-in 3s cubic-bezier(0.77, 0, 0.175, 1);
+	-moz-animation: slide-in 3s cubic-bezier(0.77, 0, 0.175, 1);
+	-ms-animation: slide-in 3s cubic-bezier(0.77, 0, 0.175, 1);
+	-o-animation: slide-in 3s cubic-bezier(0.77, 0, 0.175, 1);
+	animation: slide-in 3s cubic-bezier(0.77, 0, 0.175, 1);
+}
+.dz-success-mark svg g path {
+  fill: #fff;
+}
+.dropzone .dz-preview.dz-error .dz-error-mark {
+	opacity: 1;
+	-webkit-animation: slide-in 3s cubic-bezier(0.77, 0, 0.175, 1);
+	-moz-animation: slide-in 3s cubic-bezier(0.77, 0, 0.175, 1);
+	-ms-animation: slide-in 3s cubic-bezier(0.77, 0, 0.175, 1);
+	-o-animation: slide-in 3s cubic-bezier(0.77, 0, 0.175, 1);
+	animation: slide-in 3s cubic-bezier(0.77, 0, 0.175, 1);
+}
+.dz-error-mark svg g g {
+  fill: red;
+}
+
+<!--/* アップロードモーダル関連 END */-->
+
+<!--/* 3点リーダーボタン START */-->
+.file_menu_navi {
+	margin: 0;
+	padding: 0;
+	position: relative;
+}
+.file_menu_navi > dt {
+	cursor: pointer;
+}
+.file_menu_navi > dt:hover {
+ opacity: 0.75;
+}
+.file_menu_navi > dd {
+	position: absolute;
+    left: -20px;
+    top: 38px;
+    border-radius: 8px;
+    box-shadow: 0px 1px 6px rgba(0, 0, 0, 0.3);
+    display: none;
+    transform: translate(-50%);
+    z-index: 1;
+}
+.menu_window {
+    background-color: #FFF;
+}
+.file_menu_navi_list {
+ margin: 0;
+ padding: 0;
+ list-style: none;
+ z-index:9998;
+}
+.file_menu_navi_list li {
+	margin: 2px;
+}
+.file_menu_navi_list li .btn {
+	width: 100%;
+	border: none;
+	text-align: left;
+	padding-left: 10px;
+}
+<!--/* 3点リーダーボタン END */-->
+<!--/* 移動先選択モーダル START */-->
+<!--/* モーダル画面内に収まらない場合にスクロールバーを表示する */-->
+.my-custom-scrollbar {
+	position: relative;
+	height: 200px;
+	overflow: auto;
+}
+.selectedDisplayAreaTitle {
+	font-weight: bold;
+	font-size: 1.5rem;
+	color: #398288;
+	padding: 0rem 0.8rem 0rem 1rem;
+	width: 130px;
+	line-height: 1;
+	position: relative;
+}
+.file_quick_search_bar {
+	text-align: left;
+	display: flex;
+	align-items: center;
+	margin-bottom: 10px;
+}
+.file_quick_search_bar .search_box {
+	display: flex;
+	align-items: center;
+}
+.file_quick_search_bar .form_filename_search {
+	width: 300px;
+	height: 28px;
+	border-radius: 4px 0 0 4px;
+	background: #fff;
+	border: 1px solid #a3a3a3;
+	padding-left: 5px;
+	padding-right: 5px;
+}
+.file_quick_search_bar .search_box .form_file_search_btn {
+	width: 45px;
+	height: 28px;
+    border-radius: 0px 4px 4px 0px;
+    border-color: #63595c;
+    background-color: #63595c;
+    background-size: 1.6rem;
+    color: #fff;
+    line-height: 1;
+    padding-top: 4px;
+}
+.file_quick_search_bar .file_search_button:hover {
+	color: #fff;
+	opacity: 0.75;
+}
+.file_manage_list{
+	max-height:556px;
+}
+<!--/* 移動先選択モーダル END */-->

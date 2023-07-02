@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+	xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+	layout:decorator="globalCommonLayout">
+<head>
+<meta name="viewport" content="width=device-width,initial-scale=1.0,minimum-scale=1.0">
+<meta charset="utf-8">
+<meta content="IE=edge" http-equiv="X-UA-Compatible">
+<meta name="robots" content="noindex,nofollow">
+<title layout:fragment="title-contents">
+	[[${T(jp.loioz.common.utility.LoiozUtils).getHtmlTitle("エラー", null)}]]
+</title>
+</head>
+<body>
+	<main layout:fragment="mainContainerFragment">
+		<!-- main_container -->
+		<div class="main_container">
+			
+			<!-- main_content -->
+			<div class="main_content">
+				
+				<!-- container -->
+				<div class="container">
+					<div class="page_error_wrapper">
+						<div class="page_error_content">
+							<div class="error_title">
+								<span th:text="${errorTitle}"></span>
+							</div>
+							<div class="error_msg">
+								<span th:if="${errorMsg}!=null" myth:nl2br="${errorMsg}"></span>
+							</div>
+							<div class="powered_by">
+								Powered by <img src="/img/logo_1.png" width="100">
+							</div>
+						</div>
+					</div>
+					
+				</div>
+			</div>
+		</div>
+
+	</main>
+</body>
+</html>

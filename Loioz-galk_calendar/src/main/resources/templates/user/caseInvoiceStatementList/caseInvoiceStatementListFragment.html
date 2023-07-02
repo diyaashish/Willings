@@ -1,0 +1,312 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+	xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+	layout:decorator="commonLayout">
+<head>
+	<meta charset="utf-8" />
+</head>
+<body>
+
+<!--/* 詳細データ */-->
+<div th:fragment="caseInvoiceStatementListFragment(caseInvoiceStatementListViewForm)" id="caseInvoiceStatementListFragment" th:object="${viewForm}">
+	<script type="text/javascript" th:inline="javascript">
+	$(function() {
+		<!--/* 共有の要素セットアップ処理 */-->
+		commonSetUpElement("#caseInvoiceStatementListFragment");
+		
+		const caseInvoiceStatementListFragment = $('#caseInvoiceStatementListFragment');
+				
+		<!--/* 請求書番号をクリック */-->
+		caseInvoiceStatementListFragment.on("click", '.transitionInvoice', function(e){
+			e.stopPropagation();
+			const invoiceSeq = $(this).data("invoiceSeq");
+			<!--/* 請求書詳細画面へ遷移 */-->
+			window.location.href = "/user/invoiceDetail/" + invoiceSeq + "/";
+		});
+		
+		<!--/* 精算書番号をクリック */-->
+		caseInvoiceStatementListFragment.on("click", '.transitionStatement', function(e){
+			e.stopPropagation();
+			const statementSeq = $(this).data("statementSeq");
+			<!--/* 精算書詳細画面へ遷移 */-->
+			window.location.href = "/user/statementDetail/" + statementSeq + "/";
+		});
+		
+		<!--/* 請求書ボタンをクリック */-->
+		caseInvoiceStatementListFragment.on("click", '.registInvoice', function(e){
+			<!--/* 2重押下防止 */-->
+			if(ajaxRunning){
+				return false;
+			}
+			
+			if(!confirm(/*[[#{confirm.C00001(請求書)}]]*/'')) {
+				return false;
+			}
+			
+			ajaxRunning = true;
+			
+			<!--/* リクエストパラメータ */-->
+			const personId = /*[[${personId}]]*/;
+			const ankenId = /*[[${ankenId}]]*/;
+			const requestParam = [
+				{name:"personId", value:personId},
+				{name:"ankenId", value:ankenId}
+			];
+			
+			$.ajax({
+				type : "POST",
+				url : "/common/mvc/accgDocRegist/registInvoiceAndLinkFeeAndDeposit",
+				data : requestParam,
+			}).done(function(result, status, jqXHR) {
+				if (getAjaxProcResutl(jqXHR) == /*[[${T(jp.loioz.app.common.mvc.accgDocRegist.controller.AccgDocRegistCommonController).HEADER_VALUE_OF_AJAX_PROC_RESULT_ACCG_DOC_REGIST_REDIRECT}]]*/'100') {
+					window.location.href = getAjaxProcResutlMessage(jqXHR) + "&isAccgAnkenSide=true";
+				} else {
+					const errorMsg = getAjaxProcResutlMessage(jqXHR);
+					showErrorMessageForJs(errorMsg);
+				}
+			})
+			.fail(function(jqXHR, status, errorThrown) {
+				showErrorMessageForJs(/*[[#{E00091}]]*/ "error");
+			})
+			.always(function() {
+				ajaxRunning = false;
+			});
+		});
+		
+		<!--/* 精算書ボタンをクリック */-->
+		caseInvoiceStatementListFragment.on("click", '.registStatement', function(e){
+			<!--/* 2重押下防止 */-->
+			if(ajaxRunning){
+				return false;
+			}
+			
+			if(!confirm(/*[[#{confirm.C00001(精算書)}]]*/'')) {
+				return false;
+			}
+			
+			ajaxRunning = true;
+			
+			<!--/* リクエストパラメータ */-->
+			const personId = /*[[${personId}]]*/;
+			const ankenId = /*[[${ankenId}]]*/;
+			const requestParam = [
+				{name:"personId", value:personId},
+				{name:"ankenId", value:ankenId}
+			];
+			
+			$.ajax({
+				type : "POST",
+				url : "/common/mvc/accgDocRegist/registStatementAndLinkFeeAndDeposit",
+				data : requestParam,
+			}).done(function(result, status, jqXHR) {
+				if (getAjaxProcResutl(jqXHR) == /*[[${T(jp.loioz.app.common.mvc.accgDocRegist.controller.AccgDocRegistCommonController).HEADER_VALUE_OF_AJAX_PROC_RESULT_ACCG_DOC_REGIST_REDIRECT}]]*/'100') {
+					window.location.href = getAjaxProcResutlMessage(jqXHR) + "&isAccgAnkenSide=true";
+				} else {
+					const errorMsg = getAjaxProcResutlMessage(jqXHR);
+					showErrorMessageForJs(errorMsg);
+				}
+			})
+			.fail(function(jqXHR, status, errorThrown) {
+				showErrorMessageForJs(/*[[#{E00091}]]*/ "error");
+			})
+			.always(function() {
+				ajaxRunning = false;
+			});
+		});
+		
+	});
+	</script>
+	
+	<div class="accg_main_split">
+		
+		<div class="accg_main_split__left">
+			
+			<div class="accg_main_top_split">
+				<!--/* 会計管理用の案件情報 */-->
+				<div id="accgCaseFragmentWrap" class="accg_main_top_split__case"
+					th:insert="common/accg/accgCase::accgCaseFragment(accgCaseForm=${viewForm.getAccgCaseForm()}, isInvoiceStatement=true)">
+				</div>
+				
+				<!--/* 会計サマリ */-->
+				<div id="accgCaseSummaryFragmentWrap" class="accg_main_top_split__total"
+					th:insert="common/accg/accgCaseSummary::accgCaseSummaryFragment(accgCaseSummaryForm=${viewForm.getAccgCaseSummaryForm()}, isInvoiceStatement=true)">
+				</div>
+			</div>
+			
+	<th:block th:if="*{invoiceStatementList.size() > 0}">
+			<section class="mt-1">
+				<div class="section_header mb-3">
+					<div class="section_header__title">
+						<button class="btn btn-light text-info mr-1 registInvoice">請求書作成</button>
+						<button class="btn btn-light text-info registStatement">精算書作成</button>
+					</div>
+				</div>
+				<div class="section_body">
+					<div class="section_body__contents p-0">
+						
+						<!--/* 請求書／精算書一覧 */-->
+						<div class="hover_scroll of_x_scroll">
+							<table class="table table-hover table_standard  case_accg_doc_list">
+								<thead>
+									<tr>
+										<th class="th_doc_type">種別</th>
+										<th class="th_doc_no">請求／精算番号</th>
+										<th class="th_doc_issue_status">発行</th>
+										<th class="th_doc_status">状況</th>
+										<th class="th_doc_amount text-right">請求／精算額</th>
+										<th class="th_doc_date">請求／精算日</th>
+										<th class="th_doc_due_date">支払期日</th>
+										<th class="th_doc_memo">内部メモ</th>
+									</tr>
+								</thead>
+								<tbody>
+									<tr th:each="invoiceStatement : *{invoiceStatementList}" th:object="${invoiceStatement}" 
+										data-click-sync-for-descendants=".transitionAccgDoc">
+										<!--/* 種別 */-->
+										<td>
+					<!--/* 請求書の場合 */-->
+					<th:block th:if="*{isInvoice()}">
+											<a th:href="@{/user/invoiceDetail/{invoiceStatementSeq}/?isAccgAnkenSide=true(invoiceStatementSeq=*{invoiceStatementSeq})}"
+												class="transitionAccgDoc hidden"></a>
+					</th:block>
+					<!--/* 精算書の場合 */-->
+					<th:block th:unless="*{isInvoice()}">
+											<a th:href="@{/user/statementDetail/{invoiceStatementSeq}/?isAccgAnkenSide=true(invoiceStatementSeq=*{invoiceStatementSeq})}"
+												class="transitionAccgDoc hidden"></a>
+					</th:block>
+											<span class="fw600" th:text="*{accgDocType?.val}"></span>
+											<span th:if="*{isInvoice()}" class="fc_sub fs12">
+												(<span th:text="*{invoiceType?.val}"></span>)
+											</span>
+										</td>
+										<td>
+											<span th:text="*{invoiceStatementNo}"></span>
+										</td>
+										<td>
+											<!--/* 発行状況 */-->
+											<span th:class="|issue_status_*{issueStatus?.cd}|" >
+												<th:block th:if="*{T(jp.loioz.common.constant.CommonConstant$IssueStatus).DRAFT.equalsByCode(issueStatus?.cd)}">
+													<i class="fas fa-pen-square fa-lg"></i>
+												</th:block>
+												<span th:text="*{issueStatus?.val}"></span>
+											</span>
+										</td>
+										<td>
+					<!--/* 請求書の場合 */-->
+					<th:block th:if="*{isInvoice()}">
+						<!--/* 請求／精算状況 */-->
+						<th:block th:switch="*{invoicePaymentStatus?.cd}">
+							<!--/* 発行待ち */-->
+							<th:block th:case="${T(jp.loioz.common.constant.CommonConstant$InvoicePaymentStatus).DRAFT.getCd()}">
+								<span th:class="|invoice_nyukin_status_*{invoicePaymentStatus?.cd} |" th:text="*{invoicePaymentStatus?.val}">発行待ち</span>
+							</th:block>
+							<th:block th:case="*">
+								<th:block th:switch="*{invoicePaymentStatus?.cd}">
+									<span class="stop-events">
+										<!--/* 入金済み */-->
+										<th:block th:case="${T(jp.loioz.common.constant.CommonConstant$InvoicePaymentStatus).DEPOSITED.getCd()}">
+											<i class="fas fa-check-circle text-success"></i>
+										</th:block>
+										<!--/* 一部入金 */-->
+										<th:block th:case="${T(jp.loioz.common.constant.CommonConstant$InvoicePaymentStatus).PARTIAL_DEPOSIT.getCd()}">
+											<i class="fas fa-exclamation-circle text-danger"></i>
+										</th:block>
+										<!--/* 過入金 */-->
+										<th:block th:case="${T(jp.loioz.common.constant.CommonConstant$InvoicePaymentStatus).OVER_PAYMENT.getCd()}">
+											<i class="fas fa-exclamation-circle text-danger"></i>
+										</th:block>
+										<!--/* 回収不能 */-->
+										<th:block th:case="${T(jp.loioz.common.constant.CommonConstant$InvoicePaymentStatus).UNCOLLECTIBLE.getCd()}">
+											<i class="fas fa-times-circle text-danger"></i>
+										</th:block>
+										<th:block th:if="*{accgRecordSeq != null}">
+											<a th:href="@{/user/recordDetail/{accgRecordSeq}/?isAccgAnkenSide=true(accgRecordSeq=*{accgRecordSeq})}"
+												th:class="|invoice_nyukin_status_*{invoicePaymentStatus?.cd}|"
+												data-boundary="window" data-container="body" data-toggle="tooltip" data-trigger="hover" title="取引実績へ"
+												th:text="*{invoicePaymentStatus?.val}"></a>
+										</th:block>
+										<th:block th:if="*{accgRecordSeq == null}">
+											<span th:class="|invoice_nyukin_status_*{invoicePaymentStatus?.cd}|" th:text="*{invoicePaymentStatus?.val}"></span>
+										</th:block>
+									</span>
+								</th:block>
+							</th:block>
+						</th:block>
+					</th:block>
+					
+					<!--/* 精算書の場合 */-->
+					<th:block th:unless="*{isInvoice()}">
+						<!--/* 精算状況 */-->
+						<th:block th:switch="*{statementRefundStatus?.cd}">
+							<!--/* 発行待ち */-->
+							<th:block th:case="${T(jp.loioz.common.constant.CommonConstant$StatementRefundStatus).DRAFT.getCd()}">
+								<span th:class="|statement_henkin_status_*{statementRefundStatus?.cd} |" th:text="*{statementRefundStatus?.val}">発行待ち</span>
+							</th:block>
+							<th:block th:case="*">
+								<th:block th:switch="*{statementRefundStatus?.cd}">
+									<span class="stop-events">
+										<!--/* 精算済み */-->
+										<th:block th:case="${T(jp.loioz.common.constant.CommonConstant$StatementRefundStatus).PAID.getCd()}">
+											<i class="fas fa-check-circle text-success"></i>
+										</th:block>
+										<a th:href="@{/user/recordDetail/{accgRecordSeq}/?isAccgAnkenSide=true(accgRecordSeq=*{accgRecordSeq})}"
+											th:class="|statement_henkin_status_*{statementRefundStatus?.cd}|"
+											data-boundary="window" data-container="body" data-toggle="tooltip" data-trigger="hover" title="取引実績へ"
+											th:text="*{statementRefundStatus?.val}"></a>
+									</span>
+								</th:block>
+							</th:block>
+						</th:block>
+					</th:block>
+										</td>
+										<td class="text-right">
+											<span class="fs16 fw600" th:text="*{accgAmount}"></span>
+										</td>
+										<td>
+											<span th:text="*{invoceStatementDate}"></span>
+										</td>
+										<td>
+											<span th:text="*{invoceStatementDueDate}"></span>
+										</td>
+										<td>
+											<div myth:nl2br="*{invoiceStatementMemo}"></div>
+										</td>
+									</tr>
+								</tbody>
+							</table>
+						</div>
+					</div>
+				</div>
+			</section>
+			
+	</th:block>
+			<div class="bg_wrapper" th:if="*{invoiceStatementList.size() == 0}">
+				<div class="bg_wrapper__contents">
+					<div class="fs23 fw600">
+						請求書／精算書を作成する
+					</div>
+					<div class="fs16 mt-3 mb-4 fc_sub">
+						登録した報酬、預り金／実費から請求書／精算書を作成し、WEB共有やメールで顧客に送付します。
+					</div>
+					<div class="mb-4">
+						<button class="btn btn-light text-info registInvoice mr-4">請求書を作成する</button>
+						<button class="btn btn-light text-info registStatement">精算書を作成する</button>
+					</div>
+				</div>
+			</div>
+		</div>
+		<!--/* 請求書／精算書一覧 end */-->
+		
+		<!--/* 会計サマリ、案件-顧客一覧 */-->
+		<div class="accg_main_split__right" th:if="${viewForm.getAccgCasePersonForm().Clients}">
+			<!--/* 会計サマリ */-->
+			<div id="accgCasePersonFragmentWrap" 
+				th:insert="common/accg/accgCasePerson::accgCasePersonFragment(accgCasePersonForm=${viewForm.getAccgCasePersonForm()}, isInvoiceStatement=true)">
+			</div>
+		</div>
+		<!--/* 会計サマリ、案件-顧客一覧 end */-->
+		
+	</div>
+</div>
+</body>
+</html>

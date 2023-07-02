@@ -1,0 +1,5597 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+	<meta charset="utf-8" />
+</head>
+<body>
+
+
+<!--/* 裁判-基本情報表示ブロック */-->
+<div th:fragment="saibanBasicViewFragment(saibanBasicViewForm)" id="saibanBasicViewFragment">
+
+	<!--/* スクリプト */-->
+	<script th:inline="javascript">
+	$(function() {
+		
+		// 共有の要素セットアップ処理
+		commonSetUpElement();
+		
+		<!--/* 裁判情報の詳細の編集をクリックで編集フォームを表示 */-->
+		$(".saibanEdit").on("click", function(){
+
+			<!--/* 2重押下防止 */-->
+			if(ajaxRunning){
+				return false;
+			}
+			ajaxRunning = true;
+
+			$.ajax({
+				url : "getSaibanBasicInputForm",
+				type : "GET"
+			})
+			.done(function(data, status, jqXHR) {
+				if (isAjaxProcSuccess(jqXHR)) {
+					// 処理成功
+					$('#saibanBasicFragmentWrap').html(data);
+
+				} else {
+					// 処理失敗
+					const errorMsg = getAjaxProcResutlMessage(jqXHR);
+					showErrorMessageForJs(errorMsg);
+				}
+			})
+			.fail(function(jqXHR, status, errorThrown) {
+				showErrorMessageForJs(/*[[#{E00091}]]*/ "error");
+			})
+			.always(function(){
+				ajaxRunning = false;
+			});
+		});
+
+		<!--/* 削除ボタン押下時 */-->
+		$("#deleteSaiban").on('click', function() {
+			if (!confirm('裁判を削除します。よろしいですか?')) {
+				return false;
+			}
+
+			if (ajaxRunning){
+				return false;
+			}
+			ajaxRunning = true;
+
+			$.ajax({
+				type : "POST",
+				url : 'deleteSaiban'
+			})
+			.done(function(result) {
+				if(result.succeeded){
+					alert(result.message);
+					const deleteAnkenId = result.ankenId;
+					window.location.href = "/user/ankenManagement/edit/" + deleteAnkenId + '/';
+				} else {
+					showErrorMessage(result.message, modal, result.errors);
+				}
+			})
+			.fail(function() {
+				showErrorMessage(/*[[#{E00013}]]*/ "error", modal);
+			})
+			.always(function(){
+				ajaxRunning = false;
+			});
+		});
+
+		<!-- /** 事件番号コピー */ -->
+		$('#saibanBasicViewFragment').on('click', '.jikenNoCopy', function() {
+			const copyInput = $("<input type='text' value='" + $(this).data("jiken-no") + "'/>")
+			$("body").append(copyInput);
+			copyInput.select();
+			const result = document.execCommand("copy");
+			if (!result) {
+				showErrorMessageForJs("非対応ブラウザのため、コピーできません");
+			} else {
+				showInfoMessageForJs("コピーしました");
+			}
+			copyInput.remove();
+		});
+
+	})
+	</script>
+
+	<!--/* HTML */-->
+	<th:block th:object="${saibanBasicViewForm}">
+		
+		<div class="case_edit_top">
+			<div class="case_edit_top__info">
+				<span class="main_view_title">裁判管理</span>
+			</div>
+			<div class="case_edit_top__btn">
+				<!--/* 編集ボタン */-->
+				<span>
+					<button type="button" class="btn btn-primary btn_icon_only saibanEdit"
+						data-boundary="window" data-container="#saibanBasicViewFragment" data-toggle="tooltip" data-trigger="hover" title="裁判情報を編集">
+						<i class="fas fa-edit mr-2"></i>編集
+					</button>
+				</span>
+				
+				<!--/* 裁判削除ボタン */-->
+				<span th:if="${saibanBasicViewForm.saibanStartDate == null}">
+					<button type="button" id="deleteSaiban" class="btn btn-light btn_icon_only"
+						data-boundary="window" data-container="#saibanBasicViewFragment" data-toggle="tooltip" data-trigger="hover" title="裁判情報を削除"
+						th:data-url="@{/user/saibanMinjiManagement/{saibanSeq}/delete(saibanSeq=*{saibanSeq})}">
+						<i class="far fa-trash-alt"></i>
+					</button>
+				</span>
+				
+				<!--/* 裁判追加ボタン */-->
+				<a th:if="*{addSaiban}" href="javascript:void(0);" class="btn btn-sm btn-primary pr-3 ml-5" th:href="@{/user/saibanManagement/{ankenId}/new/(ankenId=*{ankenId.asLong()})}">
+					<i class="fas fa-plus"></i>裁判（民事）追加
+				</a>
+				<span th:unless="*{addSaiban}" class="warning_label">
+					<i class="fas fa-exclamation-triangle mr-2"></i>裁判は登録上限に達したため、追加できません。
+				</span>
+			</div>
+		</div>
+		
+		<div class="case_edit_court">
+			<div class="case_detail">
+				<div class="case_detail__image">
+					<div th:class="|case_image_wrapper${saibanBasicViewForm.ankenType?.cd}|">
+						<img class="img-thumbnail case_judgment_img" th:src="@{/img/saiban.svg?{ver}(ver=${@environment.getProperty('app.version')})}">
+					</div>
+				</div>
+				<div class="case_detail__case_name">
+					<div class="fs13">
+	<!--/* 案件区分 */-->
+	<!--/* 事務所 */-->
+	<th:block th:if="${T(jp.loioz.common.constant.CommonConstant$AnkenType).JIMUSHO.equals(saibanBasicViewForm.ankenType)}">
+						<i class="far fa-building"></i>
+	</th:block>
+	<!--/* 個人 */-->
+	<th:block th:if="${T(jp.loioz.common.constant.CommonConstant$AnkenType).KOJIN.equals(saibanBasicViewForm.ankenType)}">
+						<i class="fas fa-briefcase"></i>
+	</th:block>
+						<!--/* 案件種別 */-->
+						<span th:text="${saibanBasicViewForm.ankenType?.val}"></span>
+						<span>／</span>
+						<!--/* 分野 */-->
+						<span th:text="*{bunyaName}">分野</span>
+					</div>
+					<!--/* 事件名 */-->
+					<span class="fs30 fw600 lh1_4" th:text="${#strings.isEmpty(saibanBasicViewForm.jikenName)} ? '(事件名未入力)' : ${saibanBasicViewForm.jikenName}">事件名</span>
+					<div>
+						<!--/* 案件ID */-->
+						<span class="app_id_link case_link mr-3" th:text="|案件ID：*{ankenId.asLong()}|">案件ID</span>
+						
+						<!-- 親裁判情報 -->
+						<span th:if="${T(jp.loioz.common.constant.CommonConstant$SystemFlg).FLG_ON.equalsByCode(saibanBasicViewForm.kihonFlg)}"
+							class="label_tag kihon_jiken mr-3">基本事件</span> 
+						<span th:if="${T(jp.loioz.common.constant.CommonConstant$SystemFlg).FLG_ON.equalsByCode(saibanBasicViewForm.honsoFlg)}"
+							class="label_tag honso_jiken mr-3">本訴事件</span>
+						
+						<!--/* 裁判ステータス */-->
+						<i th:class="|fas fa-circle fa-xs anken_status_*{saibanStatus.getCd()}|"></i>
+						<span class="mr-3" th:text="*{saibanStatus.getVal()}"></span>
+						
+					</div>
+				</div>
+			</div>
+			<div class="case_detail__court_other">
+				<div class="court_info">
+					<div class="mb-3">
+						<!--/* 事件No */-->
+						<span class="badge badge-pill data_label badge_gray badge_square px-3">事件番号</span>
+						<div class="data_label_value">
+							<span class="mr-3 fs15" th:text="*{caseNumber.toString()}"></span>
+							<button th:if="*{caseNumber.toString() != ''}" type="button" class="btn btn-light btn_icon_only btn_case_no_cp jikenNoCopy" data-boundary="window" 
+								data-container="#saibanBasicViewFragment" data-toggle="tooltip" data-trigger="hover" th:title="事件番号コピー" th:data-jiken-no="*{caseNumber.toString()}">
+								<i class="far fa-copy mr-0"></i>
+							</button>
+						</div>
+					</div>
+					<span class="badge badge-pill data_label badge_gray badge_square px-3">裁判所</span>
+					<div class="data_label_value">
+						<div>
+							<div class="fs14" th:text="*{#strings.isEmpty(saibanshoName)} ?  '(裁判所が設定されていません)'  : *{saibanshoName} "></div>
+							<span th:text="*{keizokuBuName}"></span>
+							<span th:text="*{keizokuKakariName}"></span>
+						</div>
+						<div class="court_info__contact">
+							<div class="contact_data">
+								<span class="fc_sub">電話：</span><span class="contact_value" th:text="*{#strings.isEmpty(keizokuBuTelNo)} ?  '-'  : *{keizokuBuTelNo}"></span>
+							</div>
+							<div class="contact_data">
+								<span class="fc_sub">FAX：</span><span class="contact_value" th:text="*{#strings.isEmpty(keizokuBuFaxNo)} ?  '-'  : *{keizokuBuFaxNo}"></span>
+							</div>
+						</div>
+						<div class="mt-2">
+							<!--/* 裁判官・書記官 */-->
+							<span class="fc_sub"><i class="fas fa-user-tie mr-3"></i>裁判官：</span>
+							<span id="saibanBasicViewSaibankanFragmentWrap" th:insert="user/saibanManagement/saibanCommonFragment::saibanBasicViewSaibankanFragment(${saibanBasicViewForm.saibankanDtoList})">
+								<!-- 裁判官情報の表示 -->
+							</span>
+						</div>
+						<div class="mt-1">
+							<span class="fc_sub"><i class="fas fa-user-edit mr-2"></i>書記官：</span>
+							<span th:text="*{#strings.isEmpty(tantoShoki)} ?  '-'  : *{tantoShoki}"></span>
+						</div>
+					</div>
+				</div>
+				<div class="court_other">
+					<!--/* 担当情報 */-->
+					<div class="case_person_contact mb-4">
+						<!--/* 弁護士 */-->
+						<div class="case_person_contact__lawyer">
+							<span class="badge badge-pill data_label badge_gray badge_square">弁護士</span>
+							<div class="data_label_value">
+		<!--/* 担当弁護士が0件の場合 */-->
+		<th:block th:if="*{tantoBengoshiList.size() == 0}">
+								<div>(未設定)</div>
+		</th:block>
+								<div class="case_person_contact__data">
+		<!--/* 担当弁護士を設定している場合 */-->
+		<th:block th:each="bengoshi : *{tantoBengoshiList}" th:object="${bengoshi}">
+									<div class="case_account">
+										<i class="fas fa-user-circle" th:style="|color : *{accountColor};|"></i>
+										<div class="person_contact_wrapper mr-3">
+											<div class="person_contact__name">
+												<span class="fs12 fc_sub"
+													th:if="*{T(jp.loioz.common.constant.CommonConstant$SystemFlg).FLG_ON.equalsByCode(mainTantoFlg)}">(主担当)</span>
+												<span th:text="*{tantoName}"></span>
+											</div>
+										</div>
+									</div>
+		</th:block>
+								</div>
+							</div>
+						</div>
+						<!--/* 弁護士 end */-->
+							
+						<!--/* 事務職員 */-->
+						<div class="case_person_contact__jimu">
+							<span class="badge badge-pill data_label badge_gray badge_square">事務職員</span>
+							<div class="data_label_value">
+		<!--/* 担当事務職員が0件の場合 */-->
+		<th:block th:if="*{tantoJimuList.size() == 0}">
+								<div>(未設定)</div>
+		</th:block>
+								
+								<div class="case_person_contact__data">
+		<!--/* 担当事務職員を設定している場合 */-->
+		<th:block th:each="jimu : *{tantoJimuList}" th:object="${jimu}">
+									<div class="case_account">
+										<i class="fas fa-user-circle" th:style="|color : *{accountColor};|"></i>
+										<div class="person_contact_wrapper mr-3">
+											<div class="person_contact__name">
+												<span class="fs12 fc_sub"
+													th:if="*{T(jp.loioz.common.constant.CommonConstant$SystemFlg).FLG_ON.equalsByCode(mainTantoFlg)}">(主担当)</span>
+												<span th:text="*{tantoName}"></span>
+											</div>
+										</div>
+									</div>
+		</th:block>
+								</div>
+							</div>
+						</div>
+						<!--/* 事務職員 end */-->
+						
+					</div>
+					<!--/* 担当情報 end */-->
+					
+					<div class="court_date">
+						<div class="court_date__left">
+							<span class="badge badge-pill data_label badge_gray badge_square px-3">申立日</span>
+							<div class="data_label_value fs15" th:text="*{#strings.isEmpty(saibanStartDate)} ?  '-'  : *{saibanStartDate}"></div>
+						</div>
+						<div class="court_date__right">
+							<span class="badge badge-pill data_label badge_gray badge_square px-3">終了日</span>
+							<div class="data_label_value fs15" th:text="*{#strings.isEmpty(saibanEndDate)} ?  '-'  : *{saibanEndDate}"></div>
+						</div>
+					</div>
+					
+				</div>
+				<!--/* 担当情報 end*/-->
+				
+				<div class="court_judgment">
+					<span class="badge badge-pill data_label badge_gray badge_square">裁判結果</span>
+					<div class="biko_detail mt-0 data_label_value"
+						myth:nl2br="${#strings.isEmpty(saibanBasicViewForm.saibanResult)} ? '(記載なし)' : ${saibanBasicViewForm.saibanResult}">
+					</div>
+				</div>
+			</div>
+		</div>
+
+	</th:block>
+	
+</div>
+
+<!--/* 裁判追加など */-->
+<div th:fragment="saibanOptionViewFragment(saibanOptionViewForm)" id="saibanOptionViewFragment">
+
+	<!--/* Script */-->
+	<script th:inline="javascript">
+	$(function() {
+		
+		// 共有の要素セットアップ処理
+		commonSetUpElement();
+
+		<!--/* 民事裁判 新規追加 */-->
+		$('.addSaiban').on('click', function(){
+			window.location.href = "/user/saibanManagement/" + ankenId + '/new/';
+		});
+		
+		<!--/* 併合/反訴 */-->
+		$(".link").on("click",function(){
+			let form = $(this).prop("form");
+			let formData = $(form).find("[name='childSaibanSeq']").serializeArray();
+			if (!formData.length) {
+				alert("選択してください。");
+				return false;
+			}
+
+			<!--/* 併合 OR 反訴 */-->
+			const type = $(this).data("type");
+
+			<!--/* モーダル */-->
+			let $modal;
+			if(type === 'heigo') {
+				$modal = $("#saibanOptionViewFragment").find("#heigoModal");
+			} else {
+				$modal = $("#saibanOptionViewFragment").find("#hansoModal");
+			}
+
+			<!--/* リクエストパラメータ */-->
+			const childSaibanSeq = formData[0].value;
+			const requestData = {
+					childSaibanSeq: childSaibanSeq
+			}
+
+			<!--/* 2重押下防止 */-->
+			if(ajaxRunning){
+				return false;
+			}
+			ajaxRunning = true;
+
+			$.ajax({
+				url : '/user/saibanMinjiManagement/' + saibanSeq + '/' + ankenId + '/' + type + '/',
+				type : "POST",
+				data : requestData
+			})
+			.done(function(data, status, jqXHR) {
+				if (isAjaxProcSuccess(jqXHR)) {
+					// 併合 OR 反訴の事件は画面上編集不可
+					const isDisplayOnly = true;
+					const isBunriTorisageButton = true;
+					const isChildSaiban = true;
+					// 処理成功
+					Promise.resolve()
+						.then(() => modalHidePromise($modal))
+						.then(() => $('#saibanBasicFragmentWrap').html(data))
+						.then(() => getSaibanOptionView())
+						.then(() => renderTabContentBySaibanSeq(childSaibanSeq, isDisplayOnly, isBunriTorisageButton, isChildSaiban))
+						.then(() => renderAnkenMenuView())
+						.then(() => showInfoMessageForJs(getAjaxProcResutlMessage(jqXHR)))
+
+				} else {
+					// 処理失敗
+					const errorMsg = getAjaxProcResutlMessage(jqXHR);
+					showErrorMessageForJs(errorMsg);
+				}
+			})
+			.fail(function(jqXHR, status, errorThrown) {
+				showErrorMessageForJs(/*[[#{E00091}]]*/ "error");
+			})
+			.always(function(){
+				ajaxRunning = false;
+			});
+		});
+
+		<!--/* 反訴 登録モーダル */-->
+		$('.registHansoModal').on('click', function(){
+			$.ajax({
+				url : '/user/saibanMinjiManagement/createHansoModal',
+				type : "POST",
+				data : {
+					"saibanSeq" : saibanSeq,
+					"ankenId" : ankenId
+					},
+			}).done(function(val) {
+				// モーダルの表示
+				$('#saibanOptionViewFragment .editHansoBody').html(val);
+			}).fail(function(jqXHR, textStatus, errorThrown) {
+			}).always(function() {
+			});
+		});
+
+		<!--/* モーダル閉じる処理をPromise化 */-->
+		function modalHidePromise(modal){
+			return new Promise((resolve) => {
+				$(modal).one('hidden.bs.modal', function() {
+					resolve();
+				});
+				$(modal).modal("hide");
+			});
+		};
+	});
+	</script>
+
+	<!--/* HTML */-->
+	<th:block th:object="${saibanOptionViewForm}">
+		<div class="text-right mb-2 mt-3">
+			<!--/* 併合 */-->
+			<a th:if="*{addHeigoSaiban}" href="javascript:void(0);" class="fs15" data-toggle="modal" data-target="#heigoModal">
+				<i class="fas fa-search mr-2"></i>併合事件を選択
+			</a>
+			<!--/* 反訴（追加） */-->
+			<a th:if="*{addHansoSaiban}" href="javascript:void(0);" class="registHansoModal fs15 ml-5 mr-3" data-toggle="modal" data-target="#registHansoModal">
+				<i class="fas fa-plus-square mr-2"></i>反訴事件を追加
+			</a>
+			<!--/* 反訴（選択） */-->
+			<a th:if="*{addHansoSaiban}" href="javascript:void(0);" class="fs15" data-toggle="modal" data-target="#hansoModal">
+				<i class="fas fa-search mr-2"></i>反訴事件を選択
+			</a>
+		</div>
+	</th:block>
+	
+	<div th:replace="common/modal::modal(id='heigoModal', title='被併合事件の選択', bodyContents=~{::linkModalBodyContents(type='heigo')}, footerContents=~{::linkModalFooterContents(type='heigo')})"></div>
+	<div th:replace="common/modal::modal(id='hansoModal', title='反訴事件の選択', bodyContents=~{::linkModalBodyContents(type='hanso')}, footerContents=~{::linkModalFooterContents(type='hanso')})"></div>
+	<!-- 反訴の登録モーダル テンプレート -->
+	<div id="registHansoModal" class="modal fade" tabindex="-1" role="dialog" aria-hidden="true" data-backdrop="static">
+		<div class="modal-dialog modal-dialog-centered" role="document">
+			<div class="modal-content">
+				<div class="editHansoBody"></div>
+			</div>
+		</div>
+	</div>
+	<!-- 反訴の登録モーダル テンプレート end -->
+	
+</div>
+
+<!--/* 併合／反訴モーダル */-->
+<div th:fragment="linkModalBodyContents">
+	<form th:id="|${type}Form|" th:with="titleText=${type == 'heigo'} ? '併合' : '反訴'">
+		<div class="block_detail">
+			<p>同一案件内に登録されている裁判情報を<th:block th:text="${titleText}"></th:block>することができます。</p>
+			<p>現在、開いている裁判情報と<th:block th:text="${titleText}"></th:block>する裁判を選択してください。</p>
+		</div>
+		<div class="header_fixed_table_wrapper table_higoHanso">
+			<table class="table table_standard table-sm table-hover table_fixed">
+				<thead>
+					<tr>
+						<th class="col_10">選択</th>
+						<th class="col_30">事件番号</th>
+						<th class="col_60">事件名</th>
+					</tr>
+				</thead>
+				<tbody>
+<!--/*/ 		<th:block th:if="${saibanOptionViewForm.childSaibanCandidates.size() == 0} "> /*/-->
+					<tr>
+						<td colspan="3" class="col_100 no_data_table_list">
+							<span th:text="#{I00021}">MSG_I00021</span>
+						</td>
+					</tr>
+<!--/*/ 		</th:block> /*/-->
+					<tr th:each="saiban : ${saibanOptionViewForm.childSaibanCandidates}" th:object="${saiban}" data-click-sync-for-descendants="[name='childSaibanSeq']">
+						<td>
+							<label class="radio_btn no_text">
+								<input type="radio" class="radio_input" name="childSaibanSeq" th:value="${saiban.saibanSeq}">
+								<span class="radio_txt"></span>
+							</label>
+						</td>
+						<td th:text="*{caseNumber}">事件番号</td>
+						<td>
+							<th:block th:unless="*{#strings.isEmpty(jikenName)}">
+								<span th:text="*{jikenName}"></span>
+							</th:block>
+							<th:block th:if="*{#strings.isEmpty(jikenName)}">
+								<!-- 事件名が無い場合の表示 -->
+								<span>(事件名未入力)</span>
+							</th:block>
+						</td>
+					</tr>
+				</tbody>
+			</table>
+		</div>
+	</form>
+</div>
+<div th:fragment="linkModalFooterContents">
+	<button th:if="${saibanOptionViewForm.childSaibanCandidates.size() != 0}" type="button" th:form="|${type}Form|" class="btn btn-info link" th:data-type="${type}">
+		<i class="fas fa-check"></i>登録</button>
+	<button type="button" class="btn btn-light" data-dismiss="modal">
+		<i class="fas fa-times"></i>閉じる</button>
+</div>
+
+
+<!--/* 裁判基本情報編集ブロック */-->
+<div th:fragment="saibanBasicInputFragment" id="saibanBasicInputFragment">
+
+	<!--/* Script */-->
+	<script th:inline="javascript">
+	$(function() {
+		
+		// 共有の要素セットアップ処理
+		commonSetUpElement();
+		
+		<!--/* 裁判情報の詳細の編集を閉じる（表示モードの表示に切り替える） */-->
+		$('#saibanBasicInputForm .saibanClose').on('click', function() {
+			
+			<!--/* 2重押下防止 */-->
+			if(ajaxRunning){
+				return false;
+			}
+			ajaxRunning = true;
+			
+			$.ajax({
+				url : "getSaibanBasicViewForm",
+				type : "GET"
+			})
+			.done(function(data, status, jqXHR) {
+				if (isAjaxProcSuccess(jqXHR)) {
+					// 親HTMLのID
+					$('#saibanBasicFragmentWrap').html(data);
+					
+				} else {
+					// 処理失敗
+					const errorMsg = getAjaxProcResutlMessage(jqXHR);
+					showErrorMessageForJs(errorMsg);
+				}
+			})
+			.fail(function(jqXHR, status, errorThrown) {
+				showErrorMessageForJs(/*[[#{E00091}]]*/ "error");
+			})
+			.always(function(){
+				ajaxRunning = false;
+			});
+			
+		})
+		
+		<!--/* 裁判基本情報の保存 */-->
+		$('#saibanBasicSave').on('click', function() {
+
+			<!--/* リクエストURL */-->
+			let requestUrl = 'saveSaibanBasic';
+
+			<!--/* リクエストパラメータ */-->
+			let formData = $('#saibanBasicInputForm').find('input, select, textArea').serializeArray();
+
+			<!--/* 2重押下防止 */-->
+			if(ajaxRunning){
+				return false;
+			}
+			ajaxRunning = true;
+
+			$.ajax({
+				url : requestUrl,
+				type : "POST",
+				data : formData
+			})
+			.done(function(data, status, jqXHR) {
+				if (isAjaxProcSuccess(jqXHR)) {
+					// 処理成功
+					Promise.resolve()
+						.then(() => $('#saibanBasicFragmentWrap').html(data))
+						.then(() => renderAnkenMenuView())
+						.then(() => showInfoMessageForJs(getAjaxProcResutlMessage(jqXHR)))
+
+				} else {
+					// 処理失敗
+					if (data) {
+						// HTMLのコンテンツが返却されている場合
+						// 親HTMLのID
+						$('#saibanBasicFragmentWrap').html(data);
+					}
+
+					const errorMsg = getAjaxProcResutlMessage(jqXHR);
+					showErrorMessageForJs(errorMsg);
+				}
+			})
+			.fail(function(jqXHR, status, errorThrown) {
+				showErrorMessageForJs(/*[[#{E00013}]]*/ "保存に失敗しました。");
+			})
+			.always(function(){
+				ajaxRunning = false;
+			});
+		})
+		
+		<!--/* 係属部選択肢キャッシュ */-->
+		let keizokuBuCache = {};
+
+		<!--/* 係属部選択肢を変更 */-->
+		function changeKeizokuBuList(saibanshoId){
+			let orgKeizokuBuName = $("#keizokuBuSelect").find("[name='keizokuBuName']").val();
+			const inputKeizokuBu = '<div id="keizokuBuNameInputText">' +
+														'<input type="text" class="form-control" name="keizokuBuName">' +
+													'</div>';
+			if (!saibanshoId) {
+				<!--/* 裁判所IDなし：係属部をテキスト入力に変更 */-->
+				$("#keizokuBuSelect").html(inputKeizokuBu);
+				setKeizokuBuName(orgKeizokuBuName);
+
+			} else if (keizokuBuCache[saibanshoId]) {
+				<!--/* 裁判所の係属部選択肢を取得済み：キャッシュから係属部選択肢を設定 */-->
+				$("#keizokuBuSelect").html(keizokuBuCache[saibanshoId]);
+				setKeizokuBuName(orgKeizokuBuName);
+
+			} else {
+				<!--/* 裁判所の係属部選択肢が未取得：Ajaxで係属部選択肢を取得 */-->
+				$.ajax({
+					type : "POST",
+					url : /*[[(@{/user/saibanManagement/getKeizokuBu})]]*/ "/",
+					data : {"saibanshoId": saibanshoId},
+					dataType : "html"
+				})
+				.done(function(result) {
+					keizokuBuCache[saibanshoId] = result;
+					$("#keizokuBuSelect").html(result);
+					setKeizokuBuName(orgKeizokuBuName);
+				})
+				.fail(function() {
+					$("#keizokuBuSelect").html(inputKeizokuBu);
+					setKeizokuBuName(orgKeizokuBuName);
+				});
+			}
+		}
+
+		<!--/* 係属部を設定 */-->
+		function setKeizokuBuName(keizokuBuName){
+			let keizokuBuNameInput = $("#keizokuBuSelect").find("[name='keizokuBuName']");
+			keizokuBuNameInput.val(keizokuBuName);
+		}
+
+		<!--/* 裁判所変更時に係属部選択肢を変更 */-->
+		$("#saibanshoName").on("change", function(){
+			let selectedSaibansho = $("#saibanshoList").find("[value='"+$(this).val()+"']");
+			if (selectedSaibansho.length) {
+				<!--/* 裁判所が存在する */-->
+				let saibanshoId = selectedSaibansho.data("id");
+				$("#saibanshoId").val(saibanshoId);
+				changeKeizokuBuList(saibanshoId);
+
+			} else {
+				<!--/* 裁判所が存在しない */-->
+				$("#saibanshoId").val("");
+				changeKeizokuBuList("");
+			}
+		});
+
+		<!--/* 係属部選択時に電話番号・FAX番号を反映 */-->
+		$("#keizokuBuSelect").on("change", "#keizokubuSearch", function(){
+			let selectedOption = $("#keizokuBuList").find("[value='"+$(this).val()+"']");
+			<!--/* ハイフン以外を選択した場合のみ反映 */-->
+			if(selectedOption.val()){
+				$("#keizokuBuTelNo").val(selectedOption.data("telNo"));
+				$("#keizokuBuFaxNo").val(selectedOption.data("faxNo"));
+			}
+		});
+
+		<!--/* 裁判所初期表示 */-->
+		if($("#saibanshoId").val()){
+			let saibanshoName = $("#saibanshoList").find("[data-id='"+$("#saibanshoId").val()+"']").val();
+			$("#saibanshoName").val(saibanshoName);
+		}
+		<!--/* 係属部初期表示 */-->
+		changeKeizokuBuList($("#saibanshoId").val());
+
+		<!--/* 裁判所名入力時、datalistを設定する */-->
+		<!--/* Chromeでは未入力の状態でdatalistをクリックすると、全件リストを表示しようとするため文字入力時にのみdatalistをセットするようにする */-->
+		$('#saibanBasicInputFragment .saibanshoList').on('input', function(){
+			if ($(this).val()) {
+				$(this).attr('list', 'saibanshoList');
+			} else {
+				// Safariの場合は、文字入力前にdatalistを設定する必要があるため
+				if (isMacSafari()){
+					$(this).attr('list', 'saibanshoList');
+				} else {
+					$(this).removeAttr('list');
+				}
+			}
+		});
+
+		<!--/* 裁判所名クリック時、裁判所名が既に入力済の場合はdatalistを設定する */-->
+		<!--/* Chromeでは未入力の状態でdatalistをクリックすると、全件リストを表示しようとするため文字入力時にのみdatalistをセットするようにする */-->
+		$('#saibanBasicInputFragment .saibanshoList').on('click', function(){
+			if ($(this).val()) {
+				$(this).attr('list', 'saibanshoList');
+			} else {
+				// Safariの場合は、文字入力前にdatalistを設定する必要があるためクリック時でもdatalistをセットする
+				if (isMacSafari()){
+					$(this).attr('list', 'saibanshoList');
+				}
+			}
+		});
+
+	});
+	</script>
+	
+	<div class="main_edit">
+		<!--/* HTML */-->
+		<form id="saibanBasicInputForm" th:action="@{/user/saibanMinjiManagement/{saibanSeq}/save(saibanSeq=*{saibanSeq})}"
+			th:object="${saibanBasicInputForm}">
+			
+			<div>
+				<!--/* 親裁判情報 */-->
+				<span th:if="${T(jp.loioz.common.constant.CommonConstant$SystemFlg).FLG_ON.equalsByCode(saibanBasicInputForm.kihonFlg)}"
+					class="label_tag kihon_jiken mr-3">基本事件</span> 
+				<span th:if="${T(jp.loioz.common.constant.CommonConstant$SystemFlg).FLG_ON.equalsByCode(saibanBasicInputForm.honsoFlg)}"
+					class="label_tag honso_jiken">本訴事件</span>
+			</div>
+			
+			<!--/* 入力 */-->
+			<div class="row">
+				<!--/* 左側 */-->
+				<div class="col-md-6">
+					<div class="detail_input_area">
+						<!--/* 事件名 */-->
+						<div class="mb-2">
+							<label class="input_parts_label">事件名</label>
+							<input type="text" class="form-control" th:field="*{jikenName}" maxlength="100" placeholder="事件名を入力してください">
+							<div th:if="${#fields.hasErrors('jikenName')}" th:errors="*{jikenName}" class="error_mag_point">error</div>
+						</div>
+						<!--/* 事件番号 */-->
+						<div class="mb-2">
+							<label class="input_parts_label">事件番号</label>
+							<div class="d-flex align-items-center justify-content-xl-start">
+								<select class="form-control digit4" th:field="*{jikenGengo}">
+									<option th:each="option : *{jikenGengoOptionList}"
+										th:value="${option.value}" th:text="${option.label}"></option>
+								</select>
+								<input type="text" class="form-control digit2 input_number_only mx-1" th:field="*{jikenYear}" maxlength="2">
+								<span class="fs13">年</span>
+								<span class="fs13">(</span>
+								<input type="text" class="form-control digit3 ml-2" th:field="*{jikenMark}" placeholder="符号" maxlength="2">
+								<span class="fs13 ml-2">)</span>
+								<span class="fs13">第</span>
+								<input type="text" class="form-control digit5 input_number_only ml-1" th:field="*{jikenNo}" placeholder="番号" maxlength="7" >
+								<span class="fs13 ml-1">号</span>
+							</div>
+							<div th:if="${#fields.hasErrors('jikenGengo')}" th:errors="*{jikenGengo}" class="error_mag_point">error</div>
+							<div th:if="${#fields.hasErrors('jikenYear')}" th:errors="*{jikenYear}" class="error_mag_point">error</div>
+							<div th:if="${#fields.hasErrors('jikenMark')}" th:errors="*{jikenMark}" class="error_mag_point">error</div>
+							<div th:if="${#fields.hasErrors('jikenNo')}" th:errors="*{jikenNo}" class="error_mag_point">error</div>
+						</div>
+						
+						<!--/* 裁判所名 */-->
+						<div class="mb-2">
+							<label class="input_parts_label">裁判所</label>
+							<input type="search" class="form-control saibanshoList" autocomplete="off" th:field="*{saibanshoName}" maxlength="100">
+							<datalist id="saibanshoList">
+								<option th:each="option : *{saibanshoOptionList}"
+									th:value="${option.label}" th:data-id="${option.value}"></option>
+							</datalist>
+							<input type="hidden" th:field="*{saibanshoId}">
+							<div th:if="${#fields.hasErrors('saibanshoName')}" th:errors="*{saibanshoName}" class="error_mag_point">error</div>
+						</div>
+						
+						<div class="form-row">
+							<!--/* 係属部 */-->
+							<div class="form-group col-sm-6">
+								<label class="input_parts_label">係属部</label>
+								<span id="keizokuBuSelect">
+									<input type="text" class="form-control" th:field="*{keizokuBuName}" maxlength="20" tabindex="2">
+								</span>
+								<div th:if="${#fields.hasErrors('keizokuBuName')}" th:errors="*{keizokuBuName}" class="error_mag_point">error</div>
+							</div>
+							<!--/* 係属係 */-->
+							<div class="form-group col-sm-6">
+								<label class="input_parts_label">係属係</label>
+								<input type="text" class="form-control" th:field="*{keizokuKakariName}" maxlength="20" tabindex="3">
+								<div th:if="${#fields.hasErrors('keizokuKakariName')}" th:errors="*{keizokuKakariName}" class="error_mag_point">error</div>
+							</div>
+						</div>
+						
+						<!--/* その他 */-->
+						<div class="form-row">
+							<div class="form-group col-sm-6">
+								<div class="jiken_edit_row">
+									<!--/* 電話番号 */-->
+									<div>
+										<label class="input_parts_label">電話番号</label>
+										<input type="tel" class="form-control input_num_hyphen" th:field="*{keizokuBuTelNo}" maxlength="13" tabindex="4">
+										<div th:if="${#fields.hasErrors('keizokuBuTelNo')}" th:errors="*{keizokuBuTelNo}" class="error_mag_point">error</div>
+									</div>
+									<!--/* FAX番号 */-->
+									<div>
+										<label class="input_parts_label">FAX番号</label>
+										<input type="tel" class="form-control input_num_hyphen" th:field="*{keizokuBuFaxNo}" maxlength="13" tabindex="5">
+										<div th:if="${#fields.hasErrors('keizokuBuFaxNo')}" th:errors="*{keizokuBuFaxNo}" class="error_mag_point">error</div>
+									</div>
+								</div>
+							</div>
+							<!--/* 裁判官 */-->
+							<div class="form-group col-sm-6">
+								<div class="jiken_edit_row">
+									<div id="saibanBasicInputSaibankanFragmentWrap" th:insert="user/saibanManagement/saibanCommonFragment::saibanBasicInputSaibankanFragment(*{saibankanInputFormList})">
+										<!-- 裁判官情報（入力）の表示 -->
+									</div>
+									<!--/* 担当書記官 */-->
+									<div class="">
+										<label class="input_parts_label">担当書記官</label>
+										<input type="text" class="form-control" th:field="*{tantoShoki}" maxlength="128" tabindex="6">
+										<div th:if="${#fields.hasErrors('tantoShoki')}" th:errors="*{tantoShoki}" class="error_mag_point">error</div>
+									</div>
+								</div>
+							</div>
+						</div>
+						
+					</div>
+				</div>
+				<!--/* 左側入力エリア end */-->
+				
+				<!--/* 裁判情報（入力）右側 */-->
+				<div class="col-md-6">
+					
+					<!--/* 右側入力エリア */-->
+					<div class="detail_input_area">
+					
+						<!--/* 担当情報 */-->
+						<div class="form-row">
+							<div class="input_parts form-group col-sm-6">
+								<div
+									th:replace="::tantoTemplate(
+									itemName='tantoLawyer',
+									itemLabel='担当弁護士',
+									optionList=*{ankenTantoBengoshiOptionList},
+									dispMainTanto=true)">
+								</div>
+							</div>
+							<div class="input_parts form-group col-sm-6">
+								<div
+									th:replace="::tantoTemplate(
+									itemName='tantoJimu',
+									itemLabel='担当事務',
+									optionList=*{ankenTantoJimuOptionList},
+									dispMainTanto=true)">
+								</div>
+							</div>
+						</div>
+						<!--/* 担当情報 end */-->
+						
+					
+						<div class="form-row">
+							<!--/* 申立日 */-->
+							<div class="form-group col-sm-auto">
+								<label class="input_parts_label">申立日</label>
+								<input type="text" class="form-control modal_date digit7 inputDateSlash" th:field="*{saibanStartDate}" data-click-sync="[data-target-name='saibanStartDate']">
+								<button type="button" class="btn btn_popcal hidden" data-toggle="datepicker" data-target-name="saibanStartDate">カレンダー</button>
+								<div th:if="${#fields.hasErrors('saibanStartDate')}" th:errors="*{saibanStartDate}" class="error_mag_point">error</div>
+							</div>
+							<!--/* 終了日 */-->
+							<div class="form-group col-sm-auto">
+								<label class="input_parts_label">終了日</label>
+								<input type="text" class="form-control modal_date digit7 inputDateSlash" th:field="*{saibanEndDate}" data-click-sync="[data-target-name='saibanEndDate']">
+								<button type="button" class="btn btn_popcal hidden" data-toggle="datepicker" data-target-name="saibanEndDate">カレンダー</button>
+								<div th:if="${#fields.hasErrors('saibanEndDate')}" th:errors="*{saibanEndDate}" class="error_mag_point">error</div>
+							</div>
+						</div>
+						
+						<!--/* 裁判結果 */-->
+						<div class="form-row">
+							<div class="form-group col-sm-12">
+								<label class="input_parts_label">裁判結果</label>
+								<textarea rows="5" class="form-control" th:field="*{saibanResult}" maxlength="10000"></textarea>
+								<div th:if="${#fields.hasErrors('saibanResult')}" th:errors="*{saibanResult}" class="error_mag_point">error</div>
+							</div>
+						</div>
+						
+					</div>
+					<!--/* 右側入力エリア end */-->
+					
+					<!--/* ボタン */-->
+					<div class="text-right mt-4">
+						<!--/* 保存ボタン */-->
+						<button type="button" id="saibanBasicSave" class="btn btn-info">
+							<i class="fas fa-check"></i>保存
+						</button>
+						
+						<!--/* 閉じるボタン */-->
+						<button type="button" class="btn btn-light saibanClose ml-3"
+							data-boundary="window" data-container="#saibanBasicInputFragment" data-toggle="tooltip" data-trigger="hover" title="編集モードを閉じる">
+							<i class="fas fa-times mr-2"></i>閉じる
+						</button>
+					</div>
+					
+				</div>
+				<!--/* 裁判情報（入力）右側 end */-->
+			</div>
+		</form>
+	</div>
+</div>
+
+<!--/* 担当弁護士・担当事務 入力項目 */-->
+<div th:id="|${itemName}Container|" th:fragment="tantoTemplate(itemName, itemLabel, optionList)" th:with="dispMainTanto=${dispMainTanto}?: false">
+
+	<!--/* Script */-->
+	<script th:inline="javascript">
+	$(function() {
+		const $container = $(/*[[|#${itemName}Container|]]*/"");
+		
+		// レンダリング時に選択アカウントの表示非表示切り替えを発火
+		hiddenIfSelect();
+		
+		<!--/* 選択アカウントの表示非表示設定を最新化 */-->
+		function hiddenIfSelect() {
+			const seletedAccount = getSelectedAccountSeq();
+			$container.find(".selectArea button").removeClass("hidden");
+			$container.find(".selectArea button").filter((idx, elem) => {
+				return seletedAccount.includes($(elem).data("seq"));
+			}).addClass("hidden");
+			if (canAddUser()) {
+				$container.find(".showSelectArea").removeClass("hidden");
+			}
+		};
+		
+		<!--/* 選択中のアカウントSEQをArray型で取得 */-->
+		function getSelectedAccountSeq() {
+			return $.map($container.find("input[name*='accountSeq']"), (elem, idx) => {
+				if (elem.value) {
+					return Number(elem.value);
+				}
+			});
+		};
+		
+		<!--/* アカウントが追加可能かどうか */-->
+		function canAddUser() {
+			return  $container.find("."+ [[${itemName}]] + ".hidden").length > 0;
+		}
+		
+		<!--/* removeした際にパラメータの中抜けが発生するため、パラメータを詰める */-->
+		function sortParam() {
+			const paramContents = $container.find("."+ [[${itemName}]]);
+			const paramJson = $.map(paramContents, (elem, ids) => {
+				if($(elem).find("input[name*='accountSeq']").val()) {
+					return {
+						"seq": $(elem).find("input[name*='accountSeq']").val(),
+						"mainTanto": $(elem).find("input[name*='mainTanto']").val() === "true",
+						"name":$(elem).find(".accountName").text(),
+					};
+				} 
+			});
+			
+			paramContents.addClass("hidden")
+			paramContents.each((idx, elem) => {
+				const params = paramJson[idx];
+				if (params) {
+					$(elem).find("input[name*='accountSeq']").val(params.seq);
+					$(elem).find(".accountName").text(params.name);
+					$(elem).removeClass("hidden");
+
+					if (params.mainTanto) {
+						$(elem).find(".star_btn_main").addClass("btn_checked");
+						$(elem).find("input[name*='mainTanto']").val(true);
+					} else {
+						$(elem).find(".star_btn_main").removeClass("btn_checked");
+						$(elem).find("input[name*='mainTanto']").val(false);
+					}
+				} else {
+					$(elem).find("input[name*='accountSeq']").val("");
+					$(elem).find(".star_btn_main").removeClass("btn_checked");
+					$(elem).find("input[name*='mainTanto']").val(false);
+					$(elem).find(".accountName").text("");
+				}
+			});
+		}
+		
+		<!--/* 独自popperの表示処理 */-->
+		$container.on("click", ".showSelectArea", function() {
+			$(".selectArea").addClass("hidden");
+			$container.find(".selectArea").removeClass("hidden");
+		});
+		
+		<!--/* 独自popperの閉じる処理 */-->
+		$container.on("click", ".closeSelectArea", function() {
+			$container.find(".selectArea").addClass("hidden");
+		});
+		
+		<!--/* ここだけdocumentにアクションを追加する*/-->
+		const itemName = /*[[${itemName}]]*/"";
+		$(document).off("click."+itemName);
+		$(document).on("click."+itemName, function(e) {
+			if ($(e.target).is(".showSelectArea")) {
+				return false;
+			}
+			if (!$(e.target).closest('.tanto_select').length && !$container.find(".selectArea").hasClass("hidden")) {
+				$container.find(".selectArea").toggleClass("hidden");
+			}
+		});
+		
+		<!--/* ユーザーの選択処理 */-->
+		$container.on("click",".addInputUser", function() {
+			const accountSeq = $(this).data("seq");
+			const accountName = $(this).text();
+			
+			const nextContent = $container.find("."+ [[${itemName}]] + ".hidden:first");
+			if (!nextContent.length) {
+				alert("追加できる上限追加できません")
+			}
+			
+			nextContent.removeClass("hidden");
+			nextContent.find("input[name*='accountSeq']").val(accountSeq);
+			nextContent.find(".accountName").text(accountName);
+			
+			// 選択肢の表示非表示切り替え
+			hiddenIfSelect();
+			
+			if(!canAddUser()) {
+				$container.find(".selectArea").addClass("hidden");
+				$container.find(".showSelectArea").addClass("hidden");
+			}
+		});
+		
+		<!--/* ユーザーの選択解除処理 */-->
+		$container.on("click",".removeInputUser", function() {
+			const refleshContent = $(this).closest("."+ [[${itemName}]]);
+			refleshContent.addClass("hidden");
+			refleshContent.find(".star_btn_main").removeClass("btn_checked");
+			refleshContent.find("input[name*='mainTanto']").val(false);
+			refleshContent.find("input[name*='accountSeq']").val("");
+			refleshContent.find(".accountName").text("");
+			
+			hiddenIfSelect();
+			sortParam();
+			
+			// 追加可能の場合
+			if(canAddUser()) {
+				$container.find(".showSelectArea").removeClass("hidden");
+			}
+		});
+		
+	});
+	</script>
+
+	<div class="hoverTooltip tanto_block">
+		<div class="d-flex align-items-center">
+			<div>
+				<label th:text="${itemLabel}">担当弁護士</label>
+			</div>
+			<div class="ml-auto pt-1 mr-3">
+				<a href="javascript:void(0);" class="showSelectArea hidden"><i class="fas fa-user-plus mr-2"></i>選択</a>
+				
+				<!--/* 選択候補のアカウントエリア */-->
+				<div class="position-relative">
+					<div class="position-absolute tanto_select selectArea hidden">
+					
+					<!--/* 選択候補が存在する */-->
+<!--/*/			<th:block th:if="${!optionList.isEmpty()}"> /*/-->
+						<div class="tanto_select_title">担当を選択してください。</div>
+						<ul>
+							<!--/* 選択候補のアカウント */-->
+							<li th:each="option : ${optionList}">
+								<button type="button" class="btn btn-light addInputUser" th:data-seq="${option.value}">
+									<i class="fas fa-user-check mr-3"></i><span class="tanto_select__account_label" th:text="${option.label}"></span>
+								</button>
+							</li>
+						</ul>
+						<div class="tanto_select_footer">
+							<button type="button" class="btn btn-light btn_icon_only ml-3 closeSelectArea" title="閉じる">
+								<i class="fas fa-times"></i>
+							</button>
+						</div>
+<!--/*/			</th:block> /*/-->
+					<!--/* 選択候補が存在する end */-->
+					
+					</div>
+				</div>
+				<!--/* 選択候補のアカウントエリア end */-->
+				
+			</div>
+		</div>
+		
+		<!--/* 選択済みのアカウントエリア */-->
+		<div class="row row_list">
+			<!--/* 選択候補が存在しない場合 */-->
+			<div class="tanto_select_no_data" th:if="${optionList.isEmpty()}">
+				<div class="d-flex">
+					<div><i class="fas fa-exclamation-triangle mr-2"></i></div>
+					<div>
+						<p>案件情報で<span th:text="${itemLabel}"></span>（有効なアカウント）を設定してください。</p>
+					</div>
+				</div>
+			</div>
+			<!--/* 選択候補が存在しない場合 end */-->
+			
+<!--/*/		<th:block th:if="${!optionList.isEmpty()}" th:each="i : ${#numbers.sequence(0, T(java.lang.Math).min(optionList.size(), T(jp.loioz.common.constant.CommonConstant).ANKEN_TANTO_ADD_LIMIT) - 1)}"> /*/-->
+			<div th:class="|col-auto mw-100 ${itemName} pl-0|" th:object="${saibanBasicInputForm.__${itemName}__[__${i}__]}"
+				th:classappend="*{isEmpty()} ? 'hidden'">
+				<div class="d-flex align-items-center" th:id="|${itemName}${i}|">
+					<input type="button" th:if="${dispMainTanto}" class="star_btn_main" th:classappend="*{mainTanto} ? 'btn_checked': ''"
+						data-boundary="window" th:data-container="|#${itemName}${i}|" data-toggle="tooltip" data-trigger="hover" title="主担当">
+					<input type="hidden" th:if="${dispMainTanto}" th:field="*{mainTanto}" th:value="*{mainTanto}">
+					<input type="hidden" th:field="*{accountSeq}" th:value="*{accountSeq}">
+					<th:block th:with="accountSeq=*{accountSeq}">
+						<button type="button" class="btn tanto_selected_btn accountName removeInputUser"
+							th:text="${saibanBasicInputForm.getAccountName(accountSeq)}"></button>
+					</th:block>
+				</div>
+				<div th:if="${#fields.hasErrors('${saibanBasicInputForm.__${itemName}__[__${i}__]}')}" class="error_mag_point m-2"
+					th:errors="${saibanBasicInputForm.__${itemName}__[__${i}__]}">
+				</div>
+			</div>
+<!--/*/		</th:block> /*/-->
+		</div>
+		<!--/* 選択済みのアカウントエリア end */-->
+		
+	</div>
+</div>
+
+<!--/* 裁判タブ表示ブロック */-->
+<div th:fragment="saibanTabViewFragment(saibanTabViewForm)" id="saibanTabViewFragment">
+
+	<!--/* Script */-->
+	<script th:inline="javascript">
+	$(function() {
+		
+		<!--/* 共有の要素セットアップ処理 */-->
+		commonSetUpElement();
+
+		<!--/* タブ切替 */-->
+		$(".saibanTab").on("click", function(){
+
+			if(!$(this).hasClass("selected")){
+
+				<!--/* リクエストパラメータ */-->
+				let saibanSeq = $(this).data("saiban-seq");
+				let bunriTorisageButtonFlg = $(this).data("bunri-button-flg");
+				let isChildSaiban = $(this).data("child-saiban");
+				let isDisplayOnly = $(this).data("display-only");
+
+				if (ajaxRunning) {
+					return false;
+				}
+				ajaxRunning = true;
+
+				Promise.resolve()
+					.then(() => renderTabContentBySaibanSeq(saibanSeq, isDisplayOnly, bunriTorisageButtonFlg, isChildSaiban))
+					.catch((errorObj) => console.log(errorObj))
+					.finally(() => ajaxRunning = false);
+			}
+		});
+
+		<!--/* 分離/取下 */-->
+		$(".bunriTorisage").on("click", function(){
+
+			if (!confirm("対象の裁判を分離／取下します。よろしいですか？")) {
+				return false;
+			}
+
+			<!--/* リクエストパラメータ */-->
+			let childSaibanSeq = $(this).data("saiban-seq");
+			const requestData = {
+					childSaibanSeq: childSaibanSeq
+			}
+
+			<!--/* 2重押下防止 */-->
+			if(ajaxRunning){
+				return false;
+			}
+			ajaxRunning = true;
+
+			$.ajax({
+				url : '/user/saibanMinjiManagement/' + saibanSeq + '/' + ankenId + '/bunriTorisage/',
+				type : "POST",
+				data : requestData
+			})
+			.done(function(data, status, jqXHR) {
+				if (isAjaxProcSuccess(jqXHR)) {
+					// 処理成功
+					Promise.resolve()
+						.then(() => $('#saibanBasicFragmentWrap').html(data))
+						.then(() => getSaibanOptionView())
+						.then(() => renderTabContent())
+						.then(() => renderAnkenMenuView())
+						.then(() => showInfoMessageForJs(getAjaxProcResutlMessage(jqXHR)))
+
+				} else {
+					// 処理失敗
+					const errorMsg = getAjaxProcResutlMessage(jqXHR);
+					showErrorMessageForJs(errorMsg);
+				}
+			})
+			.fail(function(jqXHR, status, errorThrown) {
+				showErrorMessageForJs(/*[[#{E00091}]]*/ "error");
+			})
+			.always(function(){
+				ajaxRunning = false;
+			});
+		});
+		
+		<!--/* 裁判事件情報の編集 */-->
+		$(".openEidtSaibanJikenModal").on("click", function() {
+			const jikenSeq = $(this).data("jikenSeq");
+			
+			if (ajaxRunning) {
+				return false;
+			}
+			
+			ajaxRunning = true;
+			$.ajax({
+				url : "/user/saibanMinjiManagement/createSaibanJikenEditModal",
+				type : "GET",
+				data : {"jikenSeq":jikenSeq}
+			})
+			.done(function(data, status, jqXHR) {
+				// 処理成功
+				$("#eidtSaibanJikenModal").modal("show");
+				$("#eidtSaibanJikenModal .editSaibanJiken").html(data);
+			})
+			.fail(function(jqXHR, status, errorThrown) {
+				showErrorMessageForJs(/*[[#{E00091}]]*/ "error");
+			})
+			.always(function(){
+				ajaxRunning = false;
+			});
+			
+		});
+
+	});
+	</script>
+
+	<!--/* HTML */-->
+	<th:block th:object="${saibanTabViewForm}">
+
+		<!--/* 裁判タブ */-->
+		<div class="tab_block_hanso_heigo">
+
+			<th:block th:if="*{childSaibanList.size() > 0}" th:with="initShowMaxCharCountSaibanTabName=*{INIT_SHOW_MAX_CHAR_COUNT_SAIBAN_TAB_NAME}">
+				<ul class="nav nav-tabs mb-3 select_tab " id="jikenTab" role="tablist">
+					<li class="nav-item nav-link saibanTab " th:data-saiban-seq="*{parentSaibanSeq}" th:data-bunri-button-flg="false" th:data-display-only="false" th:data-child-saiban="false" th:classappend="*{targetSaibanSeq} == *{parentSaibanSeq} ? 'selected' : ''">
+						<div class="nav_tab_main_jiken">
+							<span class="label_tag kihon_jiken pt-0" th:if="*{kihonFlg}">基本事件</span>
+							<span class="label_tag honso_jiken pt-0" th:if="*{honsoFlg}">本訴事件</span>
+						</div>
+					</li>
+					<li class="nav-item nav-link tab-title saibanTab " th:each="childSaiban : *{childSaibanList}" 
+						th:data-saiban-seq="${childSaiban.saibanSeq}" th:data-bunri-button-flg="true" th:data-display-only="true" 
+						th:data-child-saiban="true" th:classappend="${saibanSelected} ? 'selected' : ''"
+						th:with="saibanSelected=*{targetSaibanSeq} == ${childSaiban.saibanSeq}">
+						<div class="d-flex align-items-center">
+							<div>
+								<span th:if="${childSaiban.connectType == T(jp.loioz.common.constant.CommonConstant.HeigoHansoType).HEIGO.cd}" class="label_tag hi_heigo_jiken mb-0 ml-0">被併合</span>
+								<span th:if="${childSaiban.connectType == T(jp.loioz.common.constant.CommonConstant.HeigoHansoType).HANSO.cd}" class="label_tag hanso_jiken mb-0 ml-0">反訴</span>
+							</div>
+							<div>
+								<th:block th:unless="${#strings.isEmpty(childSaiban.jikenName)}" th:with="isOverCharCount=(${initShowMaxCharCountSaibanTabName} < ${#strings.length(childSaiban.jikenName)})">
+									<!-- 事件名の文字数が多い場合の表示 -->
+									<div class="tab_jiken_name" th:if="${isOverCharCount}">
+										<span myth:nl2br="|${#strings.substring(childSaiban.jikenName,0,initShowMaxCharCountSaibanTabName)}...|"></span>
+									</div>
+									<!-- 事件名の文字数が多くない場合の表示 -->
+									<div class="tab_jiken_name" th:unless="${isOverCharCount}">
+										<span myth:nl2br="${childSaiban.jikenName}"></span>
+									</div>
+								</th:block>
+								<th:block th:if="${#strings.isEmpty(childSaiban.jikenName)}">
+									<!-- 事件名が無い場合の表示 -->
+									<span>(事件名未入力)</span>
+								</th:block>
+								<div class="tab_jiken_no" th:text="${childSaiban.jikenNo}"></div>
+							</div>
+							<div class="ml-3" th:classappend="${saibanSelected}?_:'visibility'">
+								<span data-boundary="window" data-container="#saibanTabViewFragment" data-toggle="tooltip" data-trigger="hover" title="編集">
+									<a href="javascript:void(0);" class="openEidtSaibanJikenModal" th:data-jiken-seq="${childSaiban.jikenSeq}">
+										<i class="fas fa-edit"></i>
+									</a>
+								</span>
+							</div>
+						</div>
+					</li>
+				</ul>
+			</th:block>
+
+		</div>
+		<!--/* 裁判タブ end */-->
+
+
+		<div id="bunriTorisage" class="my-3" th:if="*{bunriTorisageButtonFlg}">
+
+			<!--/* 分離/取下ボタン */-->
+			<div class="ml-auto">
+				<button type="button" class="btn btn-outline-danger bunriTorisage" th:data-saiban-seq="*{targetSaibanSeq}">
+					<i class="fas fa-undo mr-2"></i>選択した裁判を分離／取下をする
+				</button>
+			</div>
+
+		</div>
+		
+		<!-- 事件名編集のモーダル テンプレート -->
+		<div id="eidtSaibanJikenModal" class="modal fade" tabindex="-1" role="dialog" aria-hidden="true" data-backdrop="static">
+			<div class="modal-dialog modal-dialog-centered" role="document">
+				<div class="modal-content">
+					<div class="editSaibanJiken"></div>
+				</div>
+			</div>
+		</div>
+		<!-- 事件名編集のモーダル テンプレート end -->
+
+	</th:block>
+</div>
+
+<!--/* 期日一覧 */-->
+<div th:fragment="saibanKijitsuViewFragment(saibanKijitsuViewForm)" id="saibanKijitsuViewFragment">
+
+	<!--/* Script */-->
+	<script th:inline="javascript">
+	$(function() {
+		
+		<!--/* 共有の要素セットアップ処理 */-->
+		commonSetUpElement();
+
+		let modal = benzo.global.scheduleModal.modal;
+		let scheduleCache = {};
+
+		// 画面読み込み時に予定データを取得
+		const isAllTimeKijitsuList = /*[[${saibanKijitsuViewForm.AllTimeKijitsuList}]]*/false;
+		const isChildSaiban = /*[[${saibanKijitsuViewForm.ChildSaiban}]]*/false;
+		const scheduleListSize = /*[[${saibanKijitsuViewForm.saibanKijitsuDtoList.size()}]]*/0;
+
+		if (scheduleListSize) {
+			$.ajax({
+				type : "GET",
+				url : /*[[(@{getSaibanKijitsuDetails})]]*/ "/",
+				data : {
+					"isAllTimeKijitsuList": isAllTimeKijitsuList,
+					"isChildSaiban": isChildSaiban
+				},
+				dataType : "json"
+			}).done(function(result) {
+				<!--/* 予定キャッシュに予定データを追加 */-->
+				$.extend(scheduleCache, result);
+				<!--/* 予定登録モーダル表示ボタンの設定 */-->
+				setupModalButton();
+			}).fail(function() {
+			});
+		} else {
+			<!--/* 予定登録モーダル表示ボタンの設定 */-->
+			setupModalButton();
+		}
+		
+		<!--/* 予定モーダルのセットアップ */-->
+		function setupModalButton() {
+			<!--/* モーダルを開く */-->
+			$(".openScheduleModal").on("click", function(){
+				<!--/* 保存処理を上書き */-->
+				setupSaveAction()
+
+				<!--/* 予定表データを取得 */-->
+				let scheduleData = {};
+				let scheduleSeq = $(this).data("scheduleSeq");
+				let isCreate = $(this).is(".createSaibanLimit");
+				let modalConfig = {};
+	
+				if (isCreate) {
+					<!--/* 新規追加モード */-->
+					modalConfig.isCreate = true;
+					scheduleData = defaultScheduleData();
+					
+					<!--/* 新規登録時にログインユーザーが弁護士の場合、参加者に追加 */--> 
+					const isLawyer =/*[[${T(jp.loioz.common.utility.SessionUtils).isLawyer()}]]*/false;
+					if (isLawyer) {
+						const myAccountSeq = /*[[${T(jp.loioz.common.utility.SessionUtils).getLoginAccountSeq()}]]*/null;
+						scheduleData.member.push(myAccountSeq);
+						scheduleData.member = scheduleData.member.filter(function (x, i, self) {
+							return self.indexOf(x) === i;
+						});
+					}
+	
+				} else {
+					<!--/* 編集モード */-->
+					modalConfig.isUpdate = true;
+					
+					if (scheduleSeq) {
+						<!--/* 出廷要 */-->
+						scheduleData = $.extend(true, {}, benzo.global.scheduleModal.emptyScheduleData, scheduleCache[scheduleSeq]);
+
+					} else {
+						<!--/* 出廷不要 */-->
+						scheduleData = defaultScheduleData($(this).data("count"));
+
+						scheduleData.saibanLimitSeq = $(this).data("saibanLimitSeq");
+						scheduleData.roomSelected = false;
+
+						let limitAt = new Date($(this).data("limitAt"));
+						scheduleData.dateFrom = $.datepicker.formatDate("yy/mm/dd", limitAt);
+						scheduleData.hourFrom = limitAt.getHours();
+						scheduleData.minFrom = limitAt.getMinutes();
+						scheduleData.timeFrom = formatHHMMSS(scheduleData.hourFrom, scheduleData.minFrom, 0)
+						scheduleData.hourTo = limitAt.getHours() == 23 ? 0 : limitAt.getHours() + 1;
+						scheduleData.minTo = limitAt.getMinutes();
+						scheduleData.timeTo = formatHHMMSS(scheduleData.hourTo, scheduleData.minTo, 0)
+						
+					}
+					
+					let row = $(this).closest(".saibanLimitRow");
+					const roomIdVal = row.find('.roomIdVal').text();
+					if (roomIdVal === '') {
+						scheduleData.place = row.find('.placeNameVal').text();
+					}
+				}
+				
+				<!--/* モーダルを表示 */-->
+				benzo.global.scheduleModal.openModal(scheduleData, modalConfig);
+				<!--/* 裁判主担当の設定 */-->
+				benzo.global.scheduleModal.setSaibanMain(scheduleData.saibanSeq);
+				<!--/* 裁判担当者プルダウンを設定 */-->
+				benzo.global.scheduleModal.setUpSaibanTantoOption(scheduleData.saibanSeq);
+
+				<!--/* 裁判期日の作成は無効アカウントを選択肢から外し、hidden化 */-->
+				if (isCreate) {
+					modal.find(".memberList .member[data-enabled=false]").addClass("hidden");
+					modal.find(".memberList .member[data-enabled=false]").trigger("click");
+				}
+			});
+		}
+		
+		<!--/* 新規の際に使用するデータ */-->
+		function defaultScheduleData(saibanLimitCount) {
+	
+			let scheduleData = $.extend(true, {}, benzo.global.scheduleModal.emptyScheduleData);
+	
+			let defDateSetting = benzo.global.scheduleModal.getDefaultDateForOther();
+			scheduleData.dateFrom = defDateSetting.dateFrom;
+			scheduleData.hourFrom = defDateSetting.hourFrom;
+			scheduleData.timeFrom = defDateSetting.timeFrom;
+			scheduleData.hourTo = defDateSetting.hourTo;
+			scheduleData.timeTo = defDateSetting.timeTo;
+			let caseNumber = $('#caseNumberVal').text();
+			let count = saibanLimitCount ? saibanLimitCount : /*[[${saibanKijitsuViewForm.nextSaibanKijitsuCount}]]*/ null;
+			scheduleData.subject = caseNumber + " 第" + count + "回";
+			let accoutList = $(".tantoBengoshiView").map(function(){
+				return $(this).data('account-seq');
+			}).get();
+			scheduleData.member = accoutList;
+			scheduleData.saibanLimit = true;
+			scheduleData.ankenId = ankenId;
+			scheduleData.ankenIdDisp = ankenIdDisp;
+			scheduleData.ankenName = $('#jikenName').text();
+			scheduleData.saibanSeq = saibanSeq;
+			scheduleData.saibanId = true;
+			scheduleData.caseNumber = caseNumber;
+			scheduleData.roomSelected = false;
+			
+			return scheduleData;
+		}
+		
+		<!--/* 登録・更新・削除ボタン */-->
+		function setupSaveAction() {
+			benzo.global.scheduleModal.saveAction = function(triggerBtn) {
+				let button = $(triggerBtn);
+				if (button.is(".deleteButton")) {
+					if(!confirm("この予定を削除します。よろしいですか？")){
+						return false;
+					}
+				}
+				let params = benzo.global.scheduleModal.getModalFormParams();
+				if (button.is(".createButton")) {
+					params.saibanLimitCount = /*[[${saibanKijitsuViewForm.nextSaibanKijitsuCount}]]*/ 0;
+				}
+				
+				if(benzo.global.scheduleModal.ajaxRunning){
+					return false;
+				}
+				benzo.global.scheduleModal.ajaxRunning = true;
+
+				$.ajax({
+					type : "POST",
+					url : /*[[(@{/user/schedule/needConfirm})]]*/ "/",
+					data : params,
+					dataType : "json"
+				})
+				.done(function(checked) {
+					if(!button.is(".deleteButton")){
+						if(checked.needConfirm &&!confirm(checked.message)){
+							ajaxRunning = false;
+							return false;
+						}
+					}
+					$.ajax({
+						type : "POST",
+						url : button.data("url"),
+						data : params,
+						dataType: 'json',
+					})
+					.done(function(result) {
+						if(result.succeeded){
+							modal.modal("hide");
+							showInfoMessageForJs(result.message);
+							
+							// 一覧の再読み込み
+							Promise.resolve()
+								.then(getParentSaibanKijitsuView)<!--/* 親HTMLで定義している関数 */-->
+								.catch((errors) => {console.log(errors);});
+						} else {
+							showErrorMessage(result.message, modal,result.errors);
+						}
+					})
+					.fail(function() {
+						showErrorMessage(/*[[#{E00013}]]*/ "error", modal);
+					})
+					.always(function(){
+						benzo.global.scheduleModal.ajaxRunning = false;
+					});
+				}).always(function(){
+					benzo.global.scheduleModal.ajaxRunning = false;
+				});
+			}
+		}
+		
+		<!--/* 「過去の期日も表示」チェックの切り替え */-->
+		$('#saibanKijitsuViewFragment #viewAllKijitsuListCheck').on('change', function() {
+			// 一覧の再読み込み
+			Promise.resolve()
+				.then(getParentSaibanKijitsuView)<!--/* 親HTMLで定義している関数 */-->
+				.catch((errors) => {console.log(errors);});
+		});
+		
+		<!--/* 口頭弁論期日請書出力 */-->
+		$(document).on('click', '.downloadKotoBenron', function() {
+			let formData = [];
+			const scheduleSeq = $(this).data('schedule-seq');
+			const saibanSeq = $(this).data('saiban-seq');
+			formData.push(
+					{name : "scheduleSeq", value : scheduleSeq},
+					{name : "saibanSeq", value : saibanSeq},
+			);
+			const button = $(this);
+			const url = "outputKotoBenron";
+			
+			// ダウンロード処理
+			downloadFileAjax(url, button, formData);
+		});
+
+		<!--/* 期日一覧：【出廷】切り替え処理 */-->
+		$('#saibanKijitsuViewFragment .shutteiTypeSelect').on('change', function() {
+			
+			const saibanLimitSeq = $(this).data('saiban-limit-seq');
+			const selectedVal = $(this).val();
+			
+			<!--/* リクエストパラメータ */-->
+			const requestData = {
+				saibanLimitSeq: saibanLimitSeq,
+				shutteiType: selectedVal
+			}
+			
+			<!--/* 2重押下防止 */-->
+			if(ajaxRunning){
+				return false;
+			}
+			ajaxRunning = true;
+			
+			$.ajax({
+				url : 'saveKijitsuShutteiType',
+				type : "POST",
+				data : requestData
+			})
+			.done(function(data, status, jqXHR) {
+				if (isAjaxProcSuccess(jqXHR)) {
+					// 処理成功
+					
+					const msg = getAjaxProcResutlMessage(jqXHR);
+					showInfoMessageForJs(msg);
+					
+					// 一覧の再読み込み
+					Promise.resolve()
+						.then(getParentSaibanKijitsuView)<!--/* 親HTMLで定義している関数 */-->
+						.catch((errors) => {console.log(errors);});
+				} else {
+					// 処理失敗
+					const errorMsg = getAjaxProcResutlMessage(jqXHR);
+					showErrorMessageForJs(errorMsg);
+				}
+			})
+			.fail(function(jqXHR, status, errorThrown) {
+				showErrorMessageForJs(/*[[#{E00013}]]*/ "保存に失敗しました。");
+			})
+			.always(function(){
+				ajaxRunning = false;
+			});
+		})
+		
+		<!--/* 手続き すべて見る */-->
+		$('#saibanKijitsuViewFragment .showAllKijitsuContent').on('click', function() {
+			const saibanLimitSeq = $(this).data('saiban-limit-seq');
+			showAllKijitsuContent(saibanLimitSeq);
+		})
+		
+		<!--/* 期日結果 すべて見る */-->
+		$('#saibanKijitsuViewFragment .showAllKijitsuResult').on('click', function() {
+			const saibanLimitSeq = $(this).data('saiban-limit-seq');
+			showAllKijitsuResult(saibanLimitSeq);
+		})
+		
+		<!--/* 期日結果 入力フォームポップアップ表示 */-->
+		$('#saibanKijitsuViewFragment .kijitsuResultInputOpenLink').on('click', function() {
+			
+			<!--/* すべての期日結果入力ポップアップを閉じる */-->
+			$('#saibanKijitsuViewFragment .kijitsuResultInputFragmentWrap').html('');
+			
+			const saibanLimitSeq = $(this).data('saiban-limit-seq');
+			let dataObj = {
+				saibanLimitSeq : saibanLimitSeq
+			}
+			
+			<!--/* 2重押下防止 */-->
+			if(ajaxRunning){
+				return false;
+			}
+			ajaxRunning = true;
+			
+			<!--/* 期日結果入力フォームを表示 */-->
+			Promise.resolve(dataObj)
+				.then(renderKijitsuResultInputFormFunc)
+				.catch((errorObj) => {
+					<!--/* 異常系の対応は各処理側で行っており、全体共通での異常系の処理は現状ない */-->
+					console.log(errorObj);
+				})
+				.finally(() => {
+					ajaxRunning = false;
+				})
+		})
+		
+		<!--/* 手続き すべて見る */-->
+		function showAllKijitsuContent(saibanLimitSeq) {
+			changeShowCloseKijitsuContent(saibanLimitSeq, true);
+		}
+		
+		<!--/* -->
+		/**
+		 * 手続きの表示、閉じるを切り替える
+		 * 
+		 * @param {number} saibanLimitSeq - 表示を切り替える期日のSEQ
+		 * @param {boolean} toShow - true : 表示する false : 閉じる
+		 */
+		 <!-- */-->
+		function changeShowCloseKijitsuContent(saibanLimitSeq, toShow) {
+			
+			if (toShow) {
+				<!--/* 表示 */-->
+				
+				<!--/* 「すべて見る」部分のコンテンツを非表示 */-->
+				$('#showAllKijitsuContentWrap_' + saibanLimitSeq).addClass('hidden');
+				
+				<!--/* すべての手続き部分のコンテンツを表示 */-->
+				$('#allKijitsuContentWrap_' + saibanLimitSeq).removeClass('hidden');
+				
+			} else {
+				<!--/* 閉じる */-->
+				<!--/* 閉じる操作は存在しない */-->
+			}
+		}
+		
+		<!--/* 期日結果 すべて見る */-->
+		function showAllKijitsuResult(saibanLimitSeq) {
+			changeShowCloseKijitsuResult(saibanLimitSeq, true);
+		}
+		
+		<!--/* -->
+		/**
+		 * 期日結果の表示、閉じるを切り替える
+		 * 
+		 * @param {number} saibanLimitSeq - 表示を切り替える期日のSEQ
+		 * @param {boolean} toShow - true : 表示する false : 閉じる
+		 */
+		 <!-- */-->
+		function changeShowCloseKijitsuResult(saibanLimitSeq, toShow) {
+			
+			if (toShow) {
+				<!--/* 表示 */-->
+				
+				<!--/* 「すべて見る」部分のコンテンツを非表示 */-->
+				$('#showAllKijitsuResultWrap_' + saibanLimitSeq).addClass('hidden');
+				
+				<!--/* すべての期日結果部分のコンテンツを表示 */-->
+				$('#allKijitsuResultWrap_' + saibanLimitSeq).removeClass('hidden');
+				<!--/* 期日結果の入力ポップアップ部分のコンテンツを表示 */-->
+				$('#kijitsuResultInputPopoverBoxWrap_' + saibanLimitSeq).removeClass('hidden');
+				<!--/* 閉じる部分のコンテンツを表示 */-->
+				$('#closekijitsuResultWrap_' + saibanLimitSeq).removeClass('hidden');
+				
+			} else {
+				<!--/* 閉じる */-->
+				<!--/* 閉じる操作は存在しない */-->
+			}
+		}
+		
+		<!--/* 期日結果入力フォームの表示関数 */-->
+		const renderKijitsuResultInputFormFunc = (dataObj) => {
+			return new Promise((resolve, reject) => {
+				
+				<!--/* オブジェクトのプロパティ値を取得 */-->
+				const {saibanLimitSeq} = dataObj;
+				
+				<!--/* リクエストパラメータ */-->
+				const requestData = {
+					saibanLimitSeq: saibanLimitSeq
+				}
+				
+				<!--/* クリックされた要素の入力フォームを表示 */-->
+				<!--/* 2重押下防止対応はPromiseチェーンのルートで処理するため、チェーン内では行わない */-->
+				$.ajax({
+					url : 'getSaibanKijitsuResultInputForm',
+					type : "GET",
+					data : requestData
+				})
+				.done(function(data, status, jqXHR) {
+					if (isAjaxProcSuccess(jqXHR)) {
+						// HTML表示
+						let fragmentWrapDomId = "kijitsuResultInputFragmentWrap_" + saibanLimitSeq;
+						$('#saibanKijitsuViewFragment ' + '#' + fragmentWrapDomId).html(data);
+						
+						<!--/* Promiseチェーンの最後の処理となるため、引数データは渡さない */-->
+						resolve();
+					} else {
+						// 処理失敗
+						const errorMsg = getAjaxProcResutlMessage(jqXHR);
+						showErrorMessageForJs(errorMsg);
+						
+						reject();
+					}
+				})
+				.fail(function(jqXHR, status, errorThrown) {
+					showErrorMessageForJs(/*[[#{E00091}]]*/ "error");
+					
+					reject();
+				})
+			});
+		}
+
+	});
+	</script>
+
+	<!--/* HTML */-->
+	<th:block th:object="${saibanKijitsuViewForm}">
+		
+		<section class="section_border section_kijitsu">
+			<div class="section_header">
+				<div class="section_header__title">
+					期日一覧
+					<label class="ml-5 check_area checkbox_btn fs14 fc_sub fw0" th:if="!${saibanKijitsuViewForm.displayOnlyFlg}">
+						<input type="checkbox" id="viewAllKijitsuListCheck" class="checkbox_input" th:checked="*{allTimeKijitsuList}">
+						<span class="checkbox_txt">過去の予定を全て表示</span>
+					</label>
+				</div>
+				<div class="section_header__action">
+					<!--/* 新規追加 */-->
+					<a href="javascript:void(0);" class="openScheduleModal createSaibanLimit fs15" th:if="!${saibanKijitsuViewForm.displayOnlyFlg}">
+						<i class="fas fa-plus-square mr-2"></i>期日を追加
+					</a>
+				</div>
+			</div>
+			<div class="section_body">
+				<div class="section_body__contents p-0">
+					
+		<th:block th:if="*{saibanKijitsuDtoList.size() == 0}">
+					<div class="no_data_msg">
+						<span th:text="#{I00035('期日情報の登録')}">MSG_I00035</span>
+					</div>
+		</th:block>
+			
+		<th:block th:if="*{saibanKijitsuDtoList.size() > 0}">
+					<ul class="section_list kijitsu_list">
+						<!--/* 期日一覧表示 */-->
+						<li class="list_contents saibanLimitRow" th:each="dto : *{saibanKijitsuDtoList}">
+							<div class="section_list_item_wrap">
+								<div class="row">
+									<!--/* 期日カレンダー情報 */-->
+									<div class="col-md-7">
+										<div class="section_list_item">
+											<div class="item_title_block">
+												<div class="item_title" th:classappend="${dto.isKakoKijitsu()} ? 'fc_disabled' : ''">
+													<!-- /* 期日回数・予定 */ -->
+													<div class="info_name">
+														<i th:unless="${dto.isKakoKijitsu()}" class="fas fa-user-clock text-danger"></i>
+														<i th:if="${dto.isKakoKijitsu()}" class="fas fa-user-check"></i>
+														<span th:text="${dto.subject}">口頭弁論期日</span>
+													</div>
+												</div>
+												<!-- /* ボタンエリア */ -->
+												<div class="item_sub d-flex" th:if="!${saibanKijitsuViewForm.displayOnlyFlg}">
+													<div class="d-flex justify-content-end align-items-center" th:id="|kensatsukanEditContainer${dto.saibanLimitSeq}|">
+														<!--/* 期日請書を出力ボタン */-->
+														<div> 
+															<button type=button class="btn btn-light btn_icon_only downloadKotoBenron" th:data-schedule-seq="${dto.scheduleSeq}" th:data-saiban-seq="${dto.saibanSeq}"
+																data-boundary="window" th:data-container="|#kensatsukanEditContainer${dto.saibanLimitSeq}|" data-toggle="tooltip" data-trigger="hover" title="口頭弁論期日請書を出力する">
+																<i class="fas fa-download text-primary mr-0"></i>
+																<i class="fas fa-spinner mr-0 text-primary faa-spin animated hidden"></i>
+															</button>
+														</div>
+														<!--/* 編集ボタン */-->
+														<div class="ml-3">
+															<button class="btn btn-light btn_icon_only btn_icon_edit openScheduleModal"
+																data-boundary="window" th:data-container="|#kensatsukanEditContainer${dto.saibanLimitSeq}|" data-toggle="tooltip" data-trigger="hover" title="期日を編集する"
+																th:data-schedule-seq="${dto.scheduleSeq}"
+																th:data-saiban-limit-seq="${dto.saibanLimitSeq}"
+																th:data-limit-at="${{dto.limitAt}}"
+																th:data-count="${dto.limitDateCount}"><i class="fas fa-edit"></i>
+															</button>
+														</div>
+														<span class="roomIdVal hidden" th:text="${dto.roomId}"></span>
+													</div>
+												</div>
+											</div>
+											
+											<!--/* データブロック */-->
+											<div class="item_content_block">
+												<div class="item_content__info">
+													<span class="badge badge-pill badge_blue" th:text="|第${dto.limitDateCount}回|">第1回</span>
+													<div class="kijitsu_time"  th:classappend="${dto.isKakoKijitsu()} ? 'kijitsu_close' : ''">
+														<i th:if="${dto.isKakoKijitsu()}" class="far fa-calendar-check"></i>
+														<i th:unless="${dto.isKakoKijitsu()}" class="fas fa-calendar-day"></i>
+														<span th:text="${#temporals.format(dto.limitAt, 'M月d日')}"></span>
+														<span th:text="| (${#temporals.format(dto.limitAt, 'E')})|"></span>
+														<span th:text="${#temporals.format(dto.limitAt, 'H:mm')}"></span>
+														<span> ～ </span>
+														<span th:text="${#temporals.format(dto.timeTo, 'H:mm')}"></span>
+													</div>
+													<!-- /* 出廷要否 */ -->
+													<div>
+														<select class="form-control digit7 shutteiTypeSelect" th:data-saiban-limit-seq="${dto.saibanLimitSeq}" th:disabled="${saibanKijitsuViewForm.displayOnlyFlg}">
+				<th:block th:each="enum : ${T(jp.loioz.common.constant.CommonConstant$ShutteiType).values()}">
+																<option th:value="${enum.cd}" th:text="${enum.val}" th:selected="${enum.equalsByCode(dto.shutteiType)}"></option>
+				</th:block>
+														</select>
+													</div>
+												</div>
+													
+												<!--/* 場所 */-->
+												<div class="px-3 mt-1 mb-2">
+													<label class="view_label">場所</label>
+													<div class="view_value fs15">
+														<span class="placeNameVal" th:text="${dto.placeName}"></span>
+														<span th:if="${#strings.isEmpty(dto.placeName)}" class="sub_text">(指定なし)</span>
+													</div>
+												</div>
+												<!--/* 手続き */-->
+												<div class="px-3 mb-2">
+													<label class="view_label">手続き</label>
+													<div class="view_value fs15">
+														<span th:if="${#strings.isEmpty(dto.content)}" class="sub_text">(記載なし)</span>
+														<!--/* 手続きの表示 */-->
+														<div th:unless="${#strings.isEmpty(dto.content)}"
+															class="kijitsu_result fs15"
+															th:with="
+																initShowMaxCharCountKijitsuContent=*{INIT_SHOW_MAX_CHAR_COUNT_KIJITSU_CONTENT},
+																isOverCharCount=(${initShowMaxCharCountKijitsuContent} < ${#strings.length(dto.content)})">
+														
+				<!-- 文字数が多い場合の表示 -->
+				<th:block th:if="${isOverCharCount}">
+															<!-- 一部の本文文字のみ表示（すべて見るリンク） -->
+															<div th:id="|showAllKijitsuContentWrap_${dto.saibanLimitSeq}|">
+																<!-- 本文 -->
+																<span myth:nl2br="|${#strings.substring(dto.content,0,initShowMaxCharCountKijitsuContent)}|"></span>
+																<!-- すべて見るリンク -->
+																<p class="mb-0 text-left">
+																	<a href="javascirpt:void(0);" onClick="return false;" class="fs14">
+																		<span class="showAllKijitsuContent" th:data-saiban-limit-seq="${dto.saibanLimitSeq}">
+																			...すべて見る
+																		</span>
+																	</a>
+																</p>
+															</div>
+															
+															<!-- 全ての手続き文字を表示（すべて見るリンククリックで表示する） -->
+															<div th:id="|allKijitsuContentWrap_${dto.saibanLimitSeq}|" class="hidden">
+																<!-- 備考 -->
+																<div>
+																	<span myth:nl2br="${dto.content}"></span>
+																</div>
+															</div>
+				</th:block>
+				
+				<!-- 文字数が多くない場合の表示 -->
+				<th:block th:unless="${isOverCharCount}">
+															<!--  全ての手続き文字を表示 -->
+															<div>
+																<!-- 手続き -->
+																<span myth:nl2br="${dto.content}"></span>
+															</div>
+				</th:block>
+														</div>
+													</div>
+													<!--/* 手続きデータ end */-->
+												</div>
+												<!--/* 手続き end */-->
+											</div>
+										</div>
+									</div>
+									<!--/* 期日カレンダー情報 end */-->
+										
+									<!-- 期日結果エリア -->
+									<div class="col-md-5">
+										<div class="section_list_item">
+											<div class="item_content_block pt-0">
+												<!--/* 期日結果 */-->
+												<div>
+													<label class="view_label">期日結果</label>
+													<div class="view_value fs15">
+														<!-- 期日結果が未登録の場合 -->
+														<div th:if="${#strings.isEmpty(dto.result)}" class="kijitsu_result">
+															<!-- 期日結果情報は表示しない -->
+															<!-- 期日結果の入力ポップアップ -->
+															<div class="popover_box_wrap" th:if="!${saibanKijitsuViewForm.displayOnlyFlg}">
+																<div class="mt-2">
+																	<!--/* 顧客追加 */-->
+																	<button type="button" class="btn btn-light text-info kijitsuResultInputOpenLink" th:data-saiban-limit-seq="${dto.saibanLimitSeq}">
+																		<i class="fas fa-edit mr-2"></i>期日結果を入力
+																	</button>
+																</div>
+																<div th:id="|kijitsuResultInputFragmentWrap_${dto.saibanLimitSeq}|" class="kijitsuResultInputFragmentWrap">
+																	<!--/* 期日結果入力フォーム */-->
+																</div>
+															</div>
+														</div>
+														
+														<!-- 期日結果が登録済みの場合 -->
+														<div th:unless="${#strings.isEmpty(dto.result)}"
+															class="kijitsu_result"
+															th:with="
+																initShowMaxCharCountKijitsuResult=*{INIT_SHOW_MAX_CHAR_COUNT_KIJITSU_RESULT},
+																isOverCharCount=(${initShowMaxCharCountKijitsuResult} < ${#strings.length(dto.result)})">
+																
+															<!-- 文字数が多い場合 期日結果情報 -->
+															<th:block th:if="${isOverCharCount}">
+																<!-- 一部の期日結果み表示（すべて見るリンク） -->
+																<div th:id="|showAllKijitsuResultWrap_${dto.saibanLimitSeq}|">
+																	<span myth:nl2br="|${#strings.substring(dto.result,0,initShowMaxCharCountKijitsuResult)}|"></span>
+																	<p class="m-0 text-left">
+																		<a href="javascirpt:void(0);" onClick="return false;">
+																			<span class="showAllKijitsuResult" th:data-saiban-limit-seq="${dto.saibanLimitSeq}">
+																				...すべて見る
+																			</span>
+																		</a>
+																	</p>
+																</div>
+																<!-- すべて見るリンククリックで表示する -->
+																<div th:id="|allKijitsuResultWrap_${dto.saibanLimitSeq}|" class="hidden">
+																	<span myth:nl2br="${dto.result}"></span>
+																</div>
+			</th:block>
+			
+			<!-- 文字数が多くない場合 期日結果情報 -->
+			<th:block th:unless="${isOverCharCount}">
+															<!--  全ての期日結果を表示 -->
+															<div>
+																<span myth:nl2br="${dto.result}"></span>
+															</div>
+			</th:block>
+															<div class="d-flex">
+																<!-- 期日結果の入力ポップアップ -->
+																<div th:id="|kijitsuResultInputPopoverBoxWrap_${dto.saibanLimitSeq}|" class="popover_box_wrap" th:classappend="${isOverCharCount} ? 'hidden'" th:if="!${saibanKijitsuViewForm.displayOnlyFlg}">
+																	<div class="mt-2">
+																		<!--/* 顧客追加 */-->
+																		<button type="button" class="btn btn-light btn-sm kijitsuResultInputOpenLink" th:data-saiban-limit-seq="${dto.saibanLimitSeq}">
+																			<i class="fas fa-edit mr-2"></i>編集
+																		</button>
+																	</div>
+																	<div th:id="|kijitsuResultInputFragmentWrap_${dto.saibanLimitSeq}|" class="kijitsuResultInputFragmentWrap">
+																		<!--/* 期日結果入力フォーム */-->
+																	</div>
+																</div>
+															</div>
+														</div>
+													</div>
+												</div>
+											</div>
+										</div>
+									</div>
+								</div>
+							</div>
+						</li>
+						<!--/* 期日一覧 end */-->
+					</ul>
+		</th:block>
+				</div>
+			</div>
+		</section>
+	</th:block>
+</div>
+
+<!--/* 期日結果入力 */-->
+<div th:fragment="saibanKijitsuResultInputFragment" id="saibanKijitsuResultInputFragment">
+
+	<!--/* Script */-->
+	<script th:inline="javascript">
+	$(function() {
+
+		<!--/* 共有の要素セットアップ処理 */-->
+		commonSetUpElement();
+		
+		<!--/* 期日結果の保存 */-->
+		$('#saibanKijitsuResultInputFragment #saveSaibanKijitsuResult').on('click', function() {
+			
+			let formData = $('#saibanKijitsuResultInputFragment .saibanKijitsuResultInputForm').serializeArray();
+			let saibanLimitSeq = $('#saibanKijitsuResultInputFragment .saibanKijitsuResultInputForm #saibanLimitSeq').val();
+			
+			<!--/* 2重押下防止 */-->
+			if(ajaxRunning){
+				return false;
+			}
+			ajaxRunning = true;
+			
+			$.ajax({
+				url : 'saveSaibanKijitsuResult',
+				type : "POST",
+				data : formData
+			})
+			.done(function(data, status, jqXHR) {
+				if (isAjaxProcSuccess(jqXHR)) {
+					// 処理成功
+					
+					const msg = getAjaxProcResutlMessage(jqXHR);
+					showInfoMessageForJs(msg);
+					
+					// 期日一覧の再読み込み
+					Promise.resolve()
+						.then(getParentSaibanKijitsuView)<!--/* 親HTMLで定義している関数 */-->
+						.catch((errors) => {console.log(errors);});
+					
+				} else {
+					// 処理失敗
+					
+					if (data) {
+						// HTMLのコンテンツが返却されている場合
+						
+						// HTML表示（親HTMLのID）
+						let fragmentWrapDomId = "kijitsuResultInputFragmentWrap_" + saibanLimitSeq;
+						$('#saibanKijitsuViewFragment ' + '#' + fragmentWrapDomId).html(data);
+					}
+					
+					const errorMsg = getAjaxProcResutlMessage(jqXHR);
+					showErrorMessageForJs(errorMsg);
+				}
+			})
+			.fail(function(jqXHR, status, errorThrown) {
+				showErrorMessageForJs(/*[[#{E00013}]]*/ "保存に失敗しました。");
+			})
+			.always(function(){
+				ajaxRunning = false;
+			});
+			
+		})
+		
+	});
+	</script>
+	
+	<!--/* HTML */-->
+	<form th:object="${saibanKijitsuResultInputForm}" class="saibanKijitsuResultInputForm">
+		<div class="popover_box position_right notAutoClose w_xlarge h_medium popover_arrow popoverBox px-4">
+			<div class="popover_box_header pt-4 pl-0">
+				<div class="popover_box_header_title">期日結果を入力してください。</div>
+			</div>
+			<div class="popover_box_body border-0">
+				<div class="popover_box_content pl-0 m-0">
+					<textarea th:field="*{kijitsuResult}" rows="5" class="form-control" maxlength="5000"></textarea>
+					<input type="hidden" th:field="*{saibanLimitSeq}">
+				</div>
+				<div th:if="${#fields.hasErrors('kijitsuResult')}" th:errors="*{kijitsuResult}" class="error_mag_point">error</div>
+				
+				<div class="popover_box_command_area border-0">
+					<!--/* 保存ボタン */-->
+					<button type="button" id="saveSaibanKijitsuResult" class="btn btn-info btn-sm btn_icon_save">
+						<i class="fas fa-check mr-2"></i>保存
+					</button>
+					
+					<!--/* 閉じるボタン */-->
+					<button type="button" class="btn btn-light btn-sm ml-3 closePopoverBox" title="閉じる">
+						<i class="fas fa-times"></i>閉じる
+					</button>
+				</div>
+			</div>
+		</div>
+	</form>
+</div>
+
+<!--/* 顧客一覧 */-->
+<div th:fragment="saibanCustomerViewFragment(saibanCustomerViewForm)" id="saibanCustomerViewFragment">
+
+	<!--/* Script */-->
+	<script th:inline="javascript">
+	$(function() {
+
+		<!--/* 共有の要素セットアップ処理 */-->
+		commonSetUpElement();
+		
+		<!--/* 名簿ポップオーバー */-->
+		benzo.global.fragment.setUpPersonPopover($("#saibanCustomerViewFragment .personPopoverLabel"));
+		
+		<!--/* 顧客：【筆頭】切り替え処理 */-->
+		$('#saibanCustomerViewFragment .hittou_btn').on('click', function () {
+			
+			<!--/* 対象顧客 */-->
+			const customerId = $(this).data('customer-id')
+			
+			<!--/* 筆頭かどうか */-->
+			let toHittou = false;
+			
+			const isSelected = $(this).hasClass('selected')
+			if (isSelected) {
+				<!--/* 「筆頭」状態のものがクリックされた */-->
+				<!--/* 自身を「筆頭」ではない状態にする */-->
+				toHittou = false;
+			} else {
+				<!--/* 「筆頭」状態ではないものがクリックされた */-->
+				<!--/* 自身を「筆頭」にする */-->
+				toHittou = true;
+			}
+			
+			let dataObj = {
+				customerId: customerId,
+				toHittou: toHittou
+			}
+			
+			<!--/* 2重押下防止 */-->
+			if(ajaxRunning){
+				return false;
+			}
+			ajaxRunning = true;
+			
+			<!--/* 筆頭情報の更新と顧客情報の再描画を行ったのち、その他当事者の再描画を行う */-->
+			Promise.resolve(dataObj)
+				.then(updateHittouAndRenderSaibanCustomerViewFormFunc)
+				.then(renderSaibanOtherViewFormFunc)<!--/* 親HTMLで定義している関数 */-->
+				.catch((errorObj) => {
+					<!--/* 異常系の対応は各処理側で行っており、全体共通での異常系の処理は現状ない */-->
+					console.log(errorObj);
+				})
+				.finally(() => {
+					ajaxRunning = false;
+				})
+		})
+
+		<!--/* 顧客：【当事者表記】切り替え処理 */-->
+		$('#saibanCustomerViewFragment .tojishaHyokiSelect').on('change', function() {
+			
+			const customerId = $(this).data('customer-id');
+			const selectedVal = $(this).val();
+			
+			<!--/* リクエストパラメータ */-->
+			const requestData = {
+				customerId: customerId,
+				tojishaHyoki: selectedVal
+			}
+			
+			<!--/* 2重押下防止 */-->
+			if(ajaxRunning){
+				return false;
+			}
+			ajaxRunning = true;
+			
+			$.ajax({
+				url : 'saveCustomerTojishaHyoki',
+				type : "POST",
+				data : requestData
+			})
+			.done(function(data, status, jqXHR) {
+				if (isAjaxProcSuccess(jqXHR)) {
+					// 処理成功
+					Promise.resolve()
+						.then(() => $('#saibanCustomerViewFragmentWrap').html(data))
+						.then(() => getSaibanOptionView())
+					
+					const msg = getAjaxProcResutlMessage(jqXHR);
+					showInfoMessageForJs(msg);
+					
+				} else {
+					// 処理失敗
+					const errorMsg = getAjaxProcResutlMessage(jqXHR);
+					showErrorMessageForJs(errorMsg);
+				}
+			})
+			.fail(function(jqXHR, status, errorThrown) {
+				showErrorMessageForJs(/*[[#{E00013}]]*/ "保存に失敗しました。");
+			})
+			.always(function(){
+				ajaxRunning = false;
+			});
+		})
+
+		<!--/* 当事者から外すボタンのクリック */-->
+		$('#saibanCustomerViewFragment .removeSaibanCustomer').on('click', function() {
+
+			if (!confirm('当事者から外します。よろしいですか?')) {
+				return false;
+			}
+
+			const customerId = $(this).data('customer-id');
+			if (!customerId) {
+				return;
+			}
+
+			<!--/* リクエストパラメータ */-->
+			const formData = {
+				customerId: customerId
+			}
+			
+			let $clickedElem = $(this)
+			
+			<!--/* 2重押下防止 */-->
+			if(ajaxRunning){
+				return false;
+			}
+			ajaxRunning = true;
+			
+			$.ajax({
+				url : 'removeSaibanCustomer',
+				type : "POST",
+				data : formData
+			})
+			.done(function(data, status, jqXHR) {
+				if (isAjaxProcSuccess(jqXHR)) {
+					// 処理成功
+					
+					// 親HTMLのID
+					$('#saibanCustomerViewFragmentWrap').html(data);
+					
+					const msg = getAjaxProcResutlMessage(jqXHR);
+					showInfoMessageForJs(msg);
+					
+				} else {
+					// 処理失敗
+					
+					const errorMsg = getAjaxProcResutlMessage(jqXHR);
+					showErrorMessageForJs(errorMsg);
+				}
+			})
+			.fail(function(jqXHR, status, errorThrown) {
+				showErrorMessageForJs(/*[[#{E00013}]]*/ "保存に失敗しました。");
+			})
+			.always(function(){
+				ajaxRunning = false;
+			});
+		})
+		
+		<!--/* 顧客追加リンクのクリック */-->
+		$('#saibanCustomerViewFragment #customerAddButton').on('click', function() {
+			
+			<!--/* 特にデータは必要ないので空とする */-->
+			let dataObj = {}
+			
+			<!--/* 2重押下防止 */-->
+			if(ajaxRunning){
+				return false;
+			}
+			ajaxRunning = true;
+			
+			<!--/* 顧客追加フォームを表示 */-->
+			Promise.resolve(dataObj)
+				.then(renderCustomerAddInputFormFunc)
+				.catch((errorObj) => {
+					<!--/* 異常系の対応は各処理側で行っており、全体共通での異常系の処理は現状ない */-->
+					console.log(errorObj);
+				})
+				.finally(() => {
+					ajaxRunning = false;
+				})
+		})
+		
+		<!--/* 当事者の筆頭情報の更新関数（更新後、顧客情報部分を再描画） */-->
+		const updateHittouAndRenderSaibanCustomerViewFormFunc = (dataObj) => {
+			return new Promise((resolve, reject) => {
+				
+				<!--/* オブジェクトのプロパティ値を取得 */-->
+				const {customerId, toHittou} = dataObj;
+				
+				let requestData = {
+					customerId: customerId,
+					toHittou: toHittou
+				}
+				
+				<!--/* 当事者の筆頭情報の更新 */-->
+				<!--/* 2重押下防止対応はPromiseチェーンのルートで処理するため、チェーン内では行わない */-->
+				$.ajax({
+					url : 'saveTojishaHittou',
+					type : "POST",
+					data : requestData
+				})
+				.done(function(data, status, jqXHR) {
+					if (isAjaxProcSuccess(jqXHR)) {
+						// 親HTMLのID表示
+						$('#saibanCustomerViewFragmentWrap').html(data);
+						
+						<!--/* 成功メッセージを後続処理へ渡す */-->
+						dataObj.successMessage = getAjaxProcResutlMessage(jqXHR);
+						
+						resolve(dataObj);
+					} else {
+						// 処理失敗
+						const errorMsg = getAjaxProcResutlMessage(jqXHR);
+						showErrorMessageForJs(errorMsg);
+						
+						reject();
+					}
+				})
+				.fail(function(jqXHR, status, errorThrown) {
+					showErrorMessageForJs(/*[[#{E00091}]]*/ "error");
+					
+					reject();
+				})
+			});
+		}
+		
+		<!--/* 顧客追加フォームの表示関数 */-->
+		const renderCustomerAddInputFormFunc = (dataObj) => {
+			return new Promise((resolve, reject) => {
+				
+				<!--/* クリックされた要素の登録（追加）フォームを表示 */-->
+				<!--/* 2重押下防止対応はPromiseチェーンのルートで処理するため、チェーン内では行わない */-->
+				$.ajax({
+					url : 'getSaibanCustomerAddInputForm',
+					type : "GET"
+				})
+				.done(function(data, status, jqXHR) {
+					if (isAjaxProcSuccess(jqXHR)) {
+						// HTML表示
+						$('#saibanCustomerViewFragment #saibanCustomerAddInputFragmentWrap').html(data);
+						
+						<!--/* Promiseチェーンの最後の処理となるため、引数データは渡さない */-->
+						resolve();
+					} else {
+						// 処理失敗
+						const errorMsg = getAjaxProcResutlMessage(jqXHR);
+						showErrorMessageForJs(errorMsg);
+						
+						reject();
+					}
+				})
+				.fail(function(jqXHR, status, errorThrown) {
+					showErrorMessageForJs(/*[[#{E00091}]]*/ "error");
+					
+					reject();
+				})
+			});
+		}
+	});
+	</script>
+
+	<!--/* HTML */-->
+	<th:block th:object="${saibanCustomerViewForm}">
+		<section class="section_client_side">
+			<div class="section_header">
+				<div class="section_header__title">顧客（当事者）情報</div>
+				<div class="section_header__action">
+					<div class="customer_add_wrap popover_box_wrap">
+						<!--/* 顧客追加 */-->
+						<a th:if="!${saibanCustomerViewForm.displayOnlyFlg}" class="fs15" href="javascirpt:void(0);" onClick="return false;">
+							<span id="customerAddButton">
+								<i class="fas fa-plus-square mr-2"></i>当事者を追加
+							</span>
+						</a>
+						<div id="saibanCustomerAddInputFragmentWrap">
+							<!--/* 顧客追加フォーム */-->
+						</div>
+					</div>
+				</div>
+			</div>
+			<div class="section_body">
+				<div class="section_body__contents p-0">
+					
+	<th:block th:if="${#lists.isEmpty(saibanCustomerViewForm.saibanCustomerDtoList)}">
+					<div class="no_data_msg px-4">
+						<span th:text="#{I00035('顧客（当事者）')}">MSG_I00035</span>
+					</div>
+	</th:block>
+					
+	<th:block th:unless="${#lists.isEmpty(saibanCustomerViewForm.saibanCustomerDtoList)}">
+					<ul class="section_list p-2">
+						<!--/* 顧客一覧表示 */-->
+						<li class="list_contents" th:each="customer : *{saibanCustomerDtoList}">
+							<div class="section_list_item_wrap">
+								<div class="section_list_item">
+									<!--/* 名簿 */-->
+									<div class="img_info_xs mb-2">
+										<!--/* 名簿画像 */-->
+										<div class="img_info_xs__image">
+											<!--/* 名簿属性ラベル */-->
+											<div th:class="|person_image_wrapper${customer.personAttribute?.cd.getCd()}|">
+												<!--/* 個人アイコン */-->
+												<img th:if="${T(jp.loioz.common.constant.CommonConstant$CustomerType).KOJIN.equals(customer.customerType)}" 
+													class="img-thumbnail person_image_xs" th:src="@{/img/person_kojin.svg}"
+													data-boundary="window" data-container="body" data-toggle="tooltip" data-trigger="hover" th:title="個人">
+													
+												<!--/* 企業・団体アイコン */-->
+												<img th:if="${T(jp.loioz.common.constant.CommonConstant$CustomerType).HOJIN.equals(customer.customerType)}"
+													class="img-thumbnail person_image_xs" th:src="@{/img/person_hojin.svg}"
+													data-boundary="window" data-container="body" data-toggle="tooltip" data-trigger="hover" th:title="企業・団体">
+													
+												<!--/* 弁護士アイコン */-->
+												<img th:if="${T(jp.loioz.common.constant.CommonConstant$CustomerType).LAWYER.equals(customer.customerType)}"
+													class="img-thumbnail person_image_xs" th:src="@{/img/person_bengoshi.svg}"
+													data-boundary="window" data-container="body" data-toggle="tooltip" data-trigger="hover" th:title="弁護士">
+											</div>
+										</div>
+										<!--/* 名簿画像 end */-->
+										
+										<!--/* 名前 */-->
+										<div class="img_info_xs__info">
+											<div class="fw600 fs20 lh1_3 pt-1" th:text="${customer.customerName}">山田　太郎 </div>
+											<div>
+												<!-- /* 顧客ID */ -->
+												<a href="javascript:void(0);" class="app_id_link p-1 personPopoverLabel"
+													data-boundary="window" data-container="#saibanCustomerViewFragment" th:data-person-id="${customer.personId.asLong()}"
+													th:text="|名簿ID：${customer.personId.asLong()}|">
+												</a>
+											</div>
+										</div>
+										<!-- /* ボタンエリア */ -->
+										<div class="img_info_xs__btn">
+											<div class="item_sub" th:if="!${saibanCustomerViewForm.displayOnlyFlg}">
+												<!--/* 当事者から外すボタン */-->
+												<button type="button" class="btn btn-light btn_icon_only btn_icon_user_minus removeSaibanCustomer" th:data-customer-id="${customer.customerId.asLong()}"
+													data-boundary="window" data-container="#saibanCustomerViewFragment" data-toggle="tooltip" data-trigger="hover" title="当事者から外す">
+													<i class="fas fa-user-minus"></i>
+												</button>
+											</div>
+										</div>
+										<!--/* 名前 end */-->
+									</div>
+									<!--/* データブロック */-->
+									<div class="item_content_block">
+										<div class="hittou_select_area pl-1">
+											<div class="mb-1">
+												<a href="javascript:void(0);" class="btn hittou_btn px-3"
+													th:classappend="|${customer.mainFlg ? 'selected' : ''} ${saibanCustomerViewForm.displayOnlyFlg ? 'disabled' : ''}|"
+													th:data-customer-id="${customer.customerId.asLong()}">筆頭</a>
+											</div>
+											<div>
+												<select class="form-control hyoki_select tojishaHyokiSelect"
+													th:data-customer-id="${customer.customerId.asLong()}"
+													th:disabled="${saibanCustomerViewForm.displayOnlyFlg}">
+													<option value="">-</option>
+													<th:block th:each="enum : ${T(jp.loioz.common.constant.CommonConstant$TojishaHyoki).values()}">
+														<option th:value="${enum.cd}" th:text="${enum.val}" th:selected="${enum.cd.equals(customer.saibanTojishaHyoki)}"></option>
+													</th:block>
+												</select>
+											</div>
+										</div>
+									</div>
+								</div>
+							</div>
+						</li>
+					</ul>
+				</div>
+			</div>
+		</section>
+	</th:block>
+
+</div>
+
+<!--/* 顧客追加 */-->
+<div th:fragment="saibanCustomerAddInputFragment" id="saibanCustomerAddInputFragment">
+
+	<!--/* Script */-->
+	<script th:inline="javascript">
+	$(function() {
+
+		<!--/* 共有の要素セットアップ処理 */-->
+		commonSetUpElement();
+
+		<!--/* 顧客追加の保存 */-->
+		$('#saibanCustomerAddInputFragment #registSaibanCustomerAdd').on('click', function () {
+			
+			let formData = $('#saibanCustomerAddInputFragment .saibanCustomerAddInputForm').serializeArray();
+
+			if(!formData.find((v) => v.value === "true")) {
+				alert("当事者を選択してください。");
+				return false;
+			}
+
+			<!--/* 2重押下防止 */-->
+			if(ajaxRunning){
+				return false;
+			}
+			ajaxRunning = true;
+			
+			$.ajax({
+				url : 'registSaibanCustomerAdd',
+				type : "POST",
+				data : formData
+			})
+			.done(function(data, status, jqXHR) {
+				if (isAjaxProcSuccess(jqXHR)) {
+					// 処理成功
+					
+					// 顧客情報表示部のID
+					$('#saibanCustomerViewFragmentWrap').html(data);
+					
+					const msg = getAjaxProcResutlMessage(jqXHR);
+					showInfoMessageForJs(msg);
+					
+				} else {
+					// 処理失敗
+					
+					const errorMsg = getAjaxProcResutlMessage(jqXHR);
+					showErrorMessageForJs(errorMsg);
+				}
+			})
+			.fail(function(jqXHR, status, errorThrown) {
+				showErrorMessageForJs(/*[[#{E00013}]]*/ "保存に失敗しました。");
+			})
+			.always(function(){
+				ajaxRunning = false;
+			});
+			
+		})
+		
+	});
+	</script>
+	
+	<!--/* HTML */-->
+	<form th:object="${saibanCustomerAddInputForm}" class="saibanCustomerAddInputForm">
+		<div class="popover_box position_right w_small h_medium popover_arrow popoverBox">
+			<div class="popover_box_header">
+				<div class="popover_box_header_title">当事者を追加</div>
+			</div>
+			<div class="popover_box_body">
+				<div class="popover_box_content">
+					<th:block th:if="*{addCustomerCandidateList.size() != 0}">
+						<th:block th:each="candidate, candidateStat : *{addCustomerCandidateList}">
+							<p class="m-0">
+								<label class="checkbox_btn">
+									<input type="checkbox" class="checkbox_input" th:field="*{addCustomerCandidateList[__${candidateStat.index}__].toAdd}">
+									<span class="checkbox_txt" th:text="*{addCustomerCandidateList[__${candidateStat.index}__].title}">顧客　太郎</span>
+								</label>
+							</p>
+							<input type="hidden" th:field="*{addCustomerCandidateList[__${candidateStat.index}__].seq}">
+						</th:block>
+					</th:block>
+					<th:block th:unless="*{addCustomerCandidateList.size() != 0}">
+						<i class="fas fa-exclamation-circle mr-2"></i>選択できる顧客がありません。
+					</th:block>
+				</div>
+				<th:block th:if="*{addCustomerCandidateList.size() != 0}">
+					<div class="popover_box_command_area">
+						<!--/* 保存ボタン */-->
+						<button type="button" id="registSaibanCustomerAdd" class="btn btn-info btn_icon_only btn_icon_save">
+							<i class="fas fa-check m-0"></i>
+						</button>
+
+							<!--/* 閉じるボタン */-->
+							<button type="button" class="btn btn-light btn_icon_only ml-3 closePopoverBox" title="閉じる">
+							<i class="fas fa-times"></i>
+						</button>
+					</div>
+				</th:block>
+			</div>
+		</div>
+	</form>
+</div>
+
+<!--/* その他当事者一覧 */-->
+<div th:fragment="saibanOtherViewFragment(saibanOtherViewForm)" id="saibanOtherViewFragment">
+
+	<!--/* 関与者モーダルを扱うので共通JS定義 */-->
+	<script type="text/javascript" th:replace="common/mvc/kanyosha/kanyoshaEditModal::kanyoshaEditModalFragmentObjJs"></script>
+
+	<!--/* Script */-->
+	<script th:inline="javascript">
+	$(function() {
+		
+		<!--/* 共有の要素セットアップ処理 */-->
+		commonSetUpElement();
+		
+		<!--/* 名簿ポップオーバー */-->
+		benzo.global.fragment.setUpPersonPopover($("#saibanOtherViewFragment .personPopoverLabel"));
+
+		<!--/* その他当事者：【筆頭】切り替え処理 */-->
+		$('#saibanOtherViewFragment .hittou_btn').on('click', function () {
+			
+			<!--/* 対象関与者 */-->
+			const kanyoshaSeq = $(this).data('kanyosha-seq')
+			
+			<!--/* 筆頭かどうか */-->
+			let toHittou = false;
+			
+			const isSelected = $(this).hasClass('selected')
+			if (isSelected) {
+				<!--/* 「筆頭」状態のものがクリックされた */-->
+				<!--/* 自身を「筆頭」ではない状態にする */-->
+				toHittou = false;
+			} else {
+				<!--/* 「筆頭」状態ではないものがクリックされた */-->
+				<!--/* 自身を「筆頭」にする */-->
+				toHittou = true;
+			}
+			
+			let dataObj = {
+				kanyoshaSeq: kanyoshaSeq,
+				toHittou: toHittou
+			}
+			
+			<!--/* 2重押下防止 */-->
+			if(ajaxRunning){
+				return false;
+			}
+			ajaxRunning = true;
+			
+			<!--/* 筆頭情報の更新と顧客情報の再描画を行ったのち、その他当事者の再描画を行う */-->
+			Promise.resolve(dataObj)
+				.then(updateHittouAndRenderSaibanCustomerViewFormFunc)
+				.then(renderSaibanOtherViewFormFunc)<!--/* 親HTMLで定義している関数 */-->
+				.catch((errorObj) => {
+					<!--/* 異常系の対応は各処理側で行っており、全体共通での異常系の処理は現状ない */-->
+					console.log(errorObj);
+				})
+				.finally(() => {
+					ajaxRunning = false;
+				})
+		})
+		
+		<!--/* 当事者の筆頭情報の更新関数（更新後、顧客情報部分を再描画） */-->
+		const updateHittouAndRenderSaibanCustomerViewFormFunc = (dataObj) => {
+			return new Promise((resolve, reject) => {
+				
+				<!--/* オブジェクトのプロパティ値を取得 */-->
+				const {kanyoshaSeq, toHittou} = dataObj;
+				
+				let requestData = {
+					kanyoshaSeq: kanyoshaSeq,
+					toHittou: toHittou
+				}
+				
+				<!--/* 当事者の筆頭情報の更新 */-->
+				<!--/* 2重押下防止対応はPromiseチェーンのルートで処理するため、チェーン内では行わない */-->
+				$.ajax({
+					url : 'saveTojishaHittou',
+					type : "POST",
+					data : requestData
+				})
+				.done(function(data, status, jqXHR) {
+					if (isAjaxProcSuccess(jqXHR)) {
+						// 親HTMLのID表示
+						$('#saibanCustomerViewFragmentWrap').html(data);
+						
+						<!--/* 成功メッセージを後続処理へ渡す */-->
+						dataObj.successMessage = getAjaxProcResutlMessage(jqXHR);
+						
+						resolve(dataObj);
+					} else {
+						// 処理失敗
+						const errorMsg = getAjaxProcResutlMessage(jqXHR);
+						showErrorMessageForJs(errorMsg);
+						
+						reject();
+					}
+				})
+				.fail(function(jqXHR, status, errorThrown) {
+					showErrorMessageForJs(/*[[#{E00091}]]*/ "error");
+					
+					reject();
+				})
+			});
+		}
+
+		<!--/* 顧客・その他関与者：【当事者表記】切り替え処理 */-->
+		$('#saibanOtherViewFragment .tojishaHyokiSelect').on('change', function() {
+
+			const kanyoshaSeq = $(this).data('kanyosha-seq');
+			const selectedVal = $(this).val();
+			
+			<!--/* リクエストパラメータ */-->
+			const requestData = {
+				kanyoshaSeq: kanyoshaSeq,
+				tojishaHyoki: selectedVal
+			}
+			
+			<!--/* 2重押下防止 */-->
+			if(ajaxRunning){
+				return false;
+			}
+			ajaxRunning = true;
+			
+			$.ajax({
+				url : 'saveKanyoshaTojishaHyoki',
+				type : "POST",
+				data : requestData
+			})
+			.done(function(data, status, jqXHR) {
+				if (isAjaxProcSuccess(jqXHR)) {
+					// 処理成功
+					Promise.resolve()
+						.then(() => $('#saibanOtherViewFragmentWrap').html(data))
+						.then(() => getSaibanOptionView())
+
+					const msg = getAjaxProcResutlMessage(jqXHR);
+					showInfoMessageForJs(msg);
+
+				} else {
+					// 処理失敗
+					const errorMsg = getAjaxProcResutlMessage(jqXHR);
+					showErrorMessageForJs(errorMsg);
+				}
+			})
+			.fail(function(jqXHR, status, errorThrown) {
+				showErrorMessageForJs(/*[[#{E00013}]]*/ "保存に失敗しました。");
+			})
+			.always(function(){
+				ajaxRunning = false;
+			});
+		})
+
+		<!--/* その他当事者から外すボタンのクリック */-->
+		$('#saibanOtherViewFragment').on('click', '.removeSaibanKanyosha', function() {
+
+			if (!confirm('その他当事者から外します。よろしいですか?')) {
+				return false;
+			}
+
+			const kyohanshaContainer = $($(this).data('target'));
+			const kanyoshaSeq = kyohanshaContainer.data('kanyoshaSeq');
+			if (!kanyoshaSeq) {
+				return;
+			}
+			
+			<!--/* リクエストパラメータ */-->
+			const formData = {
+					kanyoshaSeq: kanyoshaSeq
+			}
+			
+			let $clickedElem = $(this)
+			
+			<!--/* 2重押下防止 */-->
+			if(ajaxRunning){
+				return false;
+			}
+			ajaxRunning = true;
+			
+			$.ajax({
+				url : 'removeSaibanKanyosha',
+				type : "POST",
+				data : formData
+			})
+			.done(function(data, status, jqXHR) {
+				if (isAjaxProcSuccess(jqXHR)) {
+					// 処理成功
+					
+					// 親HTMLのID
+					$('#saibanOtherViewFragmentWrap').html(data);
+					
+					const msg = getAjaxProcResutlMessage(jqXHR);
+					showInfoMessageForJs(msg);
+					
+				} else {
+					// 処理失敗
+					
+					const errorMsg = getAjaxProcResutlMessage(jqXHR);
+					showErrorMessageForJs(errorMsg);
+				}
+			})
+			.fail(function(jqXHR, status, errorThrown) {
+				showErrorMessageForJs(/*[[#{E00013}]]*/ "保存に失敗しました。");
+			})
+			.always(function(){
+				ajaxRunning = false;
+			});
+		})
+
+		<!--/* その他当事者を案件から外すボタンのクリック */-->
+		$('#saibanOtherViewFragment').on('click', '.removeSaibanKanyoshaFromAnken', function() {
+
+			if (!confirm('案件から外します。よろしいですか?')) {
+				return false;
+			}
+
+			const kyohanshaContainer = $($(this).data('target'));
+			const kanyoshaSeq = kyohanshaContainer.data('kanyoshaSeq');
+			if (!kanyoshaSeq) {
+				return;
+			}
+			
+			<!--/* リクエストパラメータ */-->
+			const formData = {
+					kanyoshaSeq: kanyoshaSeq
+			}
+			
+			<!--/* 2重押下防止 */-->
+			if(ajaxRunning){
+				return false;
+			}
+			ajaxRunning = true;
+			
+			Promise.resolve()
+				.then(() => beforeCheck(formData))
+				.then(() => deleteAction(formData))
+				.catch((errorObj) => console.log(errorObj))
+				.finally(() => ajaxRunning = false);
+			
+			function beforeCheck(formData) {
+				return new Promise((resolve, reject) => {
+					$.ajax({
+						type : "POST",
+						url : /*[[@{/user/saibanMinjiManagement/{saibanSeq}/{ankenId}/deleteKanyoshaBeforeCheck(saibanSeq=${saibanOtherViewForm.saibanSeq}, ankenId=${ankenId})}]]*/"",
+						data : formData,
+						dataType : "json",
+					}).done(function(data) {
+						if (data.needConfirm && !confirm(data.message)) {
+							return reject();
+						} else {
+							return resolve();
+						}
+					}).fail(function(jqXHR, status, errorThrown) {
+						const errorMsg = /*[[#{E00091}]]*/ "error";
+						showErrorMessageForJs(errorMsg);
+						return reject();
+					});
+				});
+			}
+			
+			function deleteAction(param) {
+				return new Promise((resolve, reject) => {
+					$.ajax({
+						type : "POST",
+						url : /*[[@{/user/saibanMinjiManagement/{saibanSeq}/{ankenId}/deleteOtherKanyosha(saibanSeq=${saibanOtherViewForm.saibanSeq}, ankenId=${ankenId})}]]*/"",
+						data : param,
+						dataType : "html",
+					})
+					.done(function(data, status, jqXHR) {
+						if (isAjaxProcSuccess(jqXHR)) {
+							<!--/* 処理成功 */-->
+							
+							<!--/* 親HTMLのID */-->
+							$('#saibanOtherViewFragmentWrap').html(data);
+							
+							showInfoMessageForJs(/*[[#{I00028('その他当事者情報')}]]*/)
+							return resolve();
+						} else {
+							<!--/* 処理失敗 */-->
+							const errorMsg = getAjaxProcResutlMessage(jqXHR);
+							showErrorMessageForJs(errorMsg);
+							return reject();
+						}
+					})
+					.fail(function(jqXHR, status, errorThrown) {
+						showErrorMessageForJs(/*[[#{E00014}]]*/ "削除に失敗しました。");
+						return reject();
+					})
+				});
+			}
+		});
+
+		<!--/* 代理人から外すボタンのクリック */-->
+		$('#saibanOtherViewFragment').on('click', '.removeSaibanRelatedKanyosha', function() {
+			
+			if (!confirm('代理人から外します。よろしいですか?')) {
+				return false;
+			}
+
+			const kyohanshaContainer = $($(this).data('target'));
+			const kanyoshaSeq = kyohanshaContainer.data('kanyoshaSeq');
+			if (!kanyoshaSeq) {
+				return;
+			}
+			
+			<!--/* リクエストパラメータ */-->
+			const formData = {
+					kanyoshaSeq: kanyoshaSeq
+			}
+			
+			let $clickedElem = $(this)
+			
+			<!--/* 2重押下防止 */-->
+			if(ajaxRunning){
+				return false;
+			}
+			ajaxRunning = true;
+			
+			$.ajax({
+				url : 'removeSaibanRelatedKanyosha',
+				type : "POST",
+				data : formData
+			})
+			.done(function(data, status, jqXHR) {
+				if (isAjaxProcSuccess(jqXHR)) {
+					// 処理成功
+					
+					// 親HTMLのID
+					$('#saibanOtherViewFragmentWrap').html(data);
+					
+					const msg = getAjaxProcResutlMessage(jqXHR);
+					showInfoMessageForJs(msg);
+					
+				} else {
+					// 処理失敗
+					
+					const errorMsg = getAjaxProcResutlMessage(jqXHR);
+					showErrorMessageForJs(errorMsg);
+				}
+			})
+			.fail(function(jqXHR, status, errorThrown) {
+				showErrorMessageForJs(/*[[#{E00013}]]*/ "保存に失敗しました。");
+			})
+			.always(function(){
+				ajaxRunning = false;
+			});
+		})
+
+		<!--/* その他当事者の代理人を案件から外すボタンのクリック */-->
+		$('#saibanOtherViewFragment').on('click', '.removeSaibanRelatedKanyoshaFromAnken', function() {
+
+			if (!confirm('案件から外します。よろしいですか?')) {
+				return false;
+			}
+
+			const kyohanshaContainer = $($(this).data('target'));
+			const kanyoshaSeq = kyohanshaContainer.data('relatedKanyoshaSeq');
+			if (!kanyoshaSeq) {
+				return;
+			}
+			
+			<!--/* リクエストパラメータ */-->
+			const formData = {
+					kanyoshaSeq: kanyoshaSeq
+			}
+			
+			<!--/* 2重押下防止 */-->
+			if(ajaxRunning){
+				return false;
+			}
+			ajaxRunning = true;
+			
+			Promise.resolve()
+				.then(() => beforeCheck(formData))
+				.then(() => deleteAction(formData))
+				.catch((errorObj) => console.log(errorObj))
+				.finally(() => ajaxRunning = false);
+			
+			function beforeCheck(formData) {
+				return new Promise((resolve, reject) => {
+					$.ajax({
+						type : "POST",
+						url : /*[[@{/user/saibanMinjiManagement/{saibanSeq}/{ankenId}/deleteKanyoshaBeforeCheck(saibanSeq=${saibanOtherViewForm.saibanSeq}, ankenId=${ankenId})}]]*/"",
+						data : formData,
+						dataType : "json",
+					}).done(function(data) {
+						if (data.needConfirm && !confirm(data.message)) {
+							return reject();
+						} else {
+							return resolve();
+						}
+					}).fail(function(jqXHR, status, errorThrown) {
+						const errorMsg = /*[[#{E00091}]]*/ "error";
+						showErrorMessageForJs(errorMsg);
+						return reject();
+					});
+				});
+			}
+			
+			function deleteAction(param) {
+				return new Promise((resolve, reject) => {
+					$.ajax({
+						type : "POST",
+						url : /*[[@{/user/saibanMinjiManagement/{saibanSeq}/{ankenId}/deleteOtherKanyosha(saibanSeq=${saibanOtherViewForm.saibanSeq}, ankenId=${ankenId})}]]*/"",
+						data : param,
+						dataType : "html",
+					})
+					.done(function(data, status, jqXHR) {
+						if (isAjaxProcSuccess(jqXHR)) {
+							<!--/* 処理成功 */-->
+							
+							<!--/* 親HTMLのID */-->
+							$('#saibanOtherViewFragmentWrap').html(data);
+							
+							showInfoMessageForJs(/*[[#{I00028('その他当事者代理人情報')}]]*/);
+							return resolve();
+						} else {
+							<!--/* 処理失敗 */-->
+							const errorMsg = getAjaxProcResutlMessage(jqXHR);
+							showErrorMessageForJs(errorMsg);
+							return reject();
+						}
+					})
+					.fail(function(jqXHR, status, errorThrown) {
+						showErrorMessageForJs(/*[[#{E00014}]]*/ "削除に失敗しました。");
+						return reject();
+					})
+				});
+			}
+		});
+
+		<!--/* その他当事者のモーダル */-->
+		const $otherModal = $("#saibanOtherViewFragment").find("#kanyoshaOtherModal");
+		$otherModal.on("show.bs.modal", function(e) {
+			
+			// モーダル表示名
+			benzo.global.fragment.kanyoshaEditModalFragmentObj.paramObj.modalNameLabel = 'その他当事者';
+			
+			// 選択できない顧客種別
+			benzo.global.fragment.kanyoshaEditModalFragmentObj.paramObj.excludeCustomerType = ["2"];
+			
+			// 登録処理
+			benzo.global.fragment.kanyoshaEditModalFragmentObj.setUpObj.registAction = function(triggerBtn) {
+
+				let param = benzo.global.fragment.kanyoshaEditModalFragmentObj.paramObj.getFormParams($otherModal);
+				let otherWithInParam = Object.assign({}, benzo.global.fragment.kanyoshaEditModalFragmentObj.otherWithInParam);
+				
+				param.push({
+					name : "saibanSeq",
+					value : otherWithInParam.saibanSeq
+				});
+				
+				let url = /*[[@{/common/mvc/kanyosha/registKanyoshaForSaibanOther}]]*/"";
+				if (ajaxRunning) {
+					return false;
+				}
+				ajaxRunning = true;
+				$.ajax({
+					type : "POST",
+					url : url,
+					data : param,
+					dataType : "html",
+				})
+				.done(function(data, status, jqXHR) {
+					if (isAjaxProcSuccess(jqXHR)) {
+						// 処理成功
+						Promise.resolve()
+							.then(() => modalHidePromise($otherModal))
+							.then(() => getSaibanOtherView())
+							.then(() => showInfoMessageForJs(getAjaxProcResutlMessage(jqXHR)))
+					} else {
+						if (data) {
+							$otherModal.find(".kanyoshaEditModalFragmentWrap").html(data);
+						}
+						const errorMsg = getAjaxProcResutlMessage(jqXHR);
+						showErrorMessage(errorMsg, $otherModal);
+					}
+				})
+				.fail(function(jqXHR, status, errorThrown) {
+					const errorMsg = /*[[#{E00091}]]*/ "error";
+					showErrorMessage(errorMsg, $otherModal);
+				})
+				.always(function(){
+					ajaxRunning = false;
+				});
+			};
+			
+			// 更新処理
+			benzo.global.fragment.kanyoshaEditModalFragmentObj.setUpObj.updateAction = function(triggerBtn) {
+
+				let param = benzo.global.fragment.kanyoshaEditModalFragmentObj.paramObj.getFormParams($otherModal);
+				let url = /*[[@{/common/mvc/kanyosha/updateKanyosha}]]*/"";
+				
+				if (ajaxRunning) {
+					return false;
+				}
+				ajaxRunning = true;
+
+				$.ajax({
+					type : "POST",
+					url : url,
+					data : param,
+					dataType : "html",
+				})
+				.done(function(data, status, jqXHR) {
+					if (isAjaxProcSuccess(jqXHR)) {
+						// 処理成功
+						Promise.resolve()
+							.then(() => modalHidePromise($otherModal))
+							.then(() => getSaibanOtherView())
+							.then(() => showInfoMessageForJs(/*[[#{I00023('その他当事者情報')}]]*/''))
+					} else {
+						if (data) {
+							$otherModal.find(".kanyoshaEditModalFragmentWrap").html(data);
+						}
+						const errorMsg = getAjaxProcResutlMessage(jqXHR);
+						showErrorMessage(errorMsg, $otherModal);
+					}
+				})
+				.fail(function(jqXHR, status, errorThrown) {
+					const errorMsg = /*[[#{E00091}]]*/ "error";
+					showErrorMessage(errorMsg, $otherModal);
+				})
+				.always(function(){
+					ajaxRunning = false;
+				});
+			};
+			
+			// 削除処理
+			benzo.global.fragment.kanyoshaEditModalFragmentObj.setUpObj.deleteAction = function(triggerBtn) {
+				
+				let param = benzo.global.fragment.kanyoshaEditModalFragmentObj.paramObj.getFormParams($otherModal);
+
+				if (ajaxRunning) {
+					return false;
+				}
+				ajaxRunning = true;
+
+				Promise.resolve()
+					.then(() => beforeCheck(param))
+					.then(() => deleteAction(param))
+					.then(() => modalHidePromise($otherModal))
+					.then(() => getSaibanOtherView())
+					.catch((errorObj) => console.log(errorObj))
+					.finally(() => ajaxRunning = false);
+				
+				function beforeCheck(param) {
+					return new Promise((resolve, reject) => {
+						$.ajax({
+							type : "POST",
+							url : /*[[@{/common/mvc/kanyosha/deleteKanyoshaBeforeCheck}]]*/,
+							data : param,
+							dataType : "json",
+						}).done(function(data) {
+							if (data.needConfirm && !confirm(data.message)) {
+								return reject();
+							} else {
+								return resolve([data]);
+							}
+						}).fail(function(jqXHR, status, errorThrown) {
+							const errorMsg = /*[[#{E00091}]]*/ "error";
+							showErrorMessage(errorMsg, $otherModal);
+							return reject(jqXHR, status, errorThrown);
+						});
+					});
+				}
+				
+				function deleteAction(param) {
+					return new Promise((resolve, reject) => {
+						$.ajax({
+							type : "POST",
+							url : /*[[@{/common/mvc/kanyosha/deleteKanyosha}]]*/,
+							data : param,
+							dataType : "html",
+						})
+						.done(function(data, status, jqXHR) {
+							if (isAjaxProcSuccess(jqXHR)) {
+								// 処理成功
+								showInfoMessageForJs(/*[[#{I00028('その他当事者情報')}]]*/'')
+								return resolve()
+							} else {
+								const errorMsg = getAjaxProcResutlMessage(jqXHR);
+								showErrorMessage(errorMsg, $otherModal);
+								return reject([errorMsg]);
+							}
+						})
+						.fail(function(jqXHR, status, errorThrown) {
+							const errorMsg = /*[[#{E00091}]]*/ "error";
+							showErrorMessage(errorMsg, $otherModal);
+							return reject([jqXHR, status, errorThrown]);
+						});
+					});
+				}
+			};
+			
+			// 登録・編集エリアの初期レンダリング（再レンダリングも含む）
+			benzo.global.fragment.kanyoshaEditModalFragmentObj.setUpObj.initRenderEditViewAction = function(triggerBtn) {
+				if (ajaxRunning) {
+					return false;
+				}
+				ajaxRunning = true;
+				Promise.resolve()
+					.then(() => initRenderOtherEditViewAction())
+					.catch((errors) => console.log(errors))
+					.finally(() => ajaxRunning = false);
+			};
+			
+			// 検索エリアの登録処理
+			benzo.global.fragment.kanyoshaEditModalFragmentObj.setUpObj.searchRegistAction = function(triggerBtn) {
+				if (ajaxRunning) {
+					return false;
+				}
+				let param = benzo.global.fragment.kanyoshaEditModalFragmentObj.paramObj.getSearchResultFormParams($otherModal);
+				let otherWithInParam = Object.assign({}, benzo.global.fragment.kanyoshaEditModalFragmentObj.otherWithInParam);
+				param.push({
+					name : "saibanSeq",
+					value : otherWithInParam.saibanSeq
+				});
+				const url = /*[[@{/common/mvc/kanyosha/searchResultRegistKanyoshaForSaibanOther}]]*/"";
+				ajaxRunning = true;
+				$.ajax({
+					type : "POST",
+					url : url,
+					data : param,
+					dataType : "html",
+				})
+				.done(function(data, status, jqXHR) {
+					if (isAjaxProcSuccess(jqXHR)) {
+						// 処理成功
+						Promise.resolve()
+							.then(() => modalHidePromise($otherModal))
+							.then(() => getSaibanOtherView())
+							.then(() => showInfoMessageForJs(getAjaxProcResutlMessage(jqXHR)))
+					} else {
+						const errorMsg = getAjaxProcResutlMessage(jqXHR);
+						showErrorMessage(errorMsg, $otherModal);
+					}
+				})
+				.fail(function(jqXHR, status, errorThrown) {
+					const errorMsg = /*[[#{E00091}]]*/ "error";
+					showErrorMessage(errorMsg, $otherModal);
+				})
+				.always(function(){
+					ajaxRunning = false;
+				});
+			};
+			
+			// 検索エリアの検索処理
+			benzo.global.fragment.kanyoshaEditModalFragmentObj.setUpObj.searchRenderPromise = function() {
+				return new Promise((resolve, reject) => {
+					const url = /*[[@{/common/mvc/kanyosha/getKanyoshaSearchModalFragment/saiban/other}]]*/"";
+					let optionParam = benzo.global.fragment.kanyoshaEditModalFragmentObj.paramObj.getSearchFormParams($otherModal);
+					let otherWithInParam = Object.assign({}, benzo.global.fragment.kanyoshaEditModalFragmentObj.otherWithInParam);
+					optionParam.push({
+						name : "saibanSeq",
+						value : otherWithInParam.saibanSeq
+					});
+					$.ajax({
+						type : "GET",
+						url : url,
+						data : optionParam,
+						dataType : "html"
+					})
+					.done(function(result, status, jqXHR) {
+						if (isAjaxProcSuccess(jqXHR)) {
+							// 処理成功
+							$otherModal.find(".kanyoshaEditModalFragmentWrap").html(result);
+							return resolve();
+						} else {
+							const errorMsg = getAjaxProcResutlMessage(jqXHR);
+							showErrorMessage(errorMsg, $otherModal);
+							return reject(errorMsg)
+						}
+					})
+					.fail(function(jqXHR, status, errorThrown) {
+						showErrorMessageForJs(/*[[#{E00091}]]*/ "error");
+						return reject([jqXHR, status, errorThrown]);
+					});
+				});
+			};
+			
+			// 検索エリアの初期表示処理
+			benzo.global.fragment.kanyoshaEditModalFragmentObj.setUpObj.initRenderSearchViewAction = function() {
+				if (ajaxRunning) {
+					return false;
+				}
+				ajaxRunning = true;
+				Promise.resolve()
+					.then(() => initRenderOtherSearchViewAction())
+					.catch((errors) => console.log(errors))
+					.finally(() => ajaxRunning = false);
+			};
+			
+		});
+		
+		<!--/* その他当事者編集モーダルの初期レンダリング関数 */-->
+		function initRenderOtherEditViewAction() {
+			return new Promise((resolve, reject) => {
+				let initRenderOtherEditViewParams = Object.assign({}, benzo.global.fragment.kanyoshaEditModalFragmentObj.initRenderOtherEditViewParams);
+				const ankenId = initRenderOtherEditViewParams["ankenId"];
+				const kanyoshaSeq = initRenderOtherEditViewParams["kanyoshaSeq"];
+				let url = /*[[@{/common/mvc/kanyosha/getKanyoshaEditModalFragment}]]*/"";
+				
+				let param = {} ;
+				if (kanyoshaSeq) {
+					url += `/${kanyoshaSeq}`;
+				} else {
+					url += "/create";
+					param = {
+						"ankenId" : ankenId,
+						"initCustomerType" : "0",
+					};
+				};
+
+				$.ajax({
+					type : "GET",
+					url : url,
+					data : param,
+					dataType : "html"
+				})
+				.done(function(result, status, jqXHR) {
+					if (isAjaxProcSuccess(jqXHR)) {
+						// 処理成功
+						$otherModal.find(".kanyoshaEditModalFragmentWrap").html(result);
+						return resolve();
+					} else {
+						const errorMsg = getAjaxProcResutlMessage(jqXHR);
+						showErrorMessageForJs(errorMsg);
+						return reject(errorMsg);
+					}
+				})
+				.fail(function(jqXHR, status, errorThrown) {
+					showErrorMessageForJs(/*[[#{E00091}]]*/ "error");
+					return reject(jqXHR, status, errorThrown);
+				})
+			});
+		};
+		
+		<!--/* 相手方検索モーダルの初期レンダリング関数 */-->
+		function initRenderOtherSearchViewAction() {
+			return new Promise((resolve, reject) => {
+				let initRenderOtherSearchViewParams = Object.assign({}, benzo.global.fragment.kanyoshaEditModalFragmentObj.initRenderOtherSearchViewParams);
+				const ankenId = initRenderOtherSearchViewParams["ankenId"];
+				const saibanSeq = initRenderOtherSearchViewParams["saibanSeq"]
+				let param = [
+					{name:"ankenId", value: ankenId},
+					{name:"saibanSeq", value: saibanSeq},
+				];
+
+				const url = /*[[@{/common/mvc/kanyosha/getKanyoshaSearchModalFragment/saiban/other}]]*/"";
+				$.ajax({
+					type : "GET",
+					url : url,
+					data : param,
+					dataType : "html"
+				})
+				.done(function(result, status, jqXHR) {
+					if (isAjaxProcSuccess(jqXHR)) {
+						// 処理成功
+						$otherModal.find(".kanyoshaEditModalFragmentWrap").html(result);
+						return resolve();
+					} else {
+						const errorMsg = getAjaxProcResutlMessage(jqXHR);
+						showErrorMessageForJs(errorMsg);
+						return reject(errorMsg);
+					}
+				})
+				.fail(function(jqXHR, status, errorThrown) {
+					showErrorMessageForJs(/*[[#{E00091}]]*/ "error");
+					return reject(jqXHR, status, errorThrown);
+				});
+			});
+		};
+		
+		<!--/* その他当事者のモーダル表示処理 */-->
+		$("#saibanOtherViewFragment").on("click", ".openKanyoshaOtherModal", function() {
+			if (ajaxRunning) {
+				return false;
+			}
+			ajaxRunning = true;
+
+			const ankenId = /*[[${ankenId}]]*/"";
+			const saibanSeq = /*[[${saibanOtherViewForm.saibanSeq}]]*/"";
+			const kanyoshaSeq =$(this).data("kanyoshaSeq");
+			
+			<!--/* モーダルの保存処理等で使用するパラメータをGlobal領域に保持させておく */-->
+			benzo.global.fragment.kanyoshaEditModalFragmentObj.otherWithInParam = {
+				"saibanSeq": saibanSeq,
+			}
+			
+			// 登録・編集初期表示で必要なパラメータをメモリに保持しておく
+			benzo.global.fragment.kanyoshaEditModalFragmentObj.initRenderOtherEditViewParams = {
+					"ankenId": ankenId,
+					"kanyoshaSeq": kanyoshaSeq,
+			};
+			
+			// 検索初期表示で必要なパラメータをメモリに保持しておく
+			benzo.global.fragment.kanyoshaEditModalFragmentObj.initRenderOtherSearchViewParams = {
+					"ankenId": ankenId,
+					"saibanSeq": saibanSeq
+			}
+			
+			ajaxRunning = true;
+			Promise.resolve()
+				.then(() => initRenderOtherEditViewAction())
+				.then(() => $otherModal.modal("show"))
+				.catch((errors) => console.log(errors))
+				.finally(() => ajaxRunning = false);
+		});
+		
+		<!--/* その他当事者の代理人モーダル */-->
+		const $otherDairininModal = $("#saibanOtherViewFragment").find("#kanyoshaOtherDairininModal");
+		$otherDairininModal.on("show.bs.modal", function(e) {
+			
+			// モーダル表示名
+			benzo.global.fragment.kanyoshaEditModalFragmentObj.paramObj.modalNameLabel = 'その他当事者代理人';
+			
+			// 選択できない顧客種別
+			benzo.global.fragment.kanyoshaEditModalFragmentObj.paramObj.excludeCustomerType = ["0", "1"];
+			
+			// 登録処理
+			benzo.global.fragment.kanyoshaEditModalFragmentObj.setUpObj.registAction = function(triggerBtn) {
+
+				let param = benzo.global.fragment.kanyoshaEditModalFragmentObj.paramObj.getFormParams($otherDairininModal);
+				let otherDairininWithInParam = Object.assign({}, benzo.global.fragment.kanyoshaEditModalFragmentObj.otherDairininWithInParam);
+				
+				param.push({
+					name : "saibanSeq",
+					value : otherDairininWithInParam.saibanSeq
+				});
+
+				param.push({
+					name : "otherKanyoshaSeq",
+					value : otherDairininWithInParam.otherKanyoshaSeq
+				});
+				
+				let url = /*[[@{/common/mvc/kanyosha/registKanyoshaForSaibanOtherDairinin}]]*/"";
+				if (ajaxRunning) {
+					return false;
+				}
+				ajaxRunning = true;
+				$.ajax({
+					type : "POST",
+					url : url,
+					data : param,
+					dataType : "html",
+				})
+				.done(function(data, status, jqXHR) {
+					if (isAjaxProcSuccess(jqXHR)) {
+						// 処理成功
+						Promise.resolve()
+							.then(() => modalHidePromise($otherDairininModal))
+							.then(() => getSaibanOtherView())
+							.then(() => showInfoMessageForJs(getAjaxProcResutlMessage(jqXHR)))
+					} else {
+						if (data) {
+							$otherDairininModal.find(".kanyoshaEditModalFragmentWrap").html(data);
+						}
+						const errorMsg = getAjaxProcResutlMessage(jqXHR);
+						showErrorMessage(errorMsg, $otherDairininModal);
+					}
+				})
+				.fail(function(jqXHR, status, errorThrown) {
+					const errorMsg = /*[[#{E00091}]]*/ "error";
+					showErrorMessage(errorMsg, $otherDairininModal);
+				})
+				.always(function(){
+					ajaxRunning = false;
+				});
+			};
+			
+			// 更新処理
+			benzo.global.fragment.kanyoshaEditModalFragmentObj.setUpObj.updateAction = function(triggerBtn) {
+
+				let param = benzo.global.fragment.kanyoshaEditModalFragmentObj.paramObj.getFormParams($otherDairininModal);
+				let url = /*[[@{/common/mvc/kanyosha/updateKanyosha}]]*/"";
+				
+				if (ajaxRunning) {
+					return false;
+				}
+				ajaxRunning = true;
+
+				$.ajax({
+					type : "POST",
+					url : url,
+					data : param,
+					dataType : "html",
+				})
+				.done(function(data, status, jqXHR) {
+					if (isAjaxProcSuccess(jqXHR)) {
+						// 処理成功
+						Promise.resolve()
+							.then(() => modalHidePromise($otherDairininModal))
+							.then(() => getSaibanOtherView())
+							.then(() => showInfoMessageForJs(/*[[#{I00023('その他当事者代理人情報')}]]*/''))
+					} else {
+						if (data) {
+							$otherDairininModal.find(".kanyoshaEditModalFragmentWrap").html(data);
+						}
+						const errorMsg = getAjaxProcResutlMessage(jqXHR);
+						showErrorMessage(errorMsg, $otherDairininModal);
+					}
+				})
+				.fail(function(jqXHR, status, errorThrown) {
+					const errorMsg = /*[[#{E00091}]]*/ "error";
+					showErrorMessage(errorMsg, $otherDairininModal);
+				})
+				.always(function(){
+					ajaxRunning = false;
+				});
+			};
+			
+			// 削除処理
+			benzo.global.fragment.kanyoshaEditModalFragmentObj.setUpObj.deleteAction = function(triggerBtn) {
+
+				let param = benzo.global.fragment.kanyoshaEditModalFragmentObj.paramObj.getFormParams($otherDairininModal);
+
+				if (ajaxRunning) {
+					return false;
+				}
+				ajaxRunning = true;
+				
+				Promise.resolve()
+					.then(() => beforeCheck(param))
+					.then(() => deleteAction(param))
+					.then(() => modalHidePromise($otherDairininModal))
+					.then(() => getSaibanOtherView())
+					.catch((errorObj) => console.log(errorObj))
+					.finally(() => ajaxRunning = false);
+				
+				function beforeCheck(param) {
+					return new Promise((resolve, reject) => {
+						$.ajax({
+							type : "POST",
+							url : /*[[@{/common/mvc/kanyosha/deleteKanyoshaBeforeCheck}]]*/,
+							data : param,
+							dataType : "json",
+						}).done(function(data) {
+							if (data.needConfirm && !confirm(data.message)) {
+								return reject();
+							} else {
+								return resolve([data]);
+							}
+						}).fail(function(jqXHR, status, errorThrown) {
+							const errorMsg = /*[[#{E00091}]]*/ "error";
+							showErrorMessage(errorMsg, $otherDairininModal);
+							return reject(jqXHR, status, errorThrown);
+						});
+					});
+				}
+				
+				function deleteAction(param) {
+					return new Promise((resolve, reject) => {
+						$.ajax({
+							type : "POST",
+							url : /*[[@{/common/mvc/kanyosha/deleteKanyosha}]]*/,
+							data : param,
+							dataType : "html",
+						})
+						.done(function(data, status, jqXHR) {
+							if (isAjaxProcSuccess(jqXHR)) {
+								// 処理成功
+								showInfoMessageForJs(/*[[#{I00028('その他当事者代理人情報')}]]*/'')
+								return resolve()
+							} else {
+								const errorMsg = getAjaxProcResutlMessage(jqXHR);
+								showErrorMessage(errorMsg, $otherDairininModal);
+								return reject([errorMsg]);
+							}
+						})
+						.fail(function(jqXHR, status, errorThrown) {
+							const errorMsg = /*[[#{E00091}]]*/ "error";
+							showErrorMessage(errorMsg, $otherDairininModal);
+							return reject([jqXHR, status, errorThrown]);
+						});
+					});
+				}
+			};
+			
+			// 登録・編集エリアの初期レンダリング（再レンダリングも含む）
+			benzo.global.fragment.kanyoshaEditModalFragmentObj.setUpObj.initRenderEditViewAction = function(triggerBtn) {
+				if (ajaxRunning) {
+					return false;
+				}
+				ajaxRunning = true;
+				Promise.resolve()
+					.then(() => initRenderOtherDairininEditViewAction())
+					.catch((errors) => console.log(errors))
+					.finally(() => ajaxRunning = false);
+			};
+			
+			// 検索エリアの登録処理
+			benzo.global.fragment.kanyoshaEditModalFragmentObj.setUpObj.searchRegistAction = function(triggerBtn) {
+				if (ajaxRunning) {
+					return false;
+				}
+				
+				let param = benzo.global.fragment.kanyoshaEditModalFragmentObj.paramObj.getSearchResultFormParams($otherDairininModal);
+				let otherDairininWithInParam = Object.assign({}, benzo.global.fragment.kanyoshaEditModalFragmentObj.otherDairininWithInParam);
+				
+				param.push({
+					name : "saibanSeq",
+					value : otherDairininWithInParam.saibanSeq
+				});
+				
+				param.push({
+					name : "otherKanyoshaSeq",
+					value : otherDairininWithInParam.otherKanyoshaSeq
+				});
+				
+				const url = /*[[@{/common/mvc/kanyosha/searchResultRegistKanyoshaForSaibanOtherDairinin}]]*/"";
+				ajaxRunning = true;
+				$.ajax({
+					type : "POST",
+					url : url,
+					data : param,
+					dataType : "html",
+				})
+				.done(function(data, status, jqXHR) {
+					if (isAjaxProcSuccess(jqXHR)) {
+						// 処理成功
+						Promise.resolve()
+							.then(() => modalHidePromise($otherDairininModal))
+							.then(() => getSaibanOtherView())
+							.then(() => showInfoMessageForJs(getAjaxProcResutlMessage(jqXHR)))
+					} else {
+						const errorMsg = getAjaxProcResutlMessage(jqXHR);
+						showErrorMessage(errorMsg, $otherDairininModal);
+					}
+				})
+				.fail(function(jqXHR, status, errorThrown) {
+					const errorMsg = /*[[#{E00091}]]*/ "error";
+					showErrorMessage(errorMsg, $otherDairininModal);
+				})
+				.always(function(){
+					ajaxRunning = false;
+				});
+			};
+			
+			// 検索エリアの検索処理
+			benzo.global.fragment.kanyoshaEditModalFragmentObj.setUpObj.searchRenderPromise = function() {
+				return new Promise((resolve, reject) => {
+					const url = /*[[@{/common/mvc/kanyosha/getKanyoshaSearchModalFragment/saiban/otherDairinin}]]*/"";
+					let optionParam = benzo.global.fragment.kanyoshaEditModalFragmentObj.paramObj.getSearchFormParams($otherDairininModal);
+					let otherDairininWithInParam = Object.assign({}, benzo.global.fragment.kanyoshaEditModalFragmentObj.otherDairininWithInParam);
+					
+					optionParam.push({
+						name : "saibanSeq",
+						value : otherDairininWithInParam.saibanSeq
+					});
+					$.ajax({
+						type : "GET",
+						url : url,
+						data : optionParam,
+						dataType : "html"
+					})
+					.done(function(result, status, jqXHR) {
+						if (isAjaxProcSuccess(jqXHR)) {
+							// 処理成功
+							$otherDairininModal.find(".kanyoshaEditModalFragmentWrap").html(result);
+							return resolve();
+						} else {
+							const errorMsg = getAjaxProcResutlMessage(jqXHR);
+							showErrorMessage(errorMsg, $otherDairininModal);
+							return reject(errorMsg);
+						}
+					})
+					.fail(function(jqXHR, status, errorThrown) {
+						showErrorMessageForJs(/*[[#{E00091}]]*/ "error");
+						return reject([jqXHR, status, errorThrown]);
+					});
+				});
+			};
+			
+			// 検索エリアの初期表示処理
+			benzo.global.fragment.kanyoshaEditModalFragmentObj.setUpObj.initRenderSearchViewAction = function() {
+				if (ajaxRunning) {
+					return false;
+				}
+				ajaxRunning = true;
+				Promise.resolve()
+					.then(() => initRenderOtherDairininSearchViewAction())
+					.catch((errors) => console.log(errors))
+					.finally(() => ajaxRunning = false);
+			};
+		});
+		
+		<!--/* その他当事者代理人編集モーダルの初期レンダリング関数 */-->
+		function initRenderOtherDairininEditViewAction() {
+			return new Promise((resolve, reject) => {
+				let initRenderOtherDairininEditViewParams = Object.assign({}, benzo.global.fragment.kanyoshaEditModalFragmentObj.initRenderOtherDairininEditViewParams);
+				const ankenId = initRenderOtherDairininEditViewParams["ankenId"];
+				const kanyoshaSeq = initRenderOtherDairininEditViewParams["kanyoshaSeq"];
+				let url = /*[[@{/common/mvc/kanyosha/getKanyoshaEditModalFragment}]]*/"";
+				let param = {} ;
+				if (kanyoshaSeq) {
+					url += `/${kanyoshaSeq}`;
+				} else {
+					url += "/create";
+					param = {
+						"ankenId" : ankenId,
+						"initCustomerType" : "2",
+					};
+				};
+
+				$.ajax({
+					type : "GET",
+					url : url,
+					data : param,
+					dataType : "html"
+				})
+				.done(function(result, status, jqXHR) {
+					if (isAjaxProcSuccess(jqXHR)) {
+						// 処理成功
+						$otherDairininModal.find(".kanyoshaEditModalFragmentWrap").html(result);
+						return resolve();
+					} else {
+						const errorMsg = getAjaxProcResutlMessage(jqXHR);
+						showErrorMessageForJs(errorMsg);
+						return reject(errorMsg);
+					}
+				})
+				.fail(function(jqXHR, status, errorThrown) {
+					showErrorMessageForJs(/*[[#{E00091}]]*/ "error");
+					return reject([jqXHR, status, errorThrown]);
+				});
+			});
+		};
+		
+		<!--/* その他当事者代理人検索モーダルの初期レンダリング関数 */-->
+		function initRenderOtherDairininSearchViewAction() {
+			return new Promise((resolve, reject) => {
+				let initRenderOtherDairininSearchViewParams = Object.assign({}, benzo.global.fragment.kanyoshaEditModalFragmentObj.initRenderOtherDairininSearchViewParams);
+				const ankenId = initRenderOtherDairininSearchViewParams["ankenId"];
+				const saibanSeq = initRenderOtherDairininSearchViewParams["saibanSeq"];
+				let param = [
+					{name:"ankenId", value: ankenId},
+					{name:"customerType", value: "2"},
+					{name:"saibanSeq", value: saibanSeq},
+				];
+				
+				const url = /*[[@{/common/mvc/kanyosha/getKanyoshaSearchModalFragment/saiban/otherDairinin}]]*/"";
+				$.ajax({
+					type : "GET",
+					url : url,
+					data : param,
+					dataType : "html"
+				})
+				.done(function(result, status, jqXHR) {
+					if (isAjaxProcSuccess(jqXHR)) {
+						// 処理成功
+						$otherDairininModal.find(".kanyoshaEditModalFragmentWrap").html(result);
+						return resolve();
+					} else {
+						const errorMsg = getAjaxProcResutlMessage(jqXHR);
+						showErrorMessageForJs(errorMsg);
+						return reject(errorMsg);
+					}
+				})
+				.fail(function(jqXHR, status, errorThrown) {
+					showErrorMessageForJs(/*[[#{E00091}]]*/ "error");
+					return reject(jqXHR, status, errorThrown)
+				});
+			});
+		};
+		
+		<!--/* その他当事者の代理人モーダル表示処理 */-->
+		$("#saibanOtherViewFragment").on("click", ".openKanyoshaOtherDairininModal", function() {
+			if (ajaxRunning) {
+				return false;
+			}
+			
+			const ankenId = /*[[${ankenId}]]*/"";
+			const kanyoshaSeq =$(this).data("kanyoshaSeq");
+			const saibanSeq = /*[[${saibanOtherViewForm.saibanSeq}]]*/"";
+			
+			// 登録・編集初期表示で必要なパラメータをメモリに保持しておく
+			benzo.global.fragment.kanyoshaEditModalFragmentObj.initRenderOtherDairininEditViewParams = {
+					"ankenId": ankenId,
+					"kanyoshaSeq": kanyoshaSeq,
+			}
+			
+			// 検索初期表示で必要なパラメータをメモリに保持しておく
+			benzo.global.fragment.kanyoshaEditModalFragmentObj.initRenderOtherDairininSearchViewParams = {
+					"ankenId": ankenId,
+					"saibanSeq": saibanSeq,
+			};
+
+			<!--/* モーダルの保存処理等で使用するパラメータをGlobal領域に保持させておく */-->
+			const otherKanyoshaSeq = $(this).data("otherKanyoshaSeq");
+			benzo.global.fragment.kanyoshaEditModalFragmentObj.otherDairininWithInParam = {
+				"saibanSeq": saibanSeq,
+				"otherKanyoshaSeq": otherKanyoshaSeq,
+			}
+			
+			ajaxRunning = true;
+			Promise.resolve()
+				.then(() => initRenderOtherDairininEditViewAction())
+				.then(() => $otherDairininModal.modal("show"))
+				.catch((errors) => console.log(errors))
+				.finally(() => ajaxRunning = false);
+		});
+		
+		<!--/* その他当事者情報の再取得 */-->
+		function getSaibanOtherView() {
+			return new Promise((resolve, reject) => {
+				<!--/* リクエストパラメータ */-->
+				const param = {
+						isDisplayOnly : /*[[${saibanOtherViewForm.displayOnlyFlg}]]*/'false'
+				}
+
+				$.ajax({
+					url : /*[[@{/user/saibanMinjiManagement/{saibanSeq}/{ankenId}/getSaibanOtherViewForm(saibanSeq=${saibanOtherViewForm.saibanSeq}, ankenId=${ankenId})}]]*/"getSaibanOtherViewForm",
+					type : "GET",
+					data : param,
+					dataType: 'html',
+				})
+				.done(function(data, status, jqXHR) {
+					if (isAjaxProcSuccess(jqXHR)) {
+						// 「裁判その他当事者表示部分を再描画」
+						$('#saibanOtherViewFragmentWrap').html(data);
+						return resolve();
+					} else {
+						// 処理失敗
+						const errorMsg = getAjaxProcResutlMessage(jqXHR);
+						showErrorMessageForJs(errorMsg);
+						return reject();
+					}
+					
+				})
+				.fail(function(jqXHR, status, errorThrown) {
+					showErrorMessageForJs(/*[[#{E00091}]]*/ "error");
+					return reject();
+				});
+			});
+		}
+		
+		<!--/* モーダル閉じる処理をPromise化 */-->
+		function modalHidePromise(modal){
+			return new Promise((resolve) => {
+				$(modal).one('hidden.bs.modal', function() {
+					resolve();
+				});
+				$(modal).modal("hide");
+			});
+		};
+		
+	});
+	</script>
+
+	<!--/* HTML */-->
+	<th:block th:object="${saibanOtherViewForm}">
+		<section class="section_client_side mt-5">
+			<div class="section_header">
+				<div class="section_header__title">その他当事者</div>
+				<div class="section_header__action">
+					<a href="javascript:void(0);" class="openKanyoshaOtherModal fs15" th:if="!${saibanOtherViewForm.displayOnlyFlg}">
+						<i class="fas fa-plus-square mr-2"></i>その他当事者を追加
+					</a>
+				</div>
+			</div>
+			<div class="section_body">
+				<div class="section_body__contents p-0">
+	<th:block th:if="${#lists.isEmpty(saibanOtherViewForm.saibanKanyoshaOtherDtoList)}">
+					<div class="no_data_msg px-4">
+						<span th:text="#{I00035('その他当事者情報の登録')}">MSG_I00035</span>
+					</div>
+	</th:block>
+	
+	<th:block th:unless="${#lists.isEmpty(saibanOtherViewForm.saibanKanyoshaOtherDtoList)}">
+					<div class="section_split_wrapper pb-0">
+						<div class="section_split">
+							<div class="section_split__left">
+								<span class="badge badge-pill badge_square mnw70 badge_green px-2"><i class="fas fa-user mr-2"></i>その他当事者</span>
+								<hr class="mt-3 m-0">
+							</div>
+							<div class="section_split__right">
+								<span class="badge badge-pill badge_square mnw70 badge_purple px-1"><i class="fas fa-user-tie mr-2"></i>代理人</span>
+								<hr class="mt-3 m-0">
+							</div>
+						</div>
+					</div>
+					<ul class="section_list px-3">
+						<li class="list_contents" th:each="otherKanyosha, i : *{saibanKanyoshaOtherDtoList}">
+							<div class="section_list_item_wrap section_split_wrapper">
+							
+								<div class="section_split">
+							
+									<!--/* その他当事者エリア */-->
+									<div class="section_split__left">
+										<div class="section_list_item pl-1">
+											<!--/* 名簿 */-->
+											<div class="img_info_xs mb-2">
+												<!--/* 名簿画像 */-->
+												<div class="img_info_xs__image">
+													<!--/* 名簿属性ラベル */-->
+													<div th:class="|person_image_wrapper${otherKanyosha.personAttribute?.cd.getCd()}|">
+														<!--/* 個人アイコン */-->
+														<img th:if="${T(jp.loioz.common.constant.CommonConstant$CustomerType).KOJIN.equals(otherKanyosha.customerType)}" 
+															class="img-thumbnail person_image_xs" th:src="@{/img/person_kojin.svg}"
+															data-boundary="window" data-container="body" data-toggle="tooltip" data-trigger="hover" th:title="個人">
+															
+														<!--/* 企業・団体アイコン */-->
+														<img th:if="${T(jp.loioz.common.constant.CommonConstant$CustomerType).HOJIN.equals(otherKanyosha.customerType)}"
+															class="img-thumbnail person_image_xs" th:src="@{/img/person_hojin.svg}"
+															data-boundary="window" data-container="body" data-toggle="tooltip" data-trigger="hover" th:title="企業・団体">
+															
+														<!--/* 弁護士アイコン */-->
+														<img th:if="${T(jp.loioz.common.constant.CommonConstant$CustomerType).LAWYER.equals(otherKanyosha.customerType)}"
+															class="img-thumbnail person_image_xs" th:src="@{/img/person_bengoshi.svg}"
+															data-boundary="window" data-container="body" data-toggle="tooltip" data-trigger="hover" th:title="弁護士">
+													</div>
+												</div>
+												<!--/* 名簿画像 end */-->
+												
+												<!--/* 名前 */-->
+												<div class="img_info_xs__info">
+													<div class="fw600 fs20 lh1_3 pt-1" th:text="${otherKanyosha.kanyoshaName}">山田　太郎 </div>
+													<div>
+														<a href="javascript:void(0);" class="app_id_link p-1 personPopoverLabel" th:text="|名簿ID：${otherKanyosha.personId.asLong()}|" 
+															data-boundary="window" data-container="#saibanCustomerViewFragment" th:data-person-id="${otherKanyosha.personId.asLong()}">
+														</a>
+													</div>
+												</div>
+												<!-- /* ボタンエリア */ -->
+												<div class="img_info_xs__btn">
+													<div class="item_sub px-0">
+														<div th:id="|kanyoshaContainer${i.index}|" class="d-inline-block stop-events outPutContainerClose" data-offset="-80,0" data-boundary="window" data-container="#saibanOtherViewFragment" 
+																th:data-kanyosha-seq="${otherKanyosha.kanyoshaSeq}" data-toggle="popover" data-placement="bottom" data-html="true" th:data-content=
+																'|<ul class="output_nav_list">
+																	<li><button class="btn btn-light removeSaibanKanyosha" data-target="#kanyoshaContainer${i.index}"><i class="fas fa-minus-circle"></i>その他当事者から外す</button></li>
+																	<li><button class="btn btn-light removeSaibanKanyoshaFromAnken" data-target="#kanyoshaContainer${i.index}"><i class="fas fa-user-minus"></i>案件から外す</button></li>
+																</ul>|'>
+															<button type="button" class="btn btn-light btn_icon_only btn_icon_ellipsis_v " data-boundary="window" data-container="#saibanOtherViewFragment">
+																<i class="fas fa-ellipsis-v"></i>
+															</button>
+														</div>
+													</div>
+												</div>
+											</div>
+											<!--/* １行目 end */-->
+											
+											<div class="hittou_select_area pl-1">
+												<div>
+													<a href="javascript:void(0);" class="btn hittou_btn px-3"
+														th:classappend="|${otherKanyosha.mainFlg ? 'selected' : ''} ${saibanOtherViewForm.displayOnlyFlg ? 'disabled' : ''}|"
+														th:data-kanyosha-seq="${otherKanyosha.kanyoshaSeq}">筆頭</a>
+												</div>
+												<div>
+													<select class="form-control hyoki_select tojishaHyokiSelect" th:data-kanyosha-seq="${otherKanyosha.kanyoshaSeq}"
+														th:disabled="${saibanOtherViewForm.displayOnlyFlg}">
+														<option value="">-</option>
+														<th:block th:each="enum : ${T(jp.loioz.common.constant.CommonConstant$TojishaHyoki).values()}">
+															<option th:value="${enum.cd}" th:text="${enum.val}" th:selected="${enum.cd.equals(otherKanyosha.saibanTojishaHyoki)}"></option>
+														</th:block>
+													</select>
+												</div>
+											</div>
+											
+											<!--/* データブロック */-->
+											<div class="item_content_block">
+												<div class="kankei_remarks_view" th:classappend="${saibanOtherViewForm.displayOnlyFlg}? 'disabled' :'openKanyoshaOtherModal'"
+													th:data-kanyosha-seq="${otherKanyosha.kanyoshaSeq}" th:data-toggle="${saibanOtherViewForm.displayOnlyFlg}? '' : 'tooltip'"
+													data-boundary="window" data-container="#saibanOtherViewFragment" data-trigger="hover" title="編集する">
+													<div class="mb-3">
+														<label class="view_label">関係</label>
+														<div class="view_value fs15">
+															<div th:classappend="${#strings.isEmpty(otherKanyosha.kankei)} ? 'sub_text'"
+																myth:nl2br="${#strings.isEmpty(otherKanyosha.kankei)} ? '-' : ${otherKanyosha.kankei}">関係
+															</div>
+														</div> 
+													</div>
+													<div>
+														<label class="view_label">備考</label>
+														<div class="view_value fs15">
+															<div th:classappend="${#strings.isEmpty(otherKanyosha.remarks)} ? 'sub_text'"
+																myth:nl2br="${#strings.isEmpty(otherKanyosha.remarks)} ? '-' : ${otherKanyosha.remarks}">備考
+															</div>
+														</div>
+													</div> 
+												</div>
+											</div>
+										</div>
+									</div>
+									<!--/* その他当事者エリア end */-->
+									
+									<!--/* その他当事者-代理人エリア */-->
+									<div class="section_split__right">
+									
+			<!--/* 代理人設定【あり】の場合 */-->
+			<th:block th:if="${otherKanyosha.saibanKanyoshaDairininViewDto != null}"
+				th:with="dairininPersonId=${otherKanyosha.saibanKanyoshaDairininViewDto.personId}">
+										
+										<div class="section_list_item pl-1">
+											<!--/* 名簿 */-->
+											<div class="img_info_xs mb-2">
+												<!--/* 名簿画像 */-->
+												<div class="img_info_xs__image">
+													<!--/* 名簿属性ラベル */-->
+													<div th:class="|person_image_wrapper${otherKanyosha.saibanKanyoshaDairininViewDto.personAttribute?.cd.getCd()}|">
+														<!--/* 個人アイコン */-->
+														<img th:if="${T(jp.loioz.common.constant.CommonConstant$CustomerType).KOJIN.equals(otherKanyosha.saibanKanyoshaDairininViewDto.customerType)}" 
+															class="img-thumbnail person_image_xs" th:src="@{/img/person_kojin.svg}"
+															data-boundary="window" data-container="body" data-toggle="tooltip" data-trigger="hover" th:title="個人">
+															
+														<!--/* 企業・団体アイコン */-->
+														<img th:if="${T(jp.loioz.common.constant.CommonConstant$CustomerType).HOJIN.equals(otherKanyosha.saibanKanyoshaDairininViewDto.customerType)}"
+															class="img-thumbnail person_image_xs" th:src="@{/img/person_hojin.svg}"
+															data-boundary="window" data-container="body" data-toggle="tooltip" data-trigger="hover" th:title="企業・団体">
+															
+														<!--/* 弁護士アイコン */-->
+														<img th:if="${T(jp.loioz.common.constant.CommonConstant$CustomerType).LAWYER.equals(otherKanyosha.saibanKanyoshaDairininViewDto.customerType)}"
+															class="img-thumbnail person_image_xs" th:src="@{/img/person_bengoshi.svg}"
+															data-boundary="window" data-container="body" data-toggle="tooltip" data-trigger="hover" th:title="弁護士">
+													</div>
+												</div>
+												<!--/* 名簿画像 end */-->
+		
+												<!--/* 名前 */-->
+												<div class="img_info_xs__info">
+													<div class="fw600 fs20 lh1_3 pt-1" th:text="${otherKanyosha.saibanKanyoshaDairininViewDto.kanyoshaName}">山田　太郎 </div>
+													<div class="d-flex flex-wrap cg10 rg5">
+														<!-- /* 名簿ID */ -->
+														<div>
+															<a href="javascript:void(0);" class="app_id_link p-1 personPopoverLabel" th:text="|名簿ID：${dairininPersonId.asLong()}|" 
+																data-boundary="window" data-container="#saibanOtherViewFragment" th:data-person-id="${dairininPersonId.asLong()}">
+																名簿ID：100
+															</a>
+														</div>
+			<th:block th:if="${!#strings.isEmpty(otherKanyosha.saibanKanyoshaDairininViewDto.jimushoName)}">
+														<div class="jimusho_name fc_sub fs13">
+															<i class="far fa-building fs12"></i>
+															<span th:text="${otherKanyosha.saibanKanyoshaDairininViewDto.jimushoName}"></span>
+														</div>
+			 </th:block>
+													</div>
+												</div>
+												<!-- /* ボタンエリア */ -->
+												<div class="img_info_xs__btn">
+
+													<div class="item_sub" th:if="!${saibanOtherViewForm.displayOnlyFlg}">
+														<div th:id="|relatedKanyoshaContainer${i.index}|" class="d-inline-block stop-events outPutContainerClose" data-offset="-80,0" data-boundary="window" data-container="#saibanOtherViewFragment" 
+																th:data-kanyosha-seq="${otherKanyosha.kanyoshaSeq}" th:data-related-kanyosha-seq="${otherKanyosha.relatedKanyoshaSeq}" data-toggle="popover" data-placement="bottom" data-html="true" th:data-content=
+																'|<ul class="output_nav_list">
+																	<li><button class="btn btn-light removeSaibanRelatedKanyosha" data-target="#relatedKanyoshaContainer${i.index}"><i class="fas fa-minus-circle"></i>代理人から外す</button></li>
+																	<li><button class="btn btn-light removeSaibanRelatedKanyoshaFromAnken" data-target="#relatedKanyoshaContainer${i.index}"><i class="fas fa-user-minus"></i>案件から外す</button></li>
+																</ul>|'>
+															<button type="button" class="btn btn-light btn_icon_only btn_icon_ellipsis_v " data-boundary="window" data-container="#saibanOtherViewFragment">
+																<i class="fas fa-ellipsis-v"></i>
+															</button>
+														</div>
+													</div>
+												</div>
+											</div>
+											<!--/* １行目 end */-->
+											
+											<!--/* データブロック */-->
+											<div class="item_content_block">
+												<div class="kankei_remarks_view" th:classappend="${saibanOtherViewForm.displayOnlyFlg}? 'disabled' :'openKanyoshaOtherDairininModal'"
+													th:data-kanyosha-seq="${otherKanyosha.saibanKanyoshaDairininViewDto.kanyoshaSeq}" th:data-toggle="${saibanOtherViewForm.displayOnlyFlg}? '' : 'tooltip'"
+													data-boundary="window" data-container="#saibanOtherViewFragment" data-trigger="hover" title="編集する">
+													<div class="mb-3">
+														<label class="view_label">関係</label>
+														<div class="view_value fs15">
+															<div th:classappend="${#strings.isEmpty(otherKanyosha.saibanKanyoshaDairininViewDto.kankei)} ? 'sub_text'"
+																myth:nl2br="${#strings.isEmpty(otherKanyosha.saibanKanyoshaDairininViewDto.kankei)} ? '-' : ${otherKanyosha.saibanKanyoshaDairininViewDto.kankei}">関係
+															</div>
+														</div>
+													</div> 
+													<div>
+														<label class="view_label">備考</label>
+														<div class="view_value fs15">
+															<div th:classappend="${#strings.isEmpty(otherKanyosha.saibanKanyoshaDairininViewDto.remarks)} ? 'sub_text'"
+																myth:nl2br="${#strings.isEmpty(otherKanyosha.saibanKanyoshaDairininViewDto.remarks)} ? '-' : ${otherKanyosha.saibanKanyoshaDairininViewDto.remarks}">備考
+															</div>
+														</div> 
+													</div>
+												</div>
+											</div>
+										</div>
+			</th:block>
+			
+			<!--/* 代理人未設定の場合 */-->
+			<th:block th:if="${otherKanyosha.saibanKanyoshaDairininViewDto == null}">
+										<div class="select_dairinin" th:if="!${saibanOtherViewForm.displayOnlyFlg}">
+											<div>
+												<a href="javascript:void(0);" class="openKanyoshaOtherDairininModal" th:data-other-kanyosha-seq="${otherKanyosha.kanyoshaSeq}" th:data-saiban-seq="${otherKanyosha.saibanSeq}">
+													<i class="fas fa-plus-square mr-2"></i>代理人を追加
+												</a>
+											</div>
+										</div>
+			</th:block>
+			<!--/* 代理人未設定の場合 end */-->
+									</div>
+								</div>
+							</div>
+						</li>
+					</ul>
+				</div>
+			</div>
+		</section>
+		
+		<!--/* その他当事者モーダル */-->
+		<div id="kanyoshaOtherModal" class="modal fade" tabindex="-1" role="dialog" aria-hidden="true" data-backdrop="static">
+			<div class="modal-dialog modal-dialog-centered modal_kanyosha_customer_select" role="document">
+				<div class="modal-content">
+					<div class="kanyoshaEditModalFragmentWrap">
+						<!--/* 関与者情報 */-->
+					</div>
+				</div>
+			</div>
+		</div>
+		
+		<!--/* その他当事者代理人モーダル */-->
+		<div id="kanyoshaOtherDairininModal" class="modal fade" tabindex="-1" role="dialog" aria-hidden="true" data-backdrop="static">
+			<div class="modal-dialog modal-dialog-centered modal_kanyosha_customer_select" role="document">
+				<div class="modal-content">
+					<div class="kanyoshaEditModalFragmentWrap">
+						<!--/* 関与者情報 */-->
+					</div>
+				</div>
+			</div>
+		</div>
+
+	</th:block>
+</div>
+
+<!--/* 相手方一覧 */-->
+<div th:fragment="saibanAitegataViewFragment(saibanAitegataViewForm)" id="saibanAitegataViewFragment">
+
+	<!--/* 関与者モーダルを扱うので共通JS定義 */-->
+	<script type="text/javascript" th:replace="common/mvc/kanyosha/kanyoshaEditModal::kanyoshaEditModalFragmentObjJs"></script>
+
+	<!--/* Script */-->
+	<script th:inline="javascript">
+	$(function() {
+		
+		<!--/* 共有の要素セットアップ処理 */-->
+		commonSetUpElement();
+		
+		<!--/* 名簿ポップオーバー */-->
+		benzo.global.fragment.setUpPersonPopover($("#saibanAitegataViewFragment .personPopoverLabel"));
+
+		<!--/* 相手方：【筆頭】切り替え処理 */-->
+		$('#saibanAitegataViewFragment .hittou_btn').on('click', function () {
+
+			<!--/* 対象関与者 */-->
+			const kanyoshaSeq = $(this).data('kanyosha-seq')
+
+			<!--/* 筆頭かどうか */-->
+			let toHittou = false;
+
+			const isSelected = $(this).hasClass('selected')
+			if (isSelected) {
+				<!--/* 「筆頭」状態のものがクリックされた */-->
+				<!--/* 自身を「筆頭」ではない状態にする */-->
+				toHittou = false;
+			} else {
+				<!--/* 「筆頭」状態ではないものがクリックされた */-->
+				<!--/* 自身を「筆頭」にする */-->
+				toHittou = true;
+			}
+
+			let dataObj = {
+				kanyoshaSeq: kanyoshaSeq,
+				toHittou: toHittou
+			}
+			
+			<!--/* 2重押下防止 */-->
+			if(ajaxRunning){
+				return false;
+			}
+			ajaxRunning = true;
+			
+			<!--/* 筆頭情報の更新と相手方情報の再描画を行う */-->
+			Promise.resolve(dataObj)
+				.then(updateHittouAndRenderSaibanAitegataViewFormFunc)
+				.catch((errorObj) => {
+					<!--/* 異常系の対応は各処理側で行っており、全体共通での異常系の処理は現状ない */-->
+					console.log(errorObj);
+				})
+				.finally(() => {
+					ajaxRunning = false;
+				})
+		})
+		
+		<!--/* 相手方の筆頭情報の更新関数 */-->
+		const updateHittouAndRenderSaibanAitegataViewFormFunc = (dataObj) => {
+			return new Promise((resolve, reject) => {
+
+				<!--/* オブジェクトのプロパティ値を取得 */-->
+				let requestData = {
+					kanyoshaSeq : dataObj.kanyoshaSeq,
+					toHittou : dataObj.toHittou
+				}
+
+				<!--/* 相手方の筆頭情報の更新 */-->
+				<!--/* 2重押下防止対応はPromiseチェーンのルートで処理するため、チェーン内では行わない */-->
+				$.ajax({
+					url : 'saveAitegataHittou',
+					type : "POST",
+					data : requestData
+				})
+				.done(function(data, status, jqXHR) {
+					if (isAjaxProcSuccess(jqXHR)) {
+						// 親HTMLのID表示
+						$('#saibanAitegataViewFragmentWrap').html(data);
+
+						const msg = getAjaxProcResutlMessage(jqXHR);
+						showInfoMessageForJs(msg);
+
+						resolve();
+					} else {
+						// 処理失敗
+						const errorMsg = getAjaxProcResutlMessage(jqXHR);
+						showErrorMessageForJs(errorMsg);
+
+						reject();
+					}
+				})
+				.fail(function(jqXHR, status, errorThrown) {
+					showErrorMessageForJs(/*[[#{E00091}]]*/ "error");
+
+					reject();
+				})
+			});
+		}
+
+		<!--/* 相手方：【当事者表記】切り替え処理 */-->
+		$('#saibanAitegataViewFragment .tojishaHyokiSelect').on('change', function() {
+
+			const kanyoshaSeq = $(this).data('kanyosha-seq');
+			const selectedVal = $(this).val();
+
+			<!--/* リクエストパラメータ */-->
+			const requestData = {
+				kanyoshaSeq: kanyoshaSeq,
+				tojishaHyoki: selectedVal
+			}
+
+			<!--/* 2重押下防止 */-->
+			if(ajaxRunning){
+				return false;
+			}
+			ajaxRunning = true;
+			
+			$.ajax({
+				url : 'saveAitegataTojishaHyoki',
+				type : "POST",
+				data : requestData
+			})
+			.done(function(data, status, jqXHR) {
+				if (isAjaxProcSuccess(jqXHR)) {
+					// 処理成功
+					Promise.resolve()
+						.then(() => $('#saibanAitegataViewFragmentWrap').html(data))
+						.then(() => getSaibanOptionView())
+
+					const msg = getAjaxProcResutlMessage(jqXHR);
+					showInfoMessageForJs(msg);
+
+				} else {
+					// 処理失敗
+					const errorMsg = getAjaxProcResutlMessage(jqXHR);
+					showErrorMessageForJs(errorMsg);
+				}
+			})
+			.fail(function(jqXHR, status, errorThrown) {
+				showErrorMessageForJs(/*[[#{E00013}]]*/ "保存に失敗しました。");
+			})
+			.always(function(){
+				ajaxRunning = false;
+			});
+		})
+
+		<!--/* 相手方から外すボタンのクリック */-->
+		$('#saibanAitegataViewFragment').on('click', '.removeSaibanAitegata', function() {
+
+			if (!confirm('相手方から外します。よろしいですか?')) {
+				return false;
+			}
+
+			const kyohanshaContainer = $($(this).data('target'));
+			const kanyoshaSeq = kyohanshaContainer.data('kanyoshaSeq');
+			if (!kanyoshaSeq) {
+				return;
+			}
+
+			<!--/* リクエストパラメータ */-->
+			const formData = {
+					kanyoshaSeq: kanyoshaSeq
+			}
+			
+			let $clickedElem = $(this)
+			
+			<!--/* 2重押下防止 */-->
+			if(ajaxRunning){
+				return false;
+			}
+			ajaxRunning = true;
+			
+			$.ajax({
+				url : 'removeSaibanAitegata',
+				type : "POST",
+				data : formData
+			})
+			.done(function(data, status, jqXHR) {
+				if (isAjaxProcSuccess(jqXHR)) {
+					// 処理成功
+					
+					// 親HTMLのID
+					$('#saibanAitegataViewFragmentWrap').html(data);
+					
+					const msg = getAjaxProcResutlMessage(jqXHR);
+					showInfoMessageForJs(msg);
+					
+				} else {
+					// 処理失敗
+					
+					const errorMsg = getAjaxProcResutlMessage(jqXHR);
+					showErrorMessageForJs(errorMsg);
+				}
+			})
+			.fail(function(jqXHR, status, errorThrown) {
+				showErrorMessageForJs(/*[[#{E00013}]]*/ "保存に失敗しました。");
+			})
+			.always(function(){
+				ajaxRunning = false;
+			});
+		})
+
+		<!--/* 相手方を案件から外すボタンのクリック */-->
+		$('#saibanAitegataViewFragment').on('click', '.removeSaibanAitegataFromAnken', function() {
+
+			if (!confirm('案件から外します。よろしいですか?')) {
+				return false;
+			}
+
+			const kyohanshaContainer = $($(this).data('target'));
+			const kanyoshaSeq = kyohanshaContainer.data('kanyoshaSeq');
+			if (!kanyoshaSeq) {
+				return;
+			}
+			
+			<!--/* リクエストパラメータ */-->
+			const formData = {
+					kanyoshaSeq: kanyoshaSeq
+			}
+			
+			<!--/* 2重押下防止 */-->
+			if(ajaxRunning){
+				return false;
+			}
+			ajaxRunning = true;
+			
+			Promise.resolve()
+				.then(() => beforeCheck(formData))
+				.then(() => deleteAction(formData))
+				.catch((errorObj) => console.log(errorObj))
+				.finally(() => ajaxRunning = false);
+			
+			function beforeCheck(formData) {
+				return new Promise((resolve, reject) => {
+					$.ajax({
+						type : "POST",
+						url : /*[[@{/user/saibanMinjiManagement/{saibanSeq}/{ankenId}/deleteKanyoshaBeforeCheck(saibanSeq=${saibanAitegataViewForm.saibanSeq}, ankenId=${ankenId})}]]*/"",
+						data : formData,
+						dataType : "json",
+					}).done(function(data) {
+						if (data.needConfirm && !confirm(data.message)) {
+							return reject();
+						} else {
+							return resolve();
+						}
+					}).fail(function(jqXHR, status, errorThrown) {
+						const errorMsg = /*[[#{E00091}]]*/ "error";
+						showErrorMessageForJs(errorMsg);
+						return reject();
+					});
+				});
+			}
+			
+			function deleteAction(param) {
+				return new Promise((resolve, reject) => {
+					$.ajax({
+						type : "POST",
+						url : /*[[@{/user/saibanMinjiManagement/{saibanSeq}/{ankenId}/deleteAitegataKanyosha(saibanSeq=${saibanAitegataViewForm.saibanSeq}, ankenId=${ankenId})}]]*/"",
+						data : param,
+						dataType : "html",
+					})
+					.done(function(data, status, jqXHR) {
+						if (isAjaxProcSuccess(jqXHR)) {
+							<!--/* 処理成功 */-->
+							
+							<!--/* 親HTMLのID */-->
+							$('#saibanAitegataViewFragmentWrap').html(data);
+							
+							showInfoMessageForJs(/*[[#{I00028('相手方情報')}]]*/)
+							return resolve();
+						} else {
+							<!--/* 処理失敗 */-->
+							const errorMsg = getAjaxProcResutlMessage(jqXHR);
+							showErrorMessageForJs(errorMsg);
+							return reject();
+						}
+					})
+					.fail(function(jqXHR, status, errorThrown) {
+						showErrorMessageForJs(/*[[#{E00014}]]*/ "削除に失敗しました。");
+						return reject();
+					})
+				});
+			}
+		});
+
+		<!--/* 代理人から外すボタンのクリック */-->
+		$('#saibanAitegataViewFragment').on('click', '.removeSaibanRelatedAitegata', function() {
+
+			if (!confirm('代理人から外します。よろしいですか?')) {
+				return false;
+			}
+
+			const kyohanshaContainer = $($(this).data('target'));
+			const kanyoshaSeq = kyohanshaContainer.data('kanyoshaSeq');
+			if (!kanyoshaSeq) {
+				return;
+			}
+			
+			<!--/* リクエストパラメータ */-->
+			const formData = {
+					kanyoshaSeq: kanyoshaSeq
+			}
+			
+			let $clickedElem = $(this)
+			
+			<!--/* 2重押下防止 */-->
+			if(ajaxRunning){
+				return false;
+			}
+			ajaxRunning = true;
+			
+			$.ajax({
+				url : 'removeSaibanRelatedAitegata',
+				type : "POST",
+				data : formData
+			})
+			.done(function(data, status, jqXHR) {
+				if (isAjaxProcSuccess(jqXHR)) {
+					// 処理成功
+					
+					// 親HTMLのID
+					$('#saibanAitegataViewFragmentWrap').html(data);
+					
+					const msg = getAjaxProcResutlMessage(jqXHR);
+					showInfoMessageForJs(msg);
+					
+				} else {
+					// 処理失敗
+					
+					const errorMsg = getAjaxProcResutlMessage(jqXHR);
+					showErrorMessageForJs(errorMsg);
+				}
+			})
+			.fail(function(jqXHR, status, errorThrown) {
+				showErrorMessageForJs(/*[[#{E00013}]]*/ "保存に失敗しました。");
+			})
+			.always(function(){
+				ajaxRunning = false;
+			});
+		})
+
+		<!--/* 相手方の代理人を案件から外すボタンのクリック */-->
+		$('#saibanAitegataViewFragment').on('click', '.removeSaibanRelatedAitegataFromAnken', function() {
+
+			if (!confirm('案件から外します。よろしいですか?')) {
+				return false;
+			}
+
+			const kyohanshaContainer = $($(this).data('target'));
+			const kanyoshaSeq = kyohanshaContainer.data('relatedKanyoshaSeq');
+			if (!kanyoshaSeq) {
+				return;
+			}
+			
+			<!--/* リクエストパラメータ */-->
+			const formData = {
+					kanyoshaSeq: kanyoshaSeq
+			}
+			
+			<!--/* 2重押下防止 */-->
+			if(ajaxRunning){
+				return false;
+			}
+			ajaxRunning = true;
+			
+			Promise.resolve()
+				.then(() => beforeCheck(formData))
+				.then(() => deleteAction(formData))
+				.catch((errorObj) => console.log(errorObj))
+				.finally(() => ajaxRunning = false);
+			
+			function beforeCheck(formData) {
+				return new Promise((resolve, reject) => {
+					$.ajax({
+						type : "POST",
+						url : /*[[@{/user/saibanMinjiManagement/{saibanSeq}/{ankenId}/deleteKanyoshaBeforeCheck(saibanSeq=${saibanAitegataViewForm.saibanSeq}, ankenId=${ankenId})}]]*/"",
+						data : formData,
+						dataType : "json",
+					}).done(function(data) {
+						if (data.needConfirm && !confirm(data.message)) {
+							return reject();
+						} else {
+							return resolve();
+						}
+					}).fail(function(jqXHR, status, errorThrown) {
+						const errorMsg = /*[[#{E00091}]]*/ "error";
+						showErrorMessageForJs(errorMsg);
+						return reject();
+					});
+				});
+			}
+			
+			function deleteAction(param) {
+				return new Promise((resolve, reject) => {
+					$.ajax({
+						type : "POST",
+						url : /*[[@{/user/saibanMinjiManagement/{saibanSeq}/{ankenId}/deleteAitegataKanyosha(saibanSeq=${saibanAitegataViewForm.saibanSeq}, ankenId=${ankenId})}]]*/"",
+						data : param,
+						dataType : "html",
+					})
+					.done(function(data, status, jqXHR) {
+						if (isAjaxProcSuccess(jqXHR)) {
+							<!--/* 処理成功 */-->
+							
+							<!--/* 親HTMLのID */-->
+							$('#saibanAitegataViewFragmentWrap').html(data);
+							
+							showInfoMessageForJs(/*[[#{I00028('相手方代理人情報')}]]*/);
+							return resolve();
+						} else {
+							<!--/* 処理失敗 */-->
+							const errorMsg = getAjaxProcResutlMessage(jqXHR);
+							showErrorMessageForJs(errorMsg);
+							return reject();
+						}
+					})
+					.fail(function(jqXHR, status, errorThrown) {
+						showErrorMessageForJs(/*[[#{E00014}]]*/ "削除に失敗しました。");
+						return reject();
+					})
+				});
+			}
+		});
+
+		<!--/* 相手方のモーダル */-->
+		const $aitegataModal = $("#saibanAitegataViewFragment").find("#kanyoshaAitegataModal");
+		<!--/* 相手方モーダル表示時にアクションを設定 */-->
+		$aitegataModal.on("show.bs.modal", function(e) {
+			
+			// モーダル表示名
+			benzo.global.fragment.kanyoshaEditModalFragmentObj.paramObj.modalNameLabel = '相手方';
+			
+			// 選択できない顧客種別
+			benzo.global.fragment.kanyoshaEditModalFragmentObj.paramObj.excludeCustomerType = ["2"];
+			
+			// 登録処理
+			benzo.global.fragment.kanyoshaEditModalFragmentObj.setUpObj.registAction = function(triggerBtn) {
+				
+				let param = benzo.global.fragment.kanyoshaEditModalFragmentObj.paramObj.getFormParams($aitegataModal);
+				let aitegataWithInParam = Object.assign({}, benzo.global.fragment.kanyoshaEditModalFragmentObj.aitegataWithInParam);
+
+				param.push({
+					name : "saibanSeq",
+					value : aitegataWithInParam.saibanSeq
+				});
+				
+				let url = /*[[@{/common/mvc/kanyosha/registKanyoshaForSaibanAitegata}]]*/"";
+				if (ajaxRunning) {
+					return false;
+				}
+				ajaxRunning = true;
+				$.ajax({
+					type : "POST",
+					url : url,
+					data : param,
+					dataType : "html",
+				})
+				.done(function(data, status, jqXHR) {
+					if (isAjaxProcSuccess(jqXHR)) {
+						// 処理成功
+						Promise.resolve()
+							.then(() => modalHidePromise($aitegataModal))
+							.then(() => getSaibanAitegataView())
+							.then(() => showInfoMessageForJs(getAjaxProcResutlMessage(jqXHR)))
+					} else {
+						if (data) {
+							$aitegataModal.find(".kanyoshaEditModalFragmentWrap").html(data);
+						}
+						const errorMsg = getAjaxProcResutlMessage(jqXHR);
+						showErrorMessage(errorMsg, $aitegataModal);
+					}
+				})
+				.fail(function(jqXHR, status, errorThrown) {
+					const errorMsg = /*[[#{E00091}]]*/ "error";
+					showErrorMessage(errorMsg, $aitegataModal);
+				})
+				.always(function(){
+					ajaxRunning = false;
+				});
+			};
+			
+			// 更新処理
+			benzo.global.fragment.kanyoshaEditModalFragmentObj.setUpObj.updateAction = function(triggerBtn) {
+				
+				let param = benzo.global.fragment.kanyoshaEditModalFragmentObj.paramObj.getFormParams($aitegataModal);
+				let url = /*[[@{/common/mvc/kanyosha/updateKanyosha}]]*/"";
+				
+				if (ajaxRunning) {
+					return false;
+				}
+				ajaxRunning = true;
+
+				$.ajax({
+					type : "POST",
+					url : url,
+					data : param,
+					dataType : "html",
+				})
+				.done(function(data, status, jqXHR) {
+					if (isAjaxProcSuccess(jqXHR)) {
+						// 処理成功
+						Promise.resolve()
+							.then(() => modalHidePromise($aitegataModal))
+							.then(() => getSaibanAitegataView())
+							.then(() => showInfoMessageForJs(/*[[#{I00023('相手方情報')}]]*/''))
+					} else {
+						if (data) {
+							$aitegataModal.find(".kanyoshaEditModalFragmentWrap").html(data);
+						}
+						const errorMsg = getAjaxProcResutlMessage(jqXHR);
+						showErrorMessage(errorMsg, $aitegataModal);
+					}
+				})
+				.fail(function(jqXHR, status, errorThrown) {
+					const errorMsg = /*[[#{E00091}]]*/ "error";
+					showErrorMessage(errorMsg, $aitegataModal);
+				})
+				.always(function(){
+					ajaxRunning = false;
+				});
+			};
+			
+			// 削除処理
+			benzo.global.fragment.kanyoshaEditModalFragmentObj.setUpObj.deleteAction = function(triggerBtn) {
+				
+				let param = benzo.global.fragment.kanyoshaEditModalFragmentObj.paramObj.getFormParams($aitegataModal);
+
+				if (ajaxRunning) {
+					return false;
+				}
+				ajaxRunning = true;
+
+				Promise.resolve()
+					.then(() => beforeCheck(param))
+					.then(() => deleteAction(param))
+					.then(() => modalHidePromise($aitegataModal))
+					.then(() => getSaibanAitegataView())
+					.catch((errorObj) => console.log(errorObj))
+					.finally(() => ajaxRunning = false);
+				
+				function beforeCheck(param) {
+					return new Promise((resolve, reject) => {
+						$.ajax({
+							type : "POST",
+							url : /*[[@{/common/mvc/kanyosha/deleteKanyoshaBeforeCheck}]]*/,
+							data : param,
+							dataType : "json",
+						}).done(function(data) {
+							if (data.needConfirm && !confirm(data.message)) {
+								return reject();
+							} else {
+								return resolve([data]);
+							}
+						}).fail(function(jqXHR, status, errorThrown) {
+							const errorMsg = /*[[#{E00091}]]*/ "error";
+							showErrorMessage(errorMsg, $aitegataModal);
+							return reject(jqXHR, status, errorThrown);
+						});
+					});
+				}
+				
+				function deleteAction(param) {
+					return new Promise((resolve, reject) => {
+						$.ajax({
+							type : "POST",
+							url : /*[[@{/common/mvc/kanyosha/deleteKanyosha}]]*/,
+							data : param,
+							dataType : "html",
+						})
+						.done(function(data, status, jqXHR) {
+							if (isAjaxProcSuccess(jqXHR)) {
+								// 処理成功
+								showInfoMessageForJs(/*[[#{I00028('相手方情報')}]]*/'')
+								return resolve()
+							} else {
+								const errorMsg = getAjaxProcResutlMessage(jqXHR);
+								showErrorMessage(errorMsg, $aitegataModal);
+								return reject([errorMsg]);
+							}
+						})
+						.fail(function(jqXHR, status, errorThrown) {
+							const errorMsg = /*[[#{E00091}]]*/ "error";
+							showErrorMessage(errorMsg, $aitegataModal);
+							return reject([jqXHR, status, errorThrown]);
+						});
+					});
+				}
+			};
+			
+			// 登録・編集エリアの初期レンダリング（再レンダリングも含む）
+			benzo.global.fragment.kanyoshaEditModalFragmentObj.setUpObj.initRenderEditViewAction = function(triggerBtn) {
+				if (ajaxRunning) {
+					return false;
+				}
+				ajaxRunning = true;
+				Promise.resolve()
+					.then(() => initRenderAitegataEditViewAction())
+					.catch((errors) => console.log(errors))
+					.finally(() => ajaxRunning = false);
+			};
+			
+			// 検索エリアの登録処理
+			benzo.global.fragment.kanyoshaEditModalFragmentObj.setUpObj.searchRegistAction = function(triggerBtn) {
+				if (ajaxRunning) {
+					return false;
+				}
+				let param = benzo.global.fragment.kanyoshaEditModalFragmentObj.paramObj.getSearchResultFormParams($aitegataModal);
+				let aitegataWithInParam = Object.assign({}, benzo.global.fragment.kanyoshaEditModalFragmentObj.aitegataWithInParam);
+				param.push({
+					name : "saibanSeq",
+					value : aitegataWithInParam.saibanSeq
+				});
+				
+				const url = /*[[@{/common/mvc/kanyosha/searchResultRegistKanyoshaForSaibanAitegata}]]*/"";
+				ajaxRunning = true;
+				$.ajax({
+					type : "POST",
+					url : url,
+					data : param,
+					dataType : "html",
+				})
+				.done(function(data, status, jqXHR) {
+					if (isAjaxProcSuccess(jqXHR)) {
+						// 処理成功
+						Promise.resolve()
+							.then(() => modalHidePromise($aitegataModal))
+							.then(() => getSaibanAitegataView())
+							.then(() => showInfoMessageForJs(getAjaxProcResutlMessage(jqXHR)))
+					} else {
+						const errorMsg = getAjaxProcResutlMessage(jqXHR);
+						showErrorMessage(errorMsg, $aitegataModal);
+					}
+				})
+				.fail(function(jqXHR, status, errorThrown) {
+					const errorMsg = /*[[#{E00091}]]*/ "error";
+					showErrorMessage(errorMsg, $aitegataModal);
+				})
+				.always(function(){
+					ajaxRunning = false;
+				});
+			};
+			
+			// 検索エリアの検索処理
+			benzo.global.fragment.kanyoshaEditModalFragmentObj.setUpObj.searchRenderPromise = function() {
+				return new Promise((resolve, reject) => {
+					const url = /*[[@{/common/mvc/kanyosha/getKanyoshaSearchModalFragment/saiban/aitegata}]]*/"";
+					let optionParam = benzo.global.fragment.kanyoshaEditModalFragmentObj.paramObj.getSearchFormParams($aitegataModal);
+					let aitegataWithInParam = Object.assign({}, benzo.global.fragment.kanyoshaEditModalFragmentObj.aitegataWithInParam);
+					optionParam.push({
+						name : "saibanSeq",
+						value : aitegataWithInParam.saibanSeq
+					});
+					$.ajax({
+						type : "GET",
+						url : url,
+						data : optionParam,
+						dataType : "html"
+					})
+					.done(function(result, status, jqXHR) {
+						if (isAjaxProcSuccess(jqXHR)) {
+							// 処理成功
+							$aitegataModal.find(".kanyoshaEditModalFragmentWrap").html(result);
+							return resolve();
+						} else {
+							const errorMsg = getAjaxProcResutlMessage(jqXHR);
+							showErrorMessage(errorMsg, $aitegataModal);
+							return reject(errorMsg)
+						}
+					})
+					.fail(function(jqXHR, status, errorThrown) {
+						showErrorMessageForJs(/*[[#{E00091}]]*/ "error");
+						return reject([jqXHR, status, errorThrown]);
+					});
+				});
+			};
+			
+			// 検索エリアの初期表示処理
+			benzo.global.fragment.kanyoshaEditModalFragmentObj.setUpObj.initRenderSearchViewAction = function() {
+				if (ajaxRunning) {
+					return false;
+				}
+				ajaxRunning = true;
+				Promise.resolve()
+					.then(() => initRenderAitegataSearchViewAction())
+					.catch((errors) => console.log(errors))
+					.finally(() => ajaxRunning = false);
+			};
+
+		});
+		
+		<!--/* 相手方編集モーダルの初期レンダリング関数 */-->
+		function initRenderAitegataEditViewAction() {
+			return new Promise((resolve, reject) => {
+				let initRenderAitegataEditViewParams = Object.assign({}, benzo.global.fragment.kanyoshaEditModalFragmentObj.initRenderAitegataEditViewParams);
+				const ankenId = initRenderAitegataEditViewParams["ankenId"];
+				const kanyoshaSeq = initRenderAitegataEditViewParams["kanyoshaSeq"];
+				
+				let url = /*[[@{/common/mvc/kanyosha/getKanyoshaEditModalFragment}]]*/"";
+				let param = {} ;
+				if (kanyoshaSeq) {
+					url += `/${kanyoshaSeq}`;
+				} else {
+					url += "/create";
+					param = {
+						"ankenId" : ankenId,
+						"initCustomerType" : "0",
+					};
+				};
+
+				$.ajax({
+					type : "GET",
+					url : url,
+					data : param,
+					dataType : "html"
+				})
+				.done(function(result, status, jqXHR) {
+					if (isAjaxProcSuccess(jqXHR)) {
+						// 処理成功
+						$aitegataModal.find(".kanyoshaEditModalFragmentWrap").html(result);
+						return resolve();
+					} else {
+						const errorMsg = getAjaxProcResutlMessage(jqXHR);
+						showErrorMessageForJs(errorMsg);
+						return reject(errorMsg);
+					}
+				})
+				.fail(function(jqXHR, status, errorThrown) {
+					showErrorMessageForJs(/*[[#{E00091}]]*/ "error");
+					return reject([jqXHR, status, errorThrown]);
+				});
+			});
+		};
+		
+		<!--/* 相手方検索モーダルの初期レンダリング関数 */-->
+		function initRenderAitegataSearchViewAction() {
+			return new Promise((resolve, reject) => {
+				let initRenderAitegataSearchViewParams = Object.assign({}, benzo.global.fragment.kanyoshaEditModalFragmentObj.initRenderAitegataSearchViewParams);
+				const ankenId = initRenderAitegataSearchViewParams["ankenId"];
+				const saibanSeq = initRenderAitegataSearchViewParams["saibanSeq"];
+				let param = [
+					{name:"ankenId", value: ankenId},
+					{name:"saibanSeq", value: saibanSeq},
+				];
+				const url = /*[[@{/common/mvc/kanyosha/getKanyoshaSearchModalFragment/saiban/aitegata}]]*/"";
+				$.ajax({
+					type : "GET",
+					url : url,
+					data : param,
+					dataType : "html"
+				})
+				.done(function(result, status, jqXHR) {
+					if (isAjaxProcSuccess(jqXHR)) {
+						// 処理成功
+						$aitegataModal.find(".kanyoshaEditModalFragmentWrap").html(result);
+						return resolve();
+					} else {
+						const errorMsg = getAjaxProcResutlMessage(jqXHR);
+						showErrorMessageForJs(errorMsg);
+						return reject(errorMsg);
+					}
+				})
+				.fail(function(jqXHR, status, errorThrown) {
+					showErrorMessageForJs(/*[[#{E00091}]]*/ "error");
+					return reject(jqXHR, status, errorThrown);
+				});
+			});
+		};
+		
+		<!--/* 相手方のモーダル表示処理 */-->
+		$("#saibanAitegataViewFragment").on("click", ".openKanyoshaAitegataModal", function() {
+			if (ajaxRunning) {
+				return false;
+			}
+			
+			const ankenId = /*[[${ankenId}]]*/"";
+			const saibanSeq = /*[[${saibanAitegataViewForm.saibanSeq}]]*/"";
+			const kanyoshaSeq =$(this).data("kanyoshaSeq");
+			
+			// 登録・編集初期表示で必要なパラメータをメモリに保持しておく
+			benzo.global.fragment.kanyoshaEditModalFragmentObj.initRenderAitegataEditViewParams = {
+					"ankenId": ankenId,
+					"kanyoshaSeq": kanyoshaSeq,
+			};
+			
+			// 検索初期表示で必要なパラメータをメモリに保持しておく
+			benzo.global.fragment.kanyoshaEditModalFragmentObj.initRenderAitegataSearchViewParams = {
+					"ankenId": ankenId,
+					"saibanSeq": saibanSeq,
+			}
+			
+			<!--/* モーダルの保存処理等で使用するパラメータをGlobal領域に保持させておく */-->
+			benzo.global.fragment.kanyoshaEditModalFragmentObj.aitegataWithInParam = {
+				"saibanSeq": saibanSeq,
+			}
+			
+			ajaxRunning = true;
+			Promise.resolve()
+				.then(() => initRenderAitegataEditViewAction())
+				.then(() => $aitegataModal.modal("show"))
+				.catch((errors) => console.log(errors))
+				.finally(() => ajaxRunning = false);
+		});
+		
+		<!--/* 相手方の代理人モーダル */-->
+		const $aitegataDairininModal = $("#saibanAitegataViewFragment").find("#kanyoshaAitegataDairininModal");
+		$aitegataDairininModal.on("show.bs.modal", function(e) {
+			
+			// モーダル表示名
+			benzo.global.fragment.kanyoshaEditModalFragmentObj.paramObj.modalNameLabel = '相手方代理人';
+			
+			benzo.global.fragment.kanyoshaEditModalFragmentObj.paramObj.excludeCustomerType =[];
+			
+			// 登録処理
+			benzo.global.fragment.kanyoshaEditModalFragmentObj.setUpObj.registAction = function(triggerBtn) {
+				
+				let param = benzo.global.fragment.kanyoshaEditModalFragmentObj.paramObj.getFormParams($aitegataDairininModal);
+				let aitegataDairininWithInParam = Object.assign({}, benzo.global.fragment.kanyoshaEditModalFragmentObj.aitegataDairininWithInParam);
+				
+				param.push({
+					name : "aitegataKanyoshaSeq",
+					value : aitegataDairininWithInParam.aitegataKanyoshaSeq
+				});
+				
+				param.push({
+					name : "saibanSeq",
+					value : aitegataDairininWithInParam.saibanSeq
+				});
+				
+				let url = /*[[@{/common/mvc/kanyosha/registKanyoshaForSaibanAitegataDairinin}]]*/"";
+				if (ajaxRunning) {
+					return false;
+				}
+				ajaxRunning = true;
+				$.ajax({
+					type : "POST",
+					url : url,
+					data : param,
+					dataType : "html",
+				})
+				.done(function(data, status, jqXHR) {
+					if (isAjaxProcSuccess(jqXHR)) {
+						// 処理成功
+						Promise.resolve()
+							.then(() => modalHidePromise($aitegataDairininModal))
+							.then(() => getSaibanAitegataView())
+							.then(() => showInfoMessageForJs(getAjaxProcResutlMessage(jqXHR)))
+					} else {
+						if (data) {
+							$aitegataDairininModal.find(".kanyoshaEditModalFragmentWrap").html(data);
+						}
+						const errorMsg = getAjaxProcResutlMessage(jqXHR);
+						showErrorMessage(errorMsg, $aitegataDairininModal);
+					}
+				})
+				.fail(function(jqXHR, status, errorThrown) {
+					const errorMsg = /*[[#{E00091}]]*/ "error";
+					showErrorMessage(errorMsg, $aitegataModal);
+				})
+				.always(function(){
+					ajaxRunning = false;
+				});
+			};
+			
+			// 更新処理
+			benzo.global.fragment.kanyoshaEditModalFragmentObj.setUpObj.updateAction = function(triggerBtn) {
+				
+				let param = benzo.global.fragment.kanyoshaEditModalFragmentObj.paramObj.getFormParams($aitegataDairininModal);
+				let url = /*[[@{/common/mvc/kanyosha/updateKanyosha}]]*/"";
+				
+				if (ajaxRunning) {
+					return false;
+				}
+				ajaxRunning = true;
+
+				$.ajax({
+					type : "POST",
+					url : url,
+					data : param,
+					dataType : "html",
+				})
+				.done(function(data, status, jqXHR) {
+					if (isAjaxProcSuccess(jqXHR)) {
+						// 処理成功
+						Promise.resolve()
+							.then(() => modalHidePromise($aitegataDairininModal))
+							.then(() => getSaibanAitegataView())
+							.then(() => showInfoMessageForJs(/*[[#{I00023('相手方代理人情報')}]]*/''))
+					} else {
+						if (data) {
+							$aitegataDairininModal.find(".kanyoshaEditModalFragmentWrap").html(data);
+						}
+						const errorMsg = getAjaxProcResutlMessage(jqXHR);
+						showErrorMessage(errorMsg, $aitegataDairininModal);
+					}
+				})
+				.fail(function(jqXHR, status, errorThrown) {
+					const errorMsg = /*[[#{E00091}]]*/ "error";
+					showErrorMessage(errorMsg, $aitegataDairininModal);
+				})
+				.always(function(){
+					ajaxRunning = false;
+				});
+			};
+			
+			// 削除処理
+			benzo.global.fragment.kanyoshaEditModalFragmentObj.setUpObj.deleteAction = function(triggerBtn) {
+				
+				let param = benzo.global.fragment.kanyoshaEditModalFragmentObj.paramObj.getFormParams($aitegataDairininModal);
+
+				if (ajaxRunning) {
+					return false;
+				}
+				ajaxRunning = true;
+
+				Promise.resolve()
+					.then(() => beforeCheck(param))
+					.then(() => deleteAction(param))
+					.then(() => modalHidePromise($aitegataDairininModal))
+					.then(() => getSaibanAitegataView())
+					.catch((errorObj) => console.log(errorObj))
+					.finally(() => ajaxRunning = false);
+				
+				function beforeCheck(param) {
+					return new Promise((resolve, reject) => {
+						$.ajax({
+							type : "POST",
+							url : /*[[@{/common/mvc/kanyosha/deleteKanyoshaBeforeCheck}]]*/,
+							data : param,
+							dataType : "json",
+						}).done(function(data) {
+							if (data.needConfirm && !confirm(data.message)) {
+								return reject();
+							} else {
+								return resolve([data]);
+							}
+						}).fail(function(jqXHR, status, errorThrown) {
+							const errorMsg = /*[[#{E00091}]]*/ "error";
+							showErrorMessage(errorMsg, $aitegataDairininModal);
+							return reject(jqXHR, status, errorThrown);
+						});
+					});
+				}
+				
+				function deleteAction(param) {
+					return new Promise((resolve, reject) => {
+						$.ajax({
+							type : "POST",
+							url : /*[[@{/common/mvc/kanyosha/deleteKanyosha}]]*/,
+							data : param,
+							dataType : "html",
+						})
+						.done(function(data, status, jqXHR) {
+							if (isAjaxProcSuccess(jqXHR)) {
+								// 処理成功
+								showInfoMessageForJs(/*[[#{I00028('相手方代理人情報')}]]*/'')
+								return resolve()
+							} else {
+								const errorMsg = getAjaxProcResutlMessage(jqXHR);
+								showErrorMessage(errorMsg, $aitegataDairininModal);
+								return reject([errorMsg]);
+							}
+						})
+						.fail(function(jqXHR, status, errorThrown) {
+							const errorMsg = /*[[#{E00091}]]*/ "error";
+							showErrorMessage(errorMsg, $aitegataDairininModal);
+							return reject([jqXHR, status, errorThrown]);
+						});
+					});
+				}
+			};
+			
+			// 登録・編集エリアの初期レンダリング（再レンダリングも含む）
+			benzo.global.fragment.kanyoshaEditModalFragmentObj.setUpObj.initRenderEditViewAction = function(triggerBtn) {
+				if (ajaxRunning) {
+					return false;
+				}
+				ajaxRunning = true;
+				Promise.resolve()
+					.then(() => initRenderAitegataDairininEditViewAction())
+					.catch((errors) => console.log(errors))
+					.finally(() => ajaxRunning = false);
+			};
+			
+			// 検索エリアの登録処理
+			benzo.global.fragment.kanyoshaEditModalFragmentObj.setUpObj.searchRegistAction = function(triggerBtn) {
+				if (ajaxRunning) {
+					return false;
+				}
+				let param = benzo.global.fragment.kanyoshaEditModalFragmentObj.paramObj.getSearchResultFormParams($aitegataDairininModal);
+				let aitegataDairininWithInParam = Object.assign({}, benzo.global.fragment.kanyoshaEditModalFragmentObj.aitegataDairininWithInParam);
+				param.push({
+					name : "saibanSeq",
+					value : aitegataDairininWithInParam.saibanSeq
+				});
+				
+				param.push({
+					name : "aitegataKanyoshaSeq",
+					value : aitegataDairininWithInParam.aitegataKanyoshaSeq
+				});
+				
+				const url = /*[[@{/common/mvc/kanyosha/searchResultRegistKanyoshaForSaibanAitegataDairinin}]]*/"";
+				ajaxRunning = true;
+				$.ajax({
+					type : "POST",
+					url : url,
+					data : param,
+					dataType : "html",
+				})
+				.done(function(data, status, jqXHR) {
+					if (isAjaxProcSuccess(jqXHR)) {
+						// 処理成功
+						Promise.resolve()
+							.then(() => modalHidePromise($aitegataDairininModal))
+							.then(() => getSaibanAitegataView())
+							.then(() => showInfoMessageForJs(getAjaxProcResutlMessage(jqXHR)))
+					} else {
+						const errorMsg = getAjaxProcResutlMessage(jqXHR);
+						showErrorMessage(errorMsg, $aitegataDairininModal);
+					}
+				})
+				.fail(function(jqXHR, status, errorThrown) {
+					const errorMsg = /*[[#{E00091}]]*/ "error";
+					showErrorMessage(errorMsg, $aitegataDairininModal);
+				})
+				.always(function(){
+					ajaxRunning = false;
+				});
+			};
+			
+			// 検索エリアの検索処理
+			benzo.global.fragment.kanyoshaEditModalFragmentObj.setUpObj.searchRenderPromise = function() {
+				return new Promise((resolve, reject) => {
+					const url = /*[[@{/common/mvc/kanyosha/getKanyoshaSearchModalFragment/saiban/aitegataDairinin}]]*/"";
+					let optionParam = benzo.global.fragment.kanyoshaEditModalFragmentObj.paramObj.getSearchFormParams($aitegataDairininModal);
+					let aitegataDairininWithInParam = Object.assign({}, benzo.global.fragment.kanyoshaEditModalFragmentObj.aitegataDairininWithInParam);
+					optionParam.push({
+						name : "saibanSeq",
+						value : aitegataDairininWithInParam.saibanSeq
+					});
+					$.ajax({
+						type : "GET",
+						url : url,
+						data : optionParam,
+						dataType : "html"
+					})
+					.done(function(result, status, jqXHR) {
+						if (isAjaxProcSuccess(jqXHR)) {
+							// 処理成功
+							$aitegataDairininModal.find(".kanyoshaEditModalFragmentWrap").html(result);
+							return resolve();
+						} else {
+							const errorMsg = getAjaxProcResutlMessage(jqXHR);
+							showErrorMessage(errorMsg, $aitegataDairininModal);
+							return reject(errorMsg);
+						}
+					})
+					.fail(function(jqXHR, status, errorThrown) {
+						showErrorMessageForJs(/*[[#{E00091}]]*/ "error");
+						return reject([jqXHR, status, errorThrown]);
+					});
+				});
+			};
+			
+			// 検索エリアの初期表示処理
+			benzo.global.fragment.kanyoshaEditModalFragmentObj.setUpObj.initRenderSearchViewAction = function() {
+				if (ajaxRunning) {
+					return false;
+				}
+				ajaxRunning = true;
+				Promise.resolve()
+					.then(() => initRenderAitegataDairininSearchViewAction())
+					.catch((errors) => console.log(errors))
+					.finally(() => ajaxRunning = false);
+			};
+		});
+		
+		<!--/* 相手方代理人編集モーダルの初期レンダリング関数 */-->
+		function initRenderAitegataDairininEditViewAction() {
+			return new Promise((resolve, reject) => {
+				let initRenderAitegataDairininEditViewParams = Object.assign({}, benzo.global.fragment.kanyoshaEditModalFragmentObj.initRenderAitegataDairininEditViewParams);
+				const ankenId = initRenderAitegataDairininEditViewParams["ankenId"];
+				const kanyoshaSeq = initRenderAitegataDairininEditViewParams["kanyoshaSeq"];
+				
+				let url = /*[[@{/common/mvc/kanyosha/getKanyoshaEditModalFragment}]]*/"";
+				let param = {} ;
+				if (kanyoshaSeq) {
+					url += `/${kanyoshaSeq}`;
+				} else {
+					url += "/create";
+					param = {
+						"ankenId" : ankenId,
+						"initCustomerType" : "2",
+					};
+				};
+
+				$.ajax({
+					type : "GET",
+					url : url,
+					data : param,
+					dataType : "html"
+				})
+				.done(function(result, status, jqXHR) {
+					if (isAjaxProcSuccess(jqXHR)) {
+						// 処理成功
+						$aitegataDairininModal.find(".kanyoshaEditModalFragmentWrap").html(result);
+						return resolve();
+					} else {
+						const errorMsg = getAjaxProcResutlMessage(jqXHR);
+						showErrorMessageForJs(errorMsg);
+						return reject(errorMsg);
+					}
+				})
+				.fail(function(jqXHR, status, errorThrown) {
+					showErrorMessageForJs(/*[[#{E00091}]]*/ "error");
+					return reject([jqXHR, status, errorThrown]);
+				});
+			});
+		};
+		
+		<!--/* 相手方代理人検索モーダルの初期レンダリング関数 */-->
+		function initRenderAitegataDairininSearchViewAction() {
+			return new Promise((resolve, reject) => {
+				let initRenderAitegataDairininSearchViewParams = Object.assign({}, benzo.global.fragment.kanyoshaEditModalFragmentObj.initRenderAitegataDairininSearchViewParams);
+				const ankenId = initRenderAitegataDairininSearchViewParams["ankenId"];
+				const saibanSeq = initRenderAitegataDairininSearchViewParams["saibanSeq"];
+				let param = [
+					{name:"ankenId", value: ankenId},
+					{name:"customerType", value: "2"},
+					{name:"saibanSeq", value: saibanSeq},
+				];
+				
+				const url = /*[[@{/common/mvc/kanyosha/getKanyoshaSearchModalFragment/saiban/aitegataDairinin}]]*/"";
+				$.ajax({
+					type : "GET",
+					url : url,
+					data : param,
+					dataType : "html"
+				})
+				.done(function(result, status, jqXHR) {
+					if (isAjaxProcSuccess(jqXHR)) {
+						// 処理成功
+						$aitegataDairininModal.find(".kanyoshaEditModalFragmentWrap").html(result);
+						return resolve();
+					} else {
+						const errorMsg = getAjaxProcResutlMessage(jqXHR);
+						showErrorMessageForJs(errorMsg);
+						return reject(errorMsg);
+					}
+				})
+				.fail(function(jqXHR, status, errorThrown) {
+					showErrorMessageForJs(/*[[#{E00091}]]*/ "error");
+					return reject(jqXHR, status, errorThrown)
+				});
+			});
+		};
+		
+		<!--/* 相手方の代理人モーダルの表示処理 */-->
+		$("#saibanAitegataViewFragment").on("click", ".openKanyoshaAitegataDairininModal", function() {
+			if (ajaxRunning) {
+				return false;
+			}
+			
+			const ankenId = /*[[${ankenId}]]*/"";
+			const saibanSeq = /*[[${saibanAitegataViewForm.saibanSeq}]]*/"";
+			const kanyoshaSeq =$(this).data("kanyoshaSeq");
+			
+			// 登録・編集初期表示で必要なパラメータをメモリに保持しておく
+			benzo.global.fragment.kanyoshaEditModalFragmentObj.initRenderAitegataDairininEditViewParams = {
+					"ankenId": ankenId,
+					"kanyoshaSeq": kanyoshaSeq,
+			}
+			
+			// 検索初期表示で必要なパラメータをメモリに保持しておく
+			benzo.global.fragment.kanyoshaEditModalFragmentObj.initRenderAitegataDairininSearchViewParams = {
+					"ankenId": ankenId,
+					"saibanSeq": saibanSeq,
+			};
+			
+			<!--/* モーダルの保存処理等で使用するパラメータをGlobal領域に保持させておく */-->
+			const aitegataKanyoshaSeq = $(this).data("aitegataKanyoshaSeq");
+			benzo.global.fragment.kanyoshaEditModalFragmentObj.aitegataDairininWithInParam = {
+				"saibanSeq": saibanSeq,
+				"aitegataKanyoshaSeq": aitegataKanyoshaSeq,
+			}
+			
+			ajaxRunning = true;
+			Promise.resolve()
+				.then(() => initRenderAitegataDairininEditViewAction())
+				.then(() => $aitegataDairininModal.modal("show"))
+				.catch((errors) => console.log(errors))
+				.finally(() => ajaxRunning = false);
+		});
+		
+		<!--/* 親裁判相手方情報の再取得 */-->
+		function getSaibanAitegataView() {
+			return new Promise((resolve, reject) => {
+				<!--/* リクエストパラメータ */-->
+				const param = {
+						isDisplayOnly : /*[[${saibanAitegataViewForm.displayOnlyFlg}]]*/'false'
+				}
+				$.ajax({
+					url : /*[[@{/user/saibanMinjiManagement/{saibanSeq}/{ankenId}/getSaibanAitegataViewForm(saibanSeq=${saibanAitegataViewForm.saibanSeq}, ankenId=${ankenId})}]]*/"getSaibanAitegataViewForm",
+					type : "GET",
+					data : param,
+					dataType: 'html',
+				})
+				.done(function(data, status, jqXHR) {
+					if (isAjaxProcSuccess(jqXHR)) {
+						// 「裁判相手方表示部分を再描画」
+						$('#saibanAitegataViewFragmentWrap').html(data);
+						return resolve();
+					} else {
+						// 処理失敗
+						const errorMsg = getAjaxProcResutlMessage(jqXHR);
+						showErrorMessageForJs(errorMsg);
+						return reject();
+					}
+					
+				})
+				.fail(function(jqXHR, status, errorThrown) {
+					showErrorMessageForJs(/*[[#{E00091}]]*/ "error");
+					return reject();
+				});
+			});
+		}
+		
+		<!--/* モーダル閉じる処理をPromise化 */-->
+		function modalHidePromise(modal){
+			return new Promise((resolve) => {
+				$(modal).one('hidden.bs.modal', function() {
+					resolve();
+				});
+				$(modal).modal("hide");
+			});
+		};
+
+	});
+	</script>
+
+	<!--/* HTML */-->
+	<th:block th:object="${saibanAitegataViewForm}">
+	
+	<section class="section_aitegata section_person">
+			<div class="section_header">
+				<div class="section_header__title">相手方情報</div>
+				<div class="section_header__action">
+				<!--/* 相手方を追加 */-->
+				<a href="javascript:void(0);" class="openKanyoshaAitegataModal fs15" th:if="!${saibanAitegataViewForm.displayOnlyFlg}">
+					<i class="fas fa-plus-square mr-2"></i>相手方を追加
+				</a>
+			</div>
+		</div>
+		<div class="section_body">
+			<div class="section_body__contents p-0">
+			
+		<th:block th:if="${#lists.isEmpty(saibanAitegataViewForm.saibanKanyoshaAitegataDtoList)}">
+				<div class="no_data_msg px-4">
+					<span th:text="#{I00035('相手方情報の登録')}">MSG_I00035</span>
+				</div>
+		</th:block>
+		
+		<th:block th:unless="${#lists.isEmpty(saibanAitegataViewForm.saibanKanyoshaAitegataDtoList)}">
+				<div class="section_split_wrapper pb-0">
+					<div class="section_split">
+						<div class="section_split__left">
+							<span class="badge badge-pill badge_square mnw70 badge_green px-1"><i class="fas fa-user mr-2"></i>相手方</span>
+							<hr class="mt-3 m-0">
+						</div>
+						<div class="section_split__right">
+							<span class="badge badge-pill badge_square mnw70 badge_purple px-1"><i class="fas fa-user-tie mr-2"></i>代理人</span>
+							<hr class="mt-3 m-0">
+						</div>
+					</div>
+				</div>
+				<ul class="section_list px-3">
+					<li class="list_contents" th:each="aitegataKanyosha, i : *{saibanKanyoshaAitegataDtoList}">
+						<div class="section_list_item_wrap section_split_wrapper">
+							<div class="section_split">
+								
+								<!--/* 相手方エリア */-->
+								<div class="section_split__left">
+									<div class="section_list_item pl-1">
+										<!--/* 名簿 */-->
+										<div class="img_info_xs mb-2">
+											<!--/* 名簿画像 */-->
+											<div class="img_info_xs__image">
+												<!--/* 名簿属性ラベル */-->
+												<div th:class="|person_image_wrapper${aitegataKanyosha.personAttribute?.cd.getCd()}|">
+													<!--/* 個人アイコン */-->
+													<img th:if="${T(jp.loioz.common.constant.CommonConstant$CustomerType).KOJIN.equals(aitegataKanyosha.customerType)}" 
+														class="img-thumbnail person_image_xs" th:src="@{/img/person_kojin.svg}"
+														data-boundary="window" data-container="body" data-toggle="tooltip" data-trigger="hover" th:title="個人">
+														
+													<!--/* 企業・団体アイコン */-->
+													<img th:if="${T(jp.loioz.common.constant.CommonConstant$CustomerType).HOJIN.equals(aitegataKanyosha.customerType)}"
+														class="img-thumbnail person_image_xs" th:src="@{/img/person_hojin.svg}"
+														data-boundary="window" data-container="body" data-toggle="tooltip" data-trigger="hover" th:title="企業・団体">
+														
+													<!--/* 弁護士アイコン */-->
+													<img th:if="${T(jp.loioz.common.constant.CommonConstant$CustomerType).LAWYER.equals(aitegataKanyosha.customerType)}"
+														class="img-thumbnail person_image_xs" th:src="@{/img/person_bengoshi.svg}"
+														data-boundary="window" data-container="body" data-toggle="tooltip" data-trigger="hover" th:title="弁護士">
+												</div>
+											</div>
+											<!--/* 名簿画像 end */-->
+	
+											<!--/* 名前 */-->
+											<div class="img_info_xs__info">
+												<div class="fw600 fs20 lh1_3 pt-1" th:text="${aitegataKanyosha.kanyoshaName}">山田　太郎 </div>
+												<div>
+													<!-- /* 名簿ID */ -->
+													<a href="javascript:void(0);" class="app_id_link p-1 personPopoverLabel" th:text="|名簿ID：${aitegataKanyosha.personId.asLong()}|" 
+														data-boundary="window" data-container="#saibanAitegataViewFragment" th:data-person-id="${aitegataKanyosha.personId.asLong()}">
+													</a>
+												</div>
+											</div>
+											<!-- /* ボタンエリア */ -->
+											<div class="img_info_xs__btn">
+												<div class="item_sub px-0" th:if="!${saibanAitegataViewForm.displayOnlyFlg}">
+													<div th:id="|aitegataContainer${i.index}|" class="d-inline-block stop-events outPutContainerClose" data-offset="-80,0" data-boundary="window" data-container="#saibanAitegataViewFragment" 
+															th:data-kanyosha-seq="${aitegataKanyosha.kanyoshaSeq}" data-toggle="popover" data-placement="bottom" data-html="true" th:data-content=
+															'|<ul class="output_nav_list">
+																<li><button class="btn btn-light removeSaibanAitegata" data-target="#aitegataContainer${i.index}"><i class="fas fa-minus-circle"></i>相手方から外す</button></li>
+																<li><button class="btn btn-light removeSaibanAitegataFromAnken" data-target="#aitegataContainer${i.index}"><i class="fas fa-user-minus"></i>案件から外す</button></li>
+															</ul>|'>
+														<button type="button" class="btn btn-light btn_icon_only btn_icon_ellipsis_v " data-boundary="window" data-container="#saibanAitegataViewFragment">
+															<i class="fas fa-ellipsis-v"></i>
+														</button>
+													</div>
+												</div>
+											</div>
+										</div>
+										<!--/* 筆頭エリア */-->
+										<div class="hittou_select_area pl-1">
+											<div>
+												<a href="javascript:void(0);" class="btn hittou_btn px-3"
+													th:classappend="|${aitegataKanyosha.mainFlg ? 'selected' : ''} ${saibanAitegataViewForm.displayOnlyFlg ? 'disabled' : ''}|" th:data-kanyosha-seq="${aitegataKanyosha.kanyoshaSeq}">筆頭</a>
+											</div>
+											<div>
+												<select class="form-control hyoki_select tojishaHyokiSelect" th:data-kanyosha-seq="${aitegataKanyosha.kanyoshaSeq}" th:disabled="${saibanAitegataViewForm.displayOnlyFlg}">
+													<option value="">-</option>
+													<th:block th:each="enum : ${T(jp.loioz.common.constant.CommonConstant$TojishaHyoki).values()}">
+														<option th:value="${enum.cd}" th:text="${enum.val}" th:selected="${enum.cd.equals(aitegataKanyosha.saibanTojishaHyoki)}"></option>
+													</th:block>
+												</select>
+											</div>
+										</div>
+										<!--/* データブロック */-->
+										<div class="item_content_block">
+											<div class="kankei_remarks_view" th:classappend="${saibanAitegataViewForm.displayOnlyFlg}? 'disabled' :'openKanyoshaAitegataModal'"
+													th:data-kanyosha-seq="${aitegataKanyosha.kanyoshaSeq}" th:data-toggle="${saibanAitegataViewForm.displayOnlyFlg}? '' : 'tooltip'"
+													data-boundary='window' data-container='#saibanAitegataViewFragment' data-trigger='hover' title='編集する'>
+												<div class="mb-3">
+													<label class="view_label">関係</label>
+													<div class="view_value fs15">
+														<div th:classappend="${#strings.isEmpty(aitegataKanyosha.kankei)} ? 'sub_text'"
+															myth:nl2br="${#strings.isEmpty(aitegataKanyosha.kankei)} ? '-' : ${aitegataKanyosha.kankei}">関係
+														</div>
+													</div>
+												</div>
+												<div>
+													<label class="view_label">備考</label>
+													<div class="view_value fs15">
+														<div th:classappend="${#strings.isEmpty(aitegataKanyosha.remarks)} ? 'sub_text'"
+															myth:nl2br="${#strings.isEmpty(aitegataKanyosha.remarks)} ? '-' : ${aitegataKanyosha.remarks}">備考
+														</div>
+													</div>
+												</div> 
+											</div>
+										</div>
+									</div>
+								</div>
+								<!--/* 相手方エリア end */-->
+								
+								<!--/* 代理人エリア */-->
+								<div class="section_split__right">
+								
+		<!--/* 代理人が存在する場合 */-->
+		<th:block th:if="${aitegataKanyosha.saibanKanyoshaDairininViewDto != null}"
+			th:with="dairininPersonId=${aitegataKanyosha.saibanKanyoshaDairininViewDto.personId}">
+									
+									<div class="section_list_item pl-1">
+										<!--/* 名簿 */-->
+										<div class="img_info_xs mb-2">
+											<!--/* 名簿画像 */-->
+											<div class="img_info_xs__image">
+												<!--/* 名簿属性ラベル */-->
+												<div th:class="|person_image_wrapper${aitegataKanyosha.saibanKanyoshaDairininViewDto.personAttribute?.cd.getCd()}|">
+													<!--/* 個人アイコン */-->
+													<img th:if="${T(jp.loioz.common.constant.CommonConstant$CustomerType).KOJIN.equals(aitegataKanyosha.saibanKanyoshaDairininViewDto.customerType)}" 
+														class="img-thumbnail person_image_xs" th:src="@{/img/person_kojin.svg}"
+														data-boundary="window" data-container="body" data-toggle="tooltip" data-trigger="hover" th:title="個人">
+														
+													<!--/* 企業・団体アイコン */-->
+													<img th:if="${T(jp.loioz.common.constant.CommonConstant$CustomerType).HOJIN.equals(aitegataKanyosha.saibanKanyoshaDairininViewDto.customerType)}"
+														class="img-thumbnail person_image_xs" th:src="@{/img/person_hojin.svg}"
+														data-boundary="window" data-container="body" data-toggle="tooltip" data-trigger="hover" th:title="企業・団体">
+														
+													<!--/* 弁護士アイコン */-->
+													<img th:if="${T(jp.loioz.common.constant.CommonConstant$CustomerType).LAWYER.equals(aitegataKanyosha.saibanKanyoshaDairininViewDto.customerType)}"
+														class="img-thumbnail person_image_xs" th:src="@{/img/person_bengoshi.svg}"
+														data-boundary="window" data-container="body" data-toggle="tooltip" data-trigger="hover" th:title="弁護士">
+												</div>
+											</div>
+											<!--/* 名簿画像 end */-->
+	
+											<!--/* 名前 */-->
+											<div class="img_info_xs__info">
+												<div class="fw600 fs20 lh1_3 pt-1" th:text="${aitegataKanyosha.saibanKanyoshaDairininViewDto.kanyoshaName}">山田　太郎 </div>
+												<div class="d-flex flex-wrap cg10 rg5">
+													<!-- /* 名簿ID */ -->
+													<div>
+														<a href="javascript:void(0);" class="app_id_link p-1 personPopoverLabel" th:text="|名簿ID：${dairininPersonId.asLong()}|" 
+															data-boundary="window" data-container="#saibanAitegataViewFragment" th:data-person-id="${dairininPersonId.asLong()}">
+															名簿ID：100
+														</a>
+													</div>
+			<!--/* 事務所名 */-->
+			<th:block th:if="${!#strings.isEmpty(aitegataKanyosha.saibanKanyoshaDairininViewDto.jimushoName)}">
+													<div class="jimusho_name fc_sub fs13">
+														<i class="far fa-building fs12"></i>
+														<span th:text="${aitegataKanyosha.saibanKanyoshaDairininViewDto.jimushoName}"></span>
+													</div>
+			 </th:block>
+												</div>
+											</div>
+											<!-- /* ボタンエリア */ -->
+											<div class="img_info_xs__btn">
+												<!-- /* ボタンエリア */ -->
+												<div class="item_sub px-0" th:if="!${saibanAitegataViewForm.displayOnlyFlg}">
+													<div th:id="|relatedAitegataContainer${i.index}|" class="d-inline-block stop-events outPutContainerClose" data-offset="-80,0" data-boundary="window" data-container="#saibanAitegataViewFragment" 
+															th:data-kanyosha-seq="${aitegataKanyosha.kanyoshaSeq}" th:data-related-kanyosha-seq="${aitegataKanyosha.relatedKanyoshaSeq}" data-toggle="popover" data-placement="bottom" data-html="true" th:data-content=
+															'|<ul class="output_nav_list">
+																<li><button class="btn btn-light removeSaibanRelatedAitegata" data-target="#relatedAitegataContainer${i.index}"><i class="fas fa-minus-circle"></i>代理人から外す</button></li>
+																<li><button class="btn btn-light removeSaibanRelatedAitegataFromAnken" data-target="#relatedAitegataContainer${i.index}"><i class="fas fa-user-minus"></i>案件から外す</button></li>
+															</ul>|'>
+														<button type="button" class="btn btn-light btn_icon_only btn_icon_ellipsis_v " data-boundary="window" data-container="#saibanAitegataViewFragment">
+															<i class="fas fa-ellipsis-v"></i>
+														</button>
+													</div>
+												</div>
+											</div>
+										</div>
+										<!--/* １行目 end */-->
+										
+										<div class="kankei_remarks_view" th:classappend="${saibanAitegataViewForm.displayOnlyFlg}? 'disabled' :'openKanyoshaAitegataDairininModal'"
+											th:data-kanyosha-seq="${aitegataKanyosha.saibanKanyoshaDairininViewDto.kanyoshaSeq}" th:data-toggle="${saibanAitegataViewForm.displayOnlyFlg}? '' : 'tooltip'"
+											data-boundary="window" data-container="#saibanAitegataViewFragment" data-trigger="hover" title="編集する">
+											<div class="mb-3">
+												<label class="view_label">関係</label>
+												<div class="view_value fs15">
+													<div th:classappend="${#strings.isEmpty(aitegataKanyosha.saibanKanyoshaDairininViewDto.kankei)} ? 'sub_text'"
+														myth:nl2br="${#strings.isEmpty(aitegataKanyosha.saibanKanyoshaDairininViewDto.kankei)} ? '-' : ${aitegataKanyosha.saibanKanyoshaDairininViewDto.kankei}">関係
+													</div>
+												</div>
+											</div> 
+											<div>
+												<label class="view_label">備考</label>
+												<div class="view_value fs15">
+													<div th:classappend="${#strings.isEmpty(aitegataKanyosha.saibanKanyoshaDairininViewDto.remarks)} ? 'sub_text'"
+														myth:nl2br="${#strings.isEmpty(aitegataKanyosha.saibanKanyoshaDairininViewDto.remarks)} ? '-' : ${aitegataKanyosha.saibanKanyoshaDairininViewDto.remarks}">備考
+													</div>
+												</div>
+											</div> 
+										</div>
+									</div>
+		</th:block>
+		<!--/* 代理人が存在する場合 end */-->
+		
+		<!--/* 代理人未設定の場合 */-->
+		<th:block th:if="${aitegataKanyosha.saibanKanyoshaDairininViewDto == null}">
+									<div class="select_dairinin" th:if="!${saibanAitegataViewForm.displayOnlyFlg}">
+										<div>
+											<a href="javascript:void(0);" class="openKanyoshaAitegataDairininModal" th:data-aitegata-kanyosha-seq="${aitegataKanyosha.kanyoshaSeq}" th:data-saiban-seq="${aitegataKanyosha.saibanSeq}">
+												<i class="fas fa-plus-square mr-2"></i>代理人を追加
+											</a>
+										</div>
+									</div>
+		</th:block>
+								</div>
+								<!--/* 代理人エリア end */-->
+							</div>
+						</div>
+					</li>
+				</ul>
+			</div>
+		</div>
+	</section>
+	
+	<!--/* 相手方モーダル */-->
+	<div id="kanyoshaAitegataModal" class="modal fade" tabindex="-1" role="dialog" aria-hidden="true" data-backdrop="static">
+		<div class="modal-dialog modal-dialog-centered modal_kanyosha_customer_select" role="document">
+			<div class="modal-content">
+				<div class="kanyoshaEditModalFragmentWrap">
+					<!--/* 関与者情報 */-->
+				</div>
+			</div>
+		</div>
+	</div>
+	
+	<!--/* 相手方代理人モーダル */-->
+	<div id="kanyoshaAitegataDairininModal" class="modal fade" tabindex="-1" role="dialog" aria-hidden="true" data-backdrop="static">
+		<div class="modal-dialog modal-dialog-centered modal_kanyosha_customer_select" role="document">
+			<div class="modal-content">
+				<div class="kanyoshaEditModalFragmentWrap">
+					<!--/* 関与者情報 */-->
+				</div>
+			</div>
+		</div>
+	</div>
+	</th:block>
+</div>
+
+</body>
+</html>

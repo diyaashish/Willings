@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+		xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+		layout:decorator="commonLayout">
+<head>
+	<meta charset="utf-8" />
+</head>
+<body>
+	<!--/* メンテナンスモーダル */-->
+	<div th:fragment="mentenanceModal"class="file_mentenance_menu">
+		<ul class="file_menu_navi_list">
+			<li class="file_menu_navi_list_li">
+				<button type="button" class="btn btn-light deleteBtn"  th:data-fileconfigurationmanagementid = "${fileTrashBoxMentenanceViewForm.fileConfigurationManagementId}" th:data-filekubun = "${fileTrashBoxMentenanceViewForm.fileKubun}"  th:data-fileName = "${fileTrashBoxMentenanceViewForm.fileName}">完全に削除</button>
+			</li>
+			<li class="file_menu_navi_list_li">
+				<button type="button" class="btn btn-light undoBtn"  th:data-fileconfigurationmanagementid = "${fileTrashBoxMentenanceViewForm.fileConfigurationManagementId}" th:data-filekubun = "${fileTrashBoxMentenanceViewForm.fileKubun}"  th:data-fileName = "${fileTrashBoxMentenanceViewForm.fileName}">元に戻す</button>
+			</li>
+		</ul>
+	</div>
+</body>
+</html>

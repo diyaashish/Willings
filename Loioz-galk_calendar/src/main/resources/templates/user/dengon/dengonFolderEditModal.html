@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+	xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+	layout:decorator="commonLayout">
+<head>
+	<meta charset="utf-8" />
+</head>
+<body>
+	<div th:fragment="dengonFolderEdit" class="select-modal">
+		<div th:object="${viewForm}">
+			<div class="modal-header">
+				<h2 class="modalheader_title" th:text="*{isNew()} ? 'フォルダ作成' : 'フォルダ編集' ">フォルダ編集</h2>
+			</div>
+
+			<div class="modal-body">
+				<input type="hidden" th:field="*{currentDengonFolderSeq}" />
+				<input type="hidden" id="currentParentDengonFolderSeq" th:value="*{dto.parentDengonFolderSeq}" />
+				<div th:replace="common/messageArea::jsMessageArea"></div>
+				<div class="modal_input_area">
+					<div class="form-row">
+						<div class="form-group col-md-12">
+							<label class="input_parts_label">フォルダ名</label>
+							<input type="text" class="form-control" th:field="*{dto.dengonFolderName}" maxlength="20">
+							<div class="error_mag_point hidden" id="itemMsg_dto.dengonFolderName"></div>
+						</div>
+					</div>
+					<div class="form-row">
+						<div class="form-group col-md-12">
+							<label class="input_parts_label">作成場所</label>
+							<select class="form-control" id="dengonFolderSeq" th:field="*{dto.parentDengonFolderSeq}">
+								<option value="">受信BOX</option>
+								<option th:each="customeFolder : ${viewForm.folderSelectList}"
+									th:value="${customeFolder.dengonFolderSeq}" th:text="${customeFolder.dengonFolderName}"></option>
+							</select>
+						</div>
+					</div>
+				</div>
+			</div>
+			<div class="modal-footer">
+				<button type="button" th:if="*{!isNew()}" class="btn btn-light mr-auto dengonFolderActionBtn" th:name="*{dto.trashedFlg} ? 'delete' : 'trashed' ">
+					<th:block th:if="*{!dto.trashedFlg}">
+						<i class="far fa-trash-alt"></i>ごみ箱
+					</th:block>
+					<th:block th:if="*{dto.trashedFlg}">
+						<i class="fas fa-minus-circle"></i>削除
+					</th:block>
+				</button>
+				<button type="button" th:if="*{!isNew() and currentTrashedFlg}" class="btn btn-light dengonFolderActionBtn" name="remove"><i class="far fa-folder"></i>受信BOX内に戻す</button>
+				<button type="button" th:if="*{isNew()}" class="btn btn-info dengonFolderActionBtn" name="regist"><i class="fas fa-check"></i>登録</button>
+				<button type="button" th:if="*{!isNew()}" class="btn btn-info dengonFolderActionBtn" name="update"><i class="fas fa-check"></i>保存</button>
+				<button type="button" class="btn btn-light" data-dismiss="modal"><i class="fas fa-times"></i>閉じる</button>
+			</div>
+		</div>
+	</div>
+</body>
+</html>

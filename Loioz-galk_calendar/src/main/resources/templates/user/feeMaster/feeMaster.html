@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+	xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+	layout:decorator="commonLayout">
+<head>
+<meta charset="utf-8" />
+<title layout:fragment="title-contents">
+	[[${T(jp.loioz.common.utility.LoiozUtils).getHtmlTitle("報酬項目の設定", T(jp.loioz.common.utility.SessionUtils).getTenantName())}]]
+</title>
+<th:block th:with="version=${@environment.getProperty('app.version')}">
+</th:block>
+<script type="text/javascript" th:inline="javascript">
+function getFeeMasterListViewFragment() {
+	return new Promise((resolve, reject) => {
+		$.ajax({
+			url : /*[[@{/user/feeMaster/getFeeMasterListViewFragment}]]*/,
+			type : "GET",
+		}).done(function(data, status, jqXHR) {
+			<!--/* 成功 */-->
+			if (isAjaxProcSuccess(jqXHR)) {
+				$('#feeMasterListFragmentWrap').html(data)
+				return resolve();
+			} else {
+				// 処理失敗
+				const errorMsg = getAjaxProcResutlMessage(jqXHR);
+				showErrorMessageForJs(errorMsg);
+				return reject();
+			}
+		}).fail(function(jqXHR, textStatus, errorThrown) {
+			<!--/* 失敗 */-->
+			const errorMsg = /*[[#{E00091}]]*/ "error";
+			showErrorMessageForJs(errorMsg);
+			return reject();
+		})
+	});
+};
+</script>
+
+</head>
+<body>
+	<div class="contents_sidebar_wrapper_setting" layout:fragment="main-contents">
+		
+		<!-- サイドメニュー -->
+		<div th:replace="common/systemSettingMenu::selectMenu(${T(jp.loioz.common.constant.CommonConstant$SystemSettingMenu).ACCG_FEE_MST.getCd()})"></div>
+			
+		<!--/* メインコンテンツの外側 */-->
+		<div class="contents_wrapper">
+			<div class="container-fluid contents_limited_width_setting">
+				<main class="content">
+					
+					<!--/* メッセージエリア */-->
+					<div th:replace="common/messageArea::messageArea"></div>
+					
+					<!-- パンくず-->
+					<div class="breadcrumb_area">
+						<ul>
+							<li><span>会計管理の設定</span></li>
+							<li><i class="fas fa-angle-right"></i></li>
+							<li>報酬項目の設定</li>
+						</ul>
+					</div>
+					
+					<!--/* 詳細 */-->
+					<div id="feeMasterListFragmentWrap" th:insert="user/feeMaster/feeMasterFragment::feeMasterListFragment(${viewForm.feeMasterListViewForm})"></div>
+					
+				</main>
+			</div>
+		</div>
+	</div>
+</body>
+</html>

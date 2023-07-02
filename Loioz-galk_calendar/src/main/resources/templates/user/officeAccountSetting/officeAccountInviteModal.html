@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+	xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+	layout:decorator="commonLayout">
+<head>
+<meta charset="utf-8" />
+</head>
+<body>
+	<div th:fragment="select-modal" class="select-modal">
+		<div th:object="${accountMailForm}">
+			<div class="modal-header">
+				<h2 class="modalheader_title">loiozに招待する</h2>
+			</div>
+			<div class="modal-body" id="modalbody">
+				<div th:replace="common/messageArea::jsMessageArea"></div>
+				<form id="inviteMailForm" th:action="@{/user/officeAccountSetting/}" method="post">
+				
+					<!-- 入力エリア -->
+					<div class="modal_input_area">
+						<!--/* 招待アカウント */-->
+						<div class="block_detail mb-2">
+							<div>
+								招待可能なアカウント数：<span class="invite_label" th:text="*{useableLicenseCount - usingLicenseCount}">0</span>
+							</div>
+							<div>
+								アカウントを追加したい場合は、「<a href="javascript:void(0);" class="openPlanSettingForModal">[[${T(jp.loioz.common.utility.SessionUtils).isFreePlanStatus()} ? 'ご利用プランの設定' : 'ご利用プラン／請求情報']]</a>」メニューから
+							</div>
+						</div>
+						<!--/* 送信先タイトル */-->
+						<div class="invite_label">送信先</div>
+						<!--/* エラーメッセージ */-->
+						<div class="mb-2">
+							<div th:if="*{#lists.isEmpty(mailAddressList)}"
+								class="error_mag_point pt-0">利用ライセンス数が上限に達しているため、招待ができません。</div>
+							<div th:if="*{#lists.size(mailAddressList)} > *{useableLicenseCount - usingLicenseCount}"
+							class="error_mag_point pt-0">利用ライセンス数が上限に達しているため、招待ができません。</div>
+						</div>
+						<!--/* メールアドレス表示 */-->
+						<div class="invite_mail_list">
+							<th:block th:each="AccountMailDto, row : *{mailAddressList}">
+							<div class="form-row" >
+								<!--/* メールアドレス入力 */-->
+								<th:block th:if="${#strings.isEmpty(row.current.mailAddress)}">
+									<div class="form-group col-md-12">
+										<input type="email" class="form-control" maxlength="256" autocomplete="off" th:field="*{mailAddressList[__${row.index}__].mailAddress} ">
+										<div class="error_mag_point hidden" th:id="itemMsg_mailAddressList[__${row.index}__].mailAddress"></div>
+										<input type="hidden" th:field="*{mailAddressList[__${row.index}__].insertFlg}">
+									</div>
+								</th:block>
+								
+								<!--/* 入力表示 */-->
+								<th:block th:unless="${#strings.isEmpty(row.current.mailAddress)}">
+									<!--/* 招待済みのメールアドレス */-->
+									<div class="form-group col-md-10">
+										<span th:text=${row.current.mailAddress}></span>
+									</div>
+									<!--/* 招待取り消しボタン */-->
+									<div class="form-group col-md-2 text-right">
+										<button type="button" class="btn btn-light inviteCancel" 
+											data-boundary="window" data-container="#inviteMailModal" data-toggle="tooltip" data-trigger="hover" data-title="招待を取り消す"
+											th:data-verificationkey="*{mailAddressList[__${row.index}__].verificationkey}"><i class="fas fa-user-slash mr-0"></i></button>
+									</div>
+									<div class="error_mag_point text-nowrap hidden"></div>
+									<input type="hidden" th:field="*{mailAddressList[__${row.index}__].mailAddress}">
+								</div>
+							</th:block>
+							
+						</div>
+						</th:block>
+						<!--/* メールアドレス表示 end */-->
+						
+						<input type="hidden" th:field="*{useableLicenseCount}" id="useableLicenseCount">
+						<input type="hidden" th:field="*{usingLicenseCount}" id="usingLicenseCount">
+					</div>
+				</form>
+			</div>
+			<div class="modal-footer" >
+				<th:block th:if="*{mailSendButtonFlg}" th:unless="*{#lists.isEmpty(mailAddressList)}">
+					<button type="button" class="btn btn-info" id="sendInviteMail"><i class="far fa-paper-plane mr-2"></i>招待メール送信</button>
+				</th:block>
+				<button type="button" class="btn btn-light" data-dismiss="modal"><i class="fas fa-times"></i>閉じる</button>
+			</div>
+		</div>
+	</div>
+</body>
+</html>

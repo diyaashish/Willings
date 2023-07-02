@@ -1,0 +1,18 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+<meta charset="utf-8" />
+</head>
+<body>
+	<div class="section" id="tenantLoginFragment" th:fragment="login-form">
+		<div class="section_inner">
+			<h2 class="section_title">ユーザーアカウントでログイン中...</h2>
+			<form id="loginForm" th:action="@{ ${contextPath} + '/spring_security_login'}" method="post">
+				<input type="hidden" name="tenantCreateFlg" value="1">
+				<input type="hidden" name="username" value="">
+				<input type="hidden" name="password" value="">
+			</form>
+		</div>
+	</div>
+</body>
+</html>

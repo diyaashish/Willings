@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+<meta charset="UTF-8">
+</head>
+<body>
+
+<!--/* 案件削除モーダル */-->
+<div th:fragment="ankenDeleteModal" id="ankenDeleteModalFragment">
+
+	<script th:inline="javascript">
+		$(function() {
+			
+			<!--/* フラグメント表示時の初期処理*/-->
+			function setUpHTML() {
+				// 共有の要素セットアップ処理
+				commonSetUpElement();
+			}
+			
+			let ajaxRunning = false;
+			
+			<!--/* 会計機能が使用できるプランか */-->
+			const canUseKaikei = [[${T(jp.loioz.common.utility.SessionUtils).canUsePlanFunc(T(jp.loioz.common.constant.plan.PlanConstant$PlanFuncRestrict).PF0002)}]];
+			
+			<!--/* 案件削除説明文 */-->
+			let explainDelete = 
+				'<div class="popover popover_delete_anken_msg html-content" role="tooltip">' +
+					'<div class="popover-body pt-3 pb-1 px-4">' +
+						'以下の場合、削除はできません' +
+						'<ul>' +
+							'<li>案件情報に次の日付データが存在する場合<BR>初回面談日、受任日、事件処理完了日、精算完了日</li>' +
+							'<li>裁判データが存在する場合</li>';
+			
+			<!--/* 会計機能が使用できるプランの場合は、案件が削除できない条件に会計データを追加 */-->
+			if (canUseKaikei) {
+				explainDelete += '<li>会計データが存在する場合</li>';
+			}
+			
+			explainDelete +=
+						'</ul>'+
+					'</div>' +
+				'</div>';
+			
+			<!--/* 削除説明ポップアップの表示*/-->
+			$('#ankenDeleteModalFragment .explainDelete').popover({
+				container: "body",
+				boundary: "viewport",
+				trigger: "click",
+				placement: "right",
+				template: explainDelete,
+				content: function(){}
+			});
+			
+			$('#ankenDeleteModalFragment').on('keyup', '.deleteAnkenMatch', function() {
+				 let ankenIdSouce = $('#deleteTargetAnkenId').val();
+				 if(ankenIdSouce == $('#deleteInputAnkenId').val()){
+					 $('#ankenDeleteButton').removeClass('btn-secondary');
+					 $('#ankenDeleteButton').addClass('btn-danger');
+					 $('#ankenDeleteButton').prop('disabled', false);
+				 }else{
+					 $('#ankenDeleteButton').addClass('btn-secondary');
+					 $('#ankenDeleteButton').removeClass('btn-danger');
+					 $('#ankenDeleteButton').prop('disabled', true);
+				 }
+			});
+			
+			$('#ankenDeleteModalFragment #ankenDeleteButton').on("click", function() {
+	
+				if(!confirm('削除してもよろしいですか?')){
+					return false;
+				}
+
+				let modal = $("#ankenDeleteModal");
+				const ankenId = $('#deleteTargetAnkenId').val();
+				const deleteUrl = /*[[@{/user/ankenManagement/deleteAnken}]]*/"";
+				
+				if(ajaxRunning){
+					return false;
+				}
+				
+				ajaxRunning = true;
+				$.ajax({
+					url : deleteUrl,
+					type : "POST",
+					data : {"ankenId" : ankenId}
+				}).done(function(result) {
+					if (result.successed) {
+						alert(result.message);
+						location.href = result.redirectPath;
+					} else {
+						showErrorMessage(result.message, modal);
+					}
+				}).fail(function(jqXHR, textStatus, errorThrown) {
+					alert([[#{E00013}]]);
+				}).always(function(){
+					ajaxRunning = false;
+				});
+			});
+			
+		})
+	</script>
+	<div class="modal-header">
+		<h2 class="modalheader_title bg-danger" th:text="案件削除"></h2>
+	</div>
+	<div class="modal-body">
+		<div th:replace="common/messageArea::jsMessageArea"></div>
+		<div class="warn_msg_edit msgText mb-3">
+			<div>削除した案件情報は復元することができません。</div>
+			<div>十分に確認したうえで削除を行ってください。</div>
+			<div>※案件タスクに追加済みの場合タスクメニューからも削除されます。</div>
+			<div>※間違い防止のため、案件IDを正確に入力してください。
+				<span class="explainDelete">
+					<i class="fas fa-info-circle cursor_pointer" data-outside='close'></i>
+				</span>
+			</div>
+		</div>
+		<!-- 入力エリア -->
+		<div class="modal_input_area">
+			<!-- 名称 -->
+			<div class="form-row">
+				<div class="form-group col-md-5">
+					<label class="input_parts_label">案件ID</label>
+					<span class="mark_equired">必須</span>
+					<input type="text" id="deleteInputAnkenId" class="form-control input_number_only deleteAnkenMatch" maxlength="10" placeholder="半角数字のみ">
+					<input type="hidden" id="deleteTargetAnkenId" th:field="${ankenDeleteForm.ankenId}">
+				</div>
+			</div>
+		</div>
+	</div>
+	<div class="modal-footer">
+		<button type="button" class="btn btn-secondary" id="ankenDeleteButton" disabled="disabled"><i class="far fa-trash-alt"></i>削除</button>
+		<button type="button" class="btn btn-light" id="ankenDeleteButtonClose" data-dismiss="modal"><i class="fas fa-times"></i>閉じる</button>
+	</div>
+</div>
+</body>
+</html>

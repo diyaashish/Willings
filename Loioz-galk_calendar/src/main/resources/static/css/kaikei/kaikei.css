@@ -1,0 +1,1004 @@
+@charset "UTF-8";
+
+
+.section_anken_detail {
+	width: fit-content;
+}
+.section_kaikei_detail {
+	margin-top: 20px;
+	width: fit-content;
+}
+.section_kaikei_detail:last-child {
+	margin-top: 40px;
+	margin-bottom: 90px;
+}
+.kaikei_detail_block {
+	margin-top: 20px;
+}
+.nyushukin_add_txt {
+	cursor: default;
+}
+/* 会計管理タブ */
+.tab-title {
+	width: 170px;
+	font-size: 1.7rem;
+	text-align: center;
+	color: var(--text-color-sub);
+}
+/* タブの選択状態 */
+.nav-tabs .nav-item.show .nav-link, .nav-tabs .nav-link.active {
+	border-bottom: 3px solid var(--loioz-primary);
+	border-right: 0;
+	border-left: 0;
+	border-top: 0;
+}
+/* タブの未選択状態 */
+.nav-tabs .nav-item.show .nav-link, .nav-tabs .nav-link {
+	border-right: 0;
+	border-left: 0;
+	border-top: 0;
+}
+/* タブの未選択hover */
+.nav-link:hover {
+	border-right: 0;
+	border-left: 0;
+	border-top: 0;
+	cursor: pointer;
+	opacity: 1;
+}
+.nav-tabs .nav-link.selected {
+	font-weight: 600;
+}
+ul.select_customer.nav-tabs .nav-link:hover {
+	border-bottom: 3px solid var(--bor-color-main);
+}
+ul.select_anken.nav-tabs .nav-link:hover {
+	border-bottom: 3px solid var(--bor-color-main);
+}
+ul.select_customer.nav-tabs li.nav-link.selected {
+	border-bottom: 3px solid var(--case-color);
+}
+ul.nav-tabs li.nav-link.selected {
+	border-bottom: 3px solid var(--loioz-primary);
+}
+ul.select_customer.nav-tabs li.nav-link.selected:hover {
+	border-bottom: 3px solid var(--case-color);
+}
+ul.nav-tabs li.nav-link.selected:hover {
+	border-bottom: 3px solid var(--loioz-primary);
+}
+
+/* 報酬計の内訳 */
+.hoshu_detail_open {
+	cursor: pointer;
+	display: inline-block;
+	padding-left: 5px;
+}
+
+/**************** セクション内のテーブル ****************/
+.section_table_wrapper {
+	box-shadow: none;
+	border: 1px solid var(--bor-color-main);
+	border-radius: 3px;
+	padding: 5px;
+}
+
+/* 会計管理 案件明細一覧テーブル */
+div.header_fixed_table_wrapper.table_anken_meisai_wrapper {
+	max-height: 285px;
+	overflow-x: hidden;
+}
+/* 会計管理 会計記録一覧テーブル */
+div.header_fixed_table_wrapper.table_kaikei {
+	max-height: 265px;
+	overflow-x: hidden;
+}
+/* 会計管理 入出金予定一覧テーブル */
+div.header_fixed_table_wrapper.table_kaikei.kaikei_yotei {
+	max-height: 200px;
+}
+/* 会計管理 報酬明細一覧テーブル */
+div.header_fixed_table_wrapper.table_hoshu_meisai {
+	max-height: 406px;
+}
+
+/**************** 案件明細テーブル ****************/
+.table_anken_meisai {
+	background: var(--white);
+	border-collapse: collapse;
+	border-spacing: 0px;
+	font-size: 1.3rem;
+	padding: 10px 5px 0px 5px;
+	border: none;
+}
+.table_anken_meisai th {
+	position: relative;
+	padding: 7px;
+	vertical-align: bottom;
+	z-index: 1;
+	border-bottom: 1px solid #dbdbdb;
+	font-weight: 600;
+	height: 20px;
+	text-align: left;
+	border-radius: 3px;
+}
+.table_anken_meisai td {
+	padding: 5px 7px;
+	height: 38px;
+	text-align: left;
+	border-bottom: 1px solid #dbdbdb;
+}
+.table_anken_meisai tr:hover td {
+	background-color: var(--bg-color-row-hover);
+	transition: all 0.1s;
+}
+.table_anken_meisai tr:last-child td {
+	text-align: left;
+	border: none;
+}
+/* 顧客一覧 */
+.table_customer .table_anken_meisai th, .table_customer .table_select th {
+	border-bottom: 1px solid var(--case-color);
+	color: #005b90;
+	background-color: var(--lz-gray-100);
+}
+/* 案件一覧 */
+.table_anken .table_anken_meisai th, .table_anken .table_select th {
+	border-bottom: 1px solid var(--case-color);
+	color: #155aac;
+	background-color: var(--lz-gray-100);
+}
+.table_anken_meisai td.col_anken_customer_name {
+	min-width: 240px;
+	padding-left: 10px;
+}
+.table_anken_meisai .col_anken_customer_name .item_title {
+	font-weight: 600;
+	color: var(--text-color-sub);
+	font-size: 1.7rem;
+	max-width: 222px;
+}
+.table_anken_meisai .col_hoshu_sum {
+	text-align: center;
+	font-size: 1.2rem;
+	padding: 0;
+}
+.table_anken_meisai .col_hoshu_sum > div {
+	padding: 2px 0 1px;
+}
+.table_anken_meisai th.col_kingaku {
+	width: 90px;
+	max-width: 90px;
+	text-align: center;
+	font-size: 1.2rem;
+	padding: 2px 0;
+	font-weight: normal;
+}
+.table_anken_meisai .col_kingaku_tc {
+	width: 120px;
+	max-width: 120px;
+	text-align: right;
+}
+.table_anken_meisai .col_kingaku_total {
+	width: 110px;
+}
+.table_anken_meisai .col_status {
+	width: 120px;
+}
+.table_anken_meisai td.col_kingaku,
+.table_anken_meisai td.col_kingaku_total {
+	text-align: right;
+}
+.table_anken_meisai tr:last-child td.col_kingaku,
+.table_anken_meisai tr:last-child td.col_kingaku_total {
+	text-align: right;
+}
+.table_anken_meisai td.col_kingaku_total span:before {
+	content: "\0a5";
+}
+.table_anken_meisai .col_comp {
+	width: 100px;
+	max-width: 120px;
+}
+/* 内訳エリア対応 */
+.table_anken_meisai tr.row_hoshu th {
+	padding-top: 24px;
+	padding-bottom: 5px;
+}
+.table_anken_meisai tr.row_hoshu_detail th {
+	padding-top: 4px;
+	padding-bottom: 4px;
+}
+.table_anken_meisai tbody .hoshu_data {
+	background-color: #effbff!important;
+}
+.table_anken_meisai tbody .gensen_data {
+	background-color:#fff4f5!important;
+}
+/* 案件明細 完了 */
+.meisai_completed td {
+	background-color: var(--lz-gray-400);
+	color: var(--text-color-sub);
+	border-bottom: 1px solid var(--bor-color-main);
+}
+/* 案件明細 完了操作ポップオーバー */
+.kaikei_anken_status_input_popover {
+	padding: 1.6rem 2rem 1.8rem;
+}
+.kaikei_anken_status_input_popover.popover_box.position_left {
+	/* 共通のpopover_boxのスタイルを上書き */
+	left: 92px;
+	transform: translate(-100%, 18px);
+}
+.kaikei_anken_status_input_popover .title_row {
+	font-size: 1.3rem;
+	color: var(--text-color-sub);
+	margin-bottom: 0.8rem;
+}
+.kaikei_anken_status_input_popover .title_row .target_name {
+	font-size: 1.7rem;
+	font-weight: 600;
+}
+.kaikei_anken_status_input_popover .coplete_check {
+	font-size: 1.3rem;
+	line-height: 1.2rem;
+	color: var(--text-color-sub);
+}
+.kaikei_anken_status_input_popover .checkbox_btn .checkbox_input:checked ~ .checkbox_txt {
+	color: var(--text-color-sub);
+}
+
+/**************** 会計管理テーブル **************/
+.table_kaikei > table, .table_shiharai_plan > table {
+	background: var(--white);
+	border-collapse: collapse;
+	border-spacing: 0px;
+	font-size: 1.3rem;
+	border: none;
+	width: 100%;
+}
+.table_kaikei > table th, .table_shiharai_plan > table th {
+	padding: 1px 2px 3px 5px;
+	vertical-align: bottom;
+	z-index: 1;
+	border-bottom: 1px solid #A3A3A3;
+	font-weight: 600;
+	height: 20px;
+	text-align: left;
+	color: var(--text-color-sub);
+	background-color: var(--white);
+}
+.table_kaikei > table td, .table_shiharai_plan > table td {
+	padding: 4px 5px;
+	text-align: left;
+	border-right: 1px dashed #A3A3A3;
+	border-bottom: 1px solid #A3A3A3;
+}
+.table_kaikei > table td:last-child, .table_shiharai_plan > table td:last-child {
+	border-right: 0;
+}
+.table_shiharai_plan > table tr:last-child td {
+	border-bottom: 0;
+}
+.table_kaikei > table tbody tr:hover td, .table_shiharai_plan > table tr:hover td {
+	background-color: var(--bg-color-row-hover);
+}
+.table_kaikei.table_seisan_kiroku > table tbody tr:hover td {
+	background-color: #fff;
+}
+.table_kaikei > table tfoot th {
+	font-size: 1.6rem;
+	background-color: var(--text-color-sub);
+	color: var(--white);
+	text-align: center;
+	vertical-align: middle;
+	padding: 3px 0;
+}
+.table_kaikei > table tfoot td {
+	font-size: 1.4rem;
+	background-color: var(--bg-color-view);
+}
+.table_kaikei > table td.no_data_list {
+	border-bottom: 0;
+	padding-top: 8px;
+}
+.table_kaikei > table td.no_data_list:hover{
+	cursor: default;
+}
+.table_kaikei .col_date {
+	width: 95px;
+	max-width: 95px;
+	min-width: 95px;
+}
+.table_kaikei .col_kingaku {
+	min-width: 100px;
+	width: 100px;
+	max-width: 100px;
+}
+.table_kaikei td.col_kingaku {
+	text-align: right;
+	font-size: 1.4rem;
+}
+.table_kaikei .col_komoku {
+	min-width: 110px;
+	width: 110px;
+	max-width: 110px;
+}
+.table_kaikei .col_id {
+	min-width: 75px;
+	width: 75px;
+	max-width: 75px;
+}
+.table_kaikei .col_anken_name {
+	width: 200px;
+	max-width: 200px;
+}
+.table_kaikei .col_anken_name .item_title {
+	padding: 0px 0px 0px 5px;
+	border-left: 3px solid var(--customer-color);
+}
+.table_kaikei .col_anken_name .item_title.row_completed {
+	border-left: 3px solid var(--bor-color-main);
+}
+.table_kaikei .col_customer_name {
+	width: 210px;
+	max-width: 210px;
+}
+.table_kaikei .col_customer_name .item_title {
+	padding: 0px 0px 0px 5px;
+	border-left: 3px solid var(--loioz-primary);
+}
+.table_kaikei .col_customer_name .item_title.row_completed {
+	border-left: 3px solid var(--bor-color-main);
+}
+.table_kaikei .col_tekiyo {
+	width: 245px;
+	max-width: 245px;
+}
+/* 入出金予定-摘要 */
+.table_kaikei .kaikei_yotei .col_tekiyo {
+	width: 620px;
+	max-width: 620px;
+}
+/* 精算記録-摘要 */
+.table_kaikei .kaikei_seisan .col_tekiyo {
+	width: 300px;
+	max-width: 300px;
+}
+.table_kaikei .col_seisan_id {
+	min-width: 70px;
+	width: 70px;
+	max-width: 70px;
+}
+.table_kaikei .col_kubun {
+	width: 90px;
+	max-width: 90px;
+}
+.table_kaikei .col_seisansho {
+	width: 65px;
+	max-width: 65px;
+}
+.table_kaikei .col_edit {
+	width: 80px;
+	max-width: 80px;
+}
+.table_kaikei .col_check {
+	width: 45px;
+	max-width: 45px;
+	text-align: center;
+}
+
+/* 報酬登録モーダル */
+.modal_hoshu {
+	width: 530px;
+	max-width: 96%;
+}
+.hoshu_edit_fragment .hoshu_detail_row {
+	color: var(--text-color-main);
+}
+.hoshu_edit_fragment .hoshu_detail_row .sub_text {
+	color: var(--text-color-main);
+}
+.hoshu_edit_fragment .hoshu_detail_row .komoku_block {
+	width: 60px;
+	margin-right: auto;
+	text-align: left;
+}
+.hoshu_edit_fragment .tax_flg_label_text {
+	display: inline-block;
+	line-height: 1.7rem;
+	padding: 5px 0px 5px 5px;
+	font-size: 1.3rem;
+}
+.hoshu_edit_fragment .hoshu_block .form-control.view_money {
+	border: none;
+	background: transparent!important;
+	width: 160px!important;
+	font-size: 1.5rem;
+	text-align: right;
+	outline: 0;
+	font-weight: normal;
+	color: var(--text-color-main);
+	cursor: default;
+}
+.hoshu_edit_fragment .hoshu_block .form-control.view_money {
+	-webkit-box-shadow: none;
+	box-shadow: none; 
+}
+.hoshu_edit_fragment .formula_area {
+	font-size: 1.2rem;
+	color: var(--text-color-sub);
+	background-color: #effbff;
+	padding: 5px 10px;
+	border-radius: 4px;
+}
+.hoshu_edit_fragment .formula_area_title {
+	font-size: 1.2rem;
+}
+.hoshu_edit_fragment .formula_area .gensen_calc {
+	text-align: right;
+	max-width: 210px;
+}
+.hoshu_edit_fragment .time_charge_block {
+	padding: 2px 10px 10px;
+	background-color: #effbff;
+	border-radius: 5px;
+}
+.hoshu_edit_fragment .time_charge_block .form-control:disabled,
+.hoshu_edit_fragment .time_charge_block .form-control[readonly] {
+	background-color: #fff;
+}
+.hoshu_edit_fragment .time_charge_block .form_minutes[readonly] {
+	background-color: #faffff;
+}
+.hoshu_edit_fragment .time_charge_block .form_clock,
+.hoshu_edit_fragment .time_charge_block .form_minutes {
+	background: #e9f4f5;
+	text-align: center;
+	letter-spacing: 1px;
+}
+.hoshu_edit_fragment .time_charge_block .form_clock {
+	width: 58px;
+	font-size: 1.2rem;
+	color: var(--text-color-main);
+}
+.hoshu_edit_fragment .time_charge_block .form_minutes {
+	width: 80px;
+	font-size: 1.4rem;
+	font-weight: 600;
+	color: var(--text-color-sub);
+}
+.hoshu_edit_fragment .time_charge_block .form_minutes_edit {
+	background-color: #fff;
+	border: 1px solid #BCBCBC;
+	color: var(--text-color-main);
+}
+.hoshu_edit_fragment .hoshu_detail_area {
+	border: 1px solid #bdbdbd;
+	border-radius: 4px;
+	padding: 10px 20px;
+}
+.hoshu_edit_fragment .horizon {
+	border-bottom: 1px solid #bdbdbd;
+}
+
+/** 報酬明細モーダル */
+.modalheader_action {
+	align-items: baseline;
+	-ms-flex-align: baseline;
+	display: flex;
+	display: -ms-flexbox;
+	justify-content: center;
+	-ms-flex-pack: center;
+	padding: 12px 5px 0px 0;
+}
+.table_hoshu_meisai > table {
+	width: 100%;
+	background: var(--white);
+	border-collapse: collapse;
+	border-spacing: 0px;
+	font-size: 1.3rem;
+	padding: 10px 5px 0px 5px;
+	border: none;
+}
+.table_hoshu_meisai > table th {
+	padding: 5px 10px;
+	vertical-align: bottom;
+	z-index: 1;
+	border-bottom: 1px solid #A3A3A3;
+	font-weight: 600;
+	height: 20px;
+	text-align: left;
+	color: var(--text-color-sub);
+}
+/* 顧客一覧 */
+.table_customer.table_hoshu_meisai th {
+	border-bottom: 1px solid var(--case-color);
+	color: var(--case-color);
+	background-color: var(--lz-gray-100);
+}
+/* 案件一覧 */
+.table_anken.table_hoshu_meisai th {
+	border-bottom: 1px solid var(--case-color);
+	color: var(--case-color);
+	background-color: var(--lz-gray-100);
+}
+
+.table_hoshu_meisai > table td {
+	padding: 4px 10px;
+	text-align: left;
+	border-bottom: 1px solid #dbdbdb;
+}
+.table_hoshu_meisai > table td.no_data_table_list {
+	padding: 5px 10px;
+}
+.table_hoshu_meisai > table tbody tr:hover td {
+	background-color: var(--bg-color-row-hover);
+}
+.table_hoshu_meisai .col_date {
+	width: 95px;
+	max-width: 95px;
+}
+.table_hoshu_meisai .col_komoku {
+	width: 130px;
+	max-width: 130px;
+}
+.table_hoshu_meisai .col_long_kingaku {
+	width: 145px;
+	max-width: 145px;
+	font-size: 1.4rem;
+}
+.table_hoshu_meisai .col_kingaku {
+	min-width: 100px;
+	max-width: 100px;
+	font-size: 1.4rem;
+}
+.table_hoshu_meisai .col_kingaku .sub{
+	font-size: 1.2rem;
+}
+.table_hoshu_meisai .col_id {
+	width: 90px;
+	max-width: 90px;
+}
+.table_hoshu_meisai .col_name {
+	width: 175px;
+	max-width: 175px;
+}
+.table_hoshu_meisai .col_tekiyo {
+	width: 185px;
+	max-width: 185px;
+}
+.table_hoshu_meisai .col_seisan_id {
+	width: 75px;
+	max-width: 75px;
+}
+
+/* 入出金登録モーダル */
+.row_complete_yotei td, .row_complete_hoshu td {
+	background-color: #e9ecef;
+	color: #666;
+}
+
+/* 精算説明ポップオーバー */
+.popover_seisan_comp_msg {
+	font-size: 1.2rem;
+	max-width: 430px;
+	padding: 5px 0 0 4px;
+}
+.popover_seisan_comp_msg ul {
+	padding-left: 3rem!important;
+}
+
+/*************** 支払い計画モーダル *******************/
+.shiharai_plan_edit {
+	background-color: var(--bg-color-view);
+	padding: 5px 15px 5px 30px;
+}
+.shiharai_plan_top {
+	margin-bottom: 30px;
+}
+.shiharai_summary_block {
+	padding: 5px 35px 5px 5px;
+}
+.shiharai_summary_block .row {
+	height: 45px;
+	align-items: center;
+	border-bottom: 1px solid var(--bor-color-main);
+	margin-top: 5px;
+}
+.shiharai_summary_block .summary_title {
+	font-size: 1.6rem;
+	font-weight: 600;
+	color: var(--text-color-sub);
+}
+.summary_money {
+	font-size: 2.2rem;
+	margin-right: 5px;
+	font-weight: 600;
+	color: var(--text-color-sub);
+}
+.zankin_chackbox {
+	font-size: 1.5rem;
+	color: var(--danger);
+}
+.zankin_chackbox .checkbox_btn .checkbox_input:checked ~ .checkbox_txt {
+	color: var(--danger);
+}
+.sagaku_block {
+	border-bottom: 1px solid var(--bor-color-main);
+	-ms-flex-align: center;
+	align-items: center;
+	display: -ms-flexbox;
+	display: flex;
+	margin-right: auto;
+	-ms-flex-align: center;
+	align-items: center;
+}
+.sagaku_label {
+	font-size: 1.8rem;
+	font-weight: 600;
+	color: var(--text-color-sub);
+	line-height: 1.2;
+	margin-right: 5px;
+}
+.sagaku_detail_label {
+	font-size: 1.3rem;
+	margin-right: 10px;
+}
+.sagaku_input > input.form-control[readonly] {
+	background: var(--white);
+	border: none;
+	font-size: 2rem;
+	height: 30px;/* Macのsafariだと、上記のfont-sizeの変更により、文字が少し隠れてしまうので、form-controlの高さをデフォルトより少し大きくする */
+	width: 130px;
+	text-align: right;
+	color: var(--text-color-sub);
+}
+.sagaku_input > input.form-control[readonly]:focus {
+	outline: 0;
+	box-shadow: none;
+}
+/* 支払い計画のテーブル */
+div.header_fixed_table_wrapper.table_shiharai_plan {
+	max-height: 300px;
+}
+.shiharaiPlanModalBody .table_seisan_summary {
+    background-color: #E7EFF2;
+    color: #63595c;
+    margin-bottom: 0;
+}
+.shiharaiPlanModalBody .table_seisan_summary tr:last-child {
+	background: #fff;
+}
+.shiharaiPlanModalBody .table_seisan_summary input {
+	background-color: transparent;
+}
+.shiharaiPlanModalBody .table_seisan_summary tr.line_wh td {
+    background: #fff;
+    height: 5px;
+}
+.shiharaiPlanModalBody .table_seisan_summary td {
+    padding: 5px .75rem 2px;
+    vertical-align: middle;
+}
+
+/* 回数 */
+.table_shiharai_plan .col_shiharai_idx {
+	width: 60px;
+	max-width: 60px;
+	min-width: 60px;
+}
+/* 金額 */
+.table_shiharai_plan .col_shiharai_money {
+	width: 115px;
+	max-width: 115px;
+}
+/* 日付 */
+.table_shiharai_plan .col_shiharai_date {
+	width: 100px;
+	max-width: 100px;
+	min-width: 100px;
+}
+/* 摘要 */
+.table_shiharai_plan .col_shiharai_tekiyo {
+	width: 250px;
+	max-width: 250px;
+	min-width: 250px;
+}
+/* 削除 */
+.table_shiharai_plan .col_del {
+	width: 40px;
+	max-width: 40px;
+	min-width: 40px;
+	text-align: center;
+}
+.output_nyushukkin {
+	background-color: var(--white);
+	color: var(--loioz-link-color-1st);
+}
+
+/* 案件選択モーダル */
+.table_select {
+	background: var(--white);
+	border-collapse: collapse;
+	border-spacing: 0px;
+	font-size: 1.3rem;
+	padding: 10px 5px 0px 5px;
+	border: none;
+	width: 99%;
+}
+.table_select th {
+	position: relative;
+	padding: 7px;
+	vertical-align: bottom;
+	z-index: 1;
+	border-bottom: 1px solid #dbdbdb;
+	font-weight: 600;
+	height: 20px;
+	text-align: left;
+	border-radius: 3px;
+}
+.table_select td {
+	padding: 5px 7px;
+	height: 38px;
+	text-align: left;
+	border-bottom: 1px solid #DBDBDB;
+}
+.table_select.anken_select_modal td {
+	background-color: var(--lz-gray-400);
+	color: var(--text-color-sub);
+	border-bottom: 1px solid var(--bor-color-main);
+}
+.table_select tr:hover td {
+	background-color: #FCFCEF;
+}
+.table_select.anken_select_modal:hover {
+	background-color: #FCFCEF!important;
+}
+.table_select.anken_select_modal_completed:hover {
+	background-color: var(--lz-gray-400)!important;
+	color: var(--text-color-sub)!important;
+	border-bottom: 1px solid var(--bor-color-main)!important;
+}
+.table_select .col_search_select {
+	width: 60px;
+	text-align: center;
+}
+.table_select .col_id {
+	max-width: 90px;
+}
+.table_select td.col_id > a {
+	color: var(--text-color-sub);
+}
+.table_select td.col_id > a:hover {
+	text-decoration: none;
+}
+.table_select .col_select_anken {
+	max-width: 200px;
+}
+.table_kaikei .row_completed td, .table_kaikei .row_invalid td {
+	background-color: var(--lz-gray-400)!important;
+	color: var(--text-color-sub);
+}
+.table_kaikei .row_completed:hover td, .table_kaikei .row_invalid:hover td {
+	background-color: var(--bg-color-row-hover)!important;
+}
+
+/*************** 精算書作成 *******************/
+/* 精算内容選択 */
+.seisan_title_block {
+	padding: 10px 20px 4px 0;
+	text-align: left;
+	letter-spacing: 1.3px;
+	color: var(--text-color-sub);
+}
+/* 案件名、顧客名 */
+.seisan_title_block .anken_name, .seisan_title_block .customer_name {
+	font-weight: 600;
+	font-size: 2.2rem;
+	padding-left: 15px;
+}
+.seisan_title {
+	width: fit-content;
+	padding-right: 15px;
+}
+.line_customer {
+	border-bottom: 3px solid var(--loioz-primary);
+}
+.line_anken {
+	border-bottom: 3px solid var(--case-color);
+}
+.seisan_title_sub {
+	padding: 10px 0 0px 10px;
+	display: -ms-flexbox;
+	display: flex;
+}
+/* 案件ID、顧客ID */
+.seisan_title_block .customer_id, .seisan_title_block .anken_id {
+	font-size: 1.4rem;
+}
+/* 項目 */
+.table_kaikei > table.table_seisan .col_kingaku_gensen {
+	min-width: 90px;
+	width: 90px;
+	max-width: 90px;
+}
+.table_kaikei > table.table_seisan td.col_kingaku_gensen {
+	text-align: right;
+	font-size: 1.4rem;
+}
+/* 一覧ブロック */
+.list_select_block {
+	padding: 10px;
+}
+/* 一覧ブロックタイトル */
+.list_select_block .block_title {
+	display: -ms-flexbox;
+	display: flex;
+	margin-bottom: 15px;
+}
+/* 項目 */
+.line_title {
+	color: var(--text-color-sub);
+	border-bottom: 2px solid var(--loioz-primary);
+	font-size: 1.6rem;
+	padding: 0 0 5px 1px;
+	width: 315px;
+	font-weight: 600;
+}
+.block_title .line_check {
+	color: var(--text-color-sub);
+	font-size: 1.4rem;
+	font-weight: normal;
+	margin-left: auto;
+	margin-top: auto;
+}
+/* 精算書編集 */
+.seisan_edit {
+	padding: 10px 15px;
+}
+/* 精算書詳細 */
+.seisan_summary {
+	padding: 10px 0;
+}
+.seisan_summary .summary_row {
+	-ms-flex-wrap: nowrap;
+	flex-wrap: nowrap;
+	display: -ms-flexbox;
+	display: flex;
+	color: var(--text-color-sub);
+	align-items: center;	
+	border-radius: 4px;
+	padding: 5px 20px 3px 10px;
+}
+.seisan_summary .hoshu_out_money_block {
+	padding: 5px 20px 3px 10px;
+	background-color: #ebfcff;
+	margin: 5px 0;
+	border-radius: 4px;
+}
+.seisan_summary .summary_row.bengoshi_hoshu, .seisan_summary .summary_row.out_money {
+	padding: 0;
+}
+.seisan_summary .summary_row.nyukin_sum {
+	background-color: #eea4260a;
+}
+.seisan_summary .summary_row.fix_seisan_money {
+	border-top: 1px solid var(--bor-color-main);
+	border-radius: 0;
+	margin-top: 10px;
+	padding-top: 10px;
+}
+.seisan_summary .summary_title {
+	font-size: 1.5rem;
+	font-weight: 600;
+	width: 100px;
+	-ms-flex: 1 1 auto;
+	flex: 1 1 auto;
+}
+.seisan_summary .summary_komoku {
+	min-width: 100px;
+	-ms-flex: 1 1 auto;
+	flex: 1 1 auto;
+	width: 100px;
+}
+.seisan_summary .summary_kingaku {
+	text-align: right;
+	font-size: 1.7rem;
+	width: 130px;
+	-ms-flex: 1 1 auto;
+	flex: 1 1 auto;
+	padding-right: 15px;
+}
+.seisan_summary .summary_total {
+	text-align: right;
+	font-size: 1.7rem;
+	font-weight: 600;
+	width: 130px;
+	-ms-flex: 1 1 auto;
+	flex: 1 1 auto;
+	padding-right: 15px;
+}
+.seisan_summary .komoku_sum {
+	font-weight: 600;
+}
+.table_kaikei .table_seisan .col_tekiyo {
+	width: 295px;
+	max-width: 295px;
+}
+.table_kaikei .table_seisan .col_tekiyo_l {
+	width: 400px;
+	max-width: 400px;
+}
+
+<!--/* 報酬・入出金テーブル精算済み */-->
+.hoshu_seisansumi, .nyushukkin_seisansumi {
+	background-color:#EDEDED;
+	color: #666;
+}
+.hoshu_seisansumi:hover td, .nyushukkin_seisansumi:hover td {
+	background-color:#EDEDED!important;
+}
+#seisanGakuTotal span:before {
+	content: "\0a5";
+}
+
+<!-- /* プールする案件選択テーブル hover */ -->
+.table_anken .table_select.table-hover tr:hover td {
+	background-color: var(--bg-color-row-hover);
+}
+
+<!-- /* プールする案件選択モーダル テーブル列幅 */ -->
+.selectAnkenModal .checkbox_btn.no_text, .radio_btn.no_text {
+	margin: 0 0 .5rem 0;
+}
+.selectAnkenModal .col_select {
+	width: 40px;
+	max-width: 40px;
+	text-align: center!important;
+}
+.selectAnkenModal .col_id {
+	width: 90px;
+	max-width: 90px;
+}
+.selectAnkenModal .col_bunya {
+	width: 100px;
+	max-width: 100px;
+}
+.selectAnkenModal .col_kubun {
+	width: 100px;
+	max-width: 100px;
+}
+.selectAnkenModal .col_anken_name {
+	width: 280px;
+	max-width: 280px;
+}
+.days_payment {
+	margin-left: -15px;
+}
+/* select選択不可 */
+select.form-control > option:disabled {
+	background-color: var(--lz-gray-100);
+}
+
+/* section影あり */
+.section_shadow {
+	border-radius: 6px;
+	background: #fff;
+	overflow: hidden;
+	border: 1px solid var(--bor-color-main);
+	box-shadow: 3px 3px 3px 0 #e9ecef;
+}
+
+.error_msg_edit {
+	background-color: #FCD6D6;
+	color: #9E0002;
+	margin: 10px 15px;
+	padding: 8px 15px 5px 28px;
+	border-radius: 4px;
+	background-image: url("../img/icon_error.svg");
+	background-repeat: no-repeat;
+	background-position: 6px 8px;
+	text-align: left;
+	font-size: 1.3rem;
+}

@@ -1,0 +1,14 @@
+<svg width="12.000000000000002" height="15.000000000000002" xmlns="http://www.w3.org/2000/svg">
+ <g>
+  <title>background</title>
+  <rect x="-1" y="-1" width="14" height="17" id="canvas_background" fill="none"/>
+ </g>
+
+ <g>
+  <title>Layer 1</title>
+  <g id="icon_msg_list_user" fill="none">
+   <path id="パス_152" d="m11.214,9.547a8.372,8.372 0 0 0 -2.994,-1.547l-2.22,2.347l-2.221,-2.348a8.38,8.38 0 0 0 -3.045,1.589a2.025,2.025 0 0 0 -0.734,1.569l0.517,3.842l10.966,0l0.517,-3.774a2.157,2.157 0 0 0 -0.786,-1.678z" fill="#FFAC8D"/>
+   <circle id="楕円形_66" cx="6.013" cy="3.5" r="3.5" fill="#FFAC8D"/>
+  </g>
+ </g>
+</svg>

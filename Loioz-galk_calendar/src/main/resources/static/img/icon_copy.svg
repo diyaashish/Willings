@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="16" height="17" viewBox="0 0 16 17">
+  <g id="icon_copy" transform="translate(-981 -53)">
+    <g id="cp2" transform="translate(985 57)" fill="#fff" stroke="#119590" stroke-width="1">
+      <rect width="12" height="13" rx="2" stroke="none"/>
+      <rect x="0.5" y="0.5" width="11" height="12" rx="1.5" fill="none"/>
+    </g>
+    <g id="cp1" transform="translate(981 53)" fill="#fff" stroke="#119590" stroke-width="1">
+      <rect width="12" height="13" rx="2" stroke="none"/>
+      <rect x="0.5" y="0.5" width="11" height="12" rx="1.5" fill="none"/>
+    </g>
+  </g>
+</svg>

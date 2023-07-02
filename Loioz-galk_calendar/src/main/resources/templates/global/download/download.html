@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+	xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+	layout:decorator="globalCommonLayout">
+<head>
+<meta name="viewport" content="width=device-width,initial-scale=1.0,minimum-scale=1.0">
+<meta charset="utf-8">
+<meta content="IE=edge" http-equiv="X-UA-Compatible">
+<meta name="robots" content="noindex,nofollow">
+<title layout:fragment="title-contents">
+	[[${T(jp.loioz.common.utility.LoiozUtils).getHtmlTitle("ダウンロード", null)}]]
+</title>
+
+<script type="text/javascript" th:inline="javascript">
+<!--/*
+ 二重送信防止対応用の値。
+ このHTMLに差し込まれるfragment内のScriptの処理も、共通してこの変数を利用する。
+*/-->
+let ajaxRunning = false;
+
+<!--/* テナント認証キー(変数名はあえて曖昧にする) */-->
+function getCodeKey() {
+	return /*[[${viewForm.tenantAuthKey}]]*/'';
+}
+
+<!--/* ダウンロードURLキー */-->
+function getDownloadViewKey() {
+	return /*[[${viewForm.downloadViewUrlKey}]]*/'';
+}
+
+</script>
+
+</head>
+<body>
+	<header layout:fragment="headerContainerFragment" th:remove="all"></header>
+	
+	<main layout:fragment="mainContainerFragment">
+		
+		<!--/* main_container */-->
+		<div class="main_container" th:object="${viewForm}">
+			
+			<!--/* main_content */-->
+			<div class="main_content">
+			
+				<!--/* メッセージエリア */-->
+				<div th:replace="common/messageArea::messageArea"></div>
+				
+				<!--/* container */-->
+				<div class="container">
+					
+					<!--/* ダウンロード画面 */-->
+					<div class="page_wrapper">
+						<div class="row">
+							<div class="col-md-12">
+								<span class="fs30 fw600" th:text="*{tenantName}"></span>
+							</div>
+						</div>
+						<div class="row">
+							<div class="col-md-12">
+								<div class="fs15 text-dark mt-4 mb-2">
+									<i class="far fa-clock mr-2"></i>ダウンロード期限：<th:block th:text="*{downloadLimitDt}"></th:block>
+								</div>
+								
+								<!--/* ダウンロード一覧 */-->
+								<div id="downloadFragmentWrap" th:insert="global/download/downloadFragment::downloadListFragment(${viewForm.downloadListViewForm})"></div>
+
+							</div>
+						</div>
+						
+						<div class="powered_by">Powered by <img src="/img/logo_1.png" width="100"></div>
+					</div>
+					
+				</div>
+				<!--/* container */-->
+				
+			</div>
+			<!--/* main_content */-->
+			
+		</div>
+		<!--/* main_container */-->
+		
+	</main>
+	
+</body>
+</html>

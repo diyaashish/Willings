@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+	<meta charset="utf-8" />
+</head>
+<body>
+<div th:fragment="accountExternalConnectViewFragment(accountExternalConnectViewForm)" id="accountExternalConnectViewFragment">
+<script type="text/javascript" th:inline="javascript">
+$(function() {
+	let ajaxRunning = false;
+	
+	$("#disconnectAccountExternal").on("click", function() {
+		const externalService = $(this).closest(".accountExternalRow").data("cd");
+		// 2重押下防止
+		if(ajaxRunning){
+			return false;
+		}
+		if (!confirm('接続を解除します。よろしいですか？')) {
+			return false;
+		}
+		
+		ajaxRunning = true;
+		$.ajax({
+			url : /*[[@{/user/myExternalSetting/disconnectAccountExternalService}]]*/,
+			type : "POST",
+			data : {"externalService": externalService},
+		})
+		.done(function(data, status, jqXHR) {
+			<!--/* なにもしない */-->
+			if (isAjaxProcSuccess(jqXHR)) {
+				const successMsg = getAjaxProcResutlMessage(jqXHR);
+				Promise.resolve()
+					.then(() => renderAccountExternalConnectView())
+					.then(() => showInfoMessageForJs(successMsg))
+					.catch((errors) => console.log(errors));
+			} else {
+				const errorMsg = getAjaxProcResutlMessage(jqXHR);
+				showErrorMessageForJs(errorMsg);
+			}
+		})
+		.fail(function(jqXHR, status, errorThrown) {
+			<!--/* なにもしない */-->
+			showErrorMessageForJs(/*[[#{E00091}]]*/ "error");
+		})
+		.always(function(){
+			ajaxRunning = false;
+		});
+	});
+	
+	$("#connectAccountExternal").on("click", function() {
+		const url = $(this).data("url")
+		let childWindow = window.open(url, 'rel=noopener');
+	});
+});
+</script>
+	<div class="block_title">外部サービス接続情報</div>
+	<div class="block_detail">
+		<span class="d-block">loiozと連携中の外部サービスに、ご自身のアカウントで接続を開始します。</span>
+		<span class="d-block">※loiozと連携する外部サービスは、管理者権限のアカウントのみ設定可能です。</span>
+	</div>
+	<div class="list_area">
+		<table class="table table_standard table-sm table_fixed table-striped">
+			<thead>
+				<tr>
+					<th class="col_40">サービス名</th>
+					<th class="col_20">接続日時</th>
+					<th class="col_30">操作</th>
+				</tr>
+			</thead>
+			<tbody>
+				<tr th:if="${#lists.isEmpty(accountExternalConnectViewForm.canConnectExternalServiceList)}">
+					<td colspan="3">
+						<span>連携中の外部サービスがありません。</span>
+					</td>
+				</tr>
+				<tr th:each="enum: ${accountExternalConnectViewForm.canConnectExternalServiceList}" class="accountExternalRow"
+					th:with="connectedData=${accountExternalConnectViewForm.connectedExternalServiceMap.get(enum)}" th:data-cd="${enum.cd}">
+					<td>
+						<div class="d-flex align-items-center py-2">
+							<th:block th:switch="${enum}">
+								<!--/* Google Drive */-->
+								<span th:case="${T(jp.loioz.common.constant.CommonConstant$ExternalService).GOOGLE}"
+									class="google_icon icon_size_md_lg d-inline-block"></span>
+								<!--/* Box */-->
+								<span th:case="${T(jp.loioz.common.constant.CommonConstant$ExternalService).BOX}">
+									<span class="icon_bg_wrapper wrapper_md wrapper_box">
+										<span class="box_icon icon_size_md_lg d-inline-block"></span>
+									</span>
+								</span>
+								<!--/* Drop Box */-->
+								<span th:case="${T(jp.loioz.common.constant.CommonConstant$ExternalService).DROPBOX}"
+									class="dropbox_icon icon_size_md_lg d-inline-block"></span>
+								<th:block th:case=*>
+							</th:block>
+							<span th:text="${enum.val}" class="font-weight-bold ml-3"></span>
+						</div>
+					</td>
+					<td th:text="${connectedData != null ? connectedData.connectedStartDate : '-'}"></td>
+					<td>
+						<!--/* 連携解除ボタン */-->
+						<button th:if="${connectedData}" id="disconnectAccountExternal" class="btn btn-warning btn-sm">
+							<i class="fas fa-unlink"></i>解除する
+						</button>
+						<!--/* 連携ボタン */-->
+						<th:block th:unless="${connectedData}" th:switch="${enum}">
+							<button th:case="${T(jp.loioz.common.constant.CommonConstant$ExternalService).GOOGLE}"
+								id="connectAccountExternal" class="btn btn-outline-info btn-sm" th:data-url="@{/common/api/auth/google?requestCode=2}"><i class="fas fa-link"></i>事務所フォルダに接続する</button>
+							<button th:case="${T(jp.loioz.common.constant.CommonConstant$ExternalService).BOX}"
+								id="connectAccountExternal" class="btn btn-outline-info btn-sm" th:data-url="@{/common/api/auth/box?requestCode=2}"><i class="fas fa-link"></i>事務所フォルダに接続する</button>
+							<button th:case="${T(jp.loioz.common.constant.CommonConstant$ExternalService).DROPBOX}"
+								id="connectAccountExternal" class="btn btn-outline-info btn-sm" th:data-url="@{/common/api/auth/dropbox?requestCode=2}"><i class="fas fa-link"></i>事務所フォルダに接続する</button>
+							<th:block th:case=*>
+						</th:block>
+					</td>
+				</tr>
+			</tbody>
+		</table>
+	</div>
+</div>
+</body>
+</html>

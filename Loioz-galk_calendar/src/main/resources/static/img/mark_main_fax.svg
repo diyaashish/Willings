@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 15 15">
+  <g id="mark_main_fax" transform="translate(-1601 -1464.554)">
+    <rect id="obj4" width="11" height="8" stroke-width="0.893" fill="none" stroke="#f0af3f" stroke-miterlimit="10" transform="translate(1603 1465)"/>
+    <rect id="obj3" width="7" height="1" transform="translate(1605 1468)" fill="#f0af3f"/>
+    <path id="obj2" d="M1602,1492.5v7h15v-7Zm4.608,5.628a.824.824,0,1,1,.813-.824A.819.819,0,0,1,1606.608,1498.128Zm0-2.745a.824.824,0,1,1,.813-.824A.818.818,0,0,1,1606.608,1495.382Zm2.711,2.745a.824.824,0,1,1,.813-.824A.819.819,0,0,1,1609.319,1498.128Zm0-2.745a.824.824,0,1,1,.813-.824A.818.818,0,0,1,1609.319,1495.382Zm2.711,2.745a.824.824,0,1,1,.813-.824A.819.819,0,0,1,1612.03,1498.128Zm0-2.745a.824.824,0,1,1,.813-.824A.818.818,0,0,1,1612.03,1495.382Z" transform="translate(-1 -20)" fill="#f0af3f"/>
+    <rect id="obj1" width="5" height="1" transform="translate(1605 1470)" fill="#f0af3f"/>
+  </g>
+</svg>

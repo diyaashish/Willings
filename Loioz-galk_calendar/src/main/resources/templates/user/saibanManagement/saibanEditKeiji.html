@@ -1,0 +1,303 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+	xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+	xmlns:xtra="https://github.com/connect-group/thymeleaf-extras"
+	layout:decorator="commonLayout">
+<head>
+<meta charset="utf-8" th:remove="tag" />
+<title layout:fragment="title-contents">
+	[[${T(jp.loioz.common.utility.LoiozUtils).getHtmlTitle("裁判管理", T(jp.loioz.common.utility.SessionUtils).getTenantName())}]]
+</title>
+<th:block th:with="version=${@environment.getProperty('app.version')}">
+	<link th:href="@{/css/anken/case.css?{ver}(ver=${version})}" rel="stylesheet" type="text/css"/>
+	<link th:href="@{/css/saiban/saiban.css?{ver}(ver=${version})}" rel="stylesheet" type="text/css"/>
+</th:block>
+<style th:replace="user/schedule/scheduleModal::css"></style>
+<script type="text/javascript" th:replace="user/schedule/scheduleModal::scripts"></script>
+
+<script type="text/javascript" th:inline="javascript">
+
+<!--/*
+二重送信防止対応用の値。
+このHTMLに差し込まれるfragment内のScriptの処理も、共通してこの変数を利用する。
+*/-->
+let ajaxRunning = false;
+const saibanSeq = /*[[${viewForm.selectedSaibanSeq}]]*/;
+const ankenId = /*[[${viewForm.ankenId.asLong()}]]*/;
+const ankenIdDisp = '[[${viewForm.ankenId}]]';
+
+<!--/* 以下、各フラグメントをまたいで、共通で利用する関数 */-->
+
+<!--/* 期日一覧エリアの取得ロジック */-->
+function getSaibanKijitsuView() {
+	return new Promise((resolve, reject) => {
+		
+		const viewAllKijitsuListChecked = $('#saibanKijitsuViewFragment #viewAllKijitsuListCheck').prop('checked');
+		const param = {
+			isAllTimeKijitsuList : viewAllKijitsuListChecked
+		}
+		
+		$.ajax({
+			url : 'getSaibanKijitsuViewForm',
+			type : "GET",
+			data : param,
+			dataType: 'html',
+		})
+		.done(function(data, status, jqXHR) {
+			if (isAjaxProcSuccess(jqXHR)) {
+				// 期日一覧表示部分に再描画
+				$('#saibanKijitsuFragmentWrap').html(data);
+				
+			} else {
+				// 処理失敗
+				const errorMsg = getAjaxProcResutlMessage(jqXHR);
+				showErrorMessageForJs(errorMsg);
+			}
+			
+			return resolve();
+		})
+		.fail(function(jqXHR, status, errorThrown) {
+			showErrorMessageForJs(/*[[#{E00091}]]*/ "error");
+			
+			return reject();
+		});
+	});
+}
+
+<!--/* その他当事者表示フォームの表示関数 */-->
+function renderSaibanOtherViewFormFunc(dataObj) {
+	return new Promise((resolve, reject) => {
+		
+		<!--/* オブジェクトのプロパティ値を取得 */-->
+		<!--/* 処理が全て終わった場合に表示する成功メッセージ */-->
+		const {successMessage} = dataObj;
+		
+		<!--/* その他当事者の表示フォームを表示 */-->
+		<!--/* 2重押下防止対応はPromiseチェーンのルートで処理するため、チェーン内では行わない */-->
+		$.ajax({
+			url : 'getSaibanOtherViewForm',
+			type : "GET"
+		})
+		.done(function(data, status, jqXHR) {
+			if (isAjaxProcSuccess(jqXHR)) {
+				// 親HTMLのID
+				$('#saibanOtherViewFragmentWrap').html(data);
+				
+				if (successMessage) {
+					<!--/* Promiseチェーンの上流から渡ってきたオブジェクトに成功メッセージが設定されている場合は表示する */-->
+					showInfoMessageForJs(successMessage);
+				}
+				
+				<!--/* Promiseチェーンの最後の処理となるため、引数データは渡さない */-->
+				resolve();
+			} else {
+				// 処理失敗
+				const errorMsg = getAjaxProcResutlMessage(jqXHR);
+				showErrorMessageForJs(errorMsg);
+				
+				reject();
+			}
+		})
+		.fail(function(jqXHR, status, errorThrown) {
+			showErrorMessageForJs(/*[[#{E00091}]]*/ "error");
+			
+			reject();
+		})
+	});
+}
+
+<!--/* 共犯者情報の再取得 */-->
+function getSaibanOtherView() {
+	return new Promise((resolve, reject) => {
+		$.ajax({
+			url : "getSaibanOtherViewForm",
+			type : "GET",
+			dataType: 'html',
+		})
+		.done(function(data, status, jqXHR) {
+			if (isAjaxProcSuccess(jqXHR)) {
+				// 「共犯者表示部分を再描画」
+				$('#saibanOtherViewFragmentWrap').html(data);
+				return resolve();
+			} else {
+				// 処理失敗
+				const errorMsg = getAjaxProcResutlMessage(jqXHR);
+				showErrorMessageForJs(errorMsg);
+				return reject();
+			}
+			
+		})
+		.fail(function(jqXHR, status, errorThrown) {
+			showErrorMessageForJs(/*[[#{E00091}]]*/ "error");
+			return reject();
+		});
+	});
+}
+
+<!--/* サイドメニューの再取得 */-->
+function renderAnkenMenuView() {
+
+	return new Promise((resolve, reject) => {
+		$.ajax({
+			url : /*[[@{/user/saibanKeijiManagement/{saibanSeq}/{ankenId}/getAnkenMenuView(saibanSeq=${saibanSeq}, ankenId=${ankenId})}]]*/"",
+			type : "GET",
+			dataType: 'html',
+		})
+		.done(function(data, status, jqXHR) {
+			if (isAjaxProcSuccess(jqXHR)) {
+				// メニュー表示部分のID
+				$('#customerAnkenMenuFragmentWrap').html(data);
+				return resolve();
+			} else {
+				// 処理失敗
+				const errorMsg = getAjaxProcResutlMessage(jqXHR);
+				showErrorMessageForJs(errorMsg);
+				return reject();
+			}
+		})
+		.fail(function(jqXHR, status, errorThrown) {
+			showErrorMessageForJs(/*[[#{E00091}]]*/ "error");
+			return reject();
+		});
+	});
+}
+
+</script>
+
+<!--/* スケジュールに関する処理 */-->
+<script type="text/javascript" th:inline="javascript">
+$(function() {
+	let modal = benzo.global.scheduleModal.modal;
+	let scheduleCache = {};
+	
+	benzo.global.scheduleModal.ajaxRunning = false;
+	benzo.global.scheduleModal.saveAction = function() {}
+	
+	<!--/* 
+		スケジュールモーダル内の共通化しない処理はトリガーのみ親HTMLに記載する
+		保存処理自体は、フラグメント内で記載し、モーダル表示時などに上書きする
+	*/-->
+	modal.find(".saveSchedule").on("click", function(){
+		benzo.global.scheduleModal.saveAction(this);
+	});
+});
+</script>
+
+<!--/* 名簿ポップオーバー処理 */-->
+<script type="text/javascript" th:replace="common/mvc/person/popover/personPopover::personInfoPopoverJs"></script>
+<style type="text/css" th:replace="common/mvc/person/popover/personPopover::personInfoPopoverStyle"></style>
+
+</head>
+<body>
+	<div layout:fragment="main-contents" th:remove="tag">
+
+		<!--/* ①サイドメニューあり */-->
+		<div class="contents_sidebar_wrapper contentsSlidebarWrapper" th:data-click-open=${customerAnkenMenuOpenClickForSessionValue} th:data-resize-open=${customerAnkenMenuOpenResizeForSessionValue}>
+
+			<!--/* ②顧客・案件 サイドメニュー */-->
+			<div id="customerAnkenMenuFragmentWrap" th:insert="common/customerAnkenMenu::menuList(
+				sideMenuAnkenId=${viewForm.ankenId.asLong()},
+				sideMenuCustomerId=null,
+				selectedSaiban=${viewForm.selectedSaibanSeq},
+				selectedTabClass='is_saiban')">
+			</div>
+
+			<!--/* メインコンテンツの外側 */-->
+			<div class="contents_wrapper">
+				<div class="container-fluid">
+					
+					<!--/* 画面メイン */-->
+					<main class="content">
+						
+						<!--/* ぱんくず */-->
+						<div th:replace="common/wrapHeader::wrapHeader(
+							returnListScreen=${T(jp.loioz.common.utility.SessionUtils).getSessionVaule(T(jp.loioz.common.constant.SessionAttrKeyEnum).RETURN_LIST_SCREEN.codeKey)},
+							sideMenuAnkenId=${viewForm.ankenId.asLong()},
+							selectedTabClass='is_saiban')">
+						</div>
+						
+						<!--/* メッセージエリア */-->
+						<div th:replace="common/messageArea::messageArea"></div>
+						
+						<div class="case_edit">
+							<div id="saibanBasicFragmentWrap" th:insert="user/saibanManagement/saibanEditKeijiFragment::saibanBasicViewFragment(${viewForm.saibanBasicViewForm})">
+								<!-- 裁判の基本情報の表示 -->
+							</div>
+						</div>
+						
+						<div class="row">
+							<div class="col-lg-12">
+								<div>
+									<div id="saibanKijitsuFragmentWrap" th:insert="user/saibanManagement/saibanEditKeijiFragment::saibanKijitsuViewFragment(${viewForm.saibanKijitsuViewForm})">
+										<!-- 裁判期日の表示 -->
+									</div>
+									
+									<div>
+										<!--/* 顧客・共犯者 */-->
+										<div class="customer_aitegata_block" th:unless="*{isCreate}">
+											<div class="row">
+												
+												<!--/* 顧客・共犯者 情報 */-->
+												<div class="col-md-6">
+													<div id="saibanCustomerViewFragmentWrap" th:insert="user/saibanManagement/saibanEditKeijiFragment::saibanCustomerViewFragment(${viewForm.saibanCustomerViewForm})">
+														<!--/* 顧客情報 */-->
+													</div>
+													<div id="saibanOtherViewFragmentWrap" th:insert="user/saibanManagement/saibanEditKeijiFragment::saibanOtherViewFragment(${viewForm.saibanOtherViewForm})">
+														<!--/* その他当事者 */-->
+													</div>
+												</div>
+												<!--/* 顧客・共犯者 情報 */-->
+												
+												<!--/* 公判担当者 */-->
+												<div class="col-md-6">
+													<div id="saibanKensatsukanViewFragmentWrap" th:insert="user/saibanManagement/saibanEditKeijiFragment::saibanKensatsukanViewFragment(${viewForm.saibanKensatsukanViewForm})">
+														<!--/* 公判担当者情報 */-->
+													</div>
+												</div>
+												<!--/* 公判担当者 end */-->
+												
+											</div>
+										</div>
+									</div>
+								</div>
+							</div>
+						</div>
+					</main>
+				</div>
+			</div>
+		</div>
+		
+		<!--/* 予定登録モーダル */-->
+		<div
+			th:replace="user/schedule/scheduleModal::modal(
+			createUrl=@{/user/saibanKeijiManagement/{saibanSeq}/{ankenId}/registSaibanKijitsu(saibanSeq=${viewForm.selectedSaibanSeq}, ankenId=${viewForm.ankenId.asLong()})},
+			updateUrl=@{/user/saibanKeijiManagement/{saibanSeq}/{ankenId}/saveSaibanKijitsu(saibanSeq=${viewForm.selectedSaibanSeq}, ankenId=${viewForm.ankenId.asLong()})},
+			deleteUrl=@{/user/saibanKeijiManagement/{saibanSeq}/{ankenId}/deleteSaibanKijitsu(saibanSeq=${viewForm.selectedSaibanSeq}, ankenId=${viewForm.ankenId.asLong()})})">
+		</div>
+		
+	</div>
+
+	<div th:replace="::kanyoshaModalTemplate(target='targetModalBody', ankenId=${ankenId})"></div>
+
+	<!--/* 係属部のセレクトボックス */-->
+	<div th:fragment="keizokuBuSelect" th:remove="tag">
+		<input th:if="${!#lists.isEmpty(keizokuBuList)}" id="keizokubuSearch" type="search" class="form-control" name="keizokuBuName" list="keizokuBuList" tabindex="2" />
+		<datalist th:if="${!#lists.isEmpty(keizokuBuList)}" id="keizokuBuList">
+			<option value="">-</option>
+			<option th:each="keizokuBu : ${keizokuBuList}" th:object="${keizokuBu}" th:value="*{name}" th:text="*{name}" th:data-tel-no="*{telNo}" th:data-fax-no="*{faxNo}"></option>
+		</datalist>
+		<input th:if="${#lists.isEmpty(keizokuBuList)}" type="text" class="form-control" name="keizokuBuName">
+	</div>
+
+	<!-- /* 関与者モーダルテンプレート */ -->
+	<div th:fragment="kanyoshaModalTemplate(target, ankenId)" id="kanyoshaModal" class="modal fade" tabindex="-1" role="dialog" aria-hidden="true" data-backdrop="static">
+		<div class="modal-dialog modal-dialog-centered kanyosha-modal-body" role="document">
+			<div class="modal-content">
+				<div th:class="${target}" th:data-anken-id="${ankenId}"></div>
+			</div>
+		</div>
+	</div>
+	<!-- /* 関与者モーダルテンプレート end */ -->
+	
+</body>
+</html>

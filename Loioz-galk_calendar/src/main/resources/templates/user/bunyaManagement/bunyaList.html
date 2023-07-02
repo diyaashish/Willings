@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+	xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+	layout:decorator="commonLayout">
+<head>
+<meta charset="UTF-8">
+<title layout:fragment="title-contents">
+	[[${T(jp.loioz.common.utility.LoiozUtils).getHtmlTitle(T(jp.loioz.common.constant.CommonConstant$SystemSettingMenu).DATA_BUNYA.getVal(), T(jp.loioz.common.utility.SessionUtils).getTenantName())}]]
+</title>
+<script type="text/javascript">
+	$(function() {
+
+		// -----------------------------------------
+		// ダイアログ表示(登録／更新)
+		// -----------------------------------------
+		$(document).on("click", '.saveModal', function() {
+			let action = "create";
+			let bunyaId = $(this).attr('data-id');
+			if (bunyaId) {
+				action = "edit";
+			}
+			$.ajax({
+					url : "/user/bunyaManagement/" + action,
+					type : "POST",
+					data :{ 'bunyaEditData.bunyaId' : bunyaId},
+				}).done(function(val) {
+					// モーダルの表示
+					$('.targetModalBody').html(val);
+				}).fail(function(jqXHR, textStatus, errorThrown) {
+				}).always(function() {
+			});
+		});
+		// モーダル閉じる処理
+		$('#selectModal').on('hide.bs.modal', function (e) {
+			// 初期化する
+			$('.targetModalBody').html('');
+		})
+
+		<!--/* 登録・更新・削除ボタン */-->
+		let ajaxRunning = false;
+		$('.targetModalBody').on("click", '#regist, #update, #delete', function() {
+			// 押下したボタンのIDをアクションとして取得し実行する
+			let action = $(this).attr('id');
+			if(action === "delete"){
+				if (!confirm('削除します。よろしいですか?')){
+					return false;
+				}
+			}
+			// 2重押下防止
+			if(ajaxRunning){
+				return false;
+			}
+			let modal = $(this).closest('.modal');
+			var params = $('form#editForm').serializeArray();
+			ajaxRunning = true;
+			$.ajax({
+				type : "POST",
+				url : "/user/bunyaManagement/" + action,
+				data : params,
+			})
+			.done(function(result) {
+				if(result.succeeded){
+					alert(result.message);
+					modal.modal("hide");
+					location.reload();
+				} else {
+					showErrorMessage(result.message, modal, result.errors);
+				}
+			})
+			.fail(function() {
+				window.location.href = "/systemError";// システムエラー
+			})
+			.always(function(){
+				ajaxRunning = false;
+			});
+		});
+
+		// 利用再開・停止処理
+		$('.targetModalBody').on("click", '#using', function() {
+			if (!confirm('利用を' + $(this).text().trim() + 'します。よろしいですか?')){
+				return false;
+			}
+			// 2重押下防止
+			if(ajaxRunning){
+				return false;
+			}
+			let action = "restartUsingOk";
+			if ($(this).attr('data-using').toLowerCase() === 'true') {
+				action = "stopUsingOk";
+			}
+			let modal = $(this).closest('.modal');
+			var params = $('form#editForm').serializeArray();
+			ajaxRunning = true;
+			$.ajax({
+				url : "/user/bunyaManagement/" + action,
+				type : "POST",
+				data : params,
+			})
+			.done(function(result) {
+				if(result.succeeded){
+					alert(result.message);
+					modal.modal("hide");
+					location.reload();
+				} else {
+					showErrorMessage(result.message, modal, result.errors);
+				}
+			})
+			.fail(function() {
+				window.location.href = "/systemError";// システムエラー
+			})
+			.always(function(){
+				ajaxRunning = false;
+			});
+		});
+	});
+	</script>
+<style type="text/css">
+	.col_edit {width: 7rem;}
+</style>
+</head>
+<body>
+	<!--/* サイドバー付きメインコンテンツ */-->
+	<div class="contents_sidebar_wrapper_setting" layout:fragment="main-contents">
+		<!--/* サイドメニュー */-->
+		<div th:replace="common/systemSettingMenu::selectMenu(${T(jp.loioz.common.constant.CommonConstant$SystemSettingMenu).DATA_BUNYA.getCd()})"></div>
+		<!--/* コンテンツ */-->
+		<div class="contents_wrapper" th:object="${viewForm}">
+
+			<!--/* メッセージ表示領域 */-->
+			<div th:replace="common/messageArea::messageArea"></div>
+
+			<!--/* contents_limited_width_setting サイズ幅(maxサイズ）start */-->
+			<div class="container-fluid contents_limited_width_setting">
+				<!--/* パンくず */-->
+				<div class="breadcrumb_area">
+					<ul>
+						<li><span>データ設定</span></li>
+						<li><i class="fas fa-angle-right"></i></li>
+						<li th:text="${T(jp.loioz.common.constant.CommonConstant$SystemSettingMenu).DATA_BUNYA.getVal()}">分野の設定</li>
+					</ul>
+				</div>
+
+				<!--/* ブロック start */-->
+				<div class="contents_block">
+
+					<!--/* 画面タイトル */-->
+					<div class="block_title">分野マスタ</div>
+					<!--/* 画面詳細エリア */-->
+					<div class="block_detail d-flex">
+						<div>
+							<p>分野マスタで登録したデータは、案件情報の分野として選択することができます。</p>
+						</div>
+						<div class="block_action">
+							<button type="button" class="btn btn-primary saveModal" data-toggle="modal" data-target="#selectModal">
+								<i class="fas fa-plus"></i>新規登録
+							</button>
+						</div>
+					</div>
+
+					<!--/* 一覧表示 */-->
+					<div class="list_area">
+						<table class="table table_standard table_sort table-sm table_fixed table-striped">
+							<thead>
+								<tr>
+									<th class="col_5"><i class="fas fa-grip-vertical fc_sub"></i></th>
+									<th class="col_10">区分</th>
+									<th class="col_60">分野名</th>
+									<th class="col_20">状態</th>
+									<th class="col_10">操作</th>
+								</tr>
+							</thead>
+							<tbody th:id="sortTargetList">
+<!--/*/ 				<th:block th:if="${viewForm.bunyaList.size() == 0}"> /*/-->
+								<tr>
+									<td colspan="5" class="no_data_table_list">
+										<span th:text="#{I00021}">MSG_I00021</span>
+									</td>
+								</tr>
+<!--/*/ 				</th:block> /*/-->
+								<tr th:each="item : *{bunyaList}" th:object="${item}" th:classappend="*{disabledFlg ? 'table-secondary' : ''}" th:data-target-id="*{bunyaId}" class="taskListRow">
+									<td class="col_5">
+										<div class="move_point sortableObj">
+											<svg class="icon_drag_indicator hidden"></svg>
+											<div class="sortableIdx hidden" th:text="*{dispOrder}"></div>
+										</div>
+									</td>
+									<td class="col_10">
+										<span th:if="${T(jp.loioz.common.constant.CommonConstant$SystemFlg).FLG_ON.equalsByCode(item.bunyaType)}">刑事</span> 
+										<span th:if="${T(jp.loioz.common.constant.CommonConstant$SystemFlg).FLG_OFF.equalsByCode(item.bunyaType)}">民事</span>
+									</td>
+									<td class="col_60" th:text="*{bunyaName}"></td>
+									<td class="col_20" th:text="*{disabledFlg} ? '停止中' : '利用中'"></td>
+									<td class="col_10">
+										<span class="d-inline-block" data-toggle="tooltip" title="分野を編集" data-trigger="hover">
+											<button class="btn btn-sm btn-light saveModal" data-toggle="modal" data-target="#selectModal" th:data-id="*{bunyaId}">
+												<i class="fas fa-edit mr-1"></i>
+												<span>編集</span>
+											</button>
+										</span>
+									</td>
+								</tr>
+							</tbody>
+						</table>
+					</div>
+				</div>
+				<!--/* ブロック end */-->
+			</div>
+			<!--/* contents_limited_width_setting サイズ幅(maxサイズ）end */-->
+		</div>
+
+		<!--/* 分野登録・編集モーダル */-->
+		<div th:replace="::modalTemplate(target='targetModalBody')"></div>
+
+	</div>
+	<!--/* 分野登録・編集モーダル */-->
+	<div th:fragment="modalTemplate(target)" id="selectModal" class="modal fade" tabindex="-1" role="dialog" aria-hidden="true" data-backdrop="static">
+		<div class="modal-dialog modal-dialog-centered" role="document">
+			<div class="modal-content">
+				<div th:class="${target}"></div>
+			</div>
+		</div>
+	</div>
+</body>
+</html>

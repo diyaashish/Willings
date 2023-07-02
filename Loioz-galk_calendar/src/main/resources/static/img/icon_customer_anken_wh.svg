@@ -1,0 +1,121 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<svg
+   xmlns:dc="http://purl.org/dc/elements/1.1/"
+   xmlns:cc="http://creativecommons.org/ns#"
+   xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+   xmlns:svg="http://www.w3.org/2000/svg"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
+   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+   inkscape:version="1.0 (4035a4fb49, 2020-05-01)"
+   sodipodi:docname="icon_customer_anken_wh.svg"
+   version="1.1"
+   viewBox="0 0 1935.1179 1935.1183"
+   height="512mm"
+   width="512mm"
+   id="side_tab_icon_anken">
+  <metadata
+     id="metadata13472">
+    <rdf:RDF>
+      <cc:Work
+         rdf:about="">
+        <dc:format>image/svg+xml</dc:format>
+        <dc:type
+           rdf:resource="http://purl.org/dc/dcmitype/StillImage" />
+        <dc:title></dc:title>
+      </cc:Work>
+    </rdf:RDF>
+  </metadata>
+  <defs
+     id="defs13470" />
+  <sodipodi:namedview
+     inkscape:document-rotation="0"
+     inkscape:current-layer="side_tab_icon_anken"
+     inkscape:window-maximized="1"
+     inkscape:window-y="-8"
+     inkscape:window-x="-8"
+     inkscape:cy="961.94353"
+     inkscape:cx="925.02788"
+     inkscape:zoom="0.24537038"
+     fit-margin-bottom="0"
+     fit-margin-right="0"
+     fit-margin-left="0"
+     units="mm"
+     fit-margin-top="-2.7755576e-17"
+     showgrid="false"
+     id="namedview13468"
+     inkscape:window-height="1057"
+     inkscape:window-width="1920"
+     inkscape:pageshadow="2"
+     inkscape:pageopacity="0"
+     guidetolerance="10"
+     gridtolerance="10"
+     objecttolerance="10"
+     borderopacity="1"
+     bordercolor="#666666"
+     pagecolor="#ffffff" />
+  <path
+     style="fill:#ffffff;stroke-width:39.98318863"
+     inkscape:connector-curvature="0"
+     d="m 1762.8334,1121.0994 h -581.5846 a 96.085688,115.43236 0 0 1 -95.9035,-115.3553 V 212.04521 a 96.085688,115.43236 0 0 1 95.9035,-115.377549 h 581.5846 a 96.085688,115.43236 0 0 1 95.8668,115.377549 V 1005.655 a 96.122168,115.47619 0 0 1 -95.8668,115.4444 z M 1181.2488,150.13259 a 51.581309,61.967098 0 0 0 -51.472,61.91262 v 793.60429 a 51.581309,61.967098 0 0 0 51.472,61.9293 h 581.5846 a 51.581309,61.967098 0 0 0 51.4719,-61.9293 V 212.04521 a 51.581309,61.967098 0 0 0 -51.4719,-61.91262 z"
+     data-name="パス 125"
+     id="パス_125" />
+  <rect
+     style="fill:#ffffff;stroke-width:39.98318863"
+     y="294.33997"
+     x="1220.7189"
+     height="57.234108"
+     width="418.66953"
+     data-name="長方形 222"
+     id="長方形_222" />
+  <rect
+     style="fill:#ffffff;stroke-width:39.98318863"
+     y="403.06253"
+     x="1220.7189"
+     height="57.234108"
+     width="418.66953"
+     data-name="長方形 223"
+     id="長方形_223" />
+  <rect
+     style="fill:#ffffff;stroke-width:39.98318863"
+     y="667.11267"
+     x="1326.5082"
+     height="57.234108"
+     width="418.66953"
+     data-name="長方形 225"
+     id="長方形_225" />
+  <rect
+     style="fill:#ffffff;stroke-width:39.98318863"
+     y="775.82849"
+     x="1501.6073"
+     height="57.234108"
+     width="231.78758"
+     data-name="長方形 226"
+     id="長方形_226" />
+  <rect
+     style="fill:#ffffff;stroke-width:39.98318863"
+     y="884.57141"
+     x="1501.6073"
+     height="57.234108"
+     width="231.78758"
+     data-name="長方形 227"
+     id="長方形_227" />
+  <g
+     id="g955"
+     style="opacity:1;fill:#ffffff"
+     transform="matrix(2.6798844,0,0,3.8295457,-97.919118,35.780741)">
+    <path
+       id="path951"
+       style="fill:#ffffff;stroke-width:0.942944"
+       d="m 463.98672,377.11006 c -17.84994,-31.73007 -47.08498,-67.66945 -94.6801,-88.10023 -27.22091,19.04371 -60.28997,30.25626 -95.93986,30.25626 -35.6697,0 -68.73876,-11.21161 -95.96061,-30.25626 -47.59417,20.43078 -76.83016,56.3711 -94.669719,88.10023 -23.676388,42.08549 -5.113587,101.63431 35.833759,101.63431 40.9483,0 154.79751,0 154.79751,0 0,0 113.83789,0 154.78713,0 40.94642,0 59.50922,-59.54882 35.83189,-101.63431 z"
+       class="st0"
+       inkscape:connector-curvature="0" />
+    <ellipse
+       ry="95.350266"
+       rx="133.06685"
+       cy="200.01614"
+       cx="272.13028"
+       id="path130"
+       style="fill:#ffffff;stroke-width:0.315871" />
+  </g>
+</svg>

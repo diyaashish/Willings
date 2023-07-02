@@ -1,0 +1,273 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+	xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+	layout:decorator="commonLayout">
+<head>
+<meta charset="utf-8" />
+<title layout:fragment="title-contents">
+	[[${T(jp.loioz.common.utility.LoiozUtils).getHtmlTitle("預り金／実費管理", T(jp.loioz.common.utility.SessionUtils).getTenantName())}]]
+</title>
+<th:block th:with="version=${@environment.getProperty('app.version')}">
+</th:block>
+<script type="text/javascript" th:inline="javascript">
+<!--/*
+ 二重送信防止対応用の値。
+ このHTMLに差し込まれるfragment内のScriptの処理も、共通してこの変数を利用する。
+*/-->
+let ajaxRunning = false;
+
+</script>
+<script type="text/javascript" th:inline = "javascript">
+
+<!--/* 検索条件フラグメント再表示 */-->
+function renderDepositRecvSearchFormFragment(formData) {
+	return new Promise((resolve, reject) => {
+		<!--/* 案件検索条件フラグメント表示処理 */-->
+		$.ajax({
+			url : "/user/depositRecvList/displayDepositRecvListSearchForm",
+			type : "GET",
+			data : formData,
+			dataType: 'html',
+		}).done(function(data, status, jqXHR) {
+	
+			if (isAjaxProcSuccess(jqXHR)) {
+				<!--/* 処理成功 */-->
+				$('#depositRecvListSearchFragmentWrap').html(data);
+				return resolve();
+			} else {
+				<!--/* 処理失敗 */-->
+				const errorMsg = getAjaxProcResutlMessage(jqXHR);
+				showErrorMessageForJs(errorMsg);
+				return reject(errorMsg);
+			}
+		}).fail(function() {
+			showErrorMessageForJs(/*[[#{E00059}]]*/ "データの取得に失敗しました。");
+			return reject();
+		})
+	});
+}
+
+<!--/* 検索ワードを使用した一覧画面検索処理 */-->
+function searchDepositRecvListUsingSearchWord(formData) {
+	return new Promise((resolve, reject) => {
+		<!--/* 検索処理 */-->
+		$.ajax({
+			url : "/user/depositRecvList/searchDepositRecvListUsingSearchWord",
+			type : "GET",
+			data : formData,
+			dataType: 'html',
+		}).done(function(data, status, jqXHR) {
+			if (isAjaxProcSuccess(jqXHR)) {
+				<!--/* 処理成功 */-->
+				<!--/* ツールチップを非表示にする */-->
+				$('[data-toggle="tooltip"]').tooltip('hide');
+				<!-- /* 一覧フラグメント更新 */ -->
+				$('#depositRecvListViewFragmentWrap').replaceWith($(data).find("#depositRecvListViewFragmentWrap"));
+				<!-- /* ページングフラグメント更新 */ -->
+				$('#depositRecvListPagerWrap').replaceWith($(data).find("#depositRecvListPagerWrap"));
+				return resolve();
+			} else {
+				<!--/* 処理失敗 */-->
+				const errorMsg = getAjaxProcResutlMessage(jqXHR);
+				showErrorMessageForJs(errorMsg);
+				return reject(errorMsg);
+			}
+		}).fail(function() {
+			showErrorMessageForJs(/*[[#{E00059}]]*/ "データの取得に失敗しました。");
+			return reject();
+		})
+	});
+}
+
+<!--/* 検索条件を使用した一覧画面検索処理 */-->
+function searchDepositRecvListUsingSearchCondition(formData) {
+	return new Promise((resolve, reject) => {
+		<!--/* 検索処理 */-->
+		$.ajax({
+			url : "/user/depositRecvList/searchDepositRecvListUsingSearchCondition",
+			type : "GET",
+			data : formData,
+			dataType: 'html',
+		}).done(function(data, status, jqXHR) {
+			if (isAjaxProcSuccess(jqXHR)) {
+				<!--/* 処理成功 */-->
+				<!--/* ツールチップを非表示にする */-->
+				$('[data-toggle="tooltip"]').tooltip('hide');
+				<!-- /* 一覧フラグメント更新 */ -->
+				$('#depositRecvListViewFragmentWrap').replaceWith($(data).find("#depositRecvListViewFragmentWrap"));
+				<!-- /* ページングフラグメント更新 */ -->
+				$('#depositRecvListPagerWrap').replaceWith($(data).find("#depositRecvListPagerWrap"));
+				return resolve();
+			} else {
+				<!--/* 処理失敗 */-->
+				const errorMsg = getAjaxProcResutlMessage(jqXHR);
+				showErrorMessageForJs(errorMsg);
+				return reject(errorMsg);
+			}
+		}).fail(function() {
+			showErrorMessageForJs(/*[[#{E00059}]]*/ "データの取得に失敗しました。");
+			return reject();
+		})
+	});
+}
+
+<!--/* 検索条件クリア処理 */-->
+function initDepositRecvSearchCondition() {
+	$.ajax({
+		url : "/user/depositRecvList/initDepositRecvSearchCondition",
+		type : "GET",
+		dataType: 'html',
+	}).done(function(data, status, jqXHR) {
+		if (isAjaxProcSuccess(jqXHR)) {
+			<!--/* 処理成功 */-->
+			<!--/* ツールチップを非表示にする */-->
+			$('[data-toggle="tooltip"]').tooltip('hide');
+			<!--/* 検索条件フラグメント更新 */-->
+			$('#depositRecvListSearchFragmentWrap').html(data);
+			<!-- /* 検索処理　画面上の検索条件をFormデータとして渡さず、セッションで保持しているクリア済みの検索条件を使用する */ -->
+			searchDepositRecvListUsingSearchCondition();
+		} else {
+			<!--/* 処理失敗 */-->
+			const errorMsg = getAjaxProcResutlMessage(jqXHR);
+			showErrorMessageForJs(errorMsg);
+		}
+	}).fail(function() {
+		showErrorMessageForJs(/*[[#{E00059}]]*/ "データの取得に失敗しました。");
+	}).always(function() {
+	});
+}
+
+<!--/* 預り金一覧ソート処理 */-->
+function sortDepositRecvList(optionParam) {
+	return new Promise((resolve, reject) => {
+		$.ajax({
+			url : "/user/depositRecvList/sort",
+			type : "GET",
+			data : optionParam,
+			dataType: 'html',
+		}).done(function(data, status, jqXHR) {
+			if (isAjaxProcSuccess(jqXHR)) {
+				<!--/* 処理成功 */-->
+				<!--/* ツールチップを非表示にする */-->
+				$('[data-toggle="tooltip"]').tooltip('hide');
+				<!-- /* 一覧フラグメント更新 */ -->
+				$('#depositRecvListViewFragmentWrap').replaceWith($(data).find("#depositRecvListViewFragmentWrap"));
+				<!-- /* ページングフラグメント更新 */ -->
+				$('#depositRecvListPagerWrap').replaceWith($(data).find("#depositRecvListPagerWrap"));
+				return resolve();
+			} else {
+				<!--/* 処理失敗 */-->
+				const errorMsg = getAjaxProcResutlMessage(jqXHR);
+				let sessionTimeOutKey = /*[[${T(jp.loioz.common.constant.MessageEnum).MSG_E00161.messageKey}]]*/'';
+				if (sessionTimeOutKey == errorMsg) {
+					window.location.href = "/user/depositRecvList/";
+				} else {
+					showErrorMessageForJs(errorMsg);
+				}
+				return reject(errorMsg);
+			}
+		}).fail(function() {
+			showErrorMessageForJs(/*[[#{E00059}]]*/ "データの取得に失敗しました。");
+			return reject();
+		});
+	});
+};
+
+<!--/* ページネーション処理 */-->
+function getListOfPageNumber(pageNumber) {
+
+	<!--/* パラメータ */-->
+	const formData = {
+		"page" : pageNumber
+	}
+
+	<!--/* ページング処理 */-->
+	$.ajax({
+		url : '/user/depositRecvList/pager',
+		type : "GET",
+		data : formData,
+		dataType: 'html',
+	}).done(function(data, status, jqXHR) {
+		if (isAjaxProcSuccess(jqXHR)) {
+			<!--/* 処理成功 */-->
+			<!--/* ツールチップを非表示にする */-->
+			$('[data-toggle="tooltip"]').tooltip('hide');
+			<!-- /* 一覧フラグメント更新 */ -->
+			$('#depositRecvListViewFragmentWrap').replaceWith($(data).find("#depositRecvListViewFragmentWrap"));
+			<!-- /* ページングフラグメント更新 */ -->
+			$('#depositRecvListPagerWrap').replaceWith($(data).find("#depositRecvListPagerWrap"));
+		} else {
+			<!--/* 処理失敗 */-->
+			const errorMsg = getAjaxProcResutlMessage(jqXHR);
+			let sessionTimeOutKey = /*[[${T(jp.loioz.common.constant.MessageEnum).MSG_E00161.messageKey}]]*/'';
+			if (sessionTimeOutKey == errorMsg) {
+				window.location.href = "/user/depositRecvList/";
+			} else {
+				showErrorMessageForJs(errorMsg);
+			}
+		}
+	}).fail(function() {
+		showErrorMessageForJs(/*[[#{E00059}]]*/ "データの取得に失敗しました。");
+	}).always(function() {
+	});	
+};
+
+</script>
+
+</head>
+<body>
+	<div layout:fragment="main-contents" th:remove="tag">
+		
+		<div class="contents_sidebar_wrapper_user accg_side_menu">
+			
+			<!--/* 会計管理メニュー */-->
+			<div id="accgMenuFragmentWrap"
+				th:replace="common/accg/accgMenu::accgMenuFragment(${T(jp.loioz.common.constant.CommonConstant$AccgMenu).DEPOSIT_RECV.getCd()})">
+			</div>
+			
+			<!--/* メインコンテンツの外側 */-->
+			<div class="contents_wrapper">
+				<div class="container-fluid">
+					<main class="content">
+						
+						<!--/* メッセージエリア */-->
+						<div th:replace="common/messageArea::messageArea"></div>
+						
+						<!--/* 一覧画面 */-->
+						<div class="page_list">
+							<div class="vertical_block_wrapper">
+								
+								<!--/* vertical_block_header */-->
+								<div class="vertical_block_header">
+									<!--/* 検索条件 */-->
+									<div id="depositRecvListSearchFragmentWrap">
+										<div th:replace="user/depositRecvList/depositRecvListFragment::depositRecvListSearchFragment(${depositRecvListSearchForm})"></div>
+									</div>
+								</div>
+								<!--/* vertical_block_header end */-->
+								
+								<!--/* vertical_block_body */-->
+								<div class="vertical_block_body">
+									<!--/* 一覧結果 */-->
+									<div id="depositRecvListFragmentWrap">
+										<div id="depositRecvListViewFragmentWrap" th:insert="user/depositRecvList/depositRecvListFragment::depositRecvListFragment(${viewForm})"></div>
+									</div>
+								</div>
+								<!--/* vertical_block_body end */-->
+								
+								<!--/* vertical_block_footer */-->
+								<div class="vertical_block_footer">
+									<!--/* ページング */-->
+									<div id="depositRecvListPagerWrap" th:insert="user/depositRecvList/depositRecvListFragment::depositRecvListPagerFragment(${viewForm.page})"></div>
+								</div>
+								<!--/* vertical_block_footer end */-->
+								
+							</div>
+						</div>
+					</main>
+				</div>
+			</div>
+		</div>
+	</div>
+</body>
+</html>

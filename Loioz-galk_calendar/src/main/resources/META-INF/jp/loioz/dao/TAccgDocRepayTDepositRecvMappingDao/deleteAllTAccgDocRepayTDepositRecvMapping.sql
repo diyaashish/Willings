@@ -1,0 +1,1 @@
+DELETE FROM t_accg_doc_repay_t_deposit_recv_mapping;

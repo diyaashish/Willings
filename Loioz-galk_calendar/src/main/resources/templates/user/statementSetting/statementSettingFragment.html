@@ -1,0 +1,275 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+	xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+	layout:decorator="commonLayout">
+<head>
+	<meta charset="utf-8" />
+</head>
+<body>
+
+<!--/* 詳細データ */-->
+<div th:fragment="statementSettingFragment(statementSettingFragmentInputForm)" id="statementSettingFragment" th:object="${statementSettingFragmentInputForm}">
+	<script type="text/javascript" th:inline="javascript">
+	$(function() {
+
+		<!--/* 定数 */-->
+		const statementSettingFragmentWrap = $('#statementSettingFragmentWrap');
+		const statementSettingFragment = $('#statementSettingFragment');
+		
+		<!--/* 共有の要素セットアップ処理 */-->
+		commonSetUpElement("#statementSettingFragment");
+		
+		<!--/* 精算書番号のプレビュー表示用データ */-->
+		let statementData = {
+				'statementNoPrefix' : /*[[*{statementNoPrefix}]]*/'',
+				'statementNoYFmtCd' : /*[[*{statementNoYFmtCd}]]*/'',
+				'statementNoMFmtCd' : /*[[*{statementNoMFmtCd}]]*/'',
+				'statementNoDFmtCd' : /*[[*{statementNoDFmtCd}]]*/'',
+				'statementNoDelimiter' : /*[[*{statementNoDelimiter}]]*/'',
+				'statementNoNumberingTypeCd' : /*[[*{statementNoNumberingTypeCd}]]*/'',
+				'StatementNoZeroPadEnabled' : /*[[*{StatementNoZeroPadEnabled}]]*/'',
+				'statementNoZeroPadDigits' : /*[[*{statementNoZeroPadDigits}]]*/'',
+		};
+		
+		<!--/* 精算書番号の入力によるプレビュー切り替え */-->
+		statementSettingFragment.find('.statementNoTarget[type="text"]').on('input', function() {
+			const name = $(this).prop('name');
+			const value = $(this).val();
+			statementData[name] = value;
+			
+			statementNoPreview();
+		});
+		
+		<!--/* 精算書番号のチェックボックス入力によるプレビュー切り替え */-->
+		statementSettingFragment.find('.statementNoTarget[type="checkbox"]').on('change', function() {
+			const name = $(this).prop('name');
+			const value = $(this).prop('checked');
+			statementData[name] = value;
+			
+			statementNoPreview()
+		});
+		
+		<!--/* 精算書番号のプルダウン切り替えによるプレビュー切り替え */-->
+		statementSettingFragment.find('select.statementNoTarget').on('change', function() {
+			const name = $(this).prop('name');
+			const value = $(this).val();
+			statementData[name] = value;
+			
+			statementNoPreview();
+		});
+		
+		<!--/* ゼロ埋めチェック時に桁数Disabled */-->
+		statementSettingFragment.find('.statementNoTarget[name="StatementNoZeroPadEnabled"]').on('change', function() {
+			statementSettingFragment.find('.statementNoTarget[name="statementNoZeroPadDigits"]').prop('disabled', !$(this).prop('checked')).val('');
+			statementData['statementNoZeroPadDigits'] = '';
+		});
+		
+		<!--/* 保存処理 */-->
+		statementSettingFragment.find('#update').on('click', function() {
+			if(ajaxRunning){
+				return false;
+			}
+			const formData = statementSettingFragment.find('#statementSettingForm').serializeArray();
+			ajaxRunning = true;
+			Promise.resolve(formData)
+				.then((params) => {
+					return new Promise((resolve, reject) =>{
+						$.ajax({
+							url : '/user/statementSetting/update',
+							type : "POST",
+							data : params,
+						}).done(function(data, status, jqXHR) {
+							<!--/* 成功 */-->
+							if (isAjaxProcSuccess(jqXHR)) {
+								showInfoMessageForJs(getAjaxProcResutlMessage(jqXHR));
+								return resolve();
+							} else {
+								if (data) {
+									statementSettingFragmentWrap.html(data);
+								}
+								// 処理失敗
+								const errorMsg = getAjaxProcResutlMessage(jqXHR);
+								showErrorMessageForJs(errorMsg);
+								return reject();
+							}
+						}).fail(function(jqXHR, textStatus, errorThrown) {
+							<!--/* 失敗 */-->
+							const errorMsg = /*[[#{E00091}]]*/ "error";
+							showErrorMessageForJs(errorMsg);
+							return reject();
+						});
+					});
+				})
+				.then(getStatementSettingFragment)
+				.catch((errors) => console.log(errors))
+				.finally(() => ajaxRunning = false);
+		});
+		
+		<!--/* 請求書番号のプレビュー表示 */-->
+		function statementNoPreview() {
+			const previewStr = toPreviewStr((() => {
+				return {
+					'prefix' : statementData.statementNoPrefix,
+					'yearFmtCd' : statementData.statementNoYFmtCd,
+					'monthFmtCd' : statementData.statementNoMFmtCd,
+					'dayFmtCd' : statementData.statementNoDFmtCd,
+					'delimiter' : statementData.statementNoDelimiter,
+					'numberingTypeCd' : statementData.statementNoNumberingTypeCd,
+					'isZeroPadEnabled' : statementData.StatementNoZeroPadEnabled,
+					'zeroPadDigits' : statementData.statementNoZeroPadDigits,
+				}
+			})());
+			statementSettingFragment.find('.previewTarget').text(previewStr);
+		}
+		
+	});
+	</script>
+	
+	<!-- コンテンツブロック start -->
+	<div class="contents_block">
+		<div class="block_title">精算書</div>
+		<div class="block_detail d-flex">
+			<div>
+				<p>精算書の詳細設定ができます。設定した内容は新たに生成された帳票のみに反映されます。</p>
+			</div>
+		</div>
+		<form id="statementSettingForm" th:autocomplete="off">
+			<input type="hidden" th:field="*{statementSettingSeq}">
+		
+			<div class="detail_input_area">
+				<div class="form-row">
+					<div class="form-group col-md-6">
+						<label class="input_parts_label">帳票タイトル</label>
+						<span class="mark_equired">必須</span>
+						<input type="text" class="form-control" th:field="*{defaultTitle}" placeholder="例）精算書" maxlength="20">
+						<div th:if="*{#fields.hasErrors('defaultTitle')}" th:errors="*{defaultTitle}" class="error_mag_point">error</div>
+					</div>
+				</div>
+				<div class="form-row">
+					<div class="form-group col-md-6">
+						<label class="input_parts_label">挿入文</label>
+						<input type="text" class="form-control" th:field="*{defaultSubText}" placeholder="例）下記の通り、ご精算申し上げます。" maxlength="20">
+						<div th:if="*{#fields.hasErrors('defaultSubText')}" th:errors="*{defaultSubText}" class="error_mag_point">error</div>
+					</div>
+				</div>
+				<div class="form-row">
+					<div class="form-group col-md-8">
+						<label class="input_parts_label">件名表記</label>
+						<div class="d-flex align-items-center">
+							<input type="text" class="form-control digit6" th:field="*{subjectPrefix}" placeholder="件名：" maxlength="5" value="件名：">
+							<div class="digit5 text-center mx-1">{案件名}</div>
+							<input type="text" class="form-control digit6" th:field="*{subjectSuffix}" maxlength="5">
+						</div>
+						<div th:if="*{#fields.hasErrors('subjectPrefix')}" th:errors="*{subjectPrefix}" class="error_mag_point">error</div>
+						<div th:if="*{#fields.hasErrors('subjectSuffix')}" th:errors="*{subjectSuffix}" class="error_mag_point">error</div>
+					</div>
+				</div>
+				<div class="form-row">
+					<div class="form-group col-md-12 mb-1">
+						<label class="input_parts_label">精算番号</label>
+						<div class="d-flex align-items-start">
+							<div>
+								<span class="sub_text">接頭辞</span>
+								<input type="text" class="form-control digit4 mr-2 statementNoTarget" th:field="*{statementNoPrefix}" maxlength="3">
+							</div>
+							<div>
+								<span class="sub_text">年</span>
+								<select class="form-control digit4 mr-2 statementNoTarget" th:field="*{statementNoYFmtCd}">
+									<option th:each="enum: ${T(jp.loioz.common.constant.CommonConstant$AccgNoYFmt).values()}"
+											th:text="${enum.val}" th:value="${enum.cd}">-</option>
+								</select>
+							</div>
+							<div>
+								<span class="sub_text">月</span>
+								<select class="form-control digit4 mr-2 statementNoTarget" th:field="*{statementNoMFmtCd}">
+									<option th:each="enum: ${T(jp.loioz.common.constant.CommonConstant$AccgNoMFmt).values()}"
+											th:text="${enum.val}" th:value="${enum.cd}">-</option>
+								</select>
+							</div>
+							<div>
+								<span class="sub_text">日</span>
+								<select class="form-control digit4 mr-2 statementNoTarget" th:field="*{statementNoDFmtCd}">
+									<option th:each="enum: ${T(jp.loioz.common.constant.CommonConstant$AccgNoDFmt).values()}"
+											th:text="${enum.val}" th:value="${enum.cd}">-</option>
+								</select>
+							</div>
+							<div>
+								<span class="sub_text">区切り文字</span>
+								<input type="text" class="form-control digit5 mr-2 statementNoTarget" th:field="*{statementNoDelimiter}" maxlength="1">
+							</div>
+							<div>
+								<span class="sub_text">連番</span>
+								<div>
+									<select class="form-control digit8 statementNoTarget" th:field="*{statementNoNumberingTypeCd}">
+										<option th:each="enum: ${T(jp.loioz.common.constant.CommonConstant$AccgNoNumberingType).values()}"
+												th:text="${enum.val}" th:value="${enum.cd}">-</option>
+									</select>
+								</div>
+								<div class="d-flex align-items-center mt-2">
+									<label class="checkbox_btn">
+										<input type="checkbox" class="checkbox_input statementNoTarget" th:field="*{StatementNoZeroPadEnabled}">
+										<span class="checkbox_txt">ゼロ埋め</span>
+									</label>
+									<input type="text" class="form-control inputNumberOnly digit3 mr-2 statementNoTarget" th:field="*{statementNoZeroPadDigits}" th:disabled="!*{StatementNoZeroPadEnabled}" maxlength="1" placeholder="桁数">
+								</div>
+							</div>
+						</div>
+						<div th:if="*{#fields.hasErrors('statementNoPrefix')}" th:errors="*{statementNoPrefix}" class="error_mag_point">error</div>
+						<div th:if="*{#fields.hasErrors('statementNoYFmtCd')}" th:errors="*{statementNoYFmtCd}" class="error_mag_point">error</div>
+						<div th:if="*{#fields.hasErrors('statementNoMFmtCd')}" th:errors="*{statementNoMFmtCd}" class="error_mag_point">error</div>
+						<div th:if="*{#fields.hasErrors('statementNoDFmtCd')}" th:errors="*{statementNoDFmtCd}" class="error_mag_point">error</div>
+						<div th:if="*{#fields.hasErrors('statementNoDelimiter')}" th:errors="*{statementNoDelimiter}" class="error_mag_point">error</div>
+						<div th:if="*{#fields.hasErrors('statementNoNumberingTypeCd')}" th:errors="*{statementNoNumberingTypeCd}" class="error_mag_point">error</div>
+						<div th:if="*{#fields.hasErrors('statementNoZeroPadDigits')}" th:errors="*{statementNoZeroPadDigits}" class="error_mag_point">error</div>
+					</div>
+				</div>
+				<div class="form-row">
+					<div class="form-group col-md-auto">
+						<label class="input_parts_label">プレビュー</label>
+						<div class="preview_no previewTarget" th:text="*{preview}">
+							202209-01
+						</div>
+					</div>
+				</div>
+				<div class="form-row">
+					<div class="form-group col-md-12">
+						<label class="input_parts_label">取引日</label>
+						<div>
+							<label class="checkbox_btn">
+								<input type="checkbox" class="checkbox_input" th:field="*{TransactionDatePrintEnabled}">
+								<span class="checkbox_txt">帳票に印字する</span>
+							</label>
+						</div>
+					</div>
+				</div>
+				<div class="form-row">
+					<div class="form-group col-md-12">
+						<label class="input_parts_label">返金期限</label>
+						<div>
+							<label class="checkbox_btn">
+								<input type="checkbox" class="checkbox_input" th:field="*{RefundDatePrintEnabled}">
+								<span class="checkbox_txt">帳票に印字する</span>
+							</label>
+						</div>
+					</div>
+				</div>
+				<div class="form-row">
+					<div class="form-group col-md-8">
+						<label class="input_parts_label">備考</label>
+						<div>
+							<textarea class="minh100 form-control" th:field="*{defaultRemarks}" th:maxlength="${(T(jp.loioz.common.constant.AccgConstant).MX_LEN_REMARKS)}"></textarea>
+							<div th:if="*{#fields.hasErrors('defaultRemarks')}" th:errors="*{defaultRemarks}" class="error_mag_point">error</div>
+						</div>
+					</div>
+				</div>
+			</div>
+			<div class="input_block_btn_area">
+				<button type="button" id="update" class="btn btn-info"><i class="fas fa-check"></i>保存する</button>
+			</div>
+		</form>
+	</div>
+</div>
+<!--/* 詳細エリア end */-->
+	
+</body>
+</html>

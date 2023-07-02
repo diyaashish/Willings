@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+	xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+	layout:decorator="commonLayout">
+<head>
+	<meta charset="utf-8" />
+</head>
+<body>
+	<div th:fragment="dengonFolderMove" class="select-modal">
+		<div th:object="${viewForm}">
+			<div class="modal-header">
+				<h2 class="modalheader_title">フォルダ移動</h2>
+			</div>
+			<div class="modal-body">
+				<div th:replace="common/messageArea::jsMessageArea"></div>
+				<input type="hidden" id="moveDengonSeq" th:value="${viewForm.dengonSeq}">
+				<input type="hidden" id="moveDengonSendFlg" th:value="${viewForm.sendMailFlg}">
+				
+				<div class="modal_input_area">
+					<div class="form-row">
+						<div class="form-group col-md-12">
+							<label class="input_parts_label">移動場所</label>
+							<select th:if="${viewForm.sendMailFlg}" class="form-control" id="moveFolderSelectBox" disabled>
+								<option value="">送信BOX</option>
+							</select>
+							<select th:if="${!viewForm.sendMailFlg}" class="form-control" id="moveFolderSelectBox">
+								<option value="">受信BOX</option>
+								<option th:each="customeFolder : ${viewForm.customeFolderList}" th:object="${customeFolder}"
+											th:value="*{dengonFolderSeq}" th:text="*{dengonFolderName}"></option>
+							</select>
+							<div class="mt-1">※送信メッセージを戻す際は必ず送信BOXに戻ります。</div>
+						</div>
+					</div>
+				</div>
+			</div>
+			<div class="modal-footer">
+				<button type="button" class="btn btn-info ml-auto" id="confirmBtn"><i class="fas fa-check"></i>保存</button>
+				<button type="button" class="btn btn-light" data-dismiss="modal"><i class="fas fa-times"></i>閉じる</button>
+			</div>
+		</div>
+	</div>
+</body>
+</html>

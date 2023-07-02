@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+	layout:decorator="commonLayout">
+<head>
+<meta charset="utf-8" />
+</head>
+<body>
+	<th:block th:fragment="ankenTanto()"
+		th:with="ankenId=${wrapHeaderAnkenId}?: null,
+						customerId=${wrapHeaderCustomerId}?: null">
+
+		<!--/* 案件軸 start */-->
+
+<!--/*/ 	<th:block th:if="${ankenId}" th:with="ankenHeader=${wrapAnkenHeader.get(ankenId)}"> /*/-->
+			<!--/* 案件担当者 */-->
+			<div class="anken_tanto">
+				<ul>
+					<li>担当弁護士</li>
+					<li class="add_colon" th:text ="${ankenHeader.tantoLawyerName}">弁護士名</li>
+				</ul>
+				<ul>
+					<li>担当事務</li>
+					<li class="add_colon" th:text ="${ankenHeader.tantoJimuName}">事務員名</li>
+				</ul>
+			</div>
+<!--/*/ 	</th:block> /*/-->
+
+	<!--/* 案件軸 end */-->
+
+</body>
+</html>

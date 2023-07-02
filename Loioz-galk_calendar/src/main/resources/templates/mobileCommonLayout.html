@@ -1,0 +1,275 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+	xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout">
+<head>
+<meta charset="utf-8" name="viewport" content="width=device-width,initial-scale=1" />
+<title layout:fragment="title-contents"></title>
+<th:block th:with="version=${@environment.getProperty('app.version')}">
+	<link href="./css/jquery-ui-1.12.1.min.css" th:href="@{/css/jquery-ui-1.12.1.min.css}" rel="stylesheet" type="text/css" />
+	<link href="./css/bootstrap.min.css" th:href="@{/css/bootstrap.min.css?{ver}(ver=${version})}" rel="stylesheet" type="text/css" /><!--/* ファイル内のmapファイルの参照処理の削除を反映させるためにversionを追加 */-->
+	<link href="./css/bootstrap-grid.min.css" th:href="@{/css/bootstrap-grid.min.css?{ver}(ver=${version})}" rel="stylesheet" type="text/css" /><!--/* ファイル内のmapファイルの参照処理の削除を反映させるためにversionを追加 */-->
+	<link href="./css/bootstrap-reboot.min.css" th:href="@{/css/bootstrap-reboot.min.css?{ver}(ver=${version})}" rel="stylesheet" type="text/css" /><!--/* ファイル内のmapファイルの参照処理の削除を反映させるためにversionを追加 */-->
+	<link href="./css/base.css" th:href="@{/css/base.css?{ver}(ver=${version})}" rel="stylesheet" type="text/css" />
+	<link href="./css/content.css" th:href="@{/css/content.css?{ver}(ver=${version})}" rel="stylesheet" type="text/css" />
+	<link href="./css/bootstrap-overwrite.css" th:href="@{/css/bootstrap-overwrite.css?{ver}(ver=${version})}" rel="stylesheet" type="text/css" />
+	<link href="./css/information.css" th:href="@{/css/information.css?{ver}(ver=${version})}" rel="stylesheet" type="text/css" />
+	<link href="./css/jquery.datetimepicker.css" th:href="@{/css/jquery.datetimepicker.css}" rel="stylesheet" type="text/css" />
+	
+	<!--/** スマホのみ start */-->
+	<link href="./css/mobile/mobileBase.css" th:href="@{/css/mobile/mobileBase.css?{ver}(ver=${version})}" rel="stylesheet" type="text/css"/>
+	<link href="./css/mobile/mobileContent.css" th:href="@{/css/mobile/mobileContent.css?{ver}(ver=${version})}" rel="stylesheet" type="text/css"/>
+	<link href="./css/mobile/mobileApplication.css" th:href="@{/css/mobile/mobileApplication.css?{ver}(ver=${version})}" rel="stylesheet" type="text/css"/>
+	<!--/* スマホのみ end */-->
+
+	<script type="text/javascript" th:src="@{/webjars/jquery/3.3.1/jquery.min.js}"></script>
+	<script type="text/javascript" th:src="@{/js/jquery-ui-1.12.1.min.js}"></script>
+	<script type="text/javascript" th:src="@{/js/datepicker-ja.js}"></script>
+	<script type="text/javascript" th:src="@{/js/jquery.datetimepicker.full.min.js}"></script>
+	<script type="text/javascript" th:src="@{/js/common.js?{ver}(ver=${version})}"></script>
+	<script type="text/javascript" th:src="@{/js/popper.min.js?{ver}(ver=${version})}"></script><!--/* ファイル内のmapファイルの参照処理の削除を反映させるためにversionを追加 */-->
+	<script type="text/javascript" th:src="@{/js/popper-utils.min.js?{ver}(ver=${version})}"></script><!--/* ファイル内のmapファイルの参照処理の削除を反映させるためにversionを追加 */-->
+	<script type="text/javascript" th:src="@{/js/bootstrap.min.js?{ver}(ver=${version})}"></script><!--/* ファイル内のmapファイルの参照処理の削除を反映させるためにversionを追加 */-->
+	<script type="text/javascript" th:src="@{/js/bootstrap.bundle.min.js?{ver}(ver=${version})}"></script><!--/* ファイル内のmapファイルの参照処理の削除を反映させるためにversionを追加 */-->
+	<script type="text/javascript" th:src="@{/js/fontawesome-5.15.2-all.min.js}"></script>
+	<script type="text/javascript" th:src="@{/js/navigation.js?{ver}(ver=${version})}"></script>
+	<script type="text/javascript" th:src="@{/js/Sortable.min.js}"></script>
+	<script type="text/javascript" th:src="@{/js/jquery.autoKana.js}"></script>
+	<script type="text/javascript" th:src="@{/js/addclear.js}"></script>
+	<script type="text/javascript" th:src="@{/js/ajaxzip3.js}"></script>
+	
+	<!--/* スマホのみ start */-->
+	<script type="text/javascript" th:src="@{/js/mobile/common.js?{ver}(ver=${version})}"></script>
+	<!--/* スマホのみ end */-->
+	
+</th:block>
+
+<th:block th:if="${T(jp.loioz.common.constant.CommonConstant.SystemFlg).FLG_OFF.equalsByCode(@environment.getProperty('app.devMode'))}">
+
+	<!-- Google Tag Manager -->
+	<script>(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
+	new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
+	j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
+	'https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);
+	})(window,document,'script','dataLayer','GTM-5SX264G');</script>
+	<!-- End Google Tag Manager -->
+
+</th:block>
+
+<script type="text/javascript" th:inline="javascript">
+<!--/* Ajax通信時のCSRFトークン設定 */-->
+$(function() {
+	let token = /*[[(${_csrf.token})]]*/ "";
+	let headerName = /*[[(${_csrf.headerName})]]*/ "";
+	$(document).ajaxSend(function(e, xhr, options) {
+		xhr.setRequestHeader(headerName, token);
+	});
+});
+
+<!--/* ajax処理時のセッションタイムアウトによるリダイレクト処理設定 */-->
+$(function() {
+
+	// 本テンプレートを使用する画面のajax処理では、以下の設定が適用される
+
+	/**
+	 * ログイン画面へのリダイレクト処理
+	 */
+	function ajaxSessionTimeout() {
+		let loginUrl = /*[[${T(jp.loioz.common.constant.UrlConstant).LOGIN_URL}]]*/ ''
+		loginUrl = "/" + loginUrl + "/"
+		window.location.href = loginUrl
+	}
+
+	/**
+	 * 二重ログインエラー画面へのリダイレクト処理
+	 */
+	function ajaxMultiLogin() {
+		let multiLoginErrorUrl = /*[[${T(jp.loioz.common.constant.UrlConstant).MULTI_LOGIN_ERROR_URL}]]*/ ''
+		window.location.href = multiLoginErrorUrl
+	}
+
+	/**
+	 * プラン別機能制限エラー画面へのリダイレクト処理
+	 */
+	function ajaxPlanFuncRestrict() {
+		let planFuncRestrictErrorUrl = /*[[${T(jp.loioz.common.constant.UrlConstant).PLAN_FUNC_RESTRICT_ERROR_URL}]]*/ ''
+		window.location.href = planFuncRestrictErrorUrl
+	}
+	
+	/**
+	 * プランが変更した旨のエラー画面へのリダイレクト処理
+	 */
+	function ajaxPlanChanged() {
+		let planChangedErrorUrl = /*[[${T(jp.loioz.common.constant.UrlConstant).PLAN_CHANGED_ERROR_URL}]]*/ ''
+		window.location.href = planChangedErrorUrl
+	}
+	
+	/**
+	 * ロイオズ管理者制御のエラー画面へのリダイレクト処理
+	 */
+	function ajaxLoiozAdminControlError() {
+		let loiozAdminControlError = /*[[${T(jp.loioz.common.constant.UrlConstant).PERMISSION_ERROR_URL}]]*/ ''
+		window.location.href = loiozAdminControlError
+	}
+	
+	// ajax処理への設定オプション作成
+	let ajaxSetupOptions = {}
+
+	// セッションタイムアウト
+	let sessionTimeoutErrorCode = /*[[${T(jp.loioz.common.constant.CommonConstant).CUSTOM_SESSION_TIMEOUT_ERROR_CODE}]]*/ ''
+	ajaxSetupOptions[sessionTimeoutErrorCode] = ajaxSessionTimeout
+
+	// 二重ログイン
+	let multiLoginErrorCode = /*[[${T(jp.loioz.common.constant.CommonConstant).CUSTOM_MULTI_LOGIN_ERROR_CODE}]]*/ ''
+	ajaxSetupOptions[multiLoginErrorCode] = ajaxMultiLogin
+
+	// プラン別機能制限
+	let planFuncRestrictErrorCode = /*[[${T(jp.loioz.common.constant.CommonConstant).CUSTOME_PLAN_FUNC_RESTRICT_ERROR_CODE}]]*/ ''
+	ajaxSetupOptions[planFuncRestrictErrorCode] = ajaxPlanFuncRestrict
+	
+	// プラン変更
+	let planChangedErrorCode = /*[[${T(jp.loioz.common.constant.CommonConstant).CUSTOME_PLAN_CHANGED_ERROR_CODE}]]*/ ''
+	ajaxSetupOptions[planChangedErrorCode] = ajaxPlanChanged
+	
+	// ロイオズ管理者制御
+	let loiozAdminControlErrorCode = /*[[${T(jp.loioz.common.constant.CommonConstant).CUSTOME_LOIOZ_ADMIN_CONTROL_ERROR_CODE}]]*/ ''
+	ajaxSetupOptions[loiozAdminControlErrorCode] = ajaxLoiozAdminControlError
+	
+	// ajax処理への設定適用
+	$.ajaxSetup({
+		statusCode: ajaxSetupOptions
+	});
+});
+function topPage() {
+	window.location.href = '/user/schedule/';
+}
+
+</script>
+<script>
+$(function() {
+	// ログアウトアイコンのクリック
+	$('#logoutButton').on('click', function() {
+		$('#logoutForm').submit();
+	});
+});
+</script>
+</head>
+<body ontouchstart="">
+
+<th:block th:if="${T(jp.loioz.common.constant.CommonConstant.SystemFlg).FLG_OFF.equalsByCode(@environment.getProperty('app.devMode'))}">
+
+	<!-- Google Tag Manager (noscript) -->
+	<noscript><iframe src="https://www.googletagmanager.com/ns.html?id=GTM-5SX264G"
+	height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
+	<!-- End Google Tag Manager (noscript) -->
+
+</th:block>
+
+	<!--/*-ヘッダー ここから*/-->
+	<header class="smart_globalHeader">
+		<div class="smart_globalHeader__title">
+			<div class="smart_globalHeader__logo">
+			</div>
+			<h1 class="smart_globalHeader__name" layout:fragment="header-contents"></h1>
+		</div>
+		<div class="smart_globalHeader__navi">
+			<ul class="smart_globalHeader__navi_list">
+				<li class="mr-2">
+					<span class="is_mainmenu">
+						<span id="smartHeaderMenuOpen" class="smart_globalnavi_list_mark" role="button"></span>
+					</span>
+				</li>
+			</ul>
+		</div>
+	</header>
+	<!--/*-ヘッダー ここまで */-->
+
+	<!-- main-contents ここから -->
+	<div id="main-contents">
+		<div layout:fragment="main-contents"></div>
+		
+		<!--/*- スマホメニュ ここから*/-->
+		<div class="smart_gloval_menu_contents">
+			<div class="bg_smart_gloval_menu"></div>
+			<div class="smart_gloval_menu">
+				<div class="smart_gloval_menu_area">
+					<div class="smart_gloval_menu_header">
+						<div class="logo mb-2"></div>
+						<div id="smartHeaderMenuClose" class="smart_headerMenu_btn_close hidden" role="button"><!--/* 消すと画面閉じれなくなる */--></div>
+					</div>
+					<div class="smart_gloval_menu_body">
+						<div class="search_area py-3">
+							<form th:action="@{/user/meiboList/quick}" method="get">
+								<div class="input-group">
+									<div class="flex-grow-1">
+										<input type="text" class="form-control  addTextClear" placeholder="名簿(ID/名前/住所/TEL)..." name="quickSearch" maxlength="300">
+									</div>
+									<div class="input-group-append">
+										<button class="btn btn-sm btn-dark pt-1 pb-0 px-3" type="submit" onclick="submit();"><i class="fas fa-search fa-lg mr-0"></i></button>
+									</div>
+								</div>
+							</form>
+						</div>
+						<div class="link_area">
+							<h5 class="sub_title">Menu</h5>
+							<dl class="mx-2 mb-2">
+								<dt data-click-sync-for-descendants="a">
+									<a th:href="@{/user/schedule/}" class="is_schedule">
+										<i class="far fa-calendar-alt fa-lg mr-3"></i><span>カレンダー</span>
+									</a>
+								</dt>
+								<dt data-click-sync-for-descendants="a">
+									<a th:href="@{/user/taskManagement/list}" class="is_task">
+										<i class="fas fa-list fa-lg mr-3"></i><span>タスク</span>
+									</a>
+									<span class="coming_soon">Coming soon</span>
+								</dt>
+								<th:block th:if="${T(jp.loioz.common.utility.SessionUtils).canUsePlanFunc(T(jp.loioz.common.constant.plan.PlanConstant$PlanFuncRestrict).PF0001)}">
+									<dt data-click-sync-for-descendants="a">
+										<a th:href="@{/user/dengon/}" class="is_message">
+											<i class="far fa-envelope fa-lg mr-3"></i><span>メッセージ</span>
+										</a>
+										<span class="coming_soon">Coming soon</span>
+									</dt>
+								</th:block>
+							</dl>
+						</div>
+					</div>
+					<div class="smart_gloval_menu_footer">
+						<ul class="m-2 mb-3 w-100">
+							<li>
+								<a class="navi_btn is_logout my-2" th:href="@{/common/changeViewType/{viewType}(viewType=${T(jp.loioz.common.constant.CommonConstant$ViewType).PC.getCd()})}">PC版に切り替え</a>
+							</li>
+							<li>
+								<a class="navi_btn is_logout my-2" id="logoutButton" href="javascript:void(0);">ログアウト</a>
+								<form role="form" id="logoutForm" th:action="@{/user/logout}" method="post"></form>
+							</li>
+						</ul>
+					</div>
+				</div>
+			</div>	
+		</div>
+		<!--/*- スマホメニュ ここまで */-->
+		
+	</div>
+	<!-- main-contents ここまで -->
+	
+	<!--/*- 横向き制御 ここから */-->
+	<div id="directionControll">
+		<div>
+			<div style="display: grid;">
+				<svg class="directionIcon" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="45vh" height="65vh" viewBox="0 0 512 512">
+					<g>
+						<path d="M368.25,0h-224.5c-20.219,0-36.703,16.531-36.703,36.719v438.547c0,20.203,16.484,36.734,36.703,
+									36.734h224.5c20.188,0,36.703-16.531,36.703-36.734V36.719C404.953,16.531,388.438,0,368.25,0z M256.016,477.406c-6.078,
+									0-11.016-4.938-11.016-11.016s4.938-11.016,11.016-11.016c6.047,0,11.016,4.938,11.016,11.016S262.063,477.406,256.016,477.406z M382.031,
+									432.406H129.984V62.844h252.047V432.406z" stroke="#FFF" stroke-width="3">
+						</path>
+					</g>
+				</svg>
+				<label>横向きは非対応です</label>
+			</div>
+		</div>
+	</div>
+	<!--/*- 横向き制御 ここまで */-->
+</body>
+</html>

@@ -1,0 +1,28 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16">
+  <g id="icon_menu" transform="translate(-1115 -18)">
+    <g id="menu9" transform="translate(1115 18)" fill="none" stroke="#fff" stroke-width="1">
+      <rect width="4" height="4" stroke="none"/>
+      <rect x="0.5" y="0.5" width="3" height="3" fill="none"/>
+    </g>
+    <rect id="menu8" width="4" height="4" transform="translate(1121 18)" fill="#fff"/>
+    <rect id="menu7" width="4" height="4" transform="translate(1115 24)" fill="#fff"/>
+    <g id="menu6" transform="translate(1121 24)" fill="none" stroke="#fff" stroke-width="1">
+      <rect width="4" height="4" stroke="none"/>
+      <rect x="0.5" y="0.5" width="3" height="3" fill="none"/>
+    </g>
+    <g id="menu5" transform="translate(1115 30)" fill="none" stroke="#fff" stroke-width="1">
+      <rect width="4" height="4" stroke="none"/>
+      <rect x="0.5" y="0.5" width="3" height="3" fill="none"/>
+    </g>
+    <rect id="menu4" width="4" height="4" transform="translate(1121 30)" fill="#fff"/>
+    <g id="menu3" transform="translate(1127 18)" fill="none" stroke="#fff" stroke-width="1">
+      <rect width="4" height="4" stroke="none"/>
+      <rect x="0.5" y="0.5" width="3" height="3" fill="none"/>
+    </g>
+    <rect id="menu2" width="4" height="4" transform="translate(1127 24)" fill="#fff"/>
+    <g id="menu1" transform="translate(1127 30)" fill="none" stroke="#fff" stroke-width="1">
+      <rect width="4" height="4" stroke="none"/>
+      <rect x="0.5" y="0.5" width="3" height="3" fill="none"/>
+    </g>
+  </g>
+</svg>

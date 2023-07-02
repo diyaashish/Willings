@@ -1,0 +1,138 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<configuration>
+
+    <!-- デフォルト設定読み込み -->
+    <include resource="org/springframework/boot/logging/logback/defaults.xml"/>
+
+    <!-- ▼ 出力ファイルパスとログレベル ▼ -->
+
+    <!--ローカル環境用設定 -->
+    <springProfile name="default">
+        <property name="logFilePath" value="../loiozLogs/loioz/" />
+        <property name="logLevel" value="INFO" />
+    </springProfile>
+
+    <!--ローカルDocker環境用設定 -->
+    <springProfile name="localdocker">
+        <property name="logFilePath" value="/win_volume/log/" />
+        <property name="logLevel" value="INFO" />
+    </springProfile>
+
+    <!--デモ環境用設定 -->
+    <springProfile name="demo">
+        <property name="logFilePath" value="/var/log/loioz/" />
+        <property name="logLevel" value="DEBUG" />
+    </springProfile>
+
+    <!--ステージング環境用設定 -->
+    <springProfile name="staging">
+        <property name="logFilePath" value="/var/log/loioz/" />
+        <property name="logLevel" value="INFO" />
+    </springProfile>
+
+    <!--本番環境用設定 -->
+    <springProfile name="production">
+        <property name="logFilePath" value="/var/log/loioz/" />
+        <property name="logLevel" value="INFO" />
+    </springProfile>
+
+    <!-- ▲ 出力ファイルパスとログレベル ▲ -->
+
+    <!-- ▼ アペンダー定義 ▼ -->
+
+    <springProfile name="default,demo,staging,production,localdocker">
+
+        <!-- 出力ファイル名 -->
+        <property name="logFileName" value="loioz-app" />
+
+        <!-- コンソール出力 -->
+        <appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
+            <target>System.out</target>
+            <encoder>
+                <charset>UTF-8</charset>
+                <pattern>%d{yyyy/MM/dd HH:mm:ss.SSS} %-5level [tenantSeq=%X{tenantSeq}] [sessionId=%X{sessionId}] [%thread] - %msg%n</pattern>
+            </encoder>
+        </appender>
+
+        <!-- アプリケーションログのファイル書き出し -->
+        <appender name="APPLIATION_LOG" class="ch.qos.logback.core.rolling.RollingFileAppender">
+            <!--ファイル名 -->
+            <file>${logFilePath}${logFileName}.log</file>
+            <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+                <fileNamePattern>${logFilePath}${logFileName}-%d{yyyy-MM-dd}.log</fileNamePattern>
+                <maxHistory>7</maxHistory>
+            </rollingPolicy>
+            <encoder>
+                <charset>UTF-8</charset>
+                <pattern>%d{yyyy/MM/dd HH:mm:ss.SSS} %-5level [tenantSeq=%X{tenantSeq}] [sessionId=%X{sessionId}] [%thread] - %msg%n</pattern>
+            </encoder>
+        </appender>
+
+        <!-- エラーログのファイル書き出し -->
+        <appender name="ERROR_LOG" class="ch.qos.logback.core.rolling.RollingFileAppender">
+            <!--ファイル名 -->
+            <file>${logFilePath}${logFileName}_error.log</file>
+            <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+                <fileNamePattern>${logFilePath}${logFileName}_error-%d{yyyy-MM-dd}.log</fileNamePattern>
+                <maxHistory>7</maxHistory>
+            </rollingPolicy>
+            <encoder>
+                <charset>UTF-8</charset>
+                <pattern>%d{yyyy/MM/dd HH:mm:ss.SSS} %-5level [tenantSeq=%X{tenantSeq}] [sessionId=%X{sessionId}] [%thread] - %msg%n</pattern>
+            </encoder>
+            <!-- ERRORのみ出力 -->
+            <filter class="ch.qos.logback.classic.filter.ThresholdFilter">
+                <level>ERROR</level>
+            </filter>
+        </appender>
+
+    </springProfile>
+
+    <!-- ▲ アペンダー定義 ▲ -->
+
+    <!-- ▼ rootログレベルと使用するアペンダー ▼ -->
+
+    <!--ローカル環境用設定 -->
+    <springProfile name="default">
+        <root level="${logLevel}">
+            <appender-ref ref="STDOUT" />
+            <appender-ref ref="APPLIATION_LOG" />
+            <appender-ref ref="ERROR_LOG" />
+        </root>
+    </springProfile>
+
+    <!--ローカルDocker環境用設定 -->
+    <springProfile name="localdocker">
+        <root level="${logLevel}">
+            <appender-ref ref="APPLIATION_LOG" />
+            <appender-ref ref="ERROR_LOG" />
+        </root>
+    </springProfile>
+
+    <!--デモ環境用設定 -->
+    <springProfile name="demo">
+        <root level="${logLevel}">
+            <appender-ref ref="APPLIATION_LOG" />
+            <appender-ref ref="ERROR_LOG" />
+        </root>
+    </springProfile>
+
+    <!--ステージング環境用設定 -->
+    <springProfile name="staging">
+        <root level="${logLevel}">
+            <appender-ref ref="APPLIATION_LOG" />
+            <appender-ref ref="ERROR_LOG" />
+        </root>
+    </springProfile>
+
+    <!--本番環境用設定 -->
+    <springProfile name="production">
+        <root level="${logLevel}">
+            <appender-ref ref="APPLIATION_LOG" />
+            <appender-ref ref="ERROR_LOG" />
+        </root>
+    </springProfile>
+
+    <!-- ▲ rootログレベルと使用するアペンダー ▲ -->
+
+</configuration>

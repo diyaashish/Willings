@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+	layout:decorator="commonLayout">
+<head>
+<meta charset="utf-8" />
+</head>
+<body>
+
+<!--/* 預り金明細、報酬明細のヘッダー情報フラグメント */-->
+<div id="accgCaseFragment" th:fragment="accgCaseFragment(accgCaseForm)" th:object="${accgCaseForm}"
+	th:with="
+		isAccgAnkenSide=${T(jp.loioz.common.utility.SessionUtils).getSessionVaule(T(jp.loioz.common.constant.SessionAttrKeyEnum).ACCG_ANKEN_SCREEN_BOOL.codeKey)},
+		isFee=${isFee}?:false,
+		isDeposit=${isDeposit}?:false,
+		isInvoiceStatement=${isInvoiceStatement}?:false,">
+	
+	<!--/* スクリプト */-->
+	<script th:inline="javascript">
+	$(function(){
+		<!--/* 共有の要素セットアップ処理 */-->
+		commonSetUpElement("#accgCaseFragment");
+		
+		const accgCaseFragment = $('#accgCaseFragment');
+		const isAccgAnkenSide = (function(){
+			let isAnken = /*[[${isAccgAnkenSide}]]*/false;
+			return toBoolean(isAnken);
+		}());
+		
+		
+	});
+	</script>
+	
+	<!--/* 画面上部 */-->
+	<div class="px-2">
+	
+		<div class="main_view_title">
+			<span th:if="${isFee}">報酬明細</span>
+			<span th:if="${isDeposit}">預り金／実費明細</span>
+			<span th:if="${isInvoiceStatement}">請求書／精算書</span>
+		</div>
+		
+		<!--/* 案件 */-->
+		<div>
+			<div class="case_detail">
+				<div class="case_detail__image">
+					<div th:class="|case_image_wrapper${accgCaseForm.ankenType?.cd}|">
+						<!--/* 案件区分 */-->
+						<img class="img-thumbnail person_case_img"
+							th:src="@{/img/case_type{typeCd}.svg?{ver}(typeCd=${accgCaseForm.ankenType?.cd}, ver=${@environment.getProperty('app.version')})}">
+					</div>
+				</div>
+				<div class="case_detail__case_name">
+					<div class="fs13">
+	<!--/* 事務所 */-->
+	<th:block th:if="${T(jp.loioz.common.constant.CommonConstant$AnkenType).JIMUSHO.equals(accgCaseForm.ankenType)}">
+						<i class="far fa-building"></i>
+	</th:block>
+	<!--/* 個人 */-->
+	<th:block th:if="${T(jp.loioz.common.constant.CommonConstant$AnkenType).KOJIN.equals(accgCaseForm.ankenType)}">
+						<i class="fas fa-briefcase"></i>
+	</th:block>
+						<!--/* 案件種別 */-->
+						<span th:text="${accgCaseForm.ankenType?.val}"></span>
+						<span>／</span>
+						<!--/* 分野 */-->
+						<span th:text="${accgCaseForm.bunyaName}"></span>
+					</div>
+					<!--/* 案件名 */-->
+					<span class="fs30 fw600 lh1_4"
+						th:text="${#strings.isEmpty(accgCaseForm.ankenName)} ? '(案件名未入力)' : ${accgCaseForm.ankenName}">案件名</span>
+					<div>
+						<!--/* 案件ID */-->
+						<a th:href="@{/user/ankenManagement/edit/{ankenId}/(ankenId=${ankenId})}" class="app_id_link case_link fs12 mr-3"
+							th:text="|案件ID：${ankenId}|"
+							data-boundary="window" th:data-container="${fragmentId}" data-toggle="tooltip" data-trigger="hover" title="案件情報へ">案件ID</a>
+
+						<!--/* 登録日 */-->
+						<span class="mr-3 badge badge_square badge_tag">
+							<i class="far fa-calendar-check fc_title mr-2"></i>登録日：<span th:text ="${accgCaseForm.ankenCreatedDate == null ? '' : #temporals.format(accgCaseForm.ankenCreatedDate, 'yyyy/MM/dd')}"></span>
+						</span>
+						
+	<th:block th:unless="${accgCaseForm.isKeiji()}">
+						<span class="badge badge-pill badge_square badge_green">
+							<i class="fas fa-user mr-2 ml-1"></i>相手方情報：
+		<th:block th:if="${accgCaseForm.relatedAitegata.size() == 0}">(未設定)</th:block>
+							<span th:each="aitegata, i : ${accgCaseForm.relatedAitegata}" th:text="${i.first} ? ${aitegata.kanyoshaName}:_"></span>
+							<span th:if="${accgCaseForm.relatedAitegata?.size() > 1}" th:text="| 外${accgCaseForm.relatedAitegata?.size() - 1}名|"></span>
+						</span>
+	</th:block>
+					</div>
+				</div>
+			</div>
+		</div>
+		<!--/* 案件 end */-->
+
+		<!--/* 担当情報 */-->
+		<div class="case_person_contact">
+			<!--/* 選択顧客 */-->
+			<div class="case_person_contact__person">
+				<span class="badge badge-pill data_label badge_blue badge_square">
+					<i class="far fa-id-card mr-2"></i>
+					<span th:text="*{Customers} ? '選択中の顧客' : '顧客情報' ">顧客情報</span>
+				</span>
+				<div class="data_label_value">
+					<div class="case_person_contact__data">
+						<div class="person_contact__name pt-1">
+							<i class="fas fa-check-circle status_comp fs15"></i>
+							<span class="fs18 fw600" th:text="${accgCaseForm.personName}"></span>
+						</div>
+					</div>
+				</div>
+			</div>
+			<!--/* 売上計上先 */-->
+			<div class="case_person_contact__sales">
+				<span class="badge badge-pill data_label badge_gray badge_square px-3">売上計上先</span>
+				<div class="data_label_value">
+		<!--/* 担当弁護士が0件の場合 */-->
+		<th:block th:if="${accgCaseForm.salesOwner.size() == 0}">
+					<div>(未設定)</div>
+		</th:block>
+					
+					<div class="case_person_contact__data">
+		<!--/* 設定している場合 */-->
+		<th:block th:each="salesOwner : ${accgCaseForm.salesOwner}">
+						<div class="case_account">
+							<i class="fas fa-user-circle" th:style="|color : ${salesOwner.accountColor};|"></i>
+							<div class="person_contact_wrapper mr-3">
+								<div class="person_contact__name">
+									<span th:text="${salesOwner.accountName}"></span>
+								</div>
+							</div>
+						</div>
+		</th:block>
+					</div>
+				</div>
+			</div>
+			<!--/* 売上計上先 end */-->
+			
+			<!--/* 弁護士 */-->
+			<div class="case_person_contact__lawyer">
+				<span class="badge badge-pill data_label badge_gray badge_square">弁護士</span>
+				<div class="data_label_value">
+		<!--/* 担当弁護士が0件の場合 */-->
+		<th:block th:if="${accgCaseForm.tantoLaywer.size() == 0}">
+					<div>(未設定)</div>
+		</th:block>
+		
+					<div class="case_person_contact__data">
+		<!--/* 担当弁護士を設定している場合 */-->
+		<th:block th:each="tantoLaywer : ${accgCaseForm.tantoLaywer}">
+						<div class="case_account">
+							<i class="fas fa-user-circle" th:style="|color : ${tantoLaywer.accountColor};|"></i>
+							<div class="person_contact_wrapper mr-3">
+								<div class="person_contact__name">
+									<span th:if="${tantoLaywer.Main}" class="fs12 fc_sub">(主担当)</span>
+									<span th:text="${tantoLaywer.accountName}"></span>
+								</div>
+							</div>
+						</div>
+		</th:block>
+					</div>
+				</div>
+			</div>
+			<!--/* 弁護士 end */-->
+				
+			<!--/* 事務職員 */-->
+			<div class="case_person_contact__jimu">
+				<span class="badge badge-pill data_label badge_gray badge_square">事務職員</span>
+				<div class="data_label_value">
+		<!--/* 担当事務職員が0件の場合 */-->
+		<th:block th:if="${accgCaseForm.tantoJimu.size() == 0}">
+					<div>(未設定)</div>
+		</th:block>
+					
+					<div class="case_person_contact__data">
+		<!--/* 担当事務職員を設定している場合 */-->
+		<th:block th:each="tantoJimu : ${accgCaseForm.tantoJimu}">
+						<div class="case_account">
+							<i class="fas fa-user-circle" th:style="|color : ${tantoJimu.accountColor};|"></i>
+							<div class="person_contact_wrapper mr-3">
+								<div class="person_contact__name">
+									<span th:if="${tantoJimu.Main}" class="fs12 fc_sub">(主担当)</span>
+									<span th:text="${tantoJimu.accountName}"></span>
+								</div>
+							</div>
+						</div>
+		</th:block>
+					</div>
+				</div>
+				<!--/* 事務職員 end */-->
+			</div>
+			<!--/* 担当情報 end*/-->
+			
+		</div>
+	</div>
+</div>
+</body>
+</html>

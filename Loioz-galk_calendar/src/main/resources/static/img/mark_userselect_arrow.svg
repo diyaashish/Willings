@@ -1,0 +1,18 @@
+<svg width="37" height="35.389" xmlns="http://www.w3.org/2000/svg">
+
+ <g>
+  <title>background</title>
+  <rect fill="none" id="canvas_background" height="37.389" width="39" y="-1" x="-1"/>
+ </g>
+ <g>
+  <title>Layer 1</title>
+  <g stroke="null" id="mark_userselect_arrow">
+   <path stroke="null" fill="#d6d4cd" d="m14.471132,0l-14.471108,17.694l14.471108,17.694l0,-35.388z" id="パス_232"/>
+   <rect stroke="null" x="11.022701" y="10" fill="#d6d4cd" rx="3" height="16" width="14.54174" id="長方形_766"/>
+  </g>
+  <g stroke="null" transform="rotate(180 24.200206756591797,17.694000244140625) " id="svg_3">
+   <path stroke="null" fill="#d6d4cd" d="m25.868134,0l-14.291405,17.694l14.291405,17.694l0,-35.388z" id="svg_1"/>
+   <rect stroke="null" x="22.462529" y="10" fill="#d6d4cd" rx="3" height="16" width="14.36116" id="svg_2"/>
+  </g>
+ </g>
+</svg>

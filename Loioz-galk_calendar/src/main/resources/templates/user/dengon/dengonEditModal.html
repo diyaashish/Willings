@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+		xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+		layout:decorator="commonLayout">
+<head>
+<meta charset="utf-8" />
+</head>
+<body>
+	<!--/* メッセージ作成モーダル */-->
+	<div th:fragment="dengonCreateModal" class="modal-content" >
+		<div class="modal-header">
+			<h2 class="modalheader_title" th:text="${dengonEditForm.sentFromGyoumuHistoryFlg} ? '送信済みメッセージ' : 'メッセージ作成' ">メッセージ作成</h2>
+		</div>
+		<div class="modal-body">
+			<div th:replace="common/messageArea::jsMessageArea"></div>
+			<div class="modal_input_area">
+
+				<!--/* 業歴送信済み 送信者 */-->
+				<div th:if="${dengonEditForm.sentFromGyoumuHistoryFlg}" class="d-flex align-items-center mb-2">
+					<div class="dengon_form_col_title">送信者</div>
+					<div class="msg_bh_sender">
+						<span th:text="${dengonEditForm.sentAccountInfo.accountName}"></span>
+					</div>
+				</div>
+
+				<!--/* 宛先エリア */-->
+				<div class="form-row align-items-center mb-2">
+					<input type="hidden" class="gyomuhistorySeq" name="dto.gyomuhistorySeq" th:value="${dengonEditForm.dto.gyomuhistorySeq}">
+					<div class="col-1 message_input_parts_label">宛先</div>
+					<div class="col-11 atesaki_area" th:classappend="(${dengonEditForm.sentFromGyoumuHistoryFlg} ? 'py-0 pt-2') ">
+						<div class="d-flex atesakiContainer" th:unless="${dengonEditForm.sentFromGyoumuHistoryFlg}">
+							<div class="inline_input_container flex-grow-1">
+								<button th:each="receiveAccount : ${dengonEditForm.receiveAccountList}" 
+									class="btn add_user addUser" th:data-account-seq="${receiveAccount.accountSeq}" th:text="${receiveAccount.accountName}"></button>
+								<div class="d-flex flex-grow-1 addBeforeTarget">
+									<div class="atesakiPoperObj"></div>
+									<input type="search" class="form-control form_search addTextClear atesakiSearch" data-target=".atesakiPoperObj" placeholder="アカウント名（名前・ふりがな）" />
+								</div>
+							</div>
+							<div class="d-flex align-items-end ml-3">
+								<button id="atesakiListPoper" class="btn btn-dark"><i class="fas fa-user-plus icon-color mr-2"></i>選択</button>
+							</div>
+						</div>
+						
+						<div th:if="${dengonEditForm.sentFromGyoumuHistoryFlg}" class="msg_bh_receiver receiver_panel">
+							<span th:each="receiveAccount : ${dengonEditForm.receiveAccountList}" 
+								th:text="${receiveAccountStat.last}
+									? ${receiveAccount.accountName}
+									: |${receiveAccount.accountName},|"></span>
+						</div>
+					</div>
+				</div>
+				
+				<!--/* 件名 */-->
+				<div class="form-row align-items-center mb-3">
+					<div class="col-1 message_input_parts_label">件名</div>
+					<div class="col-11">
+						<input type="text" class="form-control mail_form border_bottom" name="dto.title" th:value="${dengonEditForm.dto.title}" maxlength="50"
+							th:classappend="${dengonEditForm.sentFromGyoumuHistoryFlg}? 'input_disabled text-dark'" th:readonly="${dengonEditForm.sentFromGyoumuHistoryFlg}" th:autocomplete="off">
+						<div class="error_mag_point hidden" id="itemMsg_dto.title"></div>
+					</div>
+				</div>
+
+				<!--/* 本文 */-->
+				<div class="form-row">
+					<div class="form-group col-md-12">
+						<textarea rows="13" class="form-control" th:name="dto.body" th:text="${dengonEditForm.dto.body}" maxlength="10000"
+							th:classappend="${dengonEditForm.sentFromGyoumuHistoryFlg}? 'input_disabled text-dark'" th:readonly="${dengonEditForm.sentFromGyoumuHistoryFlg}" th:autocomplete="off"></textarea>
+						<div class="error_mag_point hidden" id="itemMsg_dto.body"></div>
+					</div>
+				</div>
+				
+				<!--/* 顧客紐付け */-->
+				<div class="form-row" th:if="!${dengonEditForm.dto.gyomuhistorySeq}">
+					<div class="form-group col-md-12">
+						<label class="input_parts_label text-primary">名簿選択</label>
+						<div id="customerSearchArea" class="d-flex" th:unless="${dengonEditForm.sentFromGyoumuHistoryFlg}" th:classappend="!${#lists.isEmpty(dengonEditForm.selectedCustomerList)} ? 'hidden'">
+							<span id="customerSearchPoperObj"></span>
+							<input type="search" id="customerSearchInput" class="form-control w-50" placeholder="名前を入力すると選択候補が表示されます..." autocomplete="off" data-target="#customerSearchPoperObj" />
+						</div>
+						<div id="customerSelectedArea" class="customer_select_area">
+							<button class="btn add_customer addCustomer" th:each="customer : ${dengonEditForm.selectedCustomerList}"
+								data-boundary="window" data-container="body" data-toggle="tooltip" data-trigger="hover" title="選択解除"
+								th:data-id="${customer.customerId}" th:disabled="${dengonEditForm.sentFromGyoumuHistoryFlg}" th:text="|${customer.customerName} (${customer.customerIdDisp})|"></button>
+						</div>
+					</div>
+				</div>
+				
+				<!--/* 関連フラグ */-->
+	<th:block th:if="${dengonEditForm.relatedCustomerList} or ${dengonEditForm.relatedAnkenList} or ${dengonEditForm.dto.saibanSeq}">
+				<div class="form-row">
+					<div class="col-12">
+						<label class="input_parts_label">関連フラグ</label>
+						<div class="d-flex flex-wrap align-items-center kanren_flg_hashtag_text">
+							<!--/* 顧客紐付け */-->
+		<th:block th:if="${dengonEditForm.relatedCustomerList}">
+							<div  class="isKokyakuRow mb-1 mr-3" th:each="relatedCustomer : ${dengonEditForm.relatedCustomerList}">
+								<i class="fas fa-hashtag mr-1"></i><span th:text="${relatedCustomer.customerName}"></span>
+								<span class="sub_text fs11" th:text="|&#40;${relatedCustomer.customerId}&#41;|">顧客ID</span>
+							</div>
+		</th:block>
+							<!--/* 案件紐付け */-->
+		<th:block th:if="${dengonEditForm.relatedAnkenList}">
+							<div class="isAnkenRow mb-1 mr-3" th:each="relatedAnken : ${dengonEditForm.relatedAnkenList}" th:data-anken-id="${relatedAnken.ankenId.asLong()}">
+								<i class="fas fa-hashtag mr-1"></i><span th:text="${#lists.isEmpty(relatedAnken.ankenName)} ? '(案件名未入力)' :  ${relatedAnken.ankenName}"></span>
+								<span class="sub_text fs11" th:text="|&#40;${relatedAnken.ankenId}&#41;|">案件ID</span>
+							</div>
+		</th:block>
+							<!--/* 裁判紐付け */-->
+							<div th:if="${dengonEditForm.dto.saibanSeq}" class="isSaibanRow mb-1 mr-3">
+								<!--/* 裁判ID、裁判名 */-->
+								<i class="fas fa-hashtag mr-1"></i><span th:text="${dengonEditForm.dto.saibanName}"></span>
+							</div>
+						</div>
+					</div>
+				</div>
+	</th:block>
+				
+			</div>
+		</div>
+		<div class="modal-footer mr-3">
+			<input type="hidden" th:name="dto.draftFlg" th:value="${dengonEditForm.dto.draftFlg}">
+			<input	type="hidden" th:name="dto.dengonSeq" th:value="${dengonEditForm.dto.dengonSeq}">
+			<label th:unless="${dengonEditForm.sentFromGyoumuHistoryFlg}" class="checkbox_btn h5 mr-3">
+				<input type="checkbox" class="checkbox_input">
+				<span class="checkbox_txt">宛先（アカウント）の登録メールアドレスに送信</span>
+			</label>
+			<button th:unless="${dengonEditForm.UnDisplayDraftFlg}" type="button" name="draft" class="btn btn-light draftBtn mr-4"><i class="fas fa-pencil-alt"></i>下書き保存</button>
+			<button th:unless="${dengonEditForm.sentFromGyoumuHistoryFlg}" type="button" name="send" class="btn btn-info sendBtn"><i class="far fa-paper-plane mr-2"></i>送信</button>
+			<button type="button" class="btn btn-light edit_cancel" data-dismiss="modal"><i class="fas fa-times"></i>閉じる</button>
+		</div>
+	</div>
+	<!--/*メッセージ作成モーダルEND */-->
+	
+	<div class="atesaki_select_poper atesakiSelectPoper" th:fragment="atesakiListPopTemplate" th:object="${dengonAtesakiListPopForm}">
+		<select id="atesakliPoperBushoSelect" class="form-control changeSelect">
+			<th:block th:if="*{!#lists.isEmpty(ankenTantoAccountSeq())}">
+				<option label="(案件担当者)" th:value="ankenOption" th:data-account-seq="*{ankenTantoAccountSeq()}"></option>
+				<option disabled>--------------</option>
+			</th:block>
+			<option th:each="busho : *{bushoList}" th:label="${busho.label}" th:value="${busho.value}"></option>
+		</select>
+		<div class="my-2 user_select_list userList"></div>
+		<div class="pt-1 border-top text-right"><a href="javascript:void(0);" class="mr-2 addAll">全員追加</a></div>
+	</div>
+
+</body>
+</html>

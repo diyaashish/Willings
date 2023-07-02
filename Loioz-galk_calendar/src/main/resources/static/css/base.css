@@ -1,0 +1,630 @@
+@charset "UTF-8";
+
+/*** カスタムプロパティを定義 ***/
+:root {
+	/** loioz */
+	--loioz-blue: #17acc7;
+	--case-color: #005b90; /** 案件カラー */
+	
+	--loioz-blue-100: #e1f1f6;
+	--loioz-blue-200: #c3e3ec;
+	--loioz-blue-300: #a3d5e3;
+	--loioz-blue-400: #81c7da;
+	--loioz-blue-500: #5abad0;
+	--loioz-blue-600: #008fa9;
+	--loioz-blue-700: #00738d;
+	--loioz-blue-800: #005871;
+	--loioz-blue-900: #003f57;
+	
+	/** 青 */
+	--lz-blue-100: #cfe2ff;
+	--lz-blue-200: #9ec5fe;
+	--lz-blue-300: #6ea8fe;
+	--lz-blue-400: #3d8bfd;
+	--lz-blue-500: #0d6efd;
+	--lz-blue-600: #0a58ca;
+	--lz-blue-700: #084298;
+	--lz-blue-800: #052c65;
+	--lz-blue-900: #031633;
+	
+	/** 緑色 */
+	--lz-green-100: #d1e7dd;
+	--lz-green-200: #a3cfbb;
+	--lz-green-300: #75b798;
+	--lz-green-400: #479f76;
+	--lz-green-500: #198754;
+	--lz-green-600: #146c43;
+	--lz-green-700: #0f5132;
+	--lz-green-800: #0a3622;
+	--lz-green-900: #051b11;
+	
+	/** 黄色 */
+	--lz-yellow: #e5bb00;
+
+	/** 赤色 */
+	--lz-red-500: #dc3545;
+	--lz-red-600: #9e0002;
+	
+	/** 灰色 */
+    --lz-gray-100: #f5f7f8;
+    --lz-gray-200: #e5eaee;
+    --lz-gray-300: #dee2e6;
+    --lz-gray-400: #ced4da;
+    --lz-gray-500: #adb5bd;
+    --lz-gray-600: #6c757d;
+    --lz-gray-700: #495057;
+    --lz-gray-800: #343a40;
+    --lz-gray-900: #212529;
+
+	/** text */
+	--text-color-main: #333;
+	--text-color-sub: #63595c;
+	--text-color-gray: #70757a;
+	--text-color-title: #4f5860;
+	--text-color-link: #007791;
+	--text-color-link-hover: #378c9f;
+	
+	/** disabled色 */
+	--disabled-color-text: #afb1b3;
+	--disabled-color-radio: #dee2e6;
+
+	/** 線 */
+	--bor-color-main: #ccc;
+	/** 背景 */
+	--bg-color-view: #f5f7f9;
+	--bg-color-edit: #f4f8fa;
+	
+	--bg-color-hover: #ebf1f3;
+	--bg-color-hover-selected: #e1e6ea;
+	
+	--bg-color-row-hover: #f5f7f9;
+	--bg-color-row-hover-selected: #eff8fb;
+	
+	
+	/** 影 */
+	--shadow-color-main: #e9ecef;
+	
+	/** bootstrap関連 */
+	--loioz-primary: #17acc7; /** loiozブルー */
+	--loioz-primary-shadow: rgb(23, 172, 199, 0.3);
+	--loioz-secondary: #a3a3a3;
+	--loioz-secondary-bg: #eee;
+	--loioz-info: #007791;
+	--loioz-info-shadow: rgb(0, 119, 145, 0.3);
+	--loioz-success: #428B7B;
+	--loioz-success-shadow: #DDEFEA;
+	--loioz-danger: #d93025;
+	--loioz-danger-shadow: #fdeae8;
+	--loioz-warning: #ffdd76;
+	--loioz-warning-shadow: rgb(255, 221, 118, 0.3);
+	--loioz-light: var(--white);
+	--loioz-light-bg: #efefef;
+	--loioz-light-shadow: rgb(0, 123, 255, 0.2);
+	--loioz-dark: #63595c;
+	--loioz-dark-shadow: rgb(20, 41, 36, 0.3);
+	
+	/** サイドバー関連 */
+	--inner-width: 1200px;
+	--inner-width-tenant: 970px;
+	--outer-padding: 40px;
+	
+}
+
+* {
+	box-sizing: border-box;
+}
+
+html {
+	font-size: 62.5%;
+}
+
+body {
+	margin: 0px;
+	background-color: #fff;
+	color: var(--text-color-main);
+	font-size: 1.4rem;
+	font-family: "Helvetica Neue", "Arial", "メイリオ", "Meiryo", "ヒラギノ角ゴ Pro W3", "Hiragino Kaku Gothic Pro", sans-serif;
+	text-align: left;
+	overflow-y: scroll;
+	letter-spacing: 0.03rem;
+	-webkit-text-size-adjust: 100%;
+}
+img {
+	max-width: 100%;
+	height: auto;
+}
+hr {
+	border-top: 1px solid var(--bor-color-main);
+	height: 0;
+	padding: 0;
+	border-right-style: none;
+	border-bottom-style: none;
+	border-left-style: none;
+	margin: 20px 0;
+}
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+	font-weight: normal;
+	line-height: 1.2;
+	margin: 0;
+}
+
+a {
+	color: var(--text-color-link);
+}
+a:hover {
+	color: var(--text-color-link);
+}
+[data-click-sync-for-descendants] {
+	cursor: pointer;
+}
+a.under_line {
+	text-decoration: underline;
+}
+a.under_line:hover {
+	color: var(--text-color-link-hover);
+}
+
+/********************************************************
+ * スクロールバー
+********************************************************/
+::-webkit-scrollbar {
+	width: 9px;
+	height: 11px;
+}
+::-webkit-scrollbar-track {
+	background: var(--white);
+	border: none;
+	box-shadow: inset 0 0 2px #c0c0c0;	
+	border-radius: 5px;
+}
+::-webkit-scrollbar-thumb {
+	background: rgba(0,0,0, .2);
+	border-radius: 5px;
+}
+
+.vertical_block_body::-webkit-scrollbar-thumb, .vertical_block_body::-webkit-scrollbar-track,
+.hover_scroll::-webkit-scrollbar-thumb, .hover_scroll::-webkit-scrollbar-track {
+	background: var(--white);
+	border: none;
+	border-radius: 5px;
+	box-shadow: inset 0 0 0 0 #fff;
+}
+.vertical_block_body:hover::-webkit-scrollbar-thumb,
+.hover_scroll:hover::-webkit-scrollbar-thumb {
+	background: rgba(0,0,0, .2);
+	border: none;
+}
+
+
+/********************************************************
+ * フォーム関連
+********************************************************/
+form {
+	margin: 0;
+	padding: 0;
+}
+
+/* 入力項目のラベル（上部） */
+.input_parts_label {
+	font-weight: 600;
+	color: var(--text-color-sub);
+	padding: 10px 0 0 0;
+	line-height: 1;
+	text-align: left;
+	flex: 0 0 100%;
+	max-width: 100%;
+	vertical-align: bottom;
+	font-size: 1.3rem;
+	height: 23px;
+}
+
+/* 表示項目のラベル（上部） */
+.top_label {
+	color: var(--text-color-sub);
+	font-weight: 600;
+	font-size: 1.3rem;
+	margin-bottom: 1px;
+}
+
+/* 項目のラベル（横） */
+.side_parts_label {
+	color: var(--text-color-sub);
+	font-weight: 600;
+	font-size: 1.3rem;
+	margin-bottom: 0;
+}
+
+/* 表示用-項目名ラベル */
+.view_label {
+	color: var(--text-color-sub);
+	font-weight: normal;
+	font-size: 1.3rem;
+	margin-bottom: 1px;
+}
+/* 表示用-値 */
+.view_value {
+	font-size: 1.7rem;
+}
+
+/* チェックボックス */
+.checkbox_input {
+	display: none;
+}
+.checkbox_btn {
+  position: relative;
+  padding: 2px 0 2px 24px;
+  margin-right: 7px;
+  line-height: 1.1;
+  cursor: pointer;
+  margin: 2px 7px 2px 0;
+}
+.checkbox_btn.no_text, .radio_btn.no_text {
+  padding: 0;
+  min-height: 12px;
+  width: 16px;
+  margin: 2px 0;
+}
+.checkbox_btn .checkbox_txt {
+  transition: all 0.3s;
+}
+.checkbox_btn .checkbox_input ~ .checkbox_txt::before {
+  content: "";
+  display: block;
+  position: absolute;
+  top: 0;
+  left: 1px;
+  width: 16px;
+  height: 16px;
+  border: 1px solid #969696;
+  border-radius: 2px;
+  background-color: #fff;
+}
+.checkbox_btn .checkbox_input:checked ~ .checkbox_txt {
+	color: var(--text-color-main);
+}
+.checkbox_btn .checkbox_input:checked ~ .checkbox_txt::before {
+  content: "";
+  display: block;
+  position: absolute;
+  top: 0px;
+  left: 1px;
+  width: 17px;
+  height: 17px;
+  border-radius: 2px;
+  background-color: var(--loioz-blue);
+  border: none;
+}
+.checkbox_btn .checkbox_input:checked ~ .checkbox_txt::after {
+	content: "";
+	display: block;
+	position: absolute;
+	left: 7px;
+	top: 2px;
+	width: 5px;
+	height: 10px;
+	transform: rotate(45deg);
+	border: solid #fff;
+	border-width: 0 2px 2px 0;
+}
+.checkbox_btn .checkbox_input:disabled ~ .checkbox_txt::before {
+	background-color: var(--loioz-secondary-bg);
+	border: 1px solid var(--bor-color-main);
+}
+
+/* ラジオボタン */
+.radio_input {
+  display: none;
+}
+.radio_btn {
+  position: relative;
+  padding: 2px 0 2px 24px !important;
+  margin-right: 7px;
+  line-height: 1.1 !important;
+  cursor: pointer;
+}
+.radio_btn::before{
+  content: "";
+  display: block;
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 18px;
+  height: 18px;
+  border: 1px solid #707070;
+  border-radius: 100px;
+  background-color: #fff;
+}
+.radio_btn.radio_btn_disabled::before {
+	background-color: var(--disabled-color-radio);
+}
+.radio_txt {
+	transition: all 0.3s;
+}
+.radio_input:checked ~ .radio_txt::after{
+  content: "";
+  display: block;
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: 12px;
+  height: 12px;
+  background-color: var(--loioz-blue);
+  border-radius: 100px;
+}
+.radio_input.c_orng:checked ~ .radio_txt::after{
+  background-color: #F0AF3F;
+}
+.radio_btn_select .radio_btn_input {
+	display: none;
+}
+.radio_btn_select .radio_btn_txt {
+	background-color: var(--white);
+	border: 1px solid #dee2e6;
+	border-radius: 15px;
+	color: var(--text-color-main);
+	cursor: pointer;
+	font-size: 1.2rem;
+	margin-right: 10px;
+	padding: 2px 15px;
+}
+.radio_btn_select .radio_btn_input:checked ~ .radio_btn_txt {
+	color: #fff;
+	background-color: var(--loioz-blue);
+	border: 1px solid var(--loioz-blue);
+}
+.radio_btn_select .radio_btn_input:not(:checked) ~ .radio_btn_txt:hover {
+	color: #fff;
+	background-color: var(--loioz-blue);
+	border: 1px solid var(--loioz-blue);
+}
+.radio_btn_select .radio_btn_txt:hover {
+	opacity: 0.75;
+}
+
+
+/********************************************************
+ * 汎用
+********************************************************/
+.digit1 {width: 1.5em;}
+.digit2 {width: 2.5em;}
+.digit3 {width: 3.5em;}
+.digit4 {width: 4.5em;}
+.digit5 {width: 5.5em;}
+.digit6 {width: 6.5em;}
+.digit7 {width: 7.5em;}
+.digit8 {width: 8.5em;}
+.digit9 {width: 9.5em;}
+.digit10 {width: 10.5em;}
+.digit11 {width: 11.5em;}
+.digit12 {width: 12.5em;}
+.digit13 {width: 13.5em;}
+.digit14 {width: 14.5em;}
+.digit15 {width: 15.5em;}
+.digit16 {width: 16.5em;}
+.digit17 {width: 17.5em;}
+.digit18 {width: 18.5em;}
+.digit19 {width: 19.5em;}
+.digit20 {width: 20.5em;}
+.digit21 {width: 21.5em;}
+.digit22 {width: 22.5em;}
+.digit23 {width: 23.5em;}
+.digit24 {width: 24.5em;}
+.digit25 {width: 25.5em;}
+.digit26 {width: 26.5em;}
+.digit27 {width: 27.5em;}
+.digit28 {width: 28.5em;}
+.digit29 {width: 29.5em;}
+
+.wid_fc {width: fit-content;}
+
+/* min-width */
+.mnw10 {min-width: 10px!important;}
+.mnw15 {min-width: 15px!important;}
+.mnw20 {min-width: 20px!important;}
+.mnw25 {min-width: 25px!important;}
+.mnw30 {min-width: 30px!important;}
+.mnw35 {min-width: 35px!important;}
+.mnw40 {min-width: 40px!important;}
+.mnw45 {min-width: 45px!important;}
+.mnw50 {min-width: 50px!important;}
+.mnw60 {min-width: 60px!important;}
+.mnw70 {min-width: 70px!important;}
+.mnw80 {min-width: 80px!important;}
+.mnw90 {min-width: 90px!important;}
+.mnw100 {min-width: 100px!important;}
+.mnw125 {min-width: 125px!important;}
+.mnw150 {min-width: 150px!important;}
+.mnw160 {min-width: 160px!important;}
+.mnw200 {min-width: 200px!important;}
+.mnw250 {min-width: 250px!important;}
+.mnw300 {min-width: 300px!important;}
+.mnw350 {min-width: 350px!important;}
+.mnw400 {min-width: 400px!important;}
+.mnw450 {min-width: 450px!important;}
+.mnw500 {min-width: 500px!important;}
+
+/* max-width */
+.mxw50 {max-width: 50px!important;}
+.mxw100 {max-width: 100px!important;}
+.mxw110 {max-width: 110px!important;}
+.mxw120 {max-width: 120px!important;}
+.mxw125 {max-width: 125px!important;}
+.mxw130 {max-width: 130px!important;}
+.mxw140 {max-width: 140px!important;}
+.mxw150 {max-width: 150px!important;}
+.mxw160 {max-width: 160px!important;}
+.mxw170 {max-width: 170px!important;}
+.mxw180 {max-width: 180px!important;}
+.mxw190 {max-width: 190px!important;}
+.mxw200 {max-width: 200px!important;}
+.mxw250 {max-width: 250px!important;}
+.mxw260 {max-width: 260px!important;}
+.mxw270 {max-width: 270px!important;}
+.mxw280 {max-width: 280px!important;}
+.mxw290 {max-width: 290px!important;}
+.mxw300 {max-width: 300px!important;}
+.mxw350 {max-width: 350px!important;}
+.mxw400 {max-width: 400px!important;}
+.mxw450 {max-width: 450px!important;}
+.mxw500 {max-width: 500px!important;}
+
+/* min-height */
+.minh0 {min-height: 0px!important;}
+.minh10 {min-height: 10px!important;}
+.minh15 {min-height: 15px!important;}
+.minh20 {min-height: 20px!important;}
+.minh25 {min-height: 25px!important;}
+.minh30 {min-height: 30px!important;}
+.minh40 {min-height: 40px!important;}
+.minh50 {min-height: 50px!important;}
+.minh55 {min-height: 55px!important;}
+.minh60 {min-height: 60px!important;}
+.minh65 {min-height: 65px!important;}
+.minh70 {min-height: 70px!important;}
+.minh75 {min-height: 75px!important;}
+.minh80 {min-height: 80px!important;}
+.minh85 {min-height: 85px!important;}
+.minh90 {min-height: 90px!important;}
+.minh95 {min-height: 95px!important;}
+.minh100 {min-height: 100px!important;}
+.minh110 {min-height: 110px!important;}
+.minh120 {min-height: 120px!important;}
+.minh130 {min-height: 130px!important;}
+.minh140 {min-height: 140px!important;}
+.minh150 {min-height: 150px!important;}
+.minh160 {min-height: 160px!important;}
+.minh170 {min-height: 170px!important;}
+.minh180 {min-height: 180px!important;}
+.minh190 {min-height: 190px!important;}
+.minh200 {min-height: 200px!important;}
+
+/* max-height */
+.mxh10 {max-height: 10px!important;}
+.mxh100 {max-height: 100px!important;}
+.mxh200 {max-height: 200px!important;}
+.mxh300 {max-height: 300px!important;}
+.mxh400 {max-height: 400px!important;}
+.mxh500 {max-height: 500px!important;}
+
+/* overflow  */
+.of_y_scroll {overflow-y: auto;}
+.of_x_scroll {overflow-x: auto;}
+
+/* 非表示 */
+.hidden {
+	display: none !important;
+}
+/** 表示領域を確保しつつ、要素を非表示 */
+.visibility {
+	visibility: hidden;
+}
+/* カーソル */
+.cursor_pointer {cursor: pointer;}
+.cursor_default {cursor: default;}
+
+/* アウトライン非表示 */
+.no_outline {outline: 0;}
+
+/* opacity */
+.opacity75 {opacity: .75 !important;};
+.opacity100 {opacity: 1 !important;};
+
+/********************************************************
+ * flex 
+********************************************************/
+/* column-gap */
+.cg5 {column-gap: 5px;}
+.cg8 {column-gap: 8px;}
+.cg10 {column-gap: 10px;}
+.cg15 {column-gap: 15px;}
+.cg20 {column-gap: 20px;}
+.cg25 {column-gap: 25px;}
+	
+/* row-gap */
+.rg5 {row-gap: 5px;}
+.rg10 {row-gap: 10px;}
+.rg15 {row-gap: 15px;}
+.rg20 {row-gap: 20px;}
+.rg25 {row-gap: 25px;}
+
+/********************************************************
+ * テキストのスタイル
+********************************************************/
+/* color */
+.fc_main {color: var(--text-color-main);}
+.fc_sub {color: var(--text-color-sub);}
+.fc_title {color: var(--text-color-title);}
+.fc_disabled {color: var(--disabled-color-text);}
+
+/* 金額合計 */
+.fc_sum_amount {color: #2d4f70;}
+
+/* font-size */
+.fs8 {font-size: .8rem!important;}
+.fs9 {font-size: .9rem!important;}
+.fs10 {font-size: 1.0rem!important;}
+.fs11 {font-size: 1.1rem!important;}
+.fs12 {font-size: 1.2rem!important;}
+.fs13 {font-size: 1.3rem!important;}
+.fs14 {font-size: 1.4rem!important;}
+.fs15 {font-size: 1.5rem!important;}
+.fs16 {font-size: 1.6rem!important;}
+.fs17 {font-size: 1.7rem!important;}
+.fs18 {font-size: 1.8rem!important;}
+.fs19 {font-size: 1.9rem!important;}
+.fs20 {font-size: 2.0rem!important;}
+.fs21 {font-size: 2.1rem!important;}
+.fs22 {font-size: 2.2rem!important;}
+.fs23 {font-size: 2.3rem!important;}
+.fs24 {font-size: 2.4rem!important;}
+.fs25 {font-size: 2.5rem!important;}
+.fs26 {font-size: 2.6rem!important;}
+.fs27 {font-size: 2.7rem!important;}
+.fs28 {font-size: 2.8rem!important;}
+.fs29 {font-size: 2.9rem!important;}
+.fs30 {font-size: 3.0rem!important;}
+
+/* weight */
+.fw0 {font-weight: normal!important;}
+.fw600 {font-weight: 600!important;}
+.fw700 {font-weight: 700!important;}
+
+/* wrap */
+.text-break {word-wrap: break-word;}
+.word-break {word-break: break-word;}
+.ws_nowarp {white-space: nowrap;}
+
+/* line-height */
+.lh1 {line-height: 1!important;}
+.lh1_1 {line-height: 1.1!important;}
+.lh1_2 {line-height: 1.2!important;}
+.lh1_3 {line-height: 1.3!important;}
+.lh1_4 {line-height: 1.4!important;}
+
+/* text-decoration */
+.td_underline {text-decoration: underline;}
+.td_line_through {text-decoration: line-through; text-decoration-thickness: 1px;}
+
+/* 反転 */
+.reverses_text {transform: scaleX(-1);}
+
+/* fontawesome */
+.fa-check {margin-right: 7px;}
+
+/* エラーメッセージ */
+.error_mag_point {
+	color: #9E0002;
+	margin-top: 4px;
+	background-image: url("../img/icon_error_s.svg");
+	background-repeat: no-repeat;
+	background-position: 1px 0;
+	padding: 1px 0 1px 17px;
+	line-height: 1.2;
+	font-size: 1.3rem;
+}
+

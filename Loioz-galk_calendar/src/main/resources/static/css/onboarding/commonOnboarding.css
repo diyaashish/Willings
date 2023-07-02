@@ -1,0 +1,92 @@
+@charset "UTF-8";
+
+.modal_onboarding {
+	width: 750px;
+	max-width: 96%;
+}
+.modal_onboarding .modal-header {
+	z-index: 2;
+	position: absolute;
+	display : block;
+	border: none;
+}
+
+.modal_onboarding .header_close {
+	list-style: none;
+	margin: 0 7px 0;
+	right: 0;
+	position: fixed;
+}
+.modal_onboarding .header_close li a.close_icon {
+	background-image: url(../../img/icon_btn_close.svg);
+	cursor: pointer;
+}
+.modal_onboarding .header_close li a {
+	display: block;
+	margin-right: 5px;
+	width: 28px;
+	height: 28px;
+	background: #f8f9fa;/** ヘッダーの文字と同じ */
+	border: 1px solid #f8f9fa; /** ヘッダーの文字と同じ */
+	border-radius: 100px;
+	text-indent: -9999px;
+	background-repeat: no-repeat;
+	background-position: center center;
+}
+.modal_onboarding .onboard_body{
+	position: relative;
+	padding: 5px 5px 5px 5px;
+	min-height: 100%;
+
+}
+.modal_onboarding .block_title {
+	margin-top: 25px;
+}
+.modal_onboarding .onboard_contents {
+	margin: 0 auto;
+}
+.modal_onboarding .onboard_contents_block{
+	height: 615px;
+	width : 100%;
+	overflow-y: auto;
+	overflow-x: auto;
+	position:relative;
+}
+.modal_onboarding .onboard_contents_block a {
+	cursor: pointer;
+}
+.modal_onboarding .block_detail {
+	width: 450px;
+	margin: 0 0 5px;
+}
+.modal_onboarding .block_detail .text_mark{
+	margin-bottom: 5px;
+}
+.modal_onboarding .info_msg_edit {
+	margin: 0;
+}
+.modal_onboarding .error_msg_edit {
+	margin: 0;
+}
+.modal_onboarding .detail_button_area {
+	width: 450px;
+	height: 80px;
+	position: absolute;
+	bottom: 0;
+	margin-bottom: 25px;
+}
+.modal_onboarding .exclamation_circle {
+	float: right;
+	color: #DE3D64;
+}
+.modal_onboarding .li_border_dashed {
+	padding: 10px;
+	font-size: 1.8rem;
+}
+
+/** オンボーディングの解像度 */
+@media screen and (max-height:700px) {
+	.modal_onboarding .onboard_contents_block {
+		height: 615px;
+	}
+}

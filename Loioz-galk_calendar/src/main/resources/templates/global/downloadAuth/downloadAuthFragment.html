@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+	<meta charset="utf-8" />
+</head>
+<body>
+
+<!--/* fragment */-->
+<div th:fragment="downloadAuthFragment(viewForm)" id="downloadAuthFragment" th:object="${viewForm}">
+	<!--/* javascript */-->
+	<script type="text/javascript" th:inline="javascript">
+	$(function() {
+		<!--/* 共有の要素セットアップ処理 */-->
+		commonSetUpElement("#downloadAuthFragment");
+		
+	});
+	</script>
+	<!--/* javascript */-->
+	
+	<!--/* html */-->
+	
+	<!--/* 認証画面 */-->
+	<div class="page_wrapper">
+		<div class="auth_form">
+			<div class="card">
+				<div class="card-header">
+					<div class="text-center pt-2 pb-3">
+						<img src="/img/logo_1.png" width="200">
+					</div>
+				</div>
+				<div class="card-body">
+					<div id="downloadPasswordAuthFragmentWrap" th:insert="::downloadPasswordAuthFragment(${downloadPasswordInputForm})"></div>
+				</div>
+			</div>
+		</div>
+	</div>
+	
+</div>
+<!--/* fragment */-->
+
+<!--/* ダウンロードパスワード認証フラグメント */-->
+<div th:fragment="downloadPasswordAuthFragment(downloadPasswordInputForm)" id="downloadPasswordAuthFragment" th:object="${downloadPasswordInputForm}">
+	<script type="text/javascript" th:inline="javascript">
+	$(function() {
+		<!--/* 定数 */-->
+		const downloadPasswordAuthFragment = $("#downloadPasswordAuthFragment");
+		
+		<!--/* 共有の要素セットアップ処理 */-->
+		commonSetUpElement("#downloadAuthFragment");
+		
+		<!--/* パスワード認証処理 */-->
+		downloadPasswordAuthFragment.find(".passwordAuth").on('click', function() {
+			if (ajaxRunning) {
+				return false;
+			}
+			const params = downloadPasswordAuthFragment.find('.downloadPasswordForm').serializeArray();
+			ajaxRunning = true;
+			$.ajax({
+				url : 'passwordAuth',
+				type : "POST",
+				data : params
+			})
+			.done(function(data, status, jqXHR) {
+				if (getAjaxProcResutl(jqXHR) == /*[[${T(jp.loioz.app.global.downloadAuth.controller.DownloadAuthController).HEADER_VALUE_OF_AJAX_PROC_RESULT_PASSWORD_AUTH_SUCCESS}]]*/'') {
+					window.location.href = getAjaxProcResutlMessage(jqXHR);
+				} else {
+					if (data) {
+						$('#downloadPasswordAuthFragmentWrap').html(data);
+					}
+					// 処理失敗
+					const errorMsg = getAjaxProcResutlMessage(jqXHR);
+					showErrorMessageForJs(errorMsg);
+				}
+			})
+			.fail(function(jqXHR, status, errorThrown) {
+				showErrorMessageForJs(/*[[#{E00091}]]*/"error");
+			})
+			.always(function() {
+				ajaxRunning = false;
+			});
+		});
+		
+	});
+	</script>
+	<div class="p-4">
+		<div class="mb-5 fs16">
+			アクセスしようとしているコンテンツはパスワードで保護されています。続行するにはパスワードを入力してください。
+		</div>
+		<form class="downloadPasswordForm">
+			<input class="hidden" type="text" name="dummy">
+			<div class="form-group">
+				<label class="top_label">パスワード</label>
+				<input type="password" class="form-control" th:field="*{passWord}" placeholder="パスワードを入力してください">
+				<div th:if="*{#fields.hasErrors('passWord')}" th:errors="*{passWord}" class="error_mag_point">error</div>
+			</div>
+			<div class="mt-5">
+				<button type="button" class="btn btn-primary w-100 passwordAuth">認証する</button>
+			</div>
+		</form>
+	</div>
+</div>
+<!--/* ダウンロードパスワード認証フラグメント end */-->
+
+</body>
+</html>

@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+	<head>
+		<meta charset="utf-8" />
+	</head>
+	<body>
+		<!--/* メッセージ表示領域 */-->
+		<div class="messageArea" th:fragment="messageArea">
+			
+			<!--/* INFOメッセージ表示領域 */-->
+			<div id="fragMessageAreaInfo" th:style="${msgHolder}!=null and ${msgHolder.hasInfo()} ? 'display:block' : 'display:none'">
+				<div class="info_msg_page infoMessageArea msg_hide" th:if="${msgHolder} != null ? ${msgHolder.hasInfo()} : false">
+					<i class="fas fa-check"></i>
+					<span class="flex-grow-1" myth:nl2br="${msgHolder.infoMsg}"></span>
+					<div class="closeMsgIconJs cursor_pointer">
+						<i class="far fa-times-circle fa-lg"></i>
+					</div>
+				</div>
+				
+				<!--/* JS用 */-->
+				<div class="info_msg_page hidden" id="infoMessageAreaJs">
+					<i class="fas fa-check"></i>
+					<span class="flex-grow-1 forJs"></span>
+					<div class="closeMsgIconJs cursor_pointer">
+						<i class="far fa-times-circle fa-lg"></i>
+					</div>
+				</div>
+				
+			</div>
+		
+			<!--/* WARNメッセージ表示領域 */-->
+			<div id="fragMessageAreaWarn" th:style="${msgHolder}!=null and ${msgHolder.hasWarning()} ? 'display:block' : 'display:none'">
+				<div class="warn_msg_page warnMessageArea" th:if="${msgHolder}!=null ? ${msgHolder.hasWarning()} : false">
+					<i class="fas fa-exclamation-triangle mr-3"></i>
+					<span class="flex-grow-1" myth:nl2br="${msgHolder.warningMsg}"></span>
+					<div class="closeMsgIconJs cursor_pointer">
+						<i class="far fa-times-circle fa-lg"></i>
+					</div>
+				</div>
+				
+				<!--/* JS用 */-->
+				<div class="warn_msg_page hidden" id="warnMessageAreaJs">
+					<i class="fas fa-exclamation-triangle mr-3"></i>
+					<span class="flex-grow-1 forJs"></span>
+					<div class="closeMsgIconJs cursor_pointer">
+						<i class="far fa-times-circle fa-lg"></i>
+					</div>
+				</div>
+				
+			</div>
+		
+			<!--/* ERRORメッセージ表示領域 */-->
+			<div id="fragMessageAreaError" th:style="${msgHolder}!=null and ${msgHolder.hasError()} ? 'display:block' : 'display:none'">
+				<div class="error_msg_page errorMessageArea" th:if="${msgHolder}!=null ? ${msgHolder.hasError()} : false">
+					<i class="fas fa-exclamation-triangle mr-3"></i>
+					<span class="flex-grow-1" myth:nl2br="${msgHolder.errorMsg}"></span>
+					<div class="closeMsgIconJs cursor_pointer">
+						<i class="far fa-times-circle fa-lg"></i>
+					</div>
+				</div>
+				
+				<!--/* JS用 */-->
+				<div class="error_msg_page hidden" id="errorMessageAreaJs">
+					<i class="fas fa-exclamation-triangle mr-3"></i>
+					<div class="flex-grow-1 forJs"></div>
+					<div class="closeMsgIconJs cursor_pointer">
+						<i class="far fa-times-circle fa-lg"></i>
+					</div>
+				</div>
+				
+			</div>
+		</div>
+		
+		<!-- JSメッセージ表示領域 -->
+		<div class="messageArea" th:fragment="jsMessageArea">
+			<!-- INFOメッセージ表示領域 -->
+			<div class="infoMessageArea info_msg_js" style="display: none;">
+				<i class="fas fa-check"></i>
+				<span class="msgText" role="alert"></span>
+			</div>
+			<!-- WARNメッセージ表示領域 -->
+			<div class="warnMessageArea warn_msg_js" style="display: none;">
+				<i class="fas fa-exclamation-triangle mr-3"></i>
+				<span class="msgText" role="alert"></span>
+			</div>
+			<!-- ERRORメッセージ表示領域 -->
+			<div class="errorMessageArea error_msg_js" style="display: none;">
+				<i class="fas fa-exclamation-triangle mr-3"></i>
+				<span class="msgText" role="alert"></span>
+			</div>
+		</div>
+		
+		<!--/* 【テナント申込み】画面内の埋め込みメッセージ表示領域 */-->
+		<div class="messageArea" th:fragment="viewMessageArea" data-js="true">
+			
+			<!-- INFOメッセージ表示領域 -->
+			<div id="fragMessageAreaInfo">
+				<div class="info_msg_view infoMessageArea" style="display: none;">
+					<i class="fas fa-check"></i>
+					<span class="msgText" role="alert"></span>
+				</div>
+			</div>
+			
+			<!-- WARNメッセージ表示領域 -->
+			<div id="fragMessageAreaWarn">
+				<div class="warn_msg_view warnMessageArea" style="display: none;">
+					<i class="fas fa-exclamation-triangle mr-3"></i>
+					<span class="msgText" role="alert"></span>
+				</div>
+			</div>
+			
+			<!-- ERRORメッセージ表示領域 -->
+			<div id="fragMessageAreaError">
+				<div class="error_msg_view errorMessageArea" style="display: none;">
+					<i class="fas fa-exclamation-triangle mr-3"></i>
+					<span class="msgText" role="alert"></span>
+				</div>
+			</div>
+			
+		</div>
+		<!--/* 【テナント申込み】画面内の埋め込みメッセージ表示領域 end */-->
+		
+		<!-- モーダルERROR時のAlertメッセージ領域 -->
+		<div th:fragment="JsAlertError">
+			<script type="text/javascript" th:inline="javascript">
+				$(function(){
+					const errorMsg =/*[[${msgHolder.errorMsg}]]*/"エラー";
+					alert(errorMsg);
+					window.location.reload();
+				});
+			</script>
+		</div>
+		
+		<!-- モーダルERROR時のAlertメッセージ領域 -->
+		<div th:fragment="JsAlertErrorHistoryBack">
+			<script type="text/javascript" th:inline="javascript">
+					const errorMsg =/*[[${msgHolder.errorMsg}]]*/"エラー";
+					alert(errorMsg);
+					history.back();
+			</script>
+		</div>
+		
+	</body>
+</html>

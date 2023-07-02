@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+	xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+	layout:decorator="commonLayout">
+<head>
+<meta charset="UTF-8">
+<title layout:fragment="title-contents">
+	[[${T(jp.loioz.common.utility.LoiozUtils).getHtmlTitle(T(jp.loioz.common.constant.CommonConstant$SystemSettingMenu).FRACTION_SETTING.getVal(), T(jp.loioz.common.utility.SessionUtils).getTenantName())}]]
+</title>
+<script type="text/javascript" th:inline="javascript">
+
+<!--/* 端数処理入力フラグメントの取得 */--> 
+function getFractionSettingInputFragment() {
+	return new Promise((resolve, reject) => {
+		$.ajax({
+			url : '/user/fractionSetting/getFractionSettingInputFragment',
+			type : "GET",
+		}).done(function(data, status, jqXHR) {
+			<!--/* 成功 */-->
+			if (isAjaxProcSuccess(jqXHR)) {
+				$("#fractionSettingFragmentWrap").html(data);
+				return resolve();
+			} else {
+				// 処理失敗
+				const errorMsg = getAjaxProcResutlMessage(jqXHR);
+				showErrorMessageForJs(errorMsg);
+				return reject();
+			}
+		}).fail(function(jqXHR, textStatus, errorThrown) {
+			<!--/* 失敗 */-->
+			const errorMsg = /*[[#{E00091}]]*/ "error";
+			showErrorMessageForJs(errorMsg);
+			return reject();
+		})
+	});
+}
+
+
+</script>
+</head>
+<body>
+	<div class="contents_sidebar_wrapper_setting" layout:fragment="main-contents">
+		<!-- サイドメニュー -->
+		<div th:replace="common/systemSettingMenu::selectMenu(${T(jp.loioz.common.constant.CommonConstant$SystemSettingMenu).FRACTION_SETTING.getCd()})"></div>
+		
+		<!--/* メインコンテンツの外側 */-->
+		<div class="contents_wrapper">
+			<div class="container-fluid contents_limited_width_setting">
+				<main class="content">
+					
+					<!--/* メッセージエリア */-->
+					<div th:replace="common/messageArea::messageArea"></div>
+					
+					<!--/* パンくず*/-->
+					<div class="breadcrumb_area">
+						<ul>
+							<li><span>会計管理の設定</span></li>
+							<li><i class="fas fa-angle-right"></i></li>
+							<li>端数処理</li>
+						</ul>
+					</div>
+					
+					<!--/* 詳細 */-->
+					<div id="fractionSettingFragmentWrap" th:insert="user/fractionSetting/fractionSettingFragment::fractionSettingInputFragment(${fractionSettingInputFragmentForm})"></div>
+				</main>
+			</div>
+		</div>
+	</div>
+</body>
+</html>

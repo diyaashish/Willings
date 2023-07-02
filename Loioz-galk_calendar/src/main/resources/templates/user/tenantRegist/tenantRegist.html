@@ -1,0 +1,269 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout">
+<head>
+<meta charset="utf-8">
+<meta content="IE=edge" http-equiv="X-UA-Compatible">
+<title>
+	[[${T(jp.loioz.common.utility.LoiozUtils).getHtmlTitle("無料トライアル申込み", T(jp.loioz.common.utility.SessionUtils).getTenantName())}]]
+</title>
+<th:block th:with="version=${@environment.getProperty('app.version')}">
+	<link th:href="@{/css/bootstrap.min.css?{ver}(ver=${version})}" rel="stylesheet" type="text/css"/><!--/* ファイル内のmapファイルの参照処理の削除を反映させるためにversionを追加 */-->
+	<link th:href="@{/css/bootstrap-overwrite.css?{ver}(ver=${version})}" rel="stylesheet" type="text/css"/>
+	<link th:href="@{/css/base.css?{ver}(ver=${version})}" rel="stylesheet" type="text/css"/>
+	<link th:href="@{/css/content.css?{ver}(ver=${version})}" rel="stylesheet" type="text/css"/>
+	<link th:href="@{/css/noLogin.css?{ver}(ver=${version})}" rel="stylesheet" type="text/css"/>
+	<script type="text/javascript" th:src="@{/webjars/jquery/3.3.1/jquery.min.js}"></script>
+	<script type="text/javascript" th:src="@{/js/jquery-ui-1.12.1.min.js}"></script>
+	<script type="text/javascript" th:src="@{/js/bootstrap.min.js?{ver}(ver=${version})}"></script><!--/* ファイル内のmapファイルの参照処理の削除を反映させるためにversionを追加 */-->
+	<script type="text/javascript" th:src="@{/js/common.js?{ver}(ver=${version})}"></script>
+	<script type="text/javascript" th:src="@{/js/jquery.autoKana.js}"></script>
+	<script type="text/javascript" th:src="@{/js/addclear.js}"></script>
+	<script type="text/javascript" th:src="@{/js/navigation.js?{ver}(ver=${version})}"></script>
+</th:block>
+
+<script>
+$(function() {
+	judgeBrowser();
+});
+</script>
+
+<script type="text/javascript" th:src="@{/js/fontawesome-5.15.2-all.min.js}"></script>
+	<script type="text/javascript" th:inline="javascript">
+	<!--/* Ajax通信時のCSRFトークン設定 */-->
+	$(function() {
+		let token = /*[[(${_csrf.token})]]*/ "";
+		let headerName = /*[[(${_csrf.headerName})]]*/ "";
+		$(document).ajaxSend(function(e, xhr, options) {
+			xhr.setRequestHeader(headerName, token);
+		});
+	});
+	</script>
+	<script type="text/javascript">
+	function toggleInputForm(targetIndex) {
+		$(".input-form").each(function() {
+			if ($(this).data("index") == targetIndex) {
+				$(this).show();
+			} else {
+				$(this).hide();
+			}
+		});
+		switch (targetIndex) {
+			case 1:
+				$('.target1').addClass('current');
+				$('.target2').removeClass('current');
+				$('.target3').removeClass('current');
+				break;
+			case 2:
+				$('.target1').removeClass('current');
+				$('.target2').addClass('current');
+				$('.target3').removeClass('current');
+				break;
+			case 3:
+				$('.target1').removeClass('current');
+				$('.target2').removeClass('current');
+				$('.target3').addClass('current');
+				break;
+		}
+	}
+	function showProcessingMessage() {
+		$("#messageArea").hide();
+		$(".tenant_input_nav").hide();
+		toggleInputForm(4);
+	}
+
+	function clearFormMessage(formArea){
+		clearAllMessages(formArea);
+		clearAllItemMsg();
+	}
+
+	$(function() {
+		initDisplay();
+		let ajaxRunning = false;
+		$("#main-contents").on("click", "#send", function() {
+			if(ajaxRunning){
+				return false;
+			}
+			if (!confirm('入力した内容で環境を作成します。よろしいですか？')) {
+				return false;
+			}
+			showProcessingMessage();
+			let registForm = $("#registForm");
+			let username = registForm.find("[name='user.accountId']").val();
+			let password = registForm.find("[name='user.password.password']").val();
+
+			ajaxRunning = true;
+			$.ajax({
+				type : "POST",
+				url : registForm.attr("action"),
+				data : registForm.serialize(),
+				dataType : "html"
+			})
+			.done(function(data) {
+				let newContents = $(data);
+				if(newContents.is("#tenantInputFragment")){
+					$("#ajaxContents").html(newContents);
+					initDisplay();
+				} else if(newContents.is("#tenantLoginFragment")){
+					$("#ajaxContents").html(newContents);
+					$("#loginForm").find("[name='username']").val(username);
+					$("#loginForm").find("[name='password']").val(password);
+					$("#loginForm").submit();
+				} else {
+					window.location.href = "/error";
+				}
+				/* 氏名(かな)の自動入力 */
+				$.fn.autoKana('input[name ="user.accountNameSei"]', 'input[name = "user.accountNameSeiKana"]', {});
+				$.fn.autoKana('input[name ="user.accountNameMei"]', 'input[name = "user.accountNameMeiKana"]', {});
+				/* 同意チェック*/
+				$("#agreeCheck").on("change", function() {
+					if($(this).prop("checked")){
+						$("#registButton").prop("disabled", false).removeClass("btn-disabled");
+					} else {
+						$("#registButton").prop("disabled", true).addClass("btn-disabled");
+					}
+				}).trigger("change");
+				/* メッセージアリアを非表示にする */
+				$('.msg_page_close_icon').on('click', function() {
+					let messageArea = $(this).closest(".messageArea");
+					if(messageArea.data("js")){
+						messageArea.find(".infoMessageArea").hide();
+						messageArea.find(".warnMessageArea").hide();
+						messageArea.find(".errorMessageArea").hide();
+					}else{
+						messageArea.addClass('hidden');
+					}
+				});
+			})
+			.fail(function() {
+				window.location.href = "/systemError";
+			})
+			.always(function() {
+				ajaxRunning = false;
+			});
+		});
+	});
+
+	$(function(){
+		let validateAjaxRunning = false;
+		$(document).on("click", ".nextForm", function(){
+
+			const formArea = $(this).closest(".input-form");
+			const index = $(formArea).data("index");
+			const url = "/user/accountDetailRegist" + $(formArea).data("action");
+			let formData = $(formArea).find("[name]").serializeArray();
+
+			if(validateAjaxRunning){
+				return false;
+			}
+
+			validateAjaxRunning = true;
+			const formValidCheckRequest = $.ajax({
+				type : "POST",
+				url : url,
+				data : formData,
+				dataType : "json",
+			});
+
+			//Ajax通信成功時
+			formValidCheckRequest.done(function(result){
+				if(result.succeeded){
+
+					//直前までのエラーは消す
+					clearFormMessage(formArea)
+
+					if(formArea.is("#userFormArea")){
+						//申し込みボタンだった場合
+						$("#send").trigger("click");
+					}else{
+						//次のフォームを開く
+						toggleInputForm(index + 1);
+
+						if(formArea.is("#tenantFormArea")){
+							// 事務所情報の名前をユーザー情報にリンクさせる
+							const daihyoNameSei =  $("#tenantFormArea").find("[name='tenant.tenantDaihyoNameSei']").val();
+							const daihyoNameSeiKana = $("#tenantFormArea").find("[name='tenant.tenantDaihyoNameSeiKana']").val();
+							const daihyoNameMei =  $("#tenantFormArea").find("[name='tenant.tenantDaihyoNameMei']").val();
+							const daihyoNameMeiKana = $("#tenantFormArea").find("[name='tenant.tenantDaihyoNameMeiKana']").val();
+							$("#userFormArea").find("[name='user.accountNameSei']").val(daihyoNameSei);
+							$("#userFormArea").find("[name='user.accountNameSeiKana']").val(daihyoNameSeiKana);
+							$("#userFormArea").find("[name='user.accountNameMei']").val(daihyoNameMei);
+							$("#userFormArea").find("[name='user.accountNameMeiKana']").val(daihyoNameMeiKana);
+						}
+					}
+				}else{
+					showErrorMessage(result.message, formArea, result.errors);
+				}
+			});
+
+			//Ajax通信失敗時(エラー)
+			formValidCheckRequest.fail(function(){
+				window.location.href = "/systemError";// システムエラー
+			});
+
+			//Ajax通信成功時と失敗時どちらも
+			formValidCheckRequest.always(function(){
+				validateAjaxRunning = false;
+			});
+
+		});
+
+		$(document).on("click", ".prevForm", function(){
+			//戻るので、エラーは消す
+			const formArea = $(this).closest(".input-form");
+			clearFormMessage(formArea)
+		});
+
+	});
+	</script>
+</head>
+<body>
+
+<th:block th:if="${T(jp.loioz.common.constant.CommonConstant.SystemFlg).FLG_OFF.equalsByCode(@environment.getProperty('app.devMode'))}">
+
+	<!-- Google Tag Manager (noscript) -->
+	<noscript><iframe src="https://www.googletagmanager.com/ns.html?id=GTM-TVP5T44"
+	height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
+	<!-- End Google Tag Manager (noscript) -->
+
+</th:block>
+
+	<!--/* ヘッダー */-->
+	<header>
+		<div class="tenant_no_login_header">
+			<div class="header_inner">
+				<img class="loioz_logo" th:src="@{/img/logo_1.png}" width="144" height="40">
+			</div>
+		</div>
+	</header>
+	<!--/* ヘッダー end */-->
+
+	<div id="main-contents">
+		<main class="loioz_hp_contetns">
+			<div layout:fragment="main-contents" th:remove="tag">
+				<div id="ajaxContents">
+					<div layout:fragment="ajax-contents"></div>
+				</div>
+			</div>
+		</main>
+	</div>
+
+	<!-- /** 利用規約モーダル START*/ -->
+	<div id="modalArea">
+		<div th:replace="common/static/terms::termsModal"></div>
+	</div>
+
+<th:block th:if="${T(jp.loioz.common.constant.CommonConstant.SystemFlg).FLG_OFF.equalsByCode(@environment.getProperty('app.devMode'))}">
+
+	<!-- Google Tag Manager -->
+	<script>(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
+	new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
+	j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
+	'https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);
+	})(window,document,'script','dataLayer','GTM-TVP5T44');</script>
+	<!-- End Google Tag Manager -->
+
+</th:block>
+
+</body>
+</html>

@@ -1,0 +1,1871 @@
+@charset "UTF-8";
+
+/****************** カレンダー ******************/
+
+/*カレンダーボタン */
+.btn_popcal {
+  background-color: var(--loioz-blue);
+  border-color: var(--loioz-blue);
+  text-align: left;
+  text-indent: -9999px;
+  height: 28px;
+  width: 28px;
+  background-image: url(../img/icon_btn_cal.svg);
+  background-repeat: no-repeat;
+  background-position: center center;
+}
+/* カレンダーの各アイコン */
+.icon_anken {
+	background: var(--case-color);
+	border-radius: 2px;
+	border: 1px solid;
+	color: var(--white);
+	display: inline-block;
+	font-size: 1.1rem;
+	margin-bottom: 2px;
+	text-align: center;
+	padding: 2px;
+}
+.icon_anken::before {
+	content: "案";
+}
+.icon_customer {
+	background: var(--loioz-blue);
+	border-radius: 2px;
+	border: 1px solid;
+	color: var(--white);
+	display: inline-block;
+	font-size: 1.1rem;
+	margin-bottom: 2px;
+	text-align: center;
+	padding: 2px;
+}
+.icon_customer::before {
+	content: "名";
+}
+.icon_saiban {
+	background: #5445da;
+	border-radius: 2px;
+	border: 1px solid;
+	color: var(--white);
+	display: inline-block;
+	font-size: 1.1rem;
+	margin-bottom: 2px;
+	text-align: center;
+	padding: 2px;
+}
+.icon_saiban::before {
+	content: "裁";
+}
+.openCloseTask:hover {
+	opacity: 0.65;
+}
+.icon_drag_indicator {
+	background-image: url(/img/icon_drag_indicator.svg);
+	background-repeat: no-repeat;
+	width: 26px;
+	height: 22px;
+	background-size: 18px;
+	margin-top: 2px;
+}
+.move_point {
+	display: flex;
+	align-items: center;
+	cursor: move;
+}
+.move_point .move_point_btn.btn {
+	cursor: move;
+}
+.move_point .move_point_btn.btn.btn-light:active {
+	background-color: var(--loioz-light-bg);
+	border-color: var(--bor-color-main);
+	box-shadow: none;
+}
+.move_point.icon_drag_indicator_sp {
+	width: 28px;
+	height: 20px;
+	margin-right: 16px;
+}
+.tdCursorPointer tbody td {
+	cursor: pointer;
+}
+
+/****************** 日付選択カレンダー ******************/
+.minicalendar {
+	border-radius: 7px;
+	background: #ffffff;
+	box-shadow: 0px 0px 0px 1px rgb(0 0 0 / 10%);
+	color: var(--text-color-main);
+	padding: 10px 10px 15px;
+	margin-bottom: 10px;
+	width: 220px;
+}
+.minicalendar .day_selected {
+	background-color: #d4f0ff;
+	border-radius: 100px;
+}
+.minicalendar_weekheader, .minicalendar_main {
+	display: flex;
+	flex-wrap: wrap;
+	justify-content: space-around;
+	line-height: 1;
+}
+.minicalendar_weekheader {
+	margin-bottom: 4px;
+}
+.minicalendar_weekheader>div {
+	width: 14.28%;
+	text-align: center;
+	padding-bottom: 2px;
+}
+.minicalendar_main>div {
+	width: 14.28%;
+}
+.minicalendar_main>div span {
+	display: block;
+	width: 26px;
+	height: 26px;
+	margin: 1px 1px;
+	text-align: center;
+	padding-top: 7px;
+	cursor: pointer;
+}
+.minicalendar_main>div:hover {
+	opacity: 0.7;
+}
+.minicalendar_weekheader {
+	font-size: 1.3rem;
+	border-bottom: 1px solid #fff;
+}
+.minicalendar_main {
+	font-size: 1.2rem;
+	font-weight: bold;
+}
+.minicalendar .is_sun span, .minicalendar .is_holiday span {
+	color: #fc658c;
+}
+.minicalendar .is_sat span {
+	color: #008cd5;
+}
+.minicalendar_main .is_disabled span {
+	color: #8F8F8F !important;
+	font-weight: normal;
+	cursor: default;
+}
+.minicalendar_main .is_disabled:hover {
+	opacity: 1 !important;
+}
+.minicalendar_main .is_today span {
+	color: #ffffff !important;
+	background-color: var(--loioz-blue);
+	border-radius: 100px;
+}
+.is_today_head {
+	color: #ffffff !important;
+	background-color: var(--loioz-blue);
+	border-radius: 20px;
+	display: inline-block;
+	height: 35px;
+	width: 35px;
+	padding-top: 5px;
+}
+.minicalendar_main .is_sun.is_today span, .minicalendar_main .is_holiday.is_today span, .minicalendar_main .is_sun.is_holiday.is_today span,
+.minicalendar_main .is_sat.is_today.is_holiday span {
+	background-color: #E3B9B9;
+	color: #424c50;
+}
+.minicalendar_main .is_sat.is_today span {
+	background-color: #9AD3F2;
+	color: #424c50;
+}
+.minicalendar_header {
+	display: flex;
+	justify-content: center;
+	align-items: center;
+	margin-bottom: 10px;
+}
+.minicalendar_title {
+	font-size: 1.4rem;
+	font-weight: bold;
+	padding: 0 10px;
+	line-height: 1.1;
+	letter-spacing: 1px;
+	padding-top: 3px;
+}
+.minicalendar_pagination {
+	width: 22px;
+}
+.minicalendar_pagination .btn_next_m, .minicalendar_pagination .btn_prev_m {
+	outline: 0 !important;
+}
+.btn_prev_m, .btn_next_m {
+	background-color: transparent;
+	border: 1px solid var(--loioz-blue);
+	border-radius: 100px;
+	text-align: left !important;
+	text-indent: -9999px !important;
+	width: 20px;
+	height: 20px;
+	font-size: 1rem;
+	position: relative;
+}
+.btn_prev_m::after, .btn_next_m::after {
+	content: "";
+	display: block;
+	position: absolute;
+	border-top: 4px solid transparent;
+	border-bottom: 4px solid transparent;
+	width: 1px;
+	top: 5px;
+}
+.btn_prev_m::after {
+	left: 5px;
+	border-right: 6px solid var(--loioz-blue);
+}
+.btn_next_m::after {
+	left: 7px;
+	border-left: 6px solid var(--loioz-blue);
+}
+.btn_prev_m:hover, .btn_next_m:hover {
+	opacity: 0.7;
+}
+
+/*ミニユーザー検索*/
+.miniusersearch {
+	border-radius: 7px;
+	background: #fff;
+	box-shadow: 0px 1px 6px rgba(0, 0, 0, 0.16);
+	margin-bottom: 5px;
+	padding: 10px;
+	text-align: left;
+	position: relative;
+	height: 50px;
+	display: flex;
+}
+.miniusersearch>div {
+	flex: 1;
+}
+.miniusersearch .miniusersearch_label {
+	background-image: url("../img/icon_miniusersrh.svg");
+	background-repeat: no-repeat;
+	background-position: center center;
+	width: 18px;
+	height: 25px;
+	text-indent: -9999px;
+	margin: 0 6px 0 0;
+}
+
+/*ミニユーザー選択*/
+.miniuserselect_area {
+	flex: 1;
+	display: flex;
+	flex-direction: column;
+}
+.miniuserselect_tab {
+	position: relative;
+	margin: 0;
+}
+.miniuserselect_tab>dt {
+	position: absolute;
+	width: 86px;
+	height: 46px;
+	left: -6px;
+	top: 0;
+	overflow: hidden;
+	cursor: pointer;
+}
+.miniuserselect_tab>dt .tab_inner {
+	display: block;
+	width: 74px;
+	height: 40px;
+	margin: 6px 6px 0;
+	border-radius: 7px 7px 0 0;
+	box-shadow: 0px 1px 6px rgba(0, 0, 0, 0.16);
+	background-color: #9DDEC2;
+	color: #398288;
+	text-align: center;
+	padding-top: 10px;
+}
+.miniuserselect_tab>dt.selected .tab_inner {
+	background: #fff;
+	font-weight: bold;
+}
+.miniuserselect_tab>dt.miniuserselect_tab_group {
+	left: 72px;
+}
+.miniuserselect_tab>dd {
+	background: #fff;
+	box-shadow: 0px 0px 0px 1px rgb(0 0 0 / 10%);
+	position: relative;
+	z-index: 1;
+	border-radius: 7px;
+}
+.miniuserselect_data_group {
+	border-radius: 7px;
+	display: none;
+}
+.miniuserselect_scroll {
+	padding: 0px 10px;
+	margin: 3px 0 5px 0;
+}
+.miniuserselect_cancel {
+	position: absolute;
+	right: 10px;
+	top: 16px;
+	z-index: 2;
+}
+.user_list_accordion, .login_user_list_accordion {
+	margin: 0 0 9px;
+	padding: 0;
+	color: var(--text-color-sub);
+	font-size: 1.4rem;
+}
+.login_user_list_accordion>dt {
+	border-top: 1px dashed #34A598;
+	padding: 8px 5px 7px 24px;
+	position: relative;
+	cursor: pointer;
+}
+.user_list_accordion>dt {
+	border-top: 1px dashed #34A598;
+	padding: 8px 5px 7px 24px;
+	position: relative;
+	cursor: pointer;
+}
+.login_user_list_accordion>dt:first-child {
+	border-top: none;
+}
+.login_user_list_accordion>dt::before {
+	width: 14px;
+	height: 14px;
+	border-radius: 4px;
+	background: transparent;
+	border: 1px solid var(--loioz-blue);
+	content: "";
+	display: block;
+	position: absolute;
+	left: 1px;
+	top: 10px;
+}
+.login_user_list_accordion>dt::after {
+	content: "";
+	display: block;
+	position: absolute;
+	left: 6px;
+	top: 13px;
+	border-left: 6px solid var(--loioz-blue);
+	border-top: 4px solid transparent;
+	border-bottom: 4px solid transparent;
+}
+.login_user_list_accordion>dt.selected {
+	color: var(--loioz-blue);
+}
+.login_user_list_accordion>dt.selected::before {
+	background: var(--loioz-blue);
+}
+.login_user_list_accordion>dt.selected::after {
+	left: 4px;
+	top: 15px;
+	border-left: 4px solid transparent;
+	border-top: 6px solid #fff;
+	border-bottom: none;
+	border-right: 4px solid transparent;
+}
+.login_user_list_accordion>.groupHeader {
+	cursor: text;
+}
+.user_list_accordion>dt:first-child {
+	border-top: none;
+}
+.user_list_accordion>dt::before {
+	width: 14px;
+	height: 14px;
+	border-radius: 4px;
+	background: transparent;
+	border: 1px solid var(--loioz-blue);
+	content: "";
+	display: block;
+	position: absolute;
+	left: 1px;
+	top: 10px;
+}
+.user_list_accordion>dt::after {
+	content: "";
+	display: block;
+	position: absolute;
+	left: 6px;
+	top: 13px;
+	border-left: 6px solid var(--loioz-blue);
+	border-top: 4px solid transparent;
+	border-bottom: 4px solid transparent;
+}
+.user_list_accordion>dt.selected {
+	color: var(--loioz-blue);
+}
+.user_list_accordion>dt.selected::before {
+	background: var(--loioz-blue);
+}
+.user_list_accordion>dt.selected::after {
+	left: 4px;
+	top: 15px;
+	border-left: 4px solid transparent;
+	border-top: 6px solid #fff;
+	border-bottom: none;
+	border-right: 4px solid transparent;
+}
+.user_list_accordion>dd {
+	display: none;
+	padding-bottom: 2px;
+}
+.user_check_list {
+	list-style: none;
+	margin: 0 0 0 24px;
+	padding: 0;
+}
+.user_check_list li {
+	margin: 2px 0;
+}
+.user_checkbox_btn {
+	position: relative;
+	padding: 1px 0 0 20px;
+	line-height: 1.1;
+	cursor: pointer;
+}
+.user_checkbox_btn::before {
+	content: "";
+	display: block;
+	position: absolute;
+	top: 0;
+	left: 0;
+	width: 14px;
+	height: 14px;
+	border: 1px solid #D6D4CD;
+	border-radius: 3px;
+}
+.user_checkbox_btn .user_color {
+	content: "";
+	position: absolute;
+	top: 0;
+	left: 0;
+	width: 14px;
+	height: 14px;
+	border: 1px solid #D6D4CD;
+	border-radius: 3px;
+	display: none;
+}
+.user_checkbox_btn .checkbox_input:checked ~ .user_color {
+	display: block;
+}
+.user_list_selectbtn {
+	list-style: none;
+	margin: 0 0 10px 24px;
+	padding: 0;
+	display: flex;
+}
+
+.user_list_selectbtn li {
+	margin: 0 10px 0 0;
+}
+
+.user_list_selectbtn li .btn {
+	width: 66px;
+	font-size: 1.2rem;
+	border-color: var(--loioz-blue);
+	padding: 0px 2px;
+}
+
+.user_list_selectbtn li .is_select {
+	color: #fff;
+	background-color: var(--loioz-blue);
+}
+
+.user_list_selectbtn li .is_cancel {
+	color: var(--loioz-blue);
+}
+
+.block_header {
+	display: flex;
+	justify-content: space-between;
+	border-bottom: 1px solid #9B9B9B;
+	margin: 0 15px 5px;
+	padding: 20px 0 10px 6px;
+}
+
+.block_header .block_title {
+	color: #119590;
+	font-size: 1.8rem;
+	padding-top: 2px;
+	margin-bottom: 5px;
+}
+
+.link_circle_task {
+	display: inline-block;
+	border: 1px solid #ffffff;
+	border-radius: 15px;
+	width: 17px;
+	height: 16px;
+	text-indent: -9999px;
+	margin-left: 10px;
+	position: relative;
+}
+
+.link_circle_task::after {
+	content: "";
+	display: block;
+	position: absolute;
+	left: 5.4px;
+	top: 3px;
+	border-left: 6px solid #ffffff;
+	border-top: 4px solid transparent;
+	border-bottom: 4px solid transparent;
+}
+
+/*予定表のタスク欄*/
+.block_task {
+	overflow-y: auto;
+}
+
+.main_calendar {
+	padding-bottom: 1px;
+}
+.main_calendar_header {
+	display: flex;
+	justify-content: space-between;
+	align-items: flex-start;
+}
+.calendar_title {
+	background-color: #17acc7;
+	border-radius: 0 0px 3px 0;
+	color: var(--white);
+	font-weight: 600;
+	font-size: 1.9rem;
+	letter-spacing: 1.4px;
+	text-align: center;
+	margin-right: 15px;
+	min-width: 224px;
+	padding: 11px 23px 8px;
+}
+.cal_fn1, .cal_fn2, .cal_fn3 {
+	list-style: none;
+	margin-top: 7px;
+	padding: 0;
+	display: flex;
+}
+.cal_fn1 {
+	margin-right: 20px;
+	margin-right: auto;
+}
+.cal_fn2 {
+	margin-left: auto;
+	margin-right: 10px;
+}
+
+.cal_fn3 {
+	margin-left: 25px;
+	margin-right: 10px;
+}
+
+.cal_fn1 li {
+	margin: auto 3px;
+}
+
+.cal_fn2 li, .cal_fn3 li {
+	margin: 0 1px;
+}
+
+.cal_fn2 .btn {
+	min-width: 53px;
+}
+
+.main_calendar_header .btn.selected {
+	color: var(--loioz-blue) !important;
+	background-color: #fff;
+	cursor: default;
+}
+
+.main_calendar_header .btn.selected:hover {
+	opacity: 1;
+}
+
+.btn_cal_prev, .btn_cal_next {
+	background-color: var(--loioz-blue);
+	border-color: var(--loioz-blue);
+	width: 24px;
+	height: 24px;
+	border-radius: 100px;
+	text-align: left;
+	text-indent: -9999px;
+	position: relative;
+}
+
+.btn_cal_prev::after, .btn_cal_next::after {
+	content: '';
+	display: block;
+	position: absolute;
+	border-top: 5px solid transparent;
+	border-bottom: 5px solid transparent;
+	top: 6px;
+}
+
+.btn_cal_prev::after {
+	border-right: 7px solid #fff;
+	left: 6px;
+}
+
+.btn_cal_next::after {
+	border-left: 7px solid #fff;
+	left: 8px;
+}
+
+.btn_cal_prev:hover, .btn_cal_next:hover {
+	opacity: 0.75;
+}
+
+.schedule_create_button_area {
+	margin: 7px 15px 0 0;
+}
+
+.schedule_create_button_area svg {
+	margin-right: 8px;
+}
+
+.schedule_create_button_area button {
+	height: 35px;
+}
+
+.select_cal_type_area {
+	margin: 7px 25px 0 0;
+}
+
+.select_cal_type_area select {
+	height: 35px;
+	width: 70px;
+}
+
+.btn_today {
+	padding: 4px 15px;
+}
+
+/************** ポップアップ カレンダー詳細 **************/
+.cal_detail_popup {
+	width: 450px;
+	border-radius: 7px;
+	background: #fff;
+	box-shadow: 0px 3px 16px rgba(0, 0, 0, 0.35);
+	z-index: 3;
+}
+.cal_detail_popup_header {
+	display: flex;
+	align-items: center;
+}
+.cal_detail_popup_day {
+	width: 120px;
+	height: 50px;
+	border-radius: 7px 0px;
+	background: #4d4d4d;
+	color: #fff;
+	font-weight: bold;
+	font-size: 2rem;
+	text-align: center;
+	padding-top: 11px;
+}
+.cal_detail_popup_day .cal_detail_popup_week {
+	font-weight: normal;
+	font-size: 1.6rem;
+}
+.cal_detail_popup_inner {
+	font-size: 1.45rem;
+	padding: 15px 20px 0px;
+	overflow-y: auto;
+	max-height: 600px;
+}
+.cal_subject {
+	font-size: 2rem;
+	border-bottom-style: solid;
+	border-bottom-width: 3px;
+	padding: 0 3px 5px;
+	margin-bottom: 10px;
+	border-bottom-color: var(--loioz-blue);
+}
+.cal_detail_popup_inner_row {
+	padding: 0 0 5px;
+}
+.cal_subject.anken_schedule {
+	border-bottom-color: #eea426;
+}
+.cal_detail_popup_dl {
+	margin: 6px 2px 1px;
+}
+.cal_detail_popup_dl>dt {
+	width: 30px;
+	padding: 3px 0 2px;
+	line-height: 1.1;
+	float: left;
+	clear: left;
+}
+.cal_detail_popup_dl>dt.icon {
+	background-repeat: no-repeat;
+	padding: 12px 0;
+	background-size: 19px;
+	margin: 3px 0 3px 5px;
+}
+.cal_detail_popup_dl>dt.calendar {
+	background-image: url("../img/icon_calendar_blk.svg");
+}
+.cal_detail_popup_dl>dt.place {
+	background-image: url("../img/icon_place_blk.svg");
+}
+.cal_detail_popup_dl>dt.memo {
+	background-image: url("../img/icon_memo_blk.svg");
+	background-size: 22px;
+}
+.cal_detail_popup_dl>dt.saiban {
+	background-image: url("../img/icon_tenbin_blk.svg");
+	background-size: 19px;
+}
+.cal_detail_popup_dl>dt.kokyaku {
+	background-image: url("../img/icon_human_blk.svg");
+	background-size: 18px;
+}
+.cal_detail_popup_dl>dt.sankasya {
+	background-image: url("../img/icon_team_blk.svg");
+}
+.cal_detail_popup_dl>dt.anken {
+	background-image: url("../img/icon_file_blk.svg");
+	background-size: 19px;
+}
+.cal_schedule_memo {
+	padding-left:0;
+}
+.cal_detail_popup_dl>dd {
+	padding: 2px 0 1px 7px;
+	display: flex;
+	align-items: flex-start;
+}
+.cal_detail_popup_dl>dd.sankasya_list {
+	padding-top: 0px;
+}
+.cal_detail_command_wrap {
+	position: sticky;
+	bottom: 0;
+	background-color: #fff;
+	padding: 10px 0px 15px;
+}
+.userdatap {
+	display: flex;
+	align-items: center;
+	margin: 5px 0;
+}
+.userdatap:hover {
+	text-decoration: none!important;
+}
+.userdatap .idnum, .cal_detail_popup_dl .idnum {
+	display: block;
+	background-color: #ccc;
+	border-radius: 100px;
+	font-size: 1.3rem;
+	line-height: 1.1;
+	padding: 3px 7px 2px;
+	margin-right: 5px;
+}
+.userdatap .is_kokyaku, .cal_detail_popup_dl .is_kokyaku {
+	background-color: #F0AF3F;
+	color: #ffffff;
+}
+.userdatap .is_anken, .cal_detail_popup_dl .is_anken {
+	background-color: #4683CB;
+	color: #ffffff;
+}
+.userdatap .is_saiban, .cal_detail_popup_dl .is_saiban {
+	background-color: #b28cce;
+	color: #ffffff;
+}
+.userdatap .infoname, .userdatap .disp_text {
+	padding-top: 3px;
+}
+.userdatap .infoname, .userdatap .disp_text, .cal_detail_popup_dl .infoname {
+	flex: 1;
+	word-break: break-all;
+}
+.userdatap .kokyaku_text {
+	color: #F0AF3F;
+}
+.disp_kokyaku_name, .disp_saiban_num {
+	padding-left: 15px;
+	padding-right: 5px;
+}
+.userdatap .anken_text, .saiban_text {
+	color: #4683CB;
+}
+.disp_bunya_name {
+	max-width: 100px;
+	padding-left: 15px;
+	padding-right: 5px;
+}
+/* ポップアップカレンダータイトル 顧客カラー */
+.cal_subject.cal_customer {
+	border-bottom-color: var(--loioz-blue);
+}
+/* ポップアップカレンダータイトル 顧客過去予定  グレー */
+.cal_subject.cal_customer.kako_yotei {
+	border-bottom-color: var(--lz-gray-400);
+}
+/* ポップアップカレンダータイトル 案件、裁判カラー */
+.cal_subject.cal_anken, .cal_subject.cal_saiban {
+	border-bottom-color: var(--case-color);
+}
+/* ポップアップカレンダータイトル 案件過去予定  グレー */
+.cal_subject.cal_anken.kako_yotei {
+	border-bottom-color: var(--lz-gray-400);
+}
+/* ポップアップカレンダータイトル 裁判過去予定 グレー */
+.cal_subject.cal_saiban.kako_yotei {
+	border-bottom-color: var(--lz-gray-400);
+}
+
+.cal_detail_row {
+	display: flex;
+	align-items: center;
+	padding: 0 10px 0 0;
+}
+.cal_detail_row .cal_icon {
+	font-size: 1.8rem;
+	width: 35px;
+	color: var(--text-color-sub);
+	text-align: center;
+}
+.cal_detail_row .cal_icon.saiban_icon {
+	font-size: 1.5rem;
+}
+.cal_detail_row .cal_data {
+	word-break: break-all;
+	margin-left: 6px;
+	max-width: 360px;
+}
+.cal_detail_row .cal_data .data_label {
+	max-width: 305px;
+	line-height: 1.1;
+	margin-top: 7px;	
+}
+.cal_detail_row .cal_data .data_item_label {
+	font-size: 1.2rem;
+	font-weight: 600;
+	color: var(--text-color-sub);
+}
+.cal_detail_row .cal_data .data_item {
+	font-size: 1.4rem;
+}
+.cal_data .id_link,
+.cal_data .id_no_link {
+	font-size: 1.3rem;
+}
+
+/* 「週」選択時の時刻線マーク */
+.is_today .time_line_mark {
+	background: #F75151;
+	border-radius: 4px;
+	height: 11px;
+	width: 11px;
+	position: absolute;
+	z-index: 10;
+	margin-left: -6.5px;
+	margin-top: 6px;
+}
+/* 「週」選択時の時刻線 */
+.is_today .time_line {
+	position: absolute;
+	border-top: #F75151 solid 2px;
+	z-index: 10;
+	left: 0;
+	right: 0;
+}
+
+/* 「日」選択時の時間棒マーク */
+.is_today_day .time_line_mark {
+	background: #F75151;
+	border-radius: 4px;
+	height: 11px;
+	width: 11px;
+	position: absolute;
+	z-index: 10;
+	margin-left: 0px;
+	margin-top: 5px;
+}
+/* 「日」選択時の時刻線 */
+.is_today_day .time_line {
+	position: absolute;
+	border-top: #F75151 solid 2px;
+	z-index: 10;
+	left: 0;
+	right: 0;
+}
+
+/************** IDのリンク装飾 **************/
+.cal_detail_popup .cal_participant_title {
+	font-size: 1.5rem;
+	border-bottom: 1px solid #BCBCBC;
+	text-align: center;
+	margin: 8px 0;
+}
+.cal_detail_popup .cal_participant_title span {
+	display: inline-block;
+	border: 1px solid #707070;
+	border-radius: 100px;
+	background-color: #fff;
+	line-height: 1.1;
+	padding: 4px 10px 1px;
+}
+.cal_participant_list {
+	list-style: none;
+	display: -webkit-inline-box;
+	flex-wrap: wrap;
+	padding: 0;
+	justify-content: space-between;
+	font-size:0;
+}
+.cal_participant_list li {
+	width: 110px;
+	padding: 1px 10px 1px 0;
+	font-size: 1.4rem;
+	display: inline-block;
+}
+.cal_detail_popup_date, .cal_detail_popup_week, .cal_detail_popup_time {
+	display: inline-block;
+	margin-right: 10px;
+}
+.cal_detail_popup_week:before {
+	content: "(";
+}
+.cal_detail_popup_week:after {
+	content: ")";
+}
+
+
+/************** 幅指定の画面中央のコンテンツ内の入力エリア **************/
+/* タイトル */
+.block_title {
+	font-size: 2.5rem;
+	font-weight: 600;
+	color: var(--loioz-blue-600);
+}
+
+.detail_input_area p {
+	margin-bottom: 0;
+}
+
+/* 詳細 */
+.block_detail {
+	margin: 0 0 20px;
+	font-size: 1.35rem;
+	color: var(--text-color-sub);
+}
+.block_detail p {
+	margin-bottom: 0;
+}
+.text_mark {
+	background-color: rgb(23, 172, 199, 0.1);
+	border-radius: 5px;
+	padding: 8px 10px;
+	border: 1px solid rgb(23, 172, 199);
+	margin-top: 5px;
+	font-weight: bold;
+}
+
+/* 編集画面のボタン郡 */
+.input_block_btn_area {
+	text-align: center;
+	margin: 10px 0;
+}
+/* ボタン郡 */
+.block_action {
+	margin-top: auto;
+	margin-left: auto;
+}
+
+
+/* 幅指定の画面中央のコンテンツ内の入力エリアの部品郡 */
+.input_parts label {
+	font-weight: bold;
+	color: var(--text-color-sub);
+	padding: 10px 0 0 0;
+	line-height: 1;
+	text-align: left;
+	flex: 0 0 100%;
+	max-width: 100%;
+	vertical-align: bottom;
+	font-size: 1.3rem;
+	height: 23px;
+}
+label.view_side_label {
+	font-weight: bold;
+	color: var(--text-color-sub);
+	line-height: 1;
+	text-align: left;
+	flex: 0 0 100%;
+	max-width: 100%;
+	vertical-align: bottom;
+	font-size: 1.3rem;
+}
+.input_parts label.radio_btn {
+	font-weight: normal;
+	color: var(--text-color-main);
+	padding: 10px 0 0 0;
+	line-height: 1;
+	text-align: left;
+	flex: none;
+	max-width: none;
+}
+.input_parts .error_mag_point {
+	-ms-flex: 0 0 10%;
+	flex: 0 0 100%;
+	max-width: 100%;
+}
+.input_parts .action_link {
+	font-size: 1.3rem;
+}
+
+/* 入力補助の文言エリア */
+.input_nav {
+	font-size: 1.2rem;
+	color: var(--text-color-sub);
+	width: 100%;
+	margin-bottom: 10px;
+	white-space: nowrap;
+	margin-top: 6px;
+}
+.input_nav p {
+	margin-bottom: 0;
+}
+
+/************** 検索条件エリア **************/
+.searchform_block {
+	padding: 10px 15px;
+	font-size: 1.2rem;
+}
+/* 検索条件エリアタイトル */
+.searchform_block_title {
+	font-weight: bold;
+	font-size: 1.5rem;
+	color: var(--text-color-sub);
+	text-align: left;
+}
+/* 検索条件メインエリア */
+.searchform_block_main {
+	padding: 0 20px 7px;
+}
+/* 検索条件詳細ヘッダ（開閉のライン） */
+.searchform_detail_block_header {
+	display: flex;
+	justify-content: space-between;
+	align-items: center;
+	border-bottom: 1px dashed var(--loioz-blue);
+	height: 8px;
+	margin: 10px 0 18px;
+}
+.searchform_block_main ul {
+	list-style: none;
+	text-align: left;
+	padding-inline-start: 0;
+}
+.searchform_block_main ul li {
+	display: inline-block;
+	margin-right: 15px;
+	margin-top: 2px;
+}
+.searchform_block_main ul li label.searchLabel {
+	display: block;
+	margin-bottom: 0;
+}
+.searchform_block_main ul li input[type=text] {
+}
+.searchform_block_main ul li .select_multiple {
+	display: block;
+	min-width: 155px;
+	max-width: 155px;
+	height: 87px;
+}
+.form-control.select_multiple {
+	display: block;
+	min-width: 130px;
+	max-width: 130px;
+	height: 87px;
+}
+
+/* 検索条件詳細タイトル */
+.searchform_detail_block_title {
+	color: var(--text-color-sub);
+	font-weight: bold;
+	position: relative;
+	background-color: #fff;
+	padding: 5px 36px 5px 0px;
+	margin-bottom: -10px;
+	cursor: pointer;
+}
+.searchform_detail_block_title::after {
+	content: "";
+	border-top: 5px solid transparent;
+	border-right: 5px solid transparent;
+	border-bottom: 5px solid transparent;
+	border-left: 9px solid var(--loioz-blue);
+	position: absolute;
+	right: 9px;
+	top: 8px;
+}
+/* 検索条件詳細開いた状態 */
+.detail_open::after {
+	content: "";
+	border-top: 9px solid var(--loioz-blue);
+	border-right: 5px solid transparent;
+	border-bottom: 5px solid transparent;
+	border-left: 5px solid transparent;
+	position: absolute;
+	right: 15px;
+	top: 8px;
+}
+/* 検索条件詳細複数行の場合 */
+.detail_block_multiLine li {
+	vertical-align: top;
+}
+.searchform_multi_line,
+.searchform_innerList {
+	margin-bottom: 10px;
+}
+.searchform_innerList li label {
+	display: block!important;
+	margin-bottom: 0rem;
+}
+.searchform_innerList li input[type=text] {
+	display: inline-block!important;
+}
+/* 検索ボタンエリア */
+.searchform_block_bottom {
+	text-align: center;
+}
+.searchform_block_bottom button {
+	width: 120px;
+}
+.searchform_block_bottom button:first-child {
+	margin-right: 20px;
+}
+/* ふりがな */
+.ruby {
+	font-size: 0.9rem;
+	padding-bottom: 2px;
+	letter-spacing: 1px;
+	text-overflow: ellipsis;
+	overflow: hidden;
+	white-space: nowrap;
+}
+/* クリックイベント無効化 */
+.stop-events:hover {
+	cursor: default!important;
+}
+
+.fd_p {
+	margin: 7px 0;
+}
+
+.modal_subtitle {
+	color: #fff;
+	font-size: 1.3rem;
+	border-radius: 100px;
+	background: #398288;
+	line-height: 1.1;
+	padding: 5px 15px;
+	margin: 30px 0 5px;
+}
+
+.user_selectblock {
+	display: flex;
+	margin-top: 7px;
+	margin-bottom: 7px;
+}
+
+.user_selectcol_c {
+	background: url("../img/mark_userselect_arrow.svg") no-repeat center
+		center;
+	width: 100%;
+}
+.user_selectcol_l, .user_selectcol_r {
+	width: 230px;
+}
+.schedule_user_selectcol_l, .schedule_user_selectcol_r {
+	width: 200px;
+}
+.user_selectcol_l .user_selectbox {
+	height: 172px;
+	margin-top: 0;
+}
+.user_selectbox_task.user_selectcol_l .user_selectbox  {
+	height: 149px;
+}
+.user_selectbox_task.user_selectbox {
+	height: 115px;
+}
+.user_selectbox {
+	width: 200px;
+	height: 140px;
+	border-radius: 4px;
+	background: #fff;
+	border: 1px solid #bcbcbc;
+	margin: 5px 0;
+	overflow-y: auto;
+}
+.user_selectbox .user_selectbtn {
+	display: block;
+	border-radius: 6px;
+	background: #f2f2f2;
+	border: none;
+	margin: 4px 3px;
+	width: 97%;
+	text-align: left;
+	padding: 5px 15px 4px;
+	line-height: 1;
+	font-size: 1.4rem;
+	background-repeat: no-repeat;
+}
+.user_selectbox .user_selectlabel {
+	display: inline-block;
+	border-radius: 6px;
+	border: none;
+	margin: 4px 3px;
+	width: 97%;
+	text-align: left;
+	padding: 5px 15px 4px;
+	line-height: 1;
+	max-width: 140px;
+	font-size: 1.4rem;
+	background-repeat: no-repeat;
+}
+.user_selectbox .user_selectbtn:hover {
+	background-color: #e2f2fa;
+}
+
+.user_selectbox.is_participantlist .user_selectbtn {
+	background-color: #e2f2fa;
+	background-image: url("../img/icon_user_select_minus.svg");
+	background-position: 96% center;
+	padding-right: 35px;
+}
+.user_selectbox.is_participantlist .user_selectbtn:hover {
+	background-color: #f2f2f2;
+}
+.user_selectbox.is_userlist .user_selectbtn {
+	background-image: url("../img/icon_user_select_plus.svg");
+	background-position: 5px center;
+	padding-left: 20px;
+}
+
+.user_selectbox.is_participantlist .user_selectbtn.isMain {
+	background-image: url("../img/icon_user_select_minus.svg"), url(../img/mark_main.svg);
+	background-position: 96% center, 88% center;
+}
+.user_selectbox.is_userlist .user_selectbtn.isMain {
+	background-image: url("../img/icon_user_select_plus.svg"), url(../img/mark_main.svg);
+	background-position: left 5px center,right 5px center;
+}
+
+
+/* 予定登録モーダル */
+.modal_schedule .user_selectblock {
+	margin: 0 auto;
+}
+.schedule_user_selectcol_l .user_selectbox {
+	height: 148px;
+	margin-top: 0;
+}
+.schedule_user_selectcol_r .user_selectbox {
+	height: 114px;
+	border: 1px solid var(--bor-color-main);
+}
+.modalbody_schedule {
+	height: 566px;
+	overflow-y: auto;
+	overflow-x: hidden;
+	justify-content: space-around;
+	padding: 0 3px;
+}
+.modalbody_schedule .privacy_label {
+	color: var(--loioz-blue);
+	margin: 3px 15px 2px 0;
+	display: inline-block;
+}
+.modalbody_schedule .checkbox_btn_box .checkbox_txt {
+	transition: all 0.3s;
+	border-radius: 4px;
+	background: #fff;
+	border: 1px solid #8ed7de;
+	display: inline-block;
+	padding: 5px 5px 3px 25px;
+	width: 65px;
+	height: 25px;
+}
+.modalbody_schedule .checkbox_btn_box .checkbox_input ~ .checkbox_txt::before {
+	top: 8px;
+}
+.modalbody_schedule .checkbox_btn_box .checkbox_input:checked ~ .checkbox_txt::after {
+	top: 10px;
+}
+
+.flt_r {
+	float: right;
+}
+
+/*カレンダー*/
+.cal_header_week {
+	height: 40px;
+	min-height: 40px;
+	border-radius: 24px 24px 0px 0px;
+	margin: 0 10px 0;
+	display: flex;
+	justify-content: space-around;
+}
+
+.cal_header_week.day_head {
+	margin-left: 46px;
+	border-bottom: 1px solid #cccccc;
+}
+
+.cal_header_week>div {
+	width: 14.28%;
+	text-align: center;
+	font-size: 1.3rem;
+}
+
+.cal_header_week.week_head {
+	margin-left: 46px;
+	/*  width: 1036px;*/
+	/*  width: 90%;*/
+	justify-content: flex-start;
+	border-bottom: 1px solid #cccccc;
+}
+
+.cal_header_week.month_head {
+	justify-content: flex-start;
+	border-bottom: 1px solid #cccccc;
+	padding-top: 10px;
+}
+
+.cal_header_week.week_head>div {
+	white-space: nowrap;
+	margin: auto;
+}
+
+.cal_header_week .ch_week {
+	display: inline-block;
+	height: 20px;
+	width: 20px;
+	border-radius: 100px;
+	background-color: #fff;
+	line-height: 1;
+	padding-top: 4px;
+	margin: 0 2px;
+}
+
+.cal_header_week .ch_day {
+	display: inline-block;
+	font-weight: bold;
+	font-size: 1.7rem;
+}
+
+.cal_header_week .ch_day .day_note {
+	font-size: 1rem;
+	font-weight: normal;
+}
+
+.cal_header_week .is_sun, .cal_header_week .is_holiday {
+	color: #F75151;
+}
+
+.cal_header_week .is_sat {
+	color: #2199D8;
+}
+
+.main_calendar_m {
+	/*  height: calc(100% - 90px);*/
+	margin: 0 10px;
+	padding-bottom: 10px;
+	display: flex;
+	flex-wrap: wrap;
+	justify-content: flex-start;
+}
+.main_calendar_w {
+	margin: 0 0 0 8px;
+	display: flex;
+	flex-wrap: wrap;
+	overflow-y: auto;
+	border-bottom: 1px solid #ccc;
+}
+.week_body {
+	margin-bottom: 10px;
+}
+.main_calendar_d {
+	margin: 0 0 0 8px;
+	display: flex;
+	flex-wrap: wrap;
+	overflow-y: auto;
+	border-bottom: 1px solid #ccc;
+}
+.main_calendar_w.week_alltime, .main_calendar_d.week_alltime {
+	height: 65px;
+	min-height: 65px;
+}
+.main_calendar_w.week_alltime .col_time, .main_calendar_d.week_alltime .col_time {
+	padding: 20px 4px 0;
+}
+.main_calendar_m>div {
+	width: 14.28%;
+	border-bottom: 1px solid #ccc;
+	border-right: 1px dashed #ccc;
+	position: relative;
+}
+
+.main_calendar_w .col_week>div {
+	width: 14.28%;
+	border-right: 1px dashed #ccc;
+	position: relative;
+}
+
+.main_calendar_d>div {
+	position: relative;
+	/*  width: 1036px;*/
+}
+
+.col_time {
+	width: 38px !important;
+	font-size: 1.1rem;
+	line-height: 1;
+	text-align: right;
+	border-right: none !important;
+}
+
+.col_hour {
+	height: 60px;
+	border-top: 1px solid #ccc;
+	position: relative;
+}
+
+.col_time .col_hour {
+	padding: 2px 2px 2px 0;
+}
+
+div .col_hour:first-child, .col_time .col_hour {
+	border-top: none;
+}
+
+.main_calendar_d.week_alltime>div:nth-child(2) {
+	border-left: 1px solid #ccc;
+	border-right: 1px solid #ccc;
+	padding-left: 3px;
+	padding-right: 3px;
+}
+
+.main_calendar_d.day_body {
+	margin-bottom: 9px;
+	margin-right: 0;
+	max-height: 74vh;
+}
+
+.main_calendar_d.day_body>div:nth-child(2) {
+	border-left: 1px solid #ccc;
+	border-right: 1px solid #ccc;
+	flex: 1;
+	height: 1440px;
+}
+
+.main_calendar_m.week5>div, .main_calendar_m.week6>div {
+	min-height: 112px;
+}
+
+.main_calendar_w {
+	display: flex;
+}
+
+.main_calendar_w .col_week {
+	flex: 1;
+	display: flex;
+}
+
+.main_calendar_w .is_sun, .main_calendar_m .is_sun {
+	border-left: 1px solid #ccc;
+	background-color: #FAF0F3;
+}
+
+.main_calendar_w .is_holiday, .main_calendar_m .is_holiday {
+	background-color: #FAF0F3;
+}
+
+.main_calendar_w .is_sat, .main_calendar_m .is_sat {
+	border-right: 1px solid #ccc !important;
+	background-color: #F0FAFA;
+}
+
+.main_calendar_w .is_disabled, .main_calendar_m .is_disabled {
+	background-color: #F9F9F9;
+	color: #A3A3A3 !important;
+}
+
+.main_calendar_m .cal_day_header {
+	margin: 2px 0 0 5px;
+	min-width: 20px;
+	text-align: center;
+	display: inline-block;
+}
+
+.main_calendar_m .cal_day_header .is_day {
+	font-size: 1.7rem;
+}
+
+.main_calendar_m .is_today .cal_day_header .is_day {
+	color: #ffffff !important;
+	background-color: var(--loioz-blue);
+	border-radius: 15px;
+	padding-top: 2px;
+	display: inline-block;
+	width: 26px;
+	height: 26px;
+	text-align: center;
+}
+
+.main_calendar_m .is_sun .cal_day_header, .main_calendar_m .is_holiday .cal_day_header,
+	.main_calendar_d .is_holiday .cal_day_header {
+	color: #D82121;
+}
+
+.main_calendar_m .is_disabled .cal_day_header {
+	color: #A3A3A3 !important;
+}
+
+.main_calendar_m .is_sat .cal_day_header {
+	color: #2199D8;
+}
+
+.main_calendar_m .cal_day_header .day_note {
+	font-size: 1.1rem;
+	margin-left: 4px;
+}
+
+.main_calendar_m .cal_day_body {
+	font-size: 1.1rem;
+	padding: 0 3px 4px;
+	line-height: 1.2;
+	display: flex;
+	flex-direction: column;
+}
+
+.main_calendar_w .cal_day_body, .main_calendar_d .cal_day_body {
+	font-size: 1.1rem;
+	padding: 0;
+	line-height: 1.2;
+}
+/*月表示*/
+.cal_entry {
+	border-bottom-style: solid;
+	border-bottom-width: 1px;
+	margin: 1px 0;
+	cursor: pointer;
+	position: relative;
+	cursor: pointer;
+}
+
+.cal_entry .sch_time, .cal_entry .sch_time_end {
+	display: inline-block;
+	font-size: 1.1rem;
+	position: relative;
+}
+
+.cal_entry .sch_time::after {
+	content: "～";
+	padding-left: 3px;
+}
+
+.main_calendar_m .cal_entry, .week_alltime .cal_entry {
+	white-space: nowrap;
+	overflow: hidden;
+}
+
+.main_calendar_m .cal_entry {
+	margin-bottom: 0;
+}
+
+/* 月表示の予定選択エリア */
+.monthlyMainCalendar .calendarDay .cal_day_body .cal_entry {
+	padding: 4px 1px 0 3px;
+	border-color: transparent;
+}
+
+/*週・日表示*/
+.main_calendar_w .cal_entry, .main_calendar_d .cal_entry {
+	border-bottom: none;
+	margin-left: 1px;
+	padding-left: 2px;
+	padding-top: 3px;
+	cursor: default;
+	cursor: pointer;
+}
+.main_calendar_w.week_body .col_week_inner>div {
+	height: 1440px;
+}
+.main_calendar_w.week_body .cal_entry {
+	position: absolute;
+	padding: 1px 1px 2px 3px;
+	z-index: 1;
+	white-space: inherit;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	border-radius: 4px;
+	border-left: 1px solid #fff;
+}
+.main_calendar_w.week_body .cal_entry .cal_title, .main_calendar_d.day_body .cal_entry .cal_title {
+	line-height: 1.2;
+	font-size: 1.2rem;
+	letter-spacing: .4px;
+}
+.main_calendar_d.day_body .cal_entry {
+	position: absolute;
+	margin: 0 0 0 2px;
+	padding: 1px 2px 3px 4px;
+	z-index: 1;
+	white-space: inherit;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	border-radius: 4px;
+	border-left: 1px solid #fff;
+}
+.main_calendar_w .main_calendar_m .cal_entry, .main_calendar_d .main_calendar_m .cal_entry {
+	white-space: nowrap;
+	overflow: hidden;
+}
+/* 顧客 / 案件検索モーダル用 */
+.new_regist_btn {
+	justify-content: flex-end;
+	margin-right: 7px;
+}
+
+input[type="number"]::-webkit-outer-spin-button, input[type="number"]::-webkit-inner-spin-button{
+	-webkit-appearance: none;
+	margin: 0;
+}
+
+/************** 検索結果 **************/
+.result_count {
+	list-style: none;
+	display: flex;
+	margin: 0;
+	padding: 0;
+}
+.result_count li {
+	border: 1px solid #ccc;
+	border-radius: 3px;
+	background-color: #fff;
+	margin: 2px 5px;
+	min-width: 115px;
+	text-align: center;
+	padding: 3px 8px 2px;
+}
+/* 検索結果の顧客件数 */
+.result_count .result_count_kokyaku {
+	border-color: var(--loioz-blue);
+}
+/* 検索結果の案件件数 */
+.result_count .result_count_anken {
+	border-color: var(--loioz-blue);
+}
+/* 検索結果の裁判件数 */
+.result_count .result_count_saiban {
+	border-color: var(--loioz-blue);
+}
+
+.dateover .col_plan {
+	font-weight: 600;
+	color: var(--loioz-danger);
+}
+
+@keyframes show {
+	from { opacity:0;}
+	to { opacity: 1;}
+}
+
+/*z_msg 行の固定アイコン 縮小版*/
+.is_lock td:first-child {
+	background-image: url("../img/icon_pin.svg");
+	background-repeat: no-repeat;
+	background-position: left top;
+}
+
+/* 会計管理 */
+.zankin_chackbox {
+	padding-top: 10px;
+	text-align: right;
+}
+button.userSelectAll {
+    margin-right: 1rem;
+}
+
+.checkbox_btn_box {
+  position: relative;
+  padding: 2px 0 2px;
+  margin-right: 7px;
+  line-height: 1.1;
+  cursor: pointer;
+  margin: 0 1px 2px 0;
+}
+.checkbox_btn_box .checkbox_txt {
+  transition: all 0.3s;
+  border-radius: 4px;
+  background: #fff;
+  border: 1px solid #8ed7de;
+  display: inline-block;
+  padding: 5px 5px 3px 25px;
+}
+.checkbox_btn_box .checkbox_input ~ .checkbox_txt::before {
+	content: "";
+	display: block;
+	position: absolute;
+	top: 6px;
+	left: 4px;
+	width: 15px;
+	height: 15px;
+	border: 1px solid var(--bor-color-main);
+	background-color: #fff;
+	border-radius: 2px;
+}
+.checkbox_btn_box .checkbox_input:checked ~ .checkbox_txt {
+  background-color: #d0f3fa;
+}
+.checkbox_btn_box .checkbox_input:checked ~ .checkbox_txt::after {
+	content: "";
+	display: block;
+	position: absolute;
+	left: 9px;
+	top: 2px;
+	width: 5px;
+	height: 10px;
+	transform: rotate(45deg);
+	border: solid var(--loioz-blue);
+	border-width: 0 2px 2px 0;
+}
+
+.storage_select{
+	display: flex;
+	font-size: 1.4rem;
+	padding: 5px;
+	color: var(--text-color-sub);
+	border-radius: 5px;
+	border: 1px solid var(--bor-color-main);
+}
+.storage_select .storage_icon_bg_wrapper {
+	padding: 0 8px;
+	border-radius: 5px;
+	margin :3px 10px 3px 5px;
+}
+.storage_select .storage_icon_bg_wrapper.wrapper_box {
+	background-color: rgb(0, 97, 213);
+}
+.storage_select .storage_icon_bg_wrapper .storage_icon {
+	width: 58px;
+	height: 58px;
+}
+.storage_select .storage_icon{
+	width: 64px;
+	height: 64px;
+	margin :0 10px 0 5px;
+}
+.storage_select .storage_detail {
+	flex: 1;
+}
+.storage_detail .storage_name {
+	font-size: 1.6rem;
+	font-weight: bold;
+	text-align: left;
+	width: 100%;
+	margin-top: .25rem;
+}
+
+.google_icon {
+	background-repeat:  no-repeat;
+	background-position:center center;
+	background-size:contain;
+	background-image: url(../img/externalService/google_drive.png);
+}
+.dropbox_icon {
+	background-repeat:  no-repeat;
+	background-position:center center;
+	background-size:contain;
+	background-image: url(../img/externalService/Dropbox_Blue.svg);
+}
+.box_icon {
+	background-repeat:  no-repeat;
+	background-position:center center;
+	background-size:contain;
+	background-image: url(../img/externalService/box_white.png);
+}
+
+.icon_bg_wrapper {
+	display: inline-block;
+	border-radius: 5px;
+}
+
+.icon_bg_wrapper.wrapper_lg {
+	padding: 0 8px;
+}
+.icon_bg_wrapper.wrapper_md {
+	padding: 0 4px;
+}
+
+.icon_bg_wrapper.wrapper_box {
+	background-color: rgb(0, 97, 213);
+}
+.icon_size_md_lg {
+	width: 48px;
+	height: 48px;
+}
+.icon_bg_wrapper .icon_size_md_lg {
+	width: 42px;
+	height: 42px;
+}
+
+/*===========================================================
+ナローサイズ以下
+===========================================================*/
+@media screen and (max-width:1280px) {
+	.col_shiharai_idx {
+		min-width: 50px;
+		width: 50px !important;
+	}
+	.col_shiharai_date {
+		min-width: 148px;
+		width: 148px !important;
+	}
+	.col_shiharai_money {
+		min-width: 200px;
+		width: 200px !important;
+	}
+	.col_shiharai_tekiyo {
+		min-width: 350px;
+		width: 350px !important;
+	}
+}
+@media screen and (max-width:1280px) {
+	/* タスク管理 */
+	.task_list li {
+		width: 50%;
+	}
+	.address_wapper {
+		width: 100%;
+		white-space: nowrap;
+	}
+}
+
+/** スケジュールの解像度調整 */
+@media screen and (max-height:700px) {
+	.modalbody_schedule {
+		height: 380px;
+	}
+	.schedule_user_selectcol_l .user_selectbox {
+		height: 144px;
+	}
+	.schedule_user_selectcol_r .user_selectbox {
+		height: 113px;
+	}
+}

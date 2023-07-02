@@ -1,0 +1,28 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" width="20px" height="20px">
+  <defs>
+    <style>
+      .cls-1, .cls-4 {
+        fill: none;
+      }
+
+      .cls-1 {
+        stroke: #fff;
+      }
+
+      .cls-2 {
+        fill: #fff;
+      }
+
+      .cls-3 {
+        stroke: none;
+      }
+    </style>
+  </defs>
+  <g id="icon_menu_close" transform="translate(-285 -178)">
+    <g id="楕円形_83" data-name="楕円形 83" class="cls-1" transform="translate(285 178)">
+      <circle class="cls-3" cx="10" cy="10" r="10"/>
+      <circle class="cls-4" cx="10" cy="10" r="9.5"/>
+    </g>
+    <rect id="長方形_498" data-name="長方形 498" class="cls-2" width="10" height="2" transform="translate(290 187)"/>
+  </g>
+</svg>

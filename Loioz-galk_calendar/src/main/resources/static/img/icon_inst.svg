@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="16px" height="14px" viewBox="0 0 16 14" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" preserveAspectRatio="none">
+    <!-- Generator: Sketch 51.3 (57544) - http://www.bohemiancoding.com/sketch -->
+    <title>icon_inst</title>
+    <desc>Created with Sketch.</desc>
+    <defs></defs>
+    <g id="Page-1" stroke="none" stroke-width="1" fill="none" fill-rule="evenodd">
+        <g id="dashboard" transform="translate(-1158.000000, -118.000000)" fill="#E52C29" fill-rule="nonzero">
+            <g id="icon_inst" transform="translate(1158.000000, 118.000000)">
+                <path d="M4.364,0 C5.97059634,9.83756531e-17 7.273,1.30240366 7.273,2.909 C7.273,4.51559634 5.97059634,5.818 4.364,5.818 C2.75740366,5.818 1.455,4.51559634 1.455,2.909 C1.455,1.30240366 2.75740366,2.95126959e-16 4.364,0 Z" id="p2"></path>
+                <path d="M4.479,6.21 C3.31745583,6.18290602 2.19277827,6.61863817 1.35267678,7.42122675 C0.512575286,8.22381534 0.025957267,9.32742987 0,10.489 L0,13.845 L8.957,13.845 L8.957,10.489 C8.93104054,9.32760721 8.4445606,8.22414709 7.60467678,7.42158726 C6.76479295,6.61902744 5.64037313,6.18317536 4.479,6.21 Z M4.444,11.865 L3.074,10.305 L4.022,7.989 L4.865,7.989 L5.813,10.305 L4.444,11.865 Z" id="p33"></path>
+                <polygon id="p1" transform="translate(12.000107, 7.422000) rotate(-45.000000) translate(-12.000107, -7.422000) " points="14.4701075 4.952 14.4701075 9.892 9.5301075 9.892"></polygon>
+            </g>
+        </g>
+    </g>
+</svg>

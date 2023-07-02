@@ -1,0 +1,474 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+	<meta charset="utf-8" />
+</head>
+<body>
+
+
+
+<!--/* プランの保存内容確認モーダル */-->
+<div th:fragment="planSaveConfirmFragment(planSettingSaveConfirmForm)" id="planSaveConfirmFragment">
+	
+	<!--/* スクリプト */-->
+	<script th:inline="javascript">
+	$(function() {
+		
+		<!--/* メッセージ */-->
+		const PLAN_REGIST_SMALLER_LICENSE_CONFIRM_MSG = "ご指定のライセンス数が無料トライアル中にご利用されていたアカウント数よりも少ない状態です。\r\nこのままプラン登録を行う場合、ご登録されている全てのアカウントを自動的に無効な状態（ライセンスを利用せず、ログインできない状態）に変更します。\r\n\r\nご登録されているアカウントを再度ご利用される場合は、\r\nプラン登録後に、アカウント管理画面から対象アカウントの有効化を行ってください。\r\n\r\nプランを登録を行います。よろしいですか。"
+		
+		<!--/* 確認チェック */-->
+		$('#planSaveConfirmFragment input:checkbox.confirmCheck').on('change', function() {
+			
+			const $planSaveButton = $('#planSaveConfirmFragment #planSaveButton');
+			
+			let checked = $(this).prop('checked')
+			if (checked) {
+				<!--/* チェックがされた場合 -> 保存ボタンを活性化 */-->
+				$planSaveButton.prop("disabled", false);
+			} else {
+				<!--/* チェックが外された場合 -> 保存ボタンを非活性化 */-->
+				$planSaveButton.prop("disabled", true);
+			}
+		})
+		
+		<!--/* 保存ボタン */-->
+		$('#planSaveConfirmFragment #planSaveButton').on('click', function() {
+			
+			let actionButtonId = /*[[${planSettingSaveConfirmForm.actionButtonId}]]*/
+			let isShowSmallerLicenseMsgForPlanRegist = /*[[${planSettingSaveConfirmForm.isShowSmallerLicenseMsgForPlanRegist()}]]*/
+
+			<!--/* 無料プランの状態からの初回プラン登録の場合で、利用中のライセンス数より入力値が小さい場合 */-->
+			if (isShowSmallerLicenseMsgForPlanRegist) {
+				if (!window.confirm(PLAN_REGIST_SMALLER_LICENSE_CONFIRM_MSG)) {
+					return false;
+				}
+			}
+
+			<!--/* 保存ボタンにローディング表示 */-->
+			$('#planSaveConfirmFragment #planSaveButton .saveCheckIcon').addClass('hidden');
+			$('#planSaveConfirmFragment #planSaveButton .saveLoadingIcon').removeClass('hidden');
+			
+			<!--/* アクションボタンを実行する（実際の保存や更新処理を実行するボタン） */-->
+			$('#' + actionButtonId).click();
+		})
+		
+		<!--/* キャンセルボタン */-->
+		$('#planSaveConfirmFragment #planConfirmCloseButton').on('click', function() {
+			<!--/* モーダルを閉じる（親のHTMLの関数） */-->
+			closeSaveConfirmModal();
+		})
+		
+	})
+	</script>
+	
+	<!--/* HTML */-->
+	<div th:object="${planSettingSaveConfirmForm}" th:with="actionName=*{isRegistModal() ? '登録' : '変更'}" class="plan_save_confirm_area">
+		
+		<div class="modal-header">
+			<h2 class="modalheader_title">
+				<span>[[${actionName}]]内容の確認</span>
+			</h2>
+		</div>
+		<div class="modal-body fc_sub">
+			
+			<div class="confirm_explain">
+				<th:block th:if="*{isFreePlanUpdateModal()}">
+					以下の内容でご利用ライセンスの変更を行います。<br>
+					ご入力いただいた内容のご確認をお願いいたします。
+				</th:block>
+				<th:block th:unless="*{isFreePlanUpdateModal()}">
+					以下の内容でプランの[[${actionName}]]を行います。<br>
+					ご入力いただいた内容のご確認をお願いいたします。
+				</th:block>
+			</div>
+			
+			<!--/* 保存内容確認 */-->
+			<div class="save_content_confirm">
+				
+				<div class="mb-4 mr-2">
+					<h4 class="font-weight-bold text-left mb-3 pb-1">
+						<th:block th:if="*{isFreePlanUpdateModal()}">ご利用ライセンスのご確認</th:block>
+						<th:block th:unless="*{isFreePlanUpdateModal()}">ご契約プランのご確認</th:block>
+					</h4>
+					
+					<div class="detail_input_area mb-2">
+					
+						<div class="form-row mx-1">
+							<div class="input_parts form-group mb-0 w-100 d-flex justify-content-between align-items-center">
+								<div class="save_content_title">
+									<span class="d-inline-block" th:text="*{getPlanTypeAfterName()}">スタンダードプラン</span>
+								</div>
+								<div class="save_content_val">
+									<div th:if="*{!isFreePlanUpdateModal()}">
+										<span th:with="oneLicenseCharge= *{oneLicenseCharge}">
+											[[${#numbers.formatInteger(oneLicenseCharge, 1, 'COMMA')}]]
+										</span>
+										<span>円</span>
+									</div>
+								</div>
+								<div class="save_content_charge">
+									<!--/* ここはない */-->
+								</div>
+							</div>
+						</div>
+						
+						<div class="form-row under_line pb-2 mt-2 mb-3"></div>
+						
+						<div class="form-row mx-1 mb-2">
+							<div class="input_parts form-group mb-0 w-100 d-flex justify-content-between align-items-center">
+								<div class="save_content_title">
+									<span class="d-inline-block">ライセンス</span>
+								</div>
+								<div class="save_content_val">
+									<th:block th:if="*{!isFreePlanUpdateModal()}">
+										<span th:with="oneLicenseCharge= *{oneLicenseCharge}">
+											[[${#numbers.formatInteger(oneLicenseCharge, 1, 'COMMA')}]]
+										</span>
+										<span>円</span>
+										<span>×</span>
+									</th:block>
+									<span th:text="*{licenseVal}">10</span>
+									<span>ユーザー</span>
+								</div>
+								<div class="save_content_charge">
+									<div th:if="*{!isFreePlanUpdateModal()}">
+										<span th:with="licenseCharge = *{licenseCharge}">
+											[[${#numbers.formatInteger(licenseCharge, 1, 'COMMA')}]]
+										</span>
+										<span class="d-inline-block ml-2">円</span>
+									</div>
+								</div>
+							</div>
+						</div>
+						
+						<div class="form-row mx-1">
+							<div class="input_parts form-group mb-0 w-100 d-flex justify-content-between align-items-center">
+								<div class="save_content_title">
+									<span class="d-inline-block">loiozファイルストレージ</span>
+								</div>
+								<div class="save_content_val">
+									<span th:text="*{storageVal}">100</span>
+									<span>GB</span>
+								</div>
+								<div class="save_content_charge">
+									<div th:if="*{!isFreePlanUpdateModal()}">
+										<span th:with="storageCharge = *{storageCharge}">
+											[[${#numbers.formatInteger(storageCharge, 1, 'COMMA')}]]
+										</span>
+										<span class="d-inline-block ml-2">円</span>
+									</div>
+								</div>
+							</div>
+						</div>
+						
+						<div class="form-row under_line pb-2 mt-2 mb-3"></div>
+						
+						<div th:if="*{!isFreePlanUpdateModal()}" class="form-row mx-1 sum_charge_row">
+							<div class="input_parts form-group mb-0 w-100 d-flex justify-content-end align-items-center">
+								<div class="save_content_title">
+									<!-- 金額部分はタイトルはない -->
+								</div>
+								<div class="sum_charge_title">
+									<span class="d-inline-block mr-5">小計</span>
+								</div>
+								<div class="save_content_charge">
+									<div>
+										<span class="d-inline-block" th:with="sumCharge = *{sumCharge}">
+											[[${#numbers.formatInteger(sumCharge, 1, 'COMMA')}]]
+										</span>
+										<span class="d-inline-block ml-2">円</span>
+									</div>
+								</div>
+							</div>
+						</div>
+						<div th:if="*{!isFreePlanUpdateModal()}" class="form-row mx-1 sum_charge_row">
+							<div class="input_parts form-group mb-0 w-100 d-flex justify-content-between align-items-center">
+								<div class="save_content_title">
+									<!-- 金額部分はタイトルはない -->
+								</div>
+								<div class="sum_charge_title">
+									<span class="d-inline-block mr-5">消費税</span>
+								</div>
+								<div class="save_content_charge">
+									<div>
+										<span class="d-inline-block" th:with="taxAmountOfSumCharge = *{taxAmountOfSumCharge}">
+											[[${#numbers.formatInteger(taxAmountOfSumCharge, 1, 'COMMA')}]]
+										</span>
+										<span class="d-inline-block ml-2">円</span>
+									</div>
+								</div>
+							</div>
+						</div>
+						<div th:if="*{!isFreePlanUpdateModal()}" class="form-row mx-1 sum_charge_row">
+							<div class="input_parts form-group mb-0 w-100 d-flex justify-content-between align-items-center">
+								<div class="save_content_title">
+									<!-- 金額部分はタイトルはない -->
+								</div>
+								<div class="sum_charge_title">
+									<span class="d-inline-block font-weight-bold mr-5">月額料金</span>
+								</div>
+								<div class="save_content_charge">
+									<div>
+										<span class="d-inline-block font-weight-bold" th:with="sumChargeIncludedTax = *{getSumChargeIncludedTax()}">
+											[[${#numbers.formatInteger(sumChargeIncludedTax, 1, 'COMMA')}]]
+										</span>
+										<span class="d-inline-block ml-2">円</span>
+									</div>
+								</div>
+							</div>
+						</div>
+					</div>
+				</div>
+				
+				<div th:if="*{!isFreePlanUpdateModal()}">
+					<h4 class="font-weight-bold text-left mb-1 pb-1">お支払い情報</h4>
+					
+					<div class="bg2 p-3 fs13">
+						<div class="card_input_item pr">
+							<div class="item_title">カード番号</div>
+							<div>
+								<span th:text="*{cardNumMasked}">************1234</span>
+							</div>
+						</div>
+						<div class="card_input_item pr">
+							<div class="item_title">有効期限</div>
+							<div>
+								<span th:text="*{cardExpireMonth}">01</span>
+								<span>月</span>
+								<span>／</span>
+								<span th:text="*{cardExpireYear}">23</span>
+								<span>年</span>
+							</div>
+						</div>
+						<div class="card_input_item pr">
+							<div class="item_title">カード名義人</div>
+							<div>
+								<span th:text="*{cardName}">TARO LOIOZ</span>
+							</div>
+						</div>
+						<div class="card_input_item">
+							<div class="item_title">セキュリティコード</div>
+							<div>
+								<span th:text="*{cardSecurityCdMasked}">***</span>
+							</div>
+						</div>
+					</div>
+				</div>
+				
+			</div>
+			
+			<!--/* 変更機能について */-->
+			<div th:if="*{isPlanTypeChange()}" class="function_change_confirm">
+				
+				<h4 class="font-weight-bold text-left mb-3 pb-1">
+					<i class="fas fa-exclamation-circle exclamation_icon"></i><span class="d-inline-block ml-3">ご利用いただける機能に変更があります</span>
+				</h4>
+				
+				<div class="change_explain">
+					ご利用プランが「[[*{getPlanTypeBeforeName()}]]」から「[[*{getPlanTypeAfterName()}]]」に変更となります。<br>
+					ご利用いただける機能に変更があるため、ご確認をお願いいたします。
+				</div>
+				
+				<div class="plan_func_compare_table_wrap">
+				
+					<div class="plan_func_compare_table">
+						<div class="t_header">
+							<div class="t_row">
+								<div class="row_col row_title bd_no pd_0"></div>
+								<div class="row_col row_val col_title bd_no">スタータープラン</div>
+								<div class="row_col row_val col_title bd_no">スタンダードプラン</div>
+							</div>
+						</div>
+						<div class="t_body">
+								<div class="t_row">
+									<div class="row_col row_title bd_b_no bd_r_no">メッセージ機能</div>
+									<div class="row_col row_val bd_b_no bd_r_no">
+										[[${planSettingSaveConfirmForm.sessionDto.canUsePlanFunc(T(jp.loioz.common.constant.plan.PlanConstant.PlanType).STARTER, T(jp.loioz.common.constant.plan.PlanConstant$PlanFuncRestrict).PF0001) ? '○' : 'ー'}]]
+									</div>
+									<div class="row_col row_val bd_b_no">
+										[[${planSettingSaveConfirmForm.sessionDto.canUsePlanFunc(T(jp.loioz.common.constant.plan.PlanConstant.PlanType).STANDARD, T(jp.loioz.common.constant.plan.PlanConstant$PlanFuncRestrict).PF0001) ? '○' : 'ー'}]]
+									</div>
+								</div>
+								<div class="t_row">
+									<div class="row_col row_title bd_r_no">会計管理</div>
+									<div class="row_col row_val bd_r_no">
+										[[${planSettingSaveConfirmForm.sessionDto.canUsePlanFunc(T(jp.loioz.common.constant.plan.PlanConstant.PlanType).STARTER, T(jp.loioz.common.constant.plan.PlanConstant$PlanFuncRestrict).PF0002) ? '○' : 'ー'}]]
+									</div>
+									<div class="row_col row_val">
+										[[${planSettingSaveConfirmForm.sessionDto.canUsePlanFunc(T(jp.loioz.common.constant.plan.PlanConstant.PlanType).STANDARD, T(jp.loioz.common.constant.plan.PlanConstant$PlanFuncRestrict).PF0002) ? '○' : 'ー'}]]
+									</div>
+								</div>
+						</div>
+					</div>
+					
+					<div class="sub_explain mt-3">
+						<div class="mb-1">※上記以外の機能については、変更は発生致しません。</div>
+						<div>※各プランでご利用いただけるすべての機能については<a href="https://www.loioz.co.jp/price/" target="_blank">こちら</a>をご確認ください。</div>
+					</div>
+					
+				</div>
+				
+				<div th:if="*{isChangeUnavailableKaikei()}" class="function_change_warning">
+					<div class="mb-1">【ご注意】</div>
+					<div>
+						「[[*{getPlanTypeAfterName()}]]」への変更により、会計管理の機能をご利用できなくなります。<br>
+						それに伴い、これまでにご登録いただいた会計情報はすべて削除されます。<br>
+						<br>
+						プラン変更の前に、下記のダウンロードをお願いいたします。<br>
+						・報酬明細、預り金／実費明細、請求書／精算書の各PDFデータなど<br>
+						<th:block th:if="*{isExistsOldKaikeiData()}">
+							<!--/* 旧会計管理のデータがある場合のみ表示する */-->
+							<br>
+							※旧会計管理をご利用の方は下記もあわせてご確認ください<br>
+							・報酬明細、入出金明細、入出金予定、精算記録など
+						</th:block>
+					</div>
+				</div>
+				
+			</div>
+			
+			<!--/* 確認チェック */-->
+			<div class="confirm_check_wrap text-center">
+				<label class="checkbox_btn">
+					<input type="checkbox" class="checkbox_input confirmCheck" value="1">
+					<span class="checkbox_txt d-inline-block pl-2">上記の[[${actionName}]]内容を確認しました</span>
+				</label>
+			</div>
+			
+			<!--/* アクションボタン */-->
+			<div class="action_button_wrap text-center">
+				<button type="button" id="planSaveButton" class="btn btn-danger btn-lg" disabled>
+					<i class="fas fa-check saveCheckIcon"></i>
+					<i class="fas fa-circle-notch faa-spin animated saveLoadingIcon hidden"></i>
+					<th:block th:if="*{isFreePlanUpdateModal()}">ライセンスを変更する</th:block>
+					<th:block th:unless="*{isFreePlanUpdateModal()}">プランを[[${actionName}]]する</th:block>
+				</button>
+				<button type="button" id="planConfirmCloseButton" class="btn btn-light plan_confirm_close_button">
+					<i class="fas fa-times"></i>キャンセル
+				</button>
+			</div>
+			
+		</div>
+		
+	</div>
+
+</div>
+
+
+
+<!--/* プランの解約確認モーダル */-->
+<div th:fragment="planCancelConfirmFragment(planSettingCancelConfirmForm)" id="planCancelConfirmFragment">
+	
+	<!--/* スクリプト */-->
+	<script th:inline="javascript">
+	$(function() {
+		
+		<!--/* 確認チェック */-->
+		$('#planCancelConfirmFragment input:checkbox.confirmCheck').on('change', function() {
+			
+			const $planCancelButton = $('#planCancelConfirmFragment #planCancelButton');
+			
+			let checked = $(this).prop('checked')
+			if (checked) {
+				<!--/* チェックがされた場合 -> 保存ボタンを活性化 */-->
+				$planCancelButton.prop("disabled", false);
+			} else {
+				<!--/* チェックが外された場合 -> 保存ボタンを非活性化 */-->
+				$planCancelButton.prop("disabled", true);
+			}
+		})
+		
+		<!--/* 解約ボタン */-->
+		$('#planCancelConfirmFragment #planCancelButton').on('click', function() {
+			
+			let actionButtonId = /*[[${planSettingCancelConfirmForm.actionButtonId}]]*/
+			
+			<!--/* アクションボタンを実行する（実際の保存や更新処理を実行するボタン） */-->
+			$('#' + actionButtonId).click();
+		})
+		
+		<!--/* キャンセルボタン */-->
+		$('#planCancelConfirmFragment #planConfirmCloseButton').on('click', function() {
+			<!--/* モーダルを閉じる（親のHTMLの関数） */-->
+			closeCancelConfirmModal();
+		})
+		
+	})
+	</script>
+	
+	<!--/* HTML */-->
+	<div th:object="${planSettingCancelConfirmForm}" class="plan_cancel_confirm_area">
+		
+		<div class="modal-header">
+			<h2 class="modalheader_title">
+				<span>ご解約の確認</span>
+			</h2>
+		</div>
+		<div class="modal-body fc_sub">
+			
+			<div class="confirm_explain">
+				loiozの解約を行います。<br>
+				以下の内容をご確認いただき、同意の上で操作をお願いいたします。
+			</div>
+			
+			<!--/* 解約内容の確認 */-->
+			<div class="cancel_content_confirm">
+			
+				<!--/* 無料期間中の解約の場合 */-->
+				<th:block th:if="*{isDuringFreeTrial()}">
+					
+					<div class="d-flex mb-2">
+						<div>・</div>
+						<div>現在は無料トライアル期間中のため、解約を行うと無料トライアルの状態に戻ります。</div>
+					</div>
+					<div class="d-flex">
+						<div>・</div>
+						<div>解約後、有償プランのお申し込みを行っていただかない場合は、<br>無料トライアルの終了をもってloiozのご利用ができなくなります。</div>
+					</div>
+					
+				</th:block>
+				<!--/* 無料期間終了後の解約の場合 */-->
+				<th:block th:unless="*{isDuringFreeTrial()}">
+					
+					<div class="d-flex mb-2">
+						<div>・</div>
+						<div>解約を行うと、翌月以降、<span class="font-weight-bold text-danger">ご登録いただいている全てのデータのご利用ができなくなります</span>。</div>
+					</div>
+					<div class="d-flex">
+						<div>・</div>
+						<div>解約を行った当月中は引き続きloiozをご利用いただけます。<br>（当月1ヶ月分のご利用料金は発生をいたします。）</div>
+					</div>
+					
+				</th:block>
+				
+			</div>
+			
+			<!--/* 確認チェック */-->
+			<div class="confirm_check_wrap text-center">
+				<label class="checkbox_btn">
+					<input type="checkbox" class="checkbox_input confirmCheck" value="1">
+					<span class="checkbox_txt d-inline-block pl-2">上記の内容に同意する</span>
+				</label>
+			</div>
+			
+			<!--/* アクションボタン */-->
+			<div class="action_button_wrap text-center">
+				<button type="button" id="planCancelButton" class="btn btn-danger btn-lg" disabled>
+					<i class="fas fa-check"></i>解約する
+				</button>
+				<button type="button" id="planConfirmCloseButton" class="btn btn-light plan_confirm_close_button">
+					<i class="fas fa-times"></i>キャンセル
+				</button>
+			</div>
+			
+		</div>
+		
+	</div>
+
+</div>
+
+
+
+</body>
+</html>

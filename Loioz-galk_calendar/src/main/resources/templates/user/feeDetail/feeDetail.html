@@ -1,0 +1,537 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+	xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+	layout:decorator="commonLayout">
+<head>
+<meta charset="utf-8" />
+<title layout:fragment="title-contents">
+	[[${T(jp.loioz.common.utility.LoiozUtils).getHtmlTitle("報酬明細", T(jp.loioz.common.utility.SessionUtils).getTenantName())}]]
+</title>
+<th:block th:with="version=${@environment.getProperty('app.version')}">
+	<link href="./css/accg/accg.css" th:href="@{/css/accg/accg.css?{ver}(ver=${version})}" rel="stylesheet" type="text/css" />
+	<script th:src="@{/js/accg/accg.js?{ver}(ver=${version})}" type="text/javascript"></script>
+</th:block>
+
+<script type="text/javascript" th:inline="javascript">
+<!--/*
+ 二重送信防止対応用の値。
+ このHTMLに差し込まれるfragment内のScriptの処理も、共通してこの変数を利用する。
+*/-->
+let ajaxRunning = false;
+
+</script>
+
+<script type="text/javascript" th:replace="common/js/accgAnkenScreenJs::accgAnkenScreenJs"></script>
+<script type="text/javascript" th:inline = "javascript">
+
+<!--/* 報酬明細一覧ソート処理 */-->
+const sortFeeDetailListFunc = (optionParam) => {
+	return new Promise((resolve, reject) => {
+		const personId = /*[[${personId}]]*/;
+		const ankenId = /*[[${ankenId}]]*/;
+		
+		$.ajax({
+			url : "/user/feeDetail/" + personId + "/" + ankenId + "/sort",
+			type : "GET",
+			data : optionParam,
+			dataType: 'html',
+		}).done(function(data, status, jqXHR) {
+			if (isAjaxProcSuccess(jqXHR)) {
+				<!--/* 処理成功 */-->
+				<!--/* ツールチップを非表示にする */-->
+				$('[data-toggle="tooltip"]').tooltip('hide');
+				<!-- /* フラグメント更新 */ -->
+				$('#feeDetailFragmentWrap').html(data);
+				return resolve();
+			} else {
+				<!--/* 処理失敗 */-->
+				const errorMsg = getAjaxProcResutlMessage(jqXHR);
+				let sessionTimeOutKey = /*[[${T(jp.loioz.common.constant.MessageEnum).MSG_E00161.messageKey}]]*/'';
+				if (sessionTimeOutKey == errorMsg) {
+					window.location.href = "/user/feeDetail/" + personId + "/" + ankenId + "/";
+				} else {
+					showErrorMessageForJs(errorMsg);
+				}
+				return reject();
+			}
+		}).fail(function() {
+			showErrorMessageForJs(/*[[#{E00059}]]*/ "データの取得に失敗しました。");
+			return reject();
+		});
+	});
+};
+
+<!--/* 報酬登録 */-->
+const registFeeFunc = (formData) => {
+	return new Promise((resolve, reject) => {
+		const personId = /*[[${personId}]]*/;
+		const ankenId = /*[[${ankenId}]]*/;
+		
+		$.ajax({
+			url : "/user/feeDetail/" + personId + "/" + ankenId + "/registFee",
+			type : "POST",
+			data : formData
+		})
+		.done(function(data, status, jqXHR) {
+			if (isAjaxProcSuccess(jqXHR)) {
+				<!--/* 処理成功 */-->
+				$('#feeDetailFragmentWrap').html(data);
+				$("html,body").scrollTop(0);
+				showInfoMessageForJs(getAjaxProcResutlMessage(jqXHR));
+				return resolve();
+			} else {
+				<!--/* 処理失敗 */-->
+				if (data) {
+					<!--/* HTMLのコンテンツが返却されている場合 */-->
+					<!--/* 対象行部分にHTML表示 */-->
+					$('#feeDetailInputRowFragmentWrap').html(data);
+					<!--/* 金額をカンマ区切りに変換 */-->
+					feeDetailFormatComma();
+				}
+				const errorMsg = getAjaxProcResutlMessage(jqXHR);
+				showErrorMessageForJs(errorMsg);
+				return reject();
+			}
+		})
+		.fail(function(jqXHR, status, errorThrown) {
+			showErrorMessageForJs(/*[[#{E00091}]]*/ "error");
+			return reject();
+		})
+	});
+}
+
+<!--/* タイムチャージ報酬登録 */-->
+const registFeeTimeChargeFunc = (formData) => {
+	return new Promise((resolve, reject) => {
+		const personId = /*[[${personId}]]*/;
+		const ankenId = /*[[${ankenId}]]*/;
+		
+		$.ajax({
+			url : "/user/feeDetail/" + personId + "/" + ankenId + "/registFeeTimeCharge",
+			type : "POST",
+			data : formData
+		})
+		.done(function(data, status, jqXHR) {
+			if (isAjaxProcSuccess(jqXHR)) {
+				<!--/* 処理成功 */-->
+				$('#feeDetailFragmentWrap').html(data);
+				$("html,body").scrollTop(0);
+				showInfoMessageForJs(getAjaxProcResutlMessage(jqXHR));
+				return resolve();
+			} else {
+				<!--/* 処理失敗 */-->
+				if (data) {
+					<!--/* HTMLのコンテンツが返却されている場合 */-->
+					<!--/* 対象行部分にHTML表示 */-->
+					$('#feeDetailInputRowFragmentWrap').html(data);
+					<!--/* 金額をカンマ区切りに変換 */-->
+					feeDetailFormatComma();
+				}
+				const errorMsg = getAjaxProcResutlMessage(jqXHR);
+				showErrorMessageForJs(errorMsg);
+				return reject();
+			}
+		})
+		.fail(function(jqXHR, status, errorThrown) {
+			showErrorMessageForJs(/*[[#{E00091}]]*/ "error");
+			return reject();
+		})
+	});
+}
+
+<!--/* 報酬選択中件数更新処理 */-->
+function updateCheckCount() {
+	let checkCnt = $('.targetCheck:checked').length;
+	$('.checkCnt').html(checkCnt);
+}
+
+<!--/* 報酬変更fragment表示 */-->
+const openEditFeeFragmentFunc = (param) => {
+	return new Promise((resolve, reject) => {
+		const personId = /*[[${personId}]]*/;
+		const ankenId = /*[[${ankenId}]]*/;
+		const feeSeq = param.feeSeq;
+		
+		$.ajax({
+			url : "/user/feeDetail/" + personId + "/" + ankenId + "/openEditFeeFragment",
+			type : "GET",
+			data : param
+		})
+		.done(function(data, status, jqXHR) {
+			if (isAjaxProcSuccess(jqXHR)) {
+				<!--/* 処理成功 */-->
+				$('#feeRow_' + feeSeq).html(data);
+				<!--/* 金額をカンマ区切りに変換 */-->
+				feeDetailFormatComma();
+				<!--/* チェックボックス数を変更 */-->
+				updateCheckCount();
+				
+				return resolve();
+			} else {
+				<!--/* 処理失敗 */-->
+				const errorMsg = getAjaxProcResutlMessage(jqXHR);
+				showErrorMessageForJs(errorMsg);
+				return reject();
+			}
+		})
+		.fail(function(jqXHR, status, errorThrown) {
+			showErrorMessageForJs(/*[[#{E00091}]]*/ "error");
+			return reject();
+		})
+	});
+}
+
+<!--/* 報酬編集 */-->
+const editFeeFunc = (formData) => {
+	return new Promise((resolve, reject) => {
+		const personId = /*[[${personId}]]*/;
+		const ankenId = /*[[${ankenId}]]*/;
+		
+		$.ajax({
+			url : "/user/feeDetail/" + personId + "/" + ankenId + "/editFee",
+			type : "POST",
+			data : formData
+		})
+		.done(function(data, status, jqXHR) {
+			if (isAjaxProcSuccess(jqXHR)) {
+				<!--/* 処理成功 */-->
+				$('#feeDetailFragmentWrap').html(data);
+				showInfoMessageForJs(getAjaxProcResutlMessage(jqXHR));
+				return resolve();
+			} else {
+				<!--/* 処理失敗 */-->
+				if (data) {
+					<!--/* HTMLのコンテンツが返却されている場合 */-->
+					let tmpData = $("<div></div>")
+					tmpData.append(data);
+					const feeSeq = $(tmpData).find('.rowFeeSeq').val();
+					<!--/* 対象行部分にHTML表示 */-->
+					$('#feeRow_' + feeSeq).html(data);
+					<!--/* 金額をカンマ区切りに変換 */-->
+					feeDetailFormatComma();
+				}
+				const errorMsg = getAjaxProcResutlMessage(jqXHR);
+				showErrorMessageForJs(errorMsg);
+				return reject();
+			}
+		})
+		.fail(function(jqXHR, status, errorThrown) {
+			showErrorMessageForJs(/*[[#{E00091}]]*/ "error");
+			return reject();
+		})
+	});
+}
+
+<!--/* タイムチャージ報酬編集 */-->
+const editFeeTimeChargeFunc = (formData) => {
+	return new Promise((resolve, reject) => {
+		const personId = /*[[${personId}]]*/;
+		const ankenId = /*[[${ankenId}]]*/;
+		
+		$.ajax({
+			url : "/user/feeDetail/" + personId + "/" + ankenId + "/editFeeTimeCharge",
+			type : "POST",
+			data : formData
+		})
+		.done(function(data, status, jqXHR) {
+			if (isAjaxProcSuccess(jqXHR)) {
+				<!--/* 処理成功 */-->
+				$('#feeDetailFragmentWrap').html(data);
+				showInfoMessageForJs(getAjaxProcResutlMessage(jqXHR));
+				return resolve();
+			} else {
+				<!--/* 処理失敗 */-->
+				if (data) {
+					<!--/* HTMLのコンテンツが返却されている場合 */-->
+					let tmpData = $("<div></div>")
+					tmpData.append(data);
+					const feeSeq = $(tmpData).find('.rowFeeSeq').val();
+					<!--/* 対象行部分にHTML表示 */-->
+					$('#feeRow_' + feeSeq).html(data);
+					<!--/* 金額をカンマ区切りに変換 */-->
+					feeDetailFormatComma();
+				}
+				const errorMsg = getAjaxProcResutlMessage(jqXHR);
+				showErrorMessageForJs(errorMsg);
+				return reject();
+			}
+		})
+		.fail(function(jqXHR, status, errorThrown) {
+			showErrorMessageForJs(/*[[#{E00091}]]*/ "error");
+			return reject();
+		})
+	});
+}
+
+<!--/* 削除前の確認 */-->
+const checkOfBeforeDeleteFeeFunc = (param) => {
+	return new Promise((resolve, reject) => {
+		const personId = /*[[${personId}]]*/;
+		const ankenId = /*[[${ankenId}]]*/;
+		
+		$.ajax({
+			url : "/user/feeDetail/" + personId + "/" + ankenId + "/checkOfBeforeDeleteFeeFunc",
+			type : "GET",
+			data : param,
+		})
+		.done(function(data, status, jqXHR) {
+			if (data.successed) {
+				<!--/* 処理成功 */-->
+				if(!confirm("報酬を削除します。よろしいですか？")){
+					return reject();
+				} else {
+					return resolve(param);
+				}
+			} else {
+				<!--/* 処理失敗 */-->
+				showErrorMessageForJs(data.message);
+				return reject();
+			}
+		})
+		.fail(function(jqXHR, status, errorThrown) {
+			showErrorMessageForJs(/*[[#{E00091}]]*/ "error");
+			return reject();
+		});
+	});
+}
+
+<!--/* 報酬削除 */-->
+const deleteFeeFunc = (param) => {
+	return new Promise((resolve, reject) => {
+		const personId = /*[[${personId}]]*/;
+		const ankenId = /*[[${ankenId}]]*/;
+		
+		$.ajax({
+			url : "/user/feeDetail/" + personId + "/" + ankenId + "/deleteFee",
+			type : "POST",
+			data : param
+		})
+		.done(function(data, status, jqXHR) {
+			if (isAjaxProcSuccess(jqXHR)) {
+				<!--/* 処理成功 */-->
+				$('#feeDetailFragmentWrap').html(data);
+				showInfoMessageForJs(getAjaxProcResutlMessage(jqXHR));
+				return resolve();
+			} else {
+				<!--/* 処理失敗 */-->
+				const errorMsg = getAjaxProcResutlMessage(jqXHR);
+				showErrorMessageForJs(errorMsg);
+				return reject();
+			}
+		})
+		.fail(function(jqXHR, status, errorThrown) {
+			showErrorMessageForJs(/*[[#{E00091}]]*/ "error");
+			return reject();
+		})
+	});
+}
+
+<!--/* 報酬編集フラグメントで項目の候補を検索 */-->
+let timeoutId = "";
+function searchFeeDataListEdit(feeSeq, keyCode) {
+	
+	const personId = /*[[${personId}]]*/;
+	const ankenId = /*[[${ankenId}]]*/;
+	const searchWord = $('#feeDetailEditRowFragment_' + feeSeq).find("#feeItemName").val();
+	
+	<!--/** tabとキーボード入力以外で呼び出された場合 */-->
+	if (isTabOrMouseInput(keyCode)) {
+		$('#feeDetailEditRowFragment_' + feeSeq).find('.feeDataListFragmentWrap').html('');
+		return false;
+	} else {
+		<!--/* 項目検索処理 */-->
+		$.ajax({
+			url : "/user/feeDetail/" + personId + "/" + ankenId + "/searchFeeDataList",
+			type : "GET",
+			data : {
+				"searchWord" : searchWord
+			},
+		})
+		.done(function(data, status, jqXHR) {
+			
+			if (isAjaxProcSuccess(jqXHR)) {
+				<!--/* 処理成功 */-->
+				$('#feeDataListEditFragment_' + feeSeq).html(data);
+			} else {
+				<!--/* 処理失敗 */-->
+				const errorMsg = getAjaxProcResutlMessage(jqXHR);
+				showErrorMessageForJs(errorMsg);
+			}
+		}).fail(function() {
+			showErrorMessageForJs(/*[[#{E00010}]]*/ "変更に失敗しました。");
+		});
+	}
+}
+
+<!--/* カンマフォーマット指定項目についてカンマを付与する */-->
+function feeDetailFormatComma() {
+	$('#feeDetailFragment .commaFormat').each(function(){
+		$(this).formatComma();
+	});
+}
+
+<!--/* カンマフォーマット指定項目についてカンマを除去する */-->
+function feeDetailUnformatComma() {
+	$('#feeDetailFragment .commaFormat').each(function(){
+		$(this).unformatComma();
+	});
+}
+
+<!--/* 項目の設定データリスト：非表示処理 */-->
+$(document).off('click.feeItemSearchPopoverHide');
+$(document).on('click.feeItemSearchPopoverHide', function(e) {
+	<!--/* 自作ポップオーバーの非表示処理（ポップオーバー外のクリック） */-->
+	let popoverWraper = $(e.target).closest('.feeDataListFragmentWrap');
+	if(!popoverWraper.length) {
+		<!--/* ポップオーバー要素の外側をクリックした時の操作 */--> 
+		<!--/* 全てのポップオーバーを非表示とする */-->
+		$('.feeDataListFragmentWrap').html('');
+	} else {
+		<!--/* ターゲット要素をクリックした時の操作 */-->
+		<!--/* 特になにもしない */-->
+	}
+});
+
+<!--/* 報酬編集用フォーム閉じる処理 */-->
+function closeEditFeeFragment(feeSeq, isChecked) {
+	const personId = /*[[${personId}]]*/;
+	const ankenId = /*[[${ankenId}]]*/;
+	const param = {
+		"feeSeq": feeSeq,
+		"isChecked": isChecked
+	}
+	
+	<!--/* 2重押下防止 */-->
+	if(ajaxRunning){
+		return false;
+	}
+	ajaxRunning = true;
+	
+	$.ajax({
+		url : "/user/feeDetail/" + personId + "/" + ankenId + "/closeEditFeeFragment",
+		type : "GET",
+		data : param
+	})
+	.done(function(data, status, jqXHR) {
+		if (isAjaxProcSuccess(jqXHR)) {
+			<!--/* 処理成功 */-->
+			$('#feeRow_' + feeSeq).html(data);
+			<!--/* チェックボックス数を変更 */-->
+			updateCheckCount();
+			
+			commonSetUpElement('#feeRow_' + feeSeq);
+		} else {
+			<!--/* 処理失敗 */-->
+			const errorMsg = getAjaxProcResutlMessage(jqXHR);
+			showErrorMessageForJs(errorMsg);
+		}
+	})
+	.fail(function(jqXHR, status, errorThrown) {
+		showErrorMessageForJs(/*[[#{E00091}]]*/ "error");
+	})
+	.always(function(){
+		ajaxRunning = false;
+	});
+}
+
+<!--/* 項目の候補を検索 */-->
+function searchFeeDataList(keyCode) {
+	
+	const personId = /*[[${personId}]]*/;
+	const ankenId = /*[[${ankenId}]]*/;
+	const searchWord = $('#feeInputForm').find('#feeItemName').val();
+	
+	<!--/** tabとキーボード入力以外で呼び出された場合 */-->
+	if (isTabOrMouseInput(keyCode)) {
+		$('#feeInputForm').find('.feeDataListFragmentWrap').html('');
+		return false;
+	} else {
+		<!--/* 項目検索処理 */-->
+		$.ajax({
+			url : "/user/feeDetail/" + personId + "/" + ankenId + "/searchFeeDataList",
+			type : "GET",
+			data : {
+				"searchWord" : searchWord
+			},
+			}).done(function(data, status, jqXHR) {
+			
+			if (isAjaxProcSuccess(jqXHR)) {
+				<!--/* 処理成功 */-->
+				$('#feeDataListRegistFragment').html(data);
+			} else {
+				<!--/* 処理失敗 */-->
+				const errorMsg = getAjaxProcResutlMessage(jqXHR);
+				showErrorMessageForJs(errorMsg);
+			}
+		}).fail(function() {
+			showErrorMessageForJs(/*[[#{E00010}]]*/ "変更に失敗しました。");
+		});
+	}
+}
+
+</script>
+
+</head>
+<body>
+	<div layout:fragment="main-contents" th:remove="tag">
+		
+		<div class="contents_sidebar_wrapper_user accg_side_menu" th:classappend="${isAccgAnkenSide}? 'contentsSlidebarWrapper':_"
+			th:data-click-open="${isAccgAnkenSide} ? ${customerAnkenMenuOpenClickForSessionValue} : 'true' "
+			th:data-resize-open="${isAccgAnkenSide} ? ${customerAnkenMenuOpenResizeForSessionValue} : 'true' "
+			th:with="isAccgAnkenSide=${T(jp.loioz.common.utility.SessionUtils).getSessionVaule(T(jp.loioz.common.constant.SessionAttrKeyEnum).ACCG_ANKEN_SCREEN_BOOL.codeKey)}">
+			
+			<!--/* 会計管理メニュー */-->
+			<th:block th:if="!${isAccgAnkenSide}">
+				<div id="accgMenuFragmentWrap"
+					th:replace="common/accg/accgMenu::accgMenuFragment(${T(jp.loioz.common.constant.CommonConstant$AccgMenu).FEE.getCd()})">
+				</div>
+			</th:block>
+			
+			<!--/* 案件軸の遷移の場合 ->案件メニュー */-->
+			<th:block th:if="${isAccgAnkenSide}">
+				<div th:replace="common/customerAnkenMenu::menuList(
+					sideMenuAnkenId=${ankenId},
+					sideMenuCustomerId=null,
+					selectedTabClass='is_fee',
+					focusPersonId=${personId})">
+				</div>
+			</th:block>
+			
+			<!--/* メインコンテンツの外側 */-->
+			<div class="contents_wrapper">
+				<div class="container-fluid">
+					<main class="content">
+						<div class="page_inner">
+							<!--/* 通常のぱんくず */-->
+							<div th:if="!${isAccgAnkenSide}" class="breadcrumb_area">
+								<ul>
+									<li><span><a href="/user/feeList/list">報酬一覧</a></span></li>
+									<li><i class="fas fa-angle-right"></i></li>
+									<li><span class="selected_menu">報酬明細</span></li>
+								</ul>
+							</div>
+							
+							<!--/* 案件軸の場合のぱんくず */-->
+							<th:block th:if="${isAccgAnkenSide}">
+								<div th:replace="common/wrapHeader::wrapHeader(
+									returnListScreen=${T(jp.loioz.common.utility.SessionUtils).getSessionVaule(T(jp.loioz.common.constant.SessionAttrKeyEnum).RETURN_LIST_SCREEN.codeKey)},
+									sideMenuAnkenId=${ankenId},
+									selectedTabClass = 'is_fee')"></div>
+							</th:block>
+							
+							<!--/* メッセージエリア */-->
+							<div th:replace="common/messageArea::messageArea"></div>
+							
+							<!--/* 詳細 */-->
+							<div id="feeDetailFragmentWrap">
+								<div th:replace="user/feeDetail/feeDetailFragment::feeDetailFragment(${feeDetailViewForm})"></div>
+							</div>
+						</div>
+						
+					</main>
+				</div>
+			</div>
+		</div>
+	</div>
+</body>
+</html>

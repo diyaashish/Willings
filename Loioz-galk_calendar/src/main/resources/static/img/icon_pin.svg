@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 18 18">
+  <g id="icon_pin" transform="translate(-144 -118.082)">
+    <path id="パス_6" data-name="パス 6" d="M1701,1131v17.719A17.581,17.581,0,0,0,1718.717,1131l0,0Z" transform="translate(-1557 -1012.919)" fill="rgba(0,0,0,0.11)"/>
+    <g id="グループ_1" data-name="グループ 1" transform="translate(153.356 133.8) rotate(-135)">
+      <path id="パス_4" data-name="パス 4" d="M0,0C1.5,0,2.723,1.866,2.723,4.168S1.5,8.336,0,8.336Z" transform="translate(4.164 0.871)" fill="#ff5252"/>
+      <path id="パス_5" data-name="パス 5" d="M5.283,4.384,0,5.442V0L5.283,1.058Z" transform="translate(5.587 2.318)" fill="#ff5252"/>
+      <ellipse id="楕円形_3" data-name="楕円形 3" cx="1.421" cy="3.511" rx="1.421" ry="3.511" transform="translate(9.633 1.528)" fill="#ff5252"/>
+      <rect id="長方形_2" data-name="長方形 2" width="8.913" height="1.07" transform="translate(0 4.504)" fill="#ff5252"/>
+    </g>
+  </g>
+</svg>

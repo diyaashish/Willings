@@ -1,0 +1,13 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+	xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+	layout:decorator="commonLayout">
+<head>
+<meta charset="utf-8" />
+<script type="text/javascript" th:inline="javascript">
+let successMsg = /*[[${message}]]*/'';
+window.opener.successConnectFnc(successMsg);
+window.close();
+</script>
+</head>
+</html>

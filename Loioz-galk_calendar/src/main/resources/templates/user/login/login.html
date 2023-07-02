@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html  xmlns:th="http://www.thymeleaf.org"
+	xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+	layout:decorator="noLoginCommonLayout">
+<head>
+<title layout:fragment="title-contents">
+	[[${T(jp.loioz.common.utility.LoiozUtils).getHtmlTitle("ログイン", T(jp.loioz.common.utility.SessionUtils).getTenantName())}]]
+</title>
+<script type="text/javascript">
+	$(function() {
+		judgeBrowser();
+	});
+</script>
+</head>
+<body class="body_one_block">
+	<!--/* ヘッダーなし */-->
+	<header layout:fragment="header-contents" th:remove="all"></header>
+
+	<main layout:fragment="main-contents">
+		
+		<div class="login_form">
+			<div class="loioz_logo">
+				<img th:src="@{/img/logo_1.png}">
+			</div>
+
+			<form th:action="@{/spring_security_login}" method="post" autocomplete="off">
+
+				<!--/* ログイン */-->
+				<div class="card">
+					<div class="card-header d-flex">
+						<div class="card_title">ログイン</div>
+					</div>
+
+					<!--/* card-body */-->
+					<div class="card-body">
+
+						<!--/* detail_input_area */-->
+						<div class="detail_input_area">
+
+							<div class="browser_message error_msg_browser" style="display: none;">
+								<div class="d-flex mb-3">
+									<div><i class="fas fa-exclamation-triangle mr-2 text-danger"></i></div>
+									<div>
+										<div>現在ご利用のブラウザは推奨環境ではありません。</div>
+										<div>動作保証している下記ブラウザをご利用ください。</div>
+									</div>
+								</div>
+								<div>
+									<div><i class="fas fa-circle fs9 mr-2"></i>Windows10</div>
+									<div class="d-flex pl-4">
+										<div>推奨ブラウザ：</div>
+										<div>
+											<div>Google Chrome 最新Version</div>
+											<div>Microsoft Edge 最新Version</div>
+										</div>
+									</div>
+								</div>
+								<div>
+									<div><i class="fas fa-circle fs9 mr-2"></i>macOS</div>
+									<div class="d-flex pl-4">
+										<div>推奨ブラウザ：</div>
+										<div>
+											<div>Safari 最新Version</div>
+											<div>Google Chrome 最新Version</div>
+										</div>
+									</div>
+								</div>
+								<div class="mt-4 text-center">
+									Google Chromeのダウンロードは、<a href="https://www.google.com/chrome/" target="_blank">こちら</a>
+								</div>
+							</div>
+
+							<div th:if="${loginErrorMsg} != null" class="error_msg_login">
+								<span myth:nl2br="${loginErrorMsg}"></span>
+							</div>
+							<!--/* アカウントID */-->
+							<div class="form-row">
+								<div class="input_parts form-group col-md-12">
+									<label>アカウントID</label>
+									<div class="input-group mb-2">
+										 <div class="input-group-prepend">
+											<div class="input-group-text"><i class="fas fa-user"></i></div>
+										</div>
+										<input type="text" class="form_userid form-control" th:field="${loginForm.username}" th:autocomplete="off" autofocus
+											th:classappend="${loginErrorMsg} ? 'is-invalid'">
+									</div>
+									<!--/* エラーメッセージ */-->
+									<div class="invalid-feedback error_mag_point d-flex" th:errors="${loginForm.username}"></div>
+								</div>
+							</div>
+							<!--/* アカウントトID end */-->
+
+							<!--/* パスワード */-->
+							<div class="form-row">
+								<div class="input_parts form-group col-md-12">
+									<label>パスワード</label>
+									<div class="input-group mb-2">
+										 <div class="input-group-prepend">
+											<div class="input-group-text"><i class="fas fa-lock"></i></div>
+										</div>
+										<input type="password" class="form-control" name="password" value="" autocomplete="current-password"
+											th:classappend="${loginErrorMsg} ? 'is-invalid'">
+									</div>
+									<!--/* エラーメッセージ */-->
+									<div class="invalid-feedback error_mag_point d-flex" th:errors="${loginForm.password}"></div>
+									<div class="input_nav">
+										<a th:href="@{/user/passwordForgetRequest/}">パスワードをお忘れですか？</a>
+									</div>
+								</div>
+							</div>
+							<!--/* パスワード end */-->
+
+							<!--/* アカウントID */-->
+							<div class="form-row">
+								<div class="input_parts form-group col-md-12 text-center">
+									<label class="checkbox_btn">
+										<input type="checkbox" class="checkbox_input" th:name="${T(jp.loioz.common.constant.CommonConstant).LOGIN_FORM_OF_KEEP_ACCOUNT_FLG_FLG_NAME}" value="true" th:checked="${loginForm.keepAccountFlg}">
+										<span class="checkbox_txt">アカウントIDを保存</span>
+									</label>
+								</div>
+							</div>
+
+							<div class="form_action">
+								<button type="submit" name="" class="btn btn-primary">
+									ログイン<i class="fas fa-sign-in-alt ml-3"></i>
+								</button>
+							</div>
+
+						</div>
+						<!--/* detail_input_area end */-->
+
+					</div>
+					<!--/* card-body end */-->
+
+					<!--/* card-footer */-->
+					<div class="card-footer">
+						<div class="row">
+							<div class="col-sm-2"></div>
+							<div class="col-sm-8 text-center">Copyright © loioz All rights Reserved.</div>
+							<div class="col-sm-2 ml-auto text-right pl-0 pr-3" th:text="${@environment.getProperty('app.version')}"></div>
+						</div>
+					</div>
+					<!--/* card-footer end */-->
+
+				</div>
+				<!--/* ログイン end */-->
+
+			</form>
+		</div>
+	</main>
+</body>
+</html>

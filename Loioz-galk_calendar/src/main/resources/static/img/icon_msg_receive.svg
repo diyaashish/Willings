@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="16" height="12" viewBox="0 0 16 12">
+  <g id="icon_msg_receive" transform="translate(0 -1.97)">
+    <path id="パス_143" data-name="パス 143" d="M2.179,8.47,4.151,3.352c.195-.555.5-.882,1.028-.882h9c.525,0,.778.327.972.882L17.179,8.47" transform="translate(-1.679)" fill="none" stroke="#117695" stroke-linejoin="bevel" stroke-miterlimit="10" stroke-width="1"/>
+    <path id="パス_144" data-name="パス 144" d="M11,39.97v2H5v-2H0v4a2.186,2.186,0,0,0,2,2H14a2.186,2.186,0,0,0,2-2v-4Z" transform="translate(0 -32)" fill="#117695"/>
+  </g>
+</svg>

@@ -1,0 +1,1 @@
+select * from users where account_id = /* accountId */'test'

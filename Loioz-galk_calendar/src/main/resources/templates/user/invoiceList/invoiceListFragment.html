@@ -1,0 +1,791 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+	xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+	layout:decorator="commonLayout">
+<head>
+	<meta charset="utf-8" />
+</head>
+<body>
+
+<!--/* 請求書一覧 */-->
+<div th:fragment="invoiceListSearchFragment(invoiceListSearchForm)" id="invoiceListSearchFragment" th:object="${invoiceListSearchForm}">
+	<script type="text/javascript" th:replace="common/mvc/accgDoc/accgDocRegistModal::accgDocRegistModalFragmentJs"></script>
+	<script type="text/javascript" th:inline="javascript">
+	$(function() {
+		
+		<!--/* 共有の要素セットアップ処理 */-->
+		commonSetUpElement("#invoiceListSearchFragment");
+		
+		const invoiceListSearchFragment = $('#invoiceListSearchFragment');
+		const accgDocRegistModal = invoiceListSearchFragment.find('#accgDocRegistModal');
+		
+		<!--/* フィルタクリック */-->
+		invoiceListSearchFragment.on("click", ".filterBtn", function() {
+			<!--/* 検索条件表示／非表示フラグの設定と表示変更 */-->
+			const searchConditionOpen = $('#searchConditionOpen').val();
+			if (searchConditionOpen == "true") {
+				$('#searchConditionOpen').val(false);
+			} else {
+				$('#searchConditionOpen').val(true);
+			}
+			<!--/* パラメータ */-->
+			const formData = $('#invoiceListSearchForm').serializeArray();
+			<!--/* 検索条件表示 */-->
+			renderInvoiceSearchFormFragment(formData);
+		});
+		
+		<!--/* 検索条件クリア処理 */-->
+		invoiceListSearchFragment.on("click", ".cliearBtn", function(e) {
+			<!--/* 検索条件クリア */-->
+			initInvoiceSearchCondition();
+		});
+		
+		<!--/* テキスト検索 */-->
+		let searchText;
+		let inputText;
+		<!--/* テキストボックス内のクリア処理 */-->
+		invoiceListSearchFragment.find('.add-clear-span > a').on('click', function() {
+			inputText = '';
+			
+			if ($(this).parent().find('.inputDate').length > 0) {
+				<!--/* 日付の入力項目（DatePickerの項目）の場合は、blurでの再検索は行わず、このケースではchangeイベントが発火せず再検索が行われないので、イベントを発火させる */-->
+				$(this).parent().find('.inputDate').change();
+			}
+		});
+		
+		<!--/* 入力項目フォーカスアウトで検索 */-->
+		invoiceListSearchFragment.find('.filtersContainer input[type="text"]').on('blur', function() {
+			if ($(this).hasClass('inputDate')) {
+				<!--/* 日付の入力項目（DatePickerの項目）の場合は、blurでの再検索は行わない（changeイベント側で実行されるため） */-->
+				return;
+			}
+			<!--/* 前回検索したキーワードが異なる場合に検索する */-->
+			if (searchText !== inputText) {
+				searchFn();
+			}
+		});
+		
+		<!--/* 入力項目のEnterで検索 */-->
+		invoiceListSearchFragment.find('.filtersContainer input[type="text"]').on('keydown', function(e) {
+			if (e.keyCode == 13) {
+				<!--/* 金額の入力項目の場合は、半角数字以外を除去する） */-->
+				if ($(this).hasClass('inputNumHyphen')) {
+					<!--/* 全角 ⇒ 半角変換 */-->
+					let kingaku = toHalfWidth($(this).val());
+					<!--/* フォーカスが外れた後、半角数字と半角ハイフン以外の文字を除去 */-->
+					kingaku = kingaku.replace(/[^0-9\-]/g,'');
+					<!--/* カンマ区切りに変更 */-->
+					searchText = formatComma(kingaku);
+					$(this).val(searchText);
+				} else {
+					searchText = $(this).val();
+				}
+				searchFn();
+			};
+			inputText = $(this).val();
+		});
+		
+		<!--/* 日付の変更で検索 */-->
+		invoiceListSearchFragment.find('.filtersContainer .inputDate').on('change', function(e) {
+			searchFn();
+		});
+		
+		<!--/* セレクトボックスの変更で検索 */-->
+		invoiceListSearchFragment.find('.filtersContainer select').on('change', function(e) {
+			searchFn();
+		});
+		
+		<!--/* 検索処理 */-->
+		function searchFn() {
+			const optionParam = invoiceListSearchFragment.find('#invoiceListSearchForm').serializeArray();
+			if (ajaxRunning) {
+				return false;
+			}
+			ajaxRunning = true;
+			Promise.resolve()
+				.then(() => searchInvoiceList(optionParam))
+				<!--/* 検索処理時に検索条件のForm情報を変更するため、画面上の検索条件は使用せずセッションにあるものを使用する */-->
+				.then(() => renderInvoiceSearchFormFragment())
+				.catch((errorObj) => console.log(errorObj))
+				.finally(() => ajaxRunning = false);
+		};
+		
+		<!--/* 請求書作成ボタン押下 */-->
+		invoiceListSearchFragment.on("click", ".createAccgDocRegistModal", function() {
+			if (ajaxRunning) {
+				return false;
+			}
+			ajaxRunning = true;
+			Promise.resolve()
+				.then(() => createAccgDocRegistModal())
+				.then(() => $("#accgDocRegistModal").modal("show"))
+				.catch((errorObj) => console.log(errorObj))
+				.finally(() => ajaxRunning = false);
+		});
+		
+		<!--/* 請求書作成モーダルを開く */-->
+		function createAccgDocRegistModal() {
+			return new Promise((resolve, reject) => {
+				$.ajax({
+					url : "/common/mvc/accgDocRegist/createAccgDocRegistModal",
+					type : "GET",
+					dataType: 'html',
+				}).done(function(data, status, jqXHR) {
+					if (isAjaxProcSuccess(jqXHR)) {
+						<!--/* ツールチップを非表示にする */-->
+						$('[data-toggle="tooltip"]').tooltip('hide');
+						$('.accgDocRegistModalFragmentWrap').html(data);
+						return resolve();
+					} else {
+						<!--/* 処理失敗 */-->
+						const errorMsg = getAjaxProcResutlMessage(jqXHR);
+						showErrorMessageForJs(errorMsg);
+						return reject(errorMsg);
+					}
+				}).fail(function() {
+					showErrorMessageForJs(/*[[#{E00059}]]*/ "データの取得に失敗しました。");
+					return reject();
+				})
+			});
+		}
+		
+		<!--/* 請求書・精算書作成モーダルを開いたとき (関数発行タイミング：表示アニメション終了時) */-->
+		accgDocRegistModal.on('shown.bs.modal', function(e){
+			<!--/* 入力項目にフォーカスを当てる */-->
+			const $input = $('#accgDocRegistModal #customerSearchInput');
+			$input.focus();
+		});
+		
+		<!--/* 請求書・精算書作成モーダルを開いたとき (関数発行タイミング：表示アニメション開始時) */-->
+		accgDocRegistModal.on('show.bs.modal', function(e){
+			
+			<!--/* 請求書ラベルの設定 */-->
+			benzo.global.fragment.accgDocRegistModalFragmentObj.paramObj.modalNameLabel = "請求書";
+			
+			<!--/* 請求書登録処理をセットアップ */-->
+			benzo.global.fragment.accgDocRegistModalFragmentObj.setUpObj.registAction = (e) => {
+				<!--/* 2重押下防止 */-->
+				if(ajaxRunning){
+					return false;
+				}
+				
+				if(!confirm(/*[[#{confirm.C00001(請求書)}]]*/'')) {
+					return false;
+				}
+				
+				const formData = benzo.global.fragment.accgDocRegistModalFragmentObj.paramObj.getFormParams(accgDocRegistModal);
+				ajaxRunning = true;
+				Promise.resolve(formData)
+					.then((params) => {
+						return new Promise((resolve, reject) => {
+							$.ajax({
+								type : "POST",
+								url : "/common/mvc/accgDocRegist/registInvoice",
+								data : formData,
+							}).done(function(result, status, jqXHR) {
+								if (getAjaxProcResutl(jqXHR) == /*[[${T(jp.loioz.app.common.mvc.accgDocRegist.controller.AccgDocRegistCommonController).HEADER_VALUE_OF_AJAX_PROC_RESULT_ACCG_DOC_REGIST_REDIRECT}]]*/'100') {
+									window.location.href = getAjaxProcResutlMessage(jqXHR);
+								} else {
+									const errorMsg = getAjaxProcResutlMessage(jqXHR);
+									showErrorMessage(errorMsg, accgDocRegistModal);
+									return reject(errorMsg);
+								}
+							})
+							.fail(function(jqXHR, status, errorThrown) {
+								showErrorMessage(/*[[#{E00091}]]*/"error", accgDocRegistModal);
+								return reject(jqXHR, status, errorThrown)
+							});
+						});
+					})
+					.catch(() => { /*何もしない*/ })
+					.finally(() => {
+						ajaxRunning = false;
+					});
+			};
+			
+		});
+		
+	});
+	</script>
+	
+	<!--/* 検索条件 */-->
+	<form id="invoiceListSearchForm" autocomplete="off">
+		<!--/* 検索条件の表示／非表示フラグ */-->
+		<input type="hidden" th:field="*{searchConditionOpen}">
+		
+		<!--/* 選択したメニュータイトル */-->
+		<div class="page_list_title_block">
+			<h1 class="page_list__name">請求書</h1>
+			<div class="page_list__btn" th:with="searchConditionCount=*{getSearchConditionCount()}">
+				<button type="button" class="btn btn-primary createAccgDocRegistModal" data-toggle="modal" data-target="#invoiceCreate"><i class="fas fa-plus mr-2"></i>請求書作成</button>
+				<button type="button" class="btn btn-light filterBtn" th:classAppend="${searchConditionCount} > 0 ?  'filter_active' ">
+					<i class="fas fa-filter"></i>フィルタ
+					<span class="btn_inner_badge" th:classAppend="${searchConditionCount} > 0 ?  'badge_warning' "
+						th:text="${searchConditionCount}">1</span>
+				</button>
+			</div>
+		</div>
+		
+		<!--/* 検索条件 */-->
+		<div class="list_filters_container filtersContainer" th:classappend="*{SearchConditionOpen ? '' : 'hidden'}">
+			<fieldset>
+				<div class="list_filters_header">
+					<div class="filters_title">検索条件</div>
+					<div class="filters_action">
+						<a href="javascript:void(0);" class="filters_action__clear cliearBtn">検索条件をクリア</a>
+						<a href="javascript:void(0);" class="filters_action__close filterBtn"><i class="fas fa-times"></i></a>
+					</div>
+				</div>
+				<div class="form-row">
+					<!--/* キーワード */-->
+					<div class="form-group col-md-auto">
+						<label class="input_parts_label">キーワード</label>
+						<input type="text" class="form-control digit19 fcAddTextClear" th:field="*{searchWord}" placeholder="名前、案件名、ID" maxlength="300">
+					</div>
+					<!--/* 請求番号 */-->
+					<div class="form-group col-md-auto">
+						<label class="input_parts_label">請求番号</label>
+						<input type="text" class="form-control digit8 fcAddTextClear" th:field="*{invoiceNo}" th:maxlength="${(T(jp.loioz.common.constant.AccgConstant).MX_LEN_ACCG_NO)}">
+					</div>
+					<!--/* 発行状況 */-->
+					<div class="form-group col-md-auto">
+						<label class="input_parts_label">発行状況</label>
+						<select class="form-control digit7" th:with="issueStatus=*{invoiceIssueStatus}" th:field="*{invoiceIssueStatus}">
+							<option value="">-</option>
+							<option th:each="status : ${T(jp.loioz.common.constant.CommonConstant$IssueStatus).values()}"
+								th:label="${status.getVal()}" th:text="${status.getVal()}" th:value="${status.getCd()}" th:selected="${status.equalsByCode(issueStatus)}">
+							</option>
+						</select>
+					</div>
+					<!--/* 入金ステータス */-->
+					<div class="form-group col-md-auto">
+						<label class="input_parts_label">請求状況</label>
+						<select class="form-control digit9" th:with="paymentStatus=*{invoicePaymentStatus}" th:field="*{invoicePaymentStatus}">
+							<option value="">-</option>
+							<option th:each="status : ${T(jp.loioz.common.constant.CommonConstant$InvoicePaymentStatus).values()}"
+								th:label="${status.getVal()}" th:text="${status.getVal()}" th:value="${status.getCd()}" th:selected="${status.equalsByCode(paymentStatus)}">
+							</option>
+						</select>
+					</div>
+					<!--/* 請求日 */-->
+					<div class="form-group col-md-auto">
+						<label class="input_parts_label">請求日</label>
+						<div class="d-flex align-items-start">
+							<div>
+								<div class="d-flex invoiceDateFrom">
+									<input type="text" class="form-control digit8 inputDateSlash fcAddTextClear inputDate" maxlength="10"
+										th:field="*{invoiceDateFrom}"
+										data-click-sync="[data-target-name='invoiceDateFrom']">
+									<button type="button" class="btn btn_popcal hidden" data-toggle="datepicker" data-target-name="invoiceDateFrom">カレンダー</button>
+									<div class="fs15 mt-2 mx-2">〜</div>
+								</div>
+							</div>
+							<div>
+								<div class="invoiceDateTo">
+									<input type="text" class="form-control digit8 inputDateSlash fcAddTextClear inputDate" maxlength="10"
+										th:field="*{invoiceDateTo}"
+										data-click-sync="[data-target-name='invoiceDateTo']">
+									<button type="button" class="btn btn_popcal hidden" data-toggle="datepicker" data-target-name="invoiceDateTo">カレンダー</button>
+								</div>
+							</div>
+						</div>
+					</div>
+					<!--/* 請求額 */-->
+					<div class="form-group col-md-auto">
+						<label class="input_parts_label">請求額</label>
+						<div class="d-flex align-items-start">
+							<div>
+								<div class="d-flex invoiceAmountFrom">
+									<input type="text" class="form-control digit9 commaFormat inputNumHyphen fcAddTextClear" maxlength="10"
+										th:field="*{invoiceAmountFrom}">
+									<div class="fs15 mt-2 mx-2">〜</div>
+								</div>
+							</div>
+							<div>
+								<div class="invoiceAmountTo">
+									<input type="text" class="form-control digit9 commaFormat inputNumHyphen fcAddTextClear" maxlength="10"
+										th:field="*{invoiceAmountTo}">
+								</div>
+							</div>
+						</div>
+					</div>
+					<!--/* 支払期日 */-->
+					<div class="form-group col-md-auto">
+						<label class="input_parts_label">支払期日</label>
+						<div class="d-flex align-items-start">
+							<div>
+								<div class="d-flex dueDateFrom">
+									<input type="text" class="form-control digit8 inputDateSlash fcAddTextClear inputDate" maxlength="10"
+										th:field="*{dueDateFrom}"
+										data-click-sync="[data-target-name='dueDateFrom']">
+									<button type="button" class="btn btn_popcal hidden" data-toggle="datepicker" data-target-name="dueDateFrom">カレンダー</button>
+									<div class="fs15 mt-2 mx-2">〜</div>
+								</div>
+							</div>
+							<div>
+								<div class="dueDateTo">
+									<input type="text" class="form-control digit8 inputDateSlash fcAddTextClear inputDate" maxlength="10"
+										th:field="*{dueDateTo}"
+										data-click-sync="[data-target-name='dueDateTo']">
+									<button type="button" class="btn btn_popcal hidden" data-toggle="datepicker" data-target-name="dueDateTo">カレンダー</button>
+								</div>
+							</div>
+						</div>
+					</div>
+				</div>
+				<div class="form-row">
+					<!--/* 請求方法 */-->
+					<div class="form-group col-md-auto">
+						<label class="input_parts_label">請求方法</label>
+						<select class="form-control digit7" th:with="type=*{invoiceType}" th:field="*{invoiceType}">
+							<option value="">-</option>
+							<option th:each="status : ${T(jp.loioz.common.constant.CommonConstant$InvoiceType).values()}"
+								th:label="${status.getVal()}" th:text="${status.getVal()}" th:value="${status.getCd()}" th:selected="${status.equalsByCode(type)}">
+							</option>
+						</select>
+					</div>
+					<!--/* 売上計上先 */-->
+					<div class="form-group col-md-auto">
+						<label class="input_parts_label">売上計上先</label>
+						<select class="form-control digit9" th:field="*{salesOwner}">
+							<option value="">-</option>
+							<option th:each="owner : *{salesOwnerList}" th:value="${owner.value}"
+								th:text="${owner.label}" th:selected="${owner.value} == *{salesOwner}">
+							</option>
+						</select>
+					</div>
+					<!--/* 担当弁護士 */-->
+					<div class="form-group col-md-auto">
+						<label class="input_parts_label">担当弁護士</label>
+						<select class="form-control digit9" th:field="*{tantoLaywer}">
+							<option value="">-</option>
+							<option th:each="lawyer : *{tantoLawyerList}" th:value="${lawyer.value}"
+								th:text="${lawyer.label}" th:selected="${lawyer.value} == *{tantoLaywer}">
+							</option>
+						</select>
+					</div>
+					<!--/* 担当事務 */-->
+					<div class="form-group col-md-auto">
+						<label class="input_parts_label">担当事務</label>
+						<select class="form-control digit9" th:field="*{tantoJimu}">
+							<option value="">-</option>
+							<option th:each="jimu : *{tantoJimuList}" th:value="${jimu.value}"
+								th:text="${jimu.label}" th:selected="${jimu.value} == *{tantoJimu}">
+							</option>
+						</select>
+					</div>
+					<!--/* 内部メモ */-->
+					<div class="form-group col-md-auto">
+						<label class="input_parts_label">内部メモ</label>
+						<input type="text" class="form-control digit19 fcAddTextClear" th:field="*{invoiceMemo}" maxlength="300">
+					</div>
+				</div>
+			</fieldset>
+		</div>
+		<!--/* 検索条件 end */-->
+	</form>
+	
+	<!--/* 請求書・精算書作成Modal */-->
+	<div id="accgDocRegistModal" class="modal fade" tabindex="-1" role="dialog" aria-labelledby="invoiceCreateTitle" aria-hidden="true" data-backdrop="static">
+		<div class="modal-dialog modal-dialog-centered modal_invoice_deposit" role="document">
+			<div class="modal-content">
+				<div class="accgDocRegistModalFragmentWrap"></div>
+			</div>
+		</div>
+	</div>
+	<!--/* 請求書・精算書作成Modal end */-->
+	
+</div>
+<!--/* 【検索条件】 end */-->
+
+<!--/* 一覧データ */-->
+<div th:fragment="invoiceListFragment(invoiceListViewForm)" id="invoiceListFragment" th:object="${viewForm}">
+	<script type="text/javascript" th:inline="javascript">
+	$(function() {
+		<!--/* 共有の要素セットアップ処理 */-->
+		commonSetUpElement("#invoiceListFragment");
+		
+		const invoiceListFragment = $('#invoiceListFragment');
+		
+		<!--/* ソート処理 */-->
+		invoiceListFragment.find('.invoiceListSort').on('click', function() {
+			const asc = /*[[${T(jp.loioz.common.constant.SortConstant$SortOrder).ASC.getCd()}]]*/'';
+			const desc = /*[[${T(jp.loioz.common.constant.SortConstant$SortOrder).DESC.getCd()}]]*/'';
+			
+			const currentSortItem = /*[[${invoiceListSearchForm.invoiceListSortItem}]]*/'';
+			const currentSortOrder = /*[[${invoiceListSearchForm.invoiceListSortOrder}]]*/'';
+			let optionParam = [];
+			
+			const sortKey = $(this).data('sortKey');
+			if (sortKey != currentSortItem) {
+				optionParam = [
+					{name:"invoiceListSortItem", value:sortKey},
+					{name:"invoiceListSortOrder", value:desc},
+				];
+			} else {
+				if (currentSortOrder === asc) {
+					optionParam = [
+						{name:"invoiceListSortOrder", value:desc},
+					];
+				} 
+				
+				if (currentSortOrder === desc) {
+					optionParam = [
+						{name:"invoiceListSortOrder", value:asc},
+					]
+				} 
+			}
+			
+			if (ajaxRunning) {
+				return false;
+			}
+			ajaxRunning = true;
+			Promise.resolve()
+				.then(() => sortInvoiceList(optionParam))
+				.catch((errorObj) => console.log(errorObj))
+				.finally(() => ajaxRunning = false);
+		});
+		
+		<!--/* 請求書一覧行をクリック */-->
+		invoiceListFragment.on("click", ".transitionInvoiceDetail", function(e){
+			e.stopPropagation();
+			const invoiceSeq = $(this).data('invoiceSeq');
+			const accgDocSeq = $(this).data('accgDocSeq');
+			const requestParam = {
+				'invoiceSeq' : invoiceSeq,
+				'accgDocSeq' : accgDocSeq
+			}
+			<!--/* 請求書明細画面へ遷移 */-->
+			$.ajax({
+				url : "/user/invoiceList/redirectInvoiceDetails",
+				type : "GET",
+				data : requestParam
+			})
+			.done(function(data, status, jqXHR) {
+				if (getAjaxProcResutl(jqXHR) == /*[[${T(jp.loioz.app.user.invoiceList.controller.InvoiceListController).HEADER_VALUE_OF_AJAX_PROC_RESULT_INVOICE_DETAIL_REDIRECT}]]*/) {
+					<!--/* 処理成功 */-->
+					window.location.href = getAjaxProcResutlMessage(jqXHR);
+				} else {
+					<!--/* 処理失敗 */-->
+					const errorMsg = getAjaxProcResutlMessage(jqXHR);
+					showErrorMessageForJs(errorMsg);
+					return reject();
+				}
+			})
+			.fail(function(jqXHR, status, errorThrown) {
+				showErrorMessageForJs(/*[[#{E00091}]]*/ "error");
+			});
+		});
+		
+		<!--/* 名簿IDリンクをクリック */-->
+		invoiceListFragment.on("click", ".transitionPerson", function(e){
+			e.stopPropagation();
+			const personId = $(this).data('personId');
+			const url = /*[[@{/user/personManagement/edit/}]]*/'';
+			<!--/* 名簿情報画面へ遷移 */-->
+			window.location.href = url + personId + '/';
+		});
+
+		<!--/* 案件IDリンクをクリック */-->
+		invoiceListFragment.on("click", ".transitionCase", function(e){
+			e.stopPropagation();
+			const personId = $(this).data('personId');
+			const caseId = $(this).data('caseId');
+			const url = /*[[@{/user/ankenManagement/edit/}]]*/'';
+			<!--/* 案件情報画面へ遷移 */-->
+			window.location.href = url + caseId + '/' + personId + '/';
+		});
+		
+		<!--/* 取引実績画面リンクをクリック */-->
+		invoiceListFragment.on("click", ".recordDetailView", function(e){
+			e.stopPropagation();
+			const accgRecordSeq = $(this).data('accgRecordSeq');
+			const url = /*[[@{/user/recordDetail/}]]*/'';
+			<!--/* 取引実績画面へ遷移 */-->
+			window.location.href = url + accgRecordSeq + '/';
+		});
+		
+		
+	});
+	</script>
+	
+	<!--/* 一覧エリア */-->
+	<div id="invoiceList">
+		<div class="header_fixed_table_wrapper table_common_list">
+			<!--/* 一覧データ */-->
+			<table class="table table_standard table_nowrap table-hover invoice_list row_two_td">
+				<thead>
+					<tr>
+						<th class="th_person_id sort_column invoiceListSort"
+							th:with="sortItem=${(T(jp.loioz.common.constant.SortConstant$InvoiceListSortItem).PERSON_ID)}"
+							th:data-sort-key="${sortItem.getCd()}">
+							名簿ID
+							<th:block th:if="${sortItem == invoiceListSearchForm.invoiceListSortItem}" th:fragment="invoiceListColumn">
+								<th:block th:if="${invoiceListSearchForm.invoiceListSortOrder == T(jp.loioz.common.constant.SortConstant$SortOrder).ASC}">
+									<i class="fas fa-chevron-up"></i>
+								</th:block>
+								<th:block th:if="${invoiceListSearchForm.invoiceListSortOrder == T(jp.loioz.common.constant.SortConstant$SortOrder).DESC}">
+									<i class="fas fa-chevron-down"></i>
+								</th:block>
+							</th:block>
+						</th>
+						<th class="th_person_name sort_column invoiceListSort"
+							th:with="sortItem=${(T(jp.loioz.common.constant.SortConstant$InvoiceListSortItem).PERSON_NAME)}"
+							th:data-sort-key="${sortItem.getCd()}">
+							<div class="ws_nowarp">
+								名前<th:block th:replace="::invoiceListColumn"></th:block>
+							</div>
+						</th>
+						<th class="th_case_id sort_column invoiceListSort"
+							th:with="sortItem=${(T(jp.loioz.common.constant.SortConstant$InvoiceListSortItem).ANKEN_ID)}"
+							th:data-sort-key="${sortItem.getCd()}">
+							<div class="ws_nowarp">
+								案件ID<th:block th:replace="::invoiceListColumn"></th:block>
+							</div>
+						</th>
+						<th class="th_case_name sort_column invoiceListSort"
+							th:with="sortItem=${(T(jp.loioz.common.constant.SortConstant$InvoiceListSortItem).ANKEN_NAME)}"
+							th:data-sort-key="${sortItem.getCd()}">
+							<div class="ws_nowarp">
+								案件名<th:block th:replace="::invoiceListColumn"></th:block>
+							</div>
+						</th>
+						<th class="th_case_invoice_type sort_column invoiceListSort"
+							th:with="sortItem=${(T(jp.loioz.common.constant.SortConstant$InvoiceListSortItem).INVOICE_TYPE)}"
+							th:data-sort-key="${sortItem.getCd()}">
+							<div class="ws_nowarp">
+								請求方法<th:block th:replace="::invoiceListColumn"></th:block>
+							</div>
+						</th>
+						<th class="th_issue_status sort_column invoiceListSort"
+							th:with="sortItem=${(T(jp.loioz.common.constant.SortConstant$InvoiceListSortItem).INVOICE_ISSUE_STATUS)}"
+							th:data-sort-key="${sortItem.getCd()}">
+							<div class="ws_nowarp">
+								発行状況<th:block th:replace="::invoiceListColumn"></th:block>
+							</div>
+						</th>
+						<th class="th_payment_status sort_column invoiceListSort"
+							th:with="sortItem=${(T(jp.loioz.common.constant.SortConstant$InvoiceListSortItem).INVOICE_PAYMENT_STATUS)}"
+							th:data-sort-key="${sortItem.getCd()}">
+							<div class="ws_nowarp">
+								請求状況<th:block th:replace="::invoiceListColumn"></th:block>
+							</div>
+						</th>
+						<th class="th_invoice_date sort_column invoiceListSort"
+							th:with="sortItem=${(T(jp.loioz.common.constant.SortConstant$InvoiceListSortItem).INVOICE_DATE)}"
+							th:data-sort-key="${sortItem.getCd()}">
+							<div class="ws_nowarp">
+								請求日<th:block th:replace="::invoiceListColumn"></th:block>
+							</div>
+						</th>
+						<th class="invoice_amount sort_column text-right invoiceListSort"
+							th:with="sortItem=${(T(jp.loioz.common.constant.SortConstant$InvoiceListSortItem).INVOICE_AMOUNT)}"
+							th:data-sort-key="${sortItem.getCd()}">
+							<div class="ws_nowarp d-flex align-items-center justify-content-end">
+								<div>
+									請求金額
+								</div>
+								<div class="mnw15" th:insert="::invoiceListColumn"></div>
+							</div>
+						</th>
+						<th class="th_due_date sort_column invoiceListSort"
+							th:with="sortItem=${(T(jp.loioz.common.constant.SortConstant$InvoiceListSortItem).DUE_DATE)}"
+							th:data-sort-key="${sortItem.getCd()}">
+							<div class="ws_nowarp">
+								支払期日<th:block th:replace="::invoiceListColumn"></th:block>
+							</div>
+						</th>
+						<th class="invoice_no sort_column invoiceListSort"
+							th:with="sortItem=${(T(jp.loioz.common.constant.SortConstant$InvoiceListSortItem).INVOICE_NO)}"
+							th:data-sort-key="${sortItem.getCd()}">
+							<div class="ws_nowarp">
+								請求番号<th:block th:replace="::invoiceListColumn"></th:block>
+							</div>
+						</th>
+						<th class="th_tanto_laywer">担当弁護士</th>
+						<th class="th_memo">内部メモ</th>
+					</tr>
+				</thead>
+				<tbody>
+					<th:block th:if="*{invoiceList.size() == 0}">
+						<tr>
+							<td colspan="13" class="no_data"><span th:text="#{I00044('請求書情報')}">該当する請求書情報は見つかりませんでした。</span></td>
+						</tr>
+					</th:block>
+					<tr th:each="invoiceData : ${invoiceListViewForm.invoiceList}" data-click-sync-for-descendants=".transitionInvoiceDetail">
+						<td th:data-person-id="${invoiceData.personId}">
+							<!--/* 名簿IDリンク */-->
+							<span class="stop-events">
+								<a href="javascript:void(0);" class="transitionInvoiceDetail hidden"
+									th:data-invoice-seq="${invoiceData.invoiceSeq}" th:data-accg-doc-seq="${invoiceData.accgDocSeq}"></a>
+								<a href="javascript:void(0);" class="main_id transitionPerson" th:data-person-id="${invoiceData.personId}"
+									data-boundary="window" data-container="body" data-toggle="tooltip" data-trigger="hover" title="名簿情報へ"
+									th:text="${invoiceData.personId}">1000</a>
+							</span>
+						</td>
+						<td>
+							<!--/* 名前 */-->
+							<div class="char_ellipsis mxw150">
+								<span th:text="${invoiceData.name}"></span>
+							</div>
+						</td>
+						<td>
+							<!--/* 案件ID */-->
+							<span class="stop-events">
+								<a href="javascript:void(0);" class="main_id transitionCase" th:data-person-id="${invoiceData.personId}" th:data-case-id="${invoiceData.ankenId}"
+									data-boundary="window" data-container="body" data-toggle="tooltip" data-trigger="hover" title="案件情報へ"
+									th:text="${invoiceData.ankenId}">1000</a>
+							</span>
+						</td>
+						<td>
+							<!--/* 案件名 */-->
+							<div class="char_ellipsis mxw200">
+								<span th:text="${#strings.isEmpty(invoiceData.ankenName)} ? '(案件名未入力)' : ${invoiceData.ankenName}"></span>
+							</div>
+						</td>
+						<td>
+							<!--/* 請求方法 */-->
+							<div class="char_ellipsis mxw80">
+								<span th:text="${#strings.isEmpty(invoiceData.invoiceTypeName)} ? '' : ${invoiceData.invoiceTypeName}"></span>
+							</div>
+						</td>
+						<td>
+							<!--/* 発行状況 */-->
+							<span th:class="|issue_status_${invoiceData.invoiceIssueStatus}|" >
+								<th:block th:if="${T(jp.loioz.common.constant.CommonConstant$IssueStatus).DRAFT.equalsByCode(invoiceData.invoiceIssueStatus)}">
+									<i class="fas fa-pen-square fa-lg"></i>
+								</th:block>
+								<span th:text="${invoiceData.invoiceIssueStatusName}"></span>
+							</span>
+						</td>
+						<td>
+							<!--/* 請求状況 */-->
+							<th:block th:switch="${invoiceData.invoicePaymentStatus}">
+								<!--/* 発行待ち */-->
+								<th:block th:case="${T(jp.loioz.common.constant.CommonConstant$InvoicePaymentStatus).DRAFT.getCd()}">
+									<span th:class="|invoice_nyukin_status_${invoiceData.invoicePaymentStatus} transitionInvoiceDetail|"
+										th:data-invoice-seq="${invoiceData.invoiceSeq}" th:data-accg-doc-seq="${invoiceData.accgDocSeq}" th:text="${invoiceData.invoicePaymentStatusName}">
+									</span>
+								</th:block>
+								<th:block th:case="*">
+									<th:block th:switch="${invoiceData.invoicePaymentStatus}">
+										<span class="stop-events">
+											<!--/* 入金済み */-->
+											<th:block th:case="${T(jp.loioz.common.constant.CommonConstant$InvoicePaymentStatus).DEPOSITED.getCd()}">
+												<i class="fas fa-check-circle text-success"></i>
+											</th:block>
+											<!--/* 一部入金 */-->
+											<th:block th:case="${T(jp.loioz.common.constant.CommonConstant$InvoicePaymentStatus).PARTIAL_DEPOSIT.getCd()}">
+												<i class="fas fa-exclamation-circle text-danger"></i>
+											</th:block>
+											<!--/* 過入金 */-->
+											<th:block th:case="${T(jp.loioz.common.constant.CommonConstant$InvoicePaymentStatus).OVER_PAYMENT.getCd()}">
+												<i class="fas fa-exclamation-circle text-danger"></i>
+											</th:block>
+											<!--/* 回収不能 */-->
+											<th:block th:case="${T(jp.loioz.common.constant.CommonConstant$InvoicePaymentStatus).UNCOLLECTIBLE.getCd()}">
+												<i class="fas fa-times-circle text-danger"></i>
+											</th:block>
+											<!--/* 発行待ち */-->
+											<th:block th:case="${T(jp.loioz.common.constant.CommonConstant$InvoicePaymentStatus).DRAFT.getCd()}">
+											</th:block>
+											<!--/* 入金待ち */-->
+											<th:block th:case="${T(jp.loioz.common.constant.CommonConstant$InvoicePaymentStatus).AWAITING_PAYMENT.getCd()}">
+											</th:block>
+											<a href="javascript:void(0);" th:class="|invoice_nyukin_status_${invoiceData.invoicePaymentStatus} recordDetailView|"
+												th:data-accg-record-seq="${invoiceData.accgRecordSeq}"
+												data-boundary="window" data-container="body" data-toggle="tooltip" data-trigger="hover" title="取引実績へ"
+												 th:text="${invoiceData.invoicePaymentStatusName}"></a>
+										</span>
+									</th:block>
+								</th:block>
+							</th:block>
+						</td>
+						<td>
+							<!--/* 請求日 */-->
+							<span th:text="${#strings.isEmpty(invoiceData.getInvoiceDateFormat())} ? '-' : ${invoiceData.getInvoiceDateFormat()}"></span>
+						</td>
+						<td class="text-right">
+							<!--/*請求金額 */-->
+							<span class="fs15 fw600 fc_sum_amount" th:text="${#strings.isEmpty(invoiceData.invoiceAmount)} ? '-' : ${invoiceData.invoiceAmount}"></span>
+						</td>
+						<td>
+							<!--/* 支払期日なし */-->
+							<th:block th:if="${#strings.isEmpty(invoiceData.getDueDateFormat())}">
+								-
+							</th:block>
+							<!--/* 支払期日あり */-->
+							<th:block th:unless="${#strings.isEmpty(invoiceData.getDueDateFormat())}">
+								<th:block th:switch="${invoiceData.invoicePaymentStatus}">
+									<!--/* 入金待ち */-->
+									<th:block th:case="${T(jp.loioz.common.constant.CommonConstant$InvoicePaymentStatus).AWAITING_PAYMENT.getCd()}">
+										<!--/* 支払い期日前の場合 */-->
+										<th:block th:if="${invoiceData.isOverdue()}">
+											<i class="far fa-clock"></i>
+										</th:block>
+										<!--/* 支払い期日を超えた場合 */-->
+										<th:block th:unless="${invoiceData.isOverdue()}">
+											<i class="fas fa-exclamation-circle text-danger"></i>
+										</th:block>
+									</th:block>
+								</th:block>
+								<span th:text="${invoiceData.getDueDateFormat()}"></span>
+							</th:block>
+						</td>
+						<td>
+							<!--/*請求番号 */-->
+							<span th:text="${#strings.isEmpty(invoiceData.invoiceNo)} ? '-' : ${invoiceData.invoiceNo}"></span>
+						</td>
+						<!--/* 担当弁護士 */-->
+						<td class="cell_fixed_100 char_ellipsis" data-boundary="window" data-container="body" data-toggle="tooltip" data-trigger="hover"
+								th:title="${#strings.isEmpty(invoiceData.tantoLaywerName)} ? '' : ${invoiceData.tantoLaywerName}"
+								th:text="${#strings.isEmpty(invoiceData.tantoLaywerName)} ? '-' : ${invoiceData.tantoLaywerName}">
+						</td>
+						<td>
+							<span th:text="${#strings.isEmpty(invoiceData.invoiceMemo)} ? '-' : ${invoiceData.invoiceMemo}"></span>
+						</td>
+					</tr>
+				</tbody>
+			</table>
+		</div>
+	</div>
+
+</div>
+<!--/* 一覧エリア end */-->
+
+<!--/* ページングフラグメント */-->
+<div th:fragment="invoiceListPagerFragment(page)" id="invoiceListPagerFragment">
+	
+	<!--/* スクリプト */-->
+	<script th:inline="javascript">
+	$(function(){
+		<!--/* 共有の要素セットアップ処理 */-->
+		commonSetUpElement("#invoiceListPagerFragment");
+	});
+	</script>
+	
+	<div id="invoiceListPager" class="list_footer_pager" th:object="${page}">
+		<th:block th:if="${page}">
+			<div  class="list_footer_pager__no" th:insert="common/pagerAjax::pagerAjax(page=${page}, listFragmentId='invoiceListPager')"></div>
+			<div class="list_footer_pager__data_cnt" th:with="firstPageNumber=${page.getNumber()} * ${page.getSize()} + 1, lastPageNumber=${page.getNumber()} * ${page.getSize()} + ${page.getNumberOfElements()}">
+				<span th:if="${lastPageNumber} > 0" th:text="|(${firstPageNumber} - ${lastPageNumber}/${page.getTotalElements()})|"></span>
+			</div>
+		</th:block>
+	</div>
+	
+</div>
+<!--/* ページングフラグメント end */-->
+
+<!--/* 一覧フッターのフラグメント */-->
+<div th:fragment="invoiceListAndPagerWraperFragment(viewForm)" id="invoiceListAndPagerWraperFragment">
+	<!--/* 一覧結果 */-->
+	<div id="invoiceListViewFragmentWrap"
+		th:insert="user/invoiceList/invoiceListFragment::invoiceListFragment(${viewForm})"></div>
+	<!--/* ページング */-->
+	<div id="invoiceListPagerWrap"
+		th:insert="user/invoiceList/invoiceListFragment::invoiceListPagerFragment(${viewForm.page})"></div>
+</div>
+
+	
+</body>
+</html>

@@ -1,0 +1,408 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+	xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+	layout:decorator="commonLayout">
+<head>
+	<meta charset="utf-8" />
+</head>
+<body>
+
+<!--/* 詳細データ */-->
+<div th:fragment="depositRecvMasterViewFragment(depositRecvMasterListViewForm)" id="depositRecvMasterViewFragment" th:object="${depositRecvMasterListViewForm}">
+	<script type="text/javascript" th:inline="javascript">
+	$(function() {
+		
+		<!--/* 定数 */-->
+		const depositRecvMasterFragmentWrap = $('#depositRecvMasterFragmentWrap');
+		const depositRecvMasterViewFragment = $('#depositRecvMasterViewFragment');
+		const depositRecvMasterEditModal = $('#depositRecvMasterEditModal');
+		const depositRecvMasterEditModalFragmentWrap = $('#depositRecvMasterEditModalFragmentWrap');
+		
+		<!--/* 共有の要素セットアップ処理 */-->
+		commonSetUpElement("#depositRecvMasterFragment");
+		setUpSortTargetFragment("#depositRecvMasterSortTargetList");
+		
+		<!--/* 検索処理 */-->
+		depositRecvMasterViewFragment.find("#depositRecvMasterListSearchForm input[type='radio']").on('change', function() {
+			if (ajaxRunning) {
+				return false;
+			}
+			const formParam = $('#depositRecvMasterListSearchForm').serializeArray();
+			ajaxRunning = true;
+			$.ajax({
+				url : '/user/depositRecvMaster/depositRecvMasterListSearch',
+				type : "GET",
+				data : formParam,
+			}).done(function(data, status, jqXHR) {
+				<!--/* 成功 */-->
+				if (isAjaxProcSuccess(jqXHR)) {
+					depositRecvMasterFragmentWrap.html(data);
+				} else {
+					// 処理失敗
+					const errorMsg = getAjaxProcResutlMessage(jqXHR);
+					showErrorMessageForJs(errorMsg);
+				}
+			}).fail(function(jqXHR, textStatus, errorThrown) {
+				<!--/* 失敗 */-->
+				const errorMsg = /*[[#{E00091}]]*/ "error";
+				showErrorMessageForJs(errorMsg);
+			}).always(function() {
+				ajaxRunning = false;
+			});
+		});
+		
+		<!--/* モーダルの表示 */-->
+		depositRecvMasterViewFragment.find('.openDepositRecvMasterEditModal').on('click', function() {
+			if (ajaxRunning) {
+				return false;
+			}
+			const depositItemSeq = $(this).data('id');
+			let action = "create";
+			if (depositItemSeq) {
+				action = "edit";
+			}
+			ajaxRunning = true;
+			$.ajax({
+				url : "/user/depositRecvMaster/" + action,
+				type : "GET",
+				data :{ 'depositItemSeq' : depositItemSeq},
+			}).done(function(data, status, jqXHR) {
+				<!--/* 成功 */-->
+				if (isAjaxProcSuccess(jqXHR)) {
+					depositRecvMasterEditModalFragmentWrap.html(data);
+					depositRecvMasterEditModal.modal('show');
+				} else {
+					// 処理失敗
+					const errorMsg = getAjaxProcResutlMessage(jqXHR);
+					showErrorMessageForJs(errorMsg);
+				}
+			}).fail(function(jqXHR, textStatus, errorThrown) {
+				<!--/* 失敗 */-->
+				const errorMsg = /*[[#{E00091}]]*/ "error";
+				showErrorMessageForJs(errorMsg);
+			}).always(function() {
+				ajaxRunning = false;
+			});
+		});
+		
+		<!--/* モーダル閉じる処理 */-->
+		depositRecvMasterEditModal.on('hidden.bs.modal', function (e) {
+			<!--/* 初期化する */-->
+			depositRecvMasterEditModalFragmentWrap.html('');
+		});
+		
+	});
+	</script>
+	
+	<div class="contents_block">
+		<div class="block_title">預り金／実費項目</div>
+		<div class="block_detail">
+			<p>会計管理の預り金／実費項目として利用します。</p>
+			<div class="search_conditions">
+				<form id="depositRecvMasterListSearchForm" th:object="${depositRecvMasterSearchForm.depositRecvMasterListSearchForm}">
+					<div class="form-row">
+						<div class="col-sm-10 my-auto">
+							<label class="side_parts_label">絞り込み：</label>
+							<label class="radio_btn">
+								<input type="radio" class ="radio_input" th:field="*{depositType}" value="">
+								<span class="radio_txt">すべて</span>
+							</label>
+							<label class="radio_btn">
+								<input type="radio" class ="radio_input" th:field="*{depositType}" th:value="${T(jp.loioz.common.constant.CommonConstant$DepositType).NYUKIN.getCd()}">
+								<span class="radio_txt">入金項目</span>
+							</label>
+							<label class="radio_btn">
+								<input type="radio" class ="radio_input" th:field="*{depositType}" th:value="${T(jp.loioz.common.constant.CommonConstant$DepositType).SHUKKIN.getCd()}">
+								<span class="radio_txt">出金項目</span>
+							</label>
+						</div>
+						<div class="block_action">
+							<button type="button" class="btn btn-primary openDepositRecvMasterEditModal">
+								<i class="fas fa-plus"></i>新規登録</button>
+						</div>
+					</div>
+				</form>
+			</div>
+		</div>
+		
+		<!--/* 一覧表示 */-->
+		<div class="list_area">
+			<table class="table table_standard table_sort table-sm table_fixed table-striped" th:with="canSort=*{canSort}">
+				<thead>
+					<tr>
+						<th class="col_5"><i class="fas fa-grip-vertical fc_sub"></i></th>
+						<th class="col_15">入金／出金</th>
+						<th class="col_35">項目名</th>
+						<th class="col_45">備考</th>
+						<th class="col_10">操作</th>
+					</tr>
+				</thead>
+				<tbody th:id="${canSort} ? 'depositRecvMasterSortTargetList' : '' ">
+<!--/*/ 		<th:block th:if="*{#lists.isEmpty(depositRecvMasterListItemDtoList)}"> /*/-->
+						<tr>
+							<td colspan="5" class="no_data_table_list">
+								<span th:text="#{I00021}">MSG_I00021</span>
+							</td>
+						</tr>
+<!--/*/ 		</th:block> /*/-->
+					<tr th:each="item : *{depositRecvMasterListItemDtoList}" th:object="${item}" th:data-target-id="*{depositItemSeq}">
+						<th:block th:if="${canSort}">
+							<td class="col_5">
+								<div class="move_point sortableObj">
+									<svg class="icon_drag_indicator hidden"></svg>
+									<div class="sortableIdx hidden" th:text="*{dispOrder}"></div>
+								</div>
+							</td>
+						</th:block>
+						<th:block th:unless="${canSort}">
+							<td class="col_5"></td>
+						</th:block>
+						<td class="col_15">
+							<span class="badge badge-pill badge_square mnw50"
+								th:classappend="${T(jp.loioz.common.constant.CommonConstant$DepositType).NYUKIN.equalsByCode(item.depositType?.getCd())} ? 'badge_cyan' : 'badge_red' "
+								th:text="*{depositType?.getVal()}"></span>
+						</td>
+						<td class="col_35" th:text="*{depositItemName}"></td>
+						<td class="col_45" th:text="*{remarks}"></td>
+						<td class="col_10">
+							<div class="d-inline-block" data-toggle="tooltip" title="預り金／実費項目を編集" data-trigger="hover" data-container="#depositRecvMasterViewFragment">
+								<button class="btn btn-light btn-sm openDepositRecvMasterEditModal" th:data-id="*{depositItemSeq}">
+									<i class="fas fa-edit mr-1"></i>
+									<span>編集</span>
+								</button>
+							</div>
+						</td>
+					</tr>
+				</tbody>
+			</table>
+		</div>
+	</div>
+	
+	<!--/* モーダル */-->
+	<div id="depositRecvMasterEditModal" class="modal fade" tabindex="-1" role="dialog" aria-hidden="true" data-backdrop="static">
+		<div class="modal-dialog modal-dialog-centered" role="document">
+			<div class="modal-content">
+				<div id="depositRecvMasterEditModalFragmentWrap"></div>
+			</div>
+		</div>
+	</div>
+</div>
+
+<!--/* 預り金項目編集モーダル */-->
+<div th:fragment="depositRecvMasterEditModalFragment" id="depositRecvMasterEditModalFragment" th:object="${depositRecvMasterEditModalInputForm}">
+	<script type="text/javascript" th:inline="javascript">
+	$(function() {
+		
+		<!--/* 定数 */-->
+		const depositRecvMasterEditModalFragmentWrap = $('#depositRecvMasterEditModalFragmentWrap');
+		const depositRecvMasterEditModalFragment = $('#depositRecvMasterEditModalFragment');
+		const modal = depositRecvMasterEditModalFragment.closest(".modal");
+		
+		<!--/* 初期処理 */-->
+		commonSetUpElement("#depositRecvMasterFragment");
+		
+		<!--/* 登録 */-->
+		depositRecvMasterEditModalFragment.find('#regist').on("click", function() {
+			<!--/* 2重押下防止 */-->
+			if (ajaxRunning){
+				return false;
+			}
+			
+			let formData = depositRecvMasterEditModalFragment.find('#editForm').serializeArray();
+			ajaxRunning = true;
+			
+			Promise.resolve(formData)
+				.then((params) => {
+					return new Promise((resolve, reject) => {
+						$.ajax({
+							type : "POST",
+							url : "/user/depositRecvMaster/regist",
+							data : params,
+						}).done(function(data, status, jqXHR) {
+							if (isAjaxProcSuccess(jqXHR)) {
+								showInfoMessageForJs(getAjaxProcResutlMessage(jqXHR));
+								return resolve();
+							} else {
+								if (data) {
+									depositRecvMasterEditModalFragmentWrap.html(data);
+								}
+								// 処理失敗
+								const errorMsg = getAjaxProcResutlMessage(jqXHR);
+								showErrorMessage(errorMsg, modal);
+								return reject();
+							}
+						}).fail(function(jqXHR, textStatus, errorThrown) {
+							<!--/* 失敗 */-->
+							const errorMsg = /*[[#{E00091}]]*/ "error";
+							showErrorMessage(errorMsg, modal);
+							return reject();
+						});
+					});
+				})
+				.then(() => modalHidePromise(modal))
+				.then(getDepositRecvMasterListSearch)
+				.catch((errors) => console.log(errors))
+				.finally(() => ajaxRunning = false);
+		});
+		
+		<!--/* 更新 */-->
+		depositRecvMasterEditModalFragment.find('#update').on("click", function() {
+			<!--/* 2重押下防止 */-->
+			if (ajaxRunning){
+				return false;
+			}
+			
+			let formData = depositRecvMasterEditModalFragment.find('#editForm').serializeArray();
+			ajaxRunning = true;
+			
+			Promise.resolve(formData)
+				.then((params) => {
+					return new Promise((resolve, reject) => {
+						$.ajax({
+							type : "POST",
+							url : "/user/depositRecvMaster/update",
+							data : params,
+						}).done(function(data, status, jqXHR) {
+							if (isAjaxProcSuccess(jqXHR)) {
+								showInfoMessageForJs(getAjaxProcResutlMessage(jqXHR));
+								return resolve();
+							} else {
+								if (data) {
+									depositRecvMasterEditModalFragmentWrap.html(data);
+								}
+								// 処理失敗
+								const errorMsg = getAjaxProcResutlMessage(jqXHR);
+								showErrorMessage(errorMsg, modal);
+								return reject();
+							}
+						}).fail(function(jqXHR, textStatus, errorThrown) {
+							<!--/* 失敗 */-->
+							const errorMsg = /*[[#{E00091}]]*/ "error";
+							showErrorMessage(errorMsg, modal);
+							return reject();
+						});
+					});
+				})
+				.then(() => modalHidePromise(modal))
+				.then(getDepositRecvMasterListSearch)
+				.catch((errors) => console.log(errors))
+				.finally(() => ajaxRunning = false);
+		});
+		
+		<!--/* 削除 */-->
+		depositRecvMasterEditModalFragment.find('#delete').on("click", function() {
+			<!--/* 2重押下防止 */-->
+			if (ajaxRunning){
+				return false;
+			}
+			
+			if (!confirm('削除します。よろしいですか?')){
+				return false;
+			}
+			
+			const depositItemSeq = depositRecvMasterEditModalFragment.find('input[name="depositItemSeq"]').val();
+			ajaxRunning = true;
+			Promise.resolve(depositItemSeq)
+				.then((params) => {
+					return new Promise((resolve, reject) => {
+						$.ajax({
+							type : "POST",
+							url : "/user/depositRecvMaster/delete",
+							data : {"depositItemSeq": depositItemSeq},
+						}).done(function(data, status, jqXHR) {
+							if (isAjaxProcSuccess(jqXHR)) {
+								showInfoMessageForJs(getAjaxProcResutlMessage(jqXHR));
+								return resolve();
+							} else {
+								// 処理失敗
+								const errorMsg = getAjaxProcResutlMessage(jqXHR);
+								showErrorMessage(errorMsg, modal);
+								return reject();
+							}
+						}).fail(function(jqXHR, textStatus, errorThrown) {
+							<!--/* 失敗 */-->
+							const errorMsg = /*[[#{E00091}]]*/ "error";
+							showErrorMessage(errorMsg, modal);
+							return reject();
+						});
+					});
+				})
+				.then(() => modalHidePromise(modal))
+				.then(getDepositRecvMasterListSearch)
+				.catch((errors) => console.log(errors))
+				.finally(() => ajaxRunning = false);
+		});
+		
+		<!--/* モーダル閉じる処理をPromise化 */-->
+		function modalHidePromise(modal){
+			return new Promise((resolve) => {
+				$(modal).one('hidden.bs.modal', function() {
+					resolve();
+				});
+				$(modal).modal("hide");
+			});
+		};
+		
+	});
+	</script>
+	<form id="editForm">
+		<div class="modal-header">
+			<h2 class="modalheader_title" th:text="*{isNew()} ? '預り金／実費項目登録' : '預り金／実費項目更新'"></h2>
+		</div>
+		<div class="modal-body">
+			<div th:replace="common/messageArea::jsMessageArea"></div>
+			<input type="hidden" th:field="*{depositItemSeq}">
+			<!--/* 入力エリア */-->
+				<!--/* 名称 */-->
+				<div class="form-row">
+					<div class="form-group col-md-12">
+						<label class="input_parts_label">項目名</label>
+						<span class="mark_equired">必須</span>
+						<input type="text" class="form-control" th:field="*{depositItemName}" placeholder="全角半角30文字" maxlength="30">
+						<!--/* Enter key対応のダミー */-->
+						<input type="text" name="dummy" style="display:none;">
+						<div th:if="*{#fields.hasErrors('depositItemName')}" th:errors="*{depositItemName}" class="error_mag_point">error</div>
+					</div>
+				</div>
+				<!--/* 名称 end */-->
+				
+				<!--/* 入金/出金 */-->
+				<div class="form-row">
+					<div class="form-group col-md-12">
+						<label class="input_parts_label">入金／出金</label>
+						<div>
+							<label class="radio_btn" th:each="enum : ${T(jp.loioz.common.constant.CommonConstant$DepositType).values()}">
+								<input type="radio" class="radio_input" th:field="*{depositType}" th:value="${enum.cd}">
+								<span class="radio_txt" th:text="${enum.val}"></span>
+							</label>
+							<div th:if="*{#fields.hasErrors('depositType')}" th:errors="*{depositType}" class="error_mag_point">error</div>
+						</div>
+					</div>
+				</div>
+				<!--/* 入金/出金 end */-->
+				
+				<!--/* 備考 */-->
+				<div class="form-row">
+					<div class="form-group col-md-12">
+						<label class="input_parts_label">備考</label>
+						<div>
+							<textarea class="form-control" th:field="*{remarks}" rows="3" maxlength="100"></textarea>
+							<div th:if="*{#fields.hasErrors('remarks')}" th:errors="*{remarks}" class="error_mag_point">error</div>
+						</div>
+				</div>
+				<!--/* 備考 */-->
+			</div>
+		</div>
+		<div class="modal-footer">
+			<button th:if="*{!isNew()}" type="button" class="btn btn-light mr-auto" id="delete"><i class="far fa-trash-alt"></i>削除</button>
+			<div>
+				<button th:if="*{!isNew()}" type="button" class="btn btn-info" id="update"><i class="fas fa-check"></i>保存</button>
+				<button th:if="*{isNew()}" type="button" class="btn btn-info" id="regist"><i class="fas fa-check"></i>登録</button>
+				<button type="button" class="btn btn-light" data-dismiss="modal"><i class="fas fa-times"></i>閉じる</button>
+			</div>
+		</div>
+	</form>
+</div>
+
+</body>
+</html>

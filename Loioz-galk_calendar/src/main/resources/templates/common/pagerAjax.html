@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+<meta charset="utf-8" />
+</head>
+<body>
+
+<!--/*
+	ページングのリクエスト処理をajaxで行うためのフラグメント。
+	※通常のHTTPのGET（aタグのhref）でリクエストを行う場合は、pager.htmlを利用する。
+	
+	page : ページオブジェクト
+	listFragmentId : このページャーフラグメントを利用する、一覧のフラグメントのID （このフラグメントの親タグである必要がある）
+	
+	関数の引数は下記の形式にすること。
+	hogePaging（pagingNum, pagingParameter）
+	@param pagingNum　次に表示するページのindex番号がわたってくる
+	
+*/-->
+<div id="pagerAjaxFragment" th:fragment="pagerAjax(page, listFragmentId)"
+	th:with="
+		page=${page}?: ${T(org.springframework.data.domain.Page).empty()},
+		pagerSubParam=${subParam}">
+	
+	<!--/* スクリプト */-->
+	<script th:inline="javascript">
+	$(function(){
+		<!--/* 共有のセットアップ処理は、親HTMLで行われるので、ここでは行わない */-->
+		<!--/* ページングをクリック（前へ、次へ、ページ番号のボタンなど） */-->
+		const listFragmentId = /*[[${listFragmentId}]]*/'';
+		$('#' + listFragmentId).on("click", ".paging", function() {
+			<!--/* ページ番号を取得 */-->
+			const pagingNum = $(this).data('page');
+			
+			<!--/* 必要に応じて使用する */-->
+			const pagerSubParam = /*[[${pagerSubParam}]]*/'';
+			
+			<!--/* 共通ページング関数を実行する（親フラグメントで定義し、実装する） */-->
+			getListOfPageNumber(pagingNum, pagerSubParam);
+		});
+
+	});
+	</script>
+
+	<th:block th:if="${page.totalPages > 1}">
+		<nav class="pager_block">
+			<ul class="pagination mr-4">
+				<li class="page-item" th:classappend="${page.first}? 'disabled'">
+					<a th:if="${page.first}" class="page-link"><i class="fas fa-angle-double-left"></i></a>
+					<a th:if="${!page.first}" class="page-link paging" data-page="0" href="javascript:void(0);"><i class="fas fa-angle-double-left"></i></a>
+				</li>
+				<li class="page-item" th:classappend="${!page.hasPrevious()}? 'disabled'">
+					<a th:if="${!page.hasPrevious()}" class="page-link"><i class="fas fa-angle-left"></i></a>
+					<a th:if="${page.hasPrevious()}" class="page-link paging" th:data-page="${page.number-1}" href="javascript:void(0);"><i class="fas fa-angle-left"></i></a>
+				</li>
+				<li class="page-item" th:classappend="${i==page.number}? 'active'" th:if="${i==page.number} or ${i!=page.number && i>=0}"
+					th:each="i : ${#numbers.sequence(
+						T(java.lang.Math).max(0, page.number-5 - T(java.lang.Math).max(0, page.number+4 - (page.totalPages-1))),
+						T(java.lang.Math).min(page.totalPages-1, page.number+4 + T(java.lang.Math).max(0, 5 - page.number))
+					)}">
+					<a class="page-link paging" th:text="${i+1}" th:data-page="${i}" href="javascript:void(0);">1</a>
+				</li>
+				<li class="page-item" th:classappend="${!page.hasNext()}? 'disabled'">
+					<a th:if="${!page.hasNext()}" class="page-link"><i class="fas fa-angle-right"></i></a>
+					<a th:if="${page.hasNext()}" class="page-link paging" th:data-page="${page.number+1}" href="javascript:void(0);"><i class="fas fa-angle-right"></i></a>
+				</li>
+				<li class="page-item" th:classappend="${page.last}? 'disabled'">
+					<a th:if="${page.last}" class="page-link"><i class="fas fa-angle-double-right"></i></a>
+					<a th:if="${!page.last}" class="page-link paging" th:data-page="${page.totalPages-1}" href="javascript:void(0);">
+						<i class="fas fa-angle-double-right"></i>
+					</a>
+				</li>
+			</ul>
+		</nav>
+	</th:block>
+</div>
+
+<!--/* 
+	デフォルトのページングデザイン
+	
+	Ajaxにより、ページング処理を行う際に利用する。
+	利用する際には、親HTMLにラッパーを用意しページング内のスクリプトを個別に書く
+ */-->
+<th:block th:fragment="pagerAjaxDefalutStyle(page)"
+	th:with="page=${page}?: ${T(org.springframework.data.domain.Page).empty()}">
+	
+	<th:block th:if="${page.totalPages > 1}">
+		<nav class="pager_block">
+			<ul class="pagination mr-4">
+				<li class="page-item" th:classappend="${page.first}? 'disabled'">
+					<a th:if="${page.first}" class="page-link"><i class="fas fa-angle-double-left"></i></a>
+					<a th:if="${!page.first}" class="page-link paging" data-page="0" href="javascript:void(0);"><i class="fas fa-angle-double-left"></i></a>
+				</li>
+				<li class="page-item" th:classappend="${!page.hasPrevious()}? 'disabled'">
+					<a th:if="${!page.hasPrevious()}" class="page-link"><i class="fas fa-angle-left"></i></a>
+					<a th:if="${page.hasPrevious()}" class="page-link paging" th:data-page="${page.number-1}" href="javascript:void(0);"><i class="fas fa-angle-left"></i></a>
+				</li>
+				<li class="page-item" th:classappend="${i==page.number}? 'active'" th:if="${i==page.number} or ${i!=page.number && i>=0}"
+					th:each="i : ${#numbers.sequence(
+						T(java.lang.Math).max(0, page.number-5 - T(java.lang.Math).max(0, page.number+4 - (page.totalPages-1))),
+						T(java.lang.Math).min(page.totalPages-1, page.number+4 + T(java.lang.Math).max(0, 5 - page.number))
+					)}">
+					<a class="page-link paging" th:text="${i+1}" th:data-page="${i}" href="javascript:void(0);">1</a>
+				</li>
+				<li class="page-item" th:classappend="${!page.hasNext()}? 'disabled'">
+					<a th:if="${!page.hasNext()}" class="page-link"><i class="fas fa-angle-right"></i></a>
+					<a th:if="${page.hasNext()}" class="page-link paging" th:data-page="${page.number+1}" href="javascript:void(0);"><i class="fas fa-angle-right"></i></a>
+				</li>
+				<li class="page-item" th:classappend="${page.last}? 'disabled'">
+					<a th:if="${page.last}" class="page-link"><i class="fas fa-angle-double-right"></i></a>
+					<a th:if="${!page.last}" class="page-link paging" th:data-page="${page.totalPages-1}" href="javascript:void(0);">
+						<i class="fas fa-angle-double-right"></i>
+					</a>
+				</li>
+			</ul>
+		</nav>
+	</th:block>
+</th:block>
+
+<!--/* 
+	NextPrev形式ののページングデザイン
+	
+	Ajaxにより、ページング処理を行う際に利用する。
+	利用する際には、親HTMLにラッパーを用意しページング内のスクリプトを個別に書く
+	
+	アクションのキークラス名：paging
+	ページングの番号の取得：data-page
+ */-->
+<th:block th:fragment="pagerAjaxNextPrevStyle(page)"
+	th:with="page=${page}?: ${T(org.springframework.data.domain.Page).empty()}">
+	<th:block th:if="${page.totalPages > 1}">
+		<nav class="pager_block">
+			<ul class="pagination justify-content-start">
+				<li class="page-item" th:classappend="${!page.hasPrevious()}? 'disabled'">
+					<a th:if="${!page.hasPrevious()}" class="page-link border-0" href="javascript:void(0);"><i class="fas fa-angle-left mr-2"></i>前へ</a>
+					<a th:if="${page.hasPrevious()}" class="page-link border-0 paging" href="javascript:void(0);" th:data-page="${page.number-1}"><i class="fas fa-angle-left mr-2"></i>前へ</a>
+				</li>
+				<li class="page-item pt-1">
+					<span th:text="${(page.number + 1) * page.getSize() - (page.getSize() - 1)}"></span>
+					<span> - </span>
+					<span th:text="${(page.number + 1) * page.getSize()}"></span>
+				</li>
+				<li class="page-item" th:classappend="${!page.hasNext()}? 'disabled'">
+					<a th:if="${!page.hasNext()}" class="page-link border-0" href="javascript:void(0);">次へ<i class="fas fa-angle-right ml-2"></i></a>
+					<a th:if="${page.hasNext()}" class="page-link border-0 paging" href="javascript:void(0);" th:data-page="${page.number+1}">次へ<i class="fas fa-angle-right ml-2"></i></a>
+				</li>
+			</ul>
+		</nav>
+	</th:block>
+</th:block>
+
+</body>
+</html>

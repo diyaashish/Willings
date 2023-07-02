@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 12 12">
+  <g id="icon_plus_side" transform="translate(-1870 -96.5)">
+    <rect id="pl2" width="12" height="3" transform="translate(1870 101)" fill="#fff"/>
+    <rect id="pl1" width="12" height="3" transform="translate(1877.5 96.5) rotate(90)" fill="#fff"/>
+  </g>
+</svg>

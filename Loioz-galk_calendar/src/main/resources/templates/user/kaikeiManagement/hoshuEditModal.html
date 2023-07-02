@@ -1,0 +1,403 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+		xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+		layout:decorator="commonLayout">
+<head>
+<meta charset="utf-8" />
+</head>
+<body>
+
+	<!-- 報酬登録モーダル -->
+	<div th:fragment="hoshuEdit" th:object="${ankenMeisaiEditForm}" id="hoshuEditFragment" class="hoshu_edit_fragment">
+	
+		<!--/* スクリプト */-->
+		<script th:inline="javascript">
+		$(function() {
+
+			<!--/* ptTimeSelectの設定 */-->
+			$("#hoshuEditFragment .viewPoptime").ptTimeSelect();
+
+		})
+		</script>
+
+		<div class="modal-header">
+			<h2 class="modalheader_title">報酬登録</h2>
+		</div>
+		
+		<div class="modal-body">
+			<!-- メッセージ表示領域 -->
+			<div th:replace="common/messageArea::jsMessageArea"></div>
+			
+			<!--/* メッセージ表示領域 */-->
+			<div th:if="*{ShowSeisanCompletedMsg} or *{ShowAnkenCompletedMsg} or *{ShowUsedSeisanshoMsg}">
+				<div class="error_msg_js">
+					<th:block th:if="*{ShowAnkenCompletedMsg}">
+						<!--/* 案件ステータスが完了状態である旨のメッセージ */-->
+						<i class="fas fa-exclamation-triangle mr-2"></i>[[#{I00047}]]
+					</th:block>
+					<th:block th:if="!*{ShowAnkenCompletedMsg} and *{ShowSeisanCompletedMsg}">
+						<!--/* 精算完了日が設定されている旨のメッセージ */-->
+						<i class="fas fa-exclamation-triangle mr-2"></i>[[#{I00048}]]
+					</th:block>
+					<th:block th:if="!*{ShowAnkenCompletedMsg} and !*{ShowSeisanCompletedMsg} and *{ShowUsedSeisanshoMsg}">
+						<!--/* 精算書で利用されている旨のメッセージ */-->
+						<i class="fas fa-exclamation-triangle mr-2"></i>[[#{I00049}]]
+					</th:block>
+				</div>
+			</div>
+			
+			<!-- 入力エリア -->
+			<div class="modal_input_area">
+				<!-- 案件 -->
+				<th:block th:if="*{transitionCustomerId}">
+					<div class="form-row">
+						<div class="form-group col-md-12">
+							<label class="input_parts_label" for="ankenMeisaiDto.ankenId">案件</label>
+							<span class="mark_equired">必須</span>
+							<select id="meisaiAnkenSelect" class="form-control w-100 char_ellipsis" th:with="initShowMaxCharCountMainText=37"
+								th:field="*{ankenMeisaiDto.ankenId}" th:data-id="*{transitionCustomerId}" th:disabled="*{disabledFlg}">
+								<option value="">-</option>
+								<option th:each="kaikeiManagementList : *{kaikeiManagementList}"
+										th:value="${kaikeiManagementList.ankenId.asLong()}" 
+										th:text="${#strings.isEmpty(kaikeiManagementList.ankenName)} ? '(案件名未入力)' : (${initShowMaxCharCountMainText} >= ${#strings.length(kaikeiManagementList.ankenName)} ? ${kaikeiManagementList.ankenName} : ${#strings.substring(kaikeiManagementList.ankenName, 0, initShowMaxCharCountMainText)} + '…')">
+								</option>
+							</select>
+							<div class="error_mag_point hidden" id="itemMsg_ankenMeisaiDto.ankenId"></div>
+						</div>
+					</div>
+				</th:block>
+				
+				<!-- 顧客 -->
+				<th:block th:if="*{transitionAnkenId}">
+					<div class="form-row">
+						<div class="form-group col-md-12">
+							<label class="input_parts_label" for="ankenMeisaiDto.customerId">顧客</label>
+							<span class="mark_equired">必須</span>
+							<select id="meisaiCustomerSelect" class="form-control w-100" th:field="*{ankenMeisaiDto.customerId}" th:data-id="*{transitionAnkenId}" th:disabled="*{disabledFlg}">
+								<option value="">-</option>
+								<option th:each="kaikeiManagementList : *{kaikeiManagementList}"
+										th:value="${kaikeiManagementList.customerId.asLong()}" th:text="${kaikeiManagementList.customerName}" th:disabled="${!kaikeiManagementList.CanKaikeiCreate}" th:classappend="${!kaikeiManagementList.CanKaikeiCreate} ? 'meisai_completed' : '' ">
+								</option>
+							</select>
+							<div class="error_mag_point hidden" id="itemMsg_ankenMeisaiDto.customerId"></div>
+						</div>
+					</div>
+				</th:block>
+				
+				<div class="form-row">
+					<!-- 項目 -->
+					<div class="form-group col-md-6">
+						<label class="input_parts_label" for="ankenMeisaiDto.hoshuKomokuId">項目</label>
+						<span class="mark_equired">必須</span>
+						<select id="meisaKomokuId" class="form-control" th:field="*{ankenMeisaiDto.hoshuKomokuId}" th:data-ankenId="ankenMeisaiDto.ankenId" th:disabled="*{disabledFlg}">
+							<option value="">-</option>
+							<option th:each="enum : ${T(jp.loioz.common.constant.CommonConstant$LawyerHoshu).values()}"
+								th:value="${enum.cd}" th:text="${enum.val}"></option>
+						</select>
+						<div class="error_mag_point hidden" id="itemMsg_ankenMeisaiDto.hoshuKomokuId"></div>
+					</div>
+					<!-- 発生日 -->
+					<div class="form-group col-md-6 pl-3" id="hoshu-hasseiDate-tr">
+						<label class="input_parts_label" id="hasseiDt" for="ankenMeisaiDto.hasseiDate">発生日</label>
+						<input type="text" id="hoshu-hasseiDate" class="form-control  hoshu-hassei digit7 inputDateSlash" maxlength="10" data-click-sync="#hoshu-hasseiCal" th:field="*{ankenMeisaiDto.hasseiDate}" th:data-id="*{transitionCustomerId}" th:disabled="*{disabledFlg}">
+						<button type="button" id="hoshu-hasseiCal" class="btn btn_popcal hidden" data-target="#hoshu-hasseiDate" data-toggle="datepicker">カレンダー</button>
+						<div class="error_mag_point hidden" id="itemMsg_ankenMeisaiDto.hasseiDate"></div>
+					</div>
+				</div>
+
+				<!-- 金額（タイムチャージの場合は単価） -->
+				<div class="form-row">
+					<!-- 金額 -->
+					<div class="form-group pr-0 col-md-4 mb-0">
+						<div id="kinGaku">
+							<label class="input_parts_label" for="ankenMeisaiDto.kingaku">金額</label>
+							<span class="mark_equired">必須</span>
+							<div class="d-flex align-items-center">
+								<div class="mr-2">
+									<input type="text" id="kingakuText" class="form-control input_money kingaku-text commaFormat input_number_only" th:field="*{ankenMeisaiDto.kingaku}" th:disabled="*{disabledFlg}" th:maxlength="${T(jp.loioz.common.constant.CommonConstant).MAX_KINGAKU_INPUT_DIGIT}">
+								</div>
+								<div class="mr-2">円</div>
+							</div>
+						</div>
+						<!-- 単価 -->
+						<div id="timeChargeTanka">
+							<label class="input_parts_label" for="ankenMeisaiDto.timeChargeTanka">単価</label>
+							<span class="mark_equired">必須</span>
+							<div class="d-flex align-items-center">
+								<div class="mr-2">
+									<input type="text" id="tankaTxt" class="form-control input_money commaFormat input_number_only" th:field="*{ankenMeisaiDto.timeChargeTanka}" th:disabled="*{disabledFlg}" th:maxlength="${T(jp.loioz.common.constant.CommonConstant).MAX_KINGAKU_INPUT_DIGIT}">
+								</div>
+								<div>円</div>
+							</div>
+						</div>
+					</div>
+					
+					<!-- 税抜、税込の選択 -->
+					<div class="form-group align-self-end col-md-2 mb-0">
+						<div id="" class="hoshu_block">
+							<div id="taxFlgSelectArea">
+								<select id="taxFlgSelect" class="form-control w-auto ml-auto d-block" th:field="*{ankenMeisaiDto.taxFlg}" th:disabled="*{disabledFlg}">
+									<option id="foreignTaxOption" th:value="${T(jp.loioz.common.constant.CommonConstant$TaxFlg).FOREIGN_TAX.cd}">(税抜)</option>
+									<option id="internalTaxOption" th:value="${T(jp.loioz.common.constant.CommonConstant$TaxFlg).INTERNAL_TAX.cd}">(税込)</option>
+								</select>
+							</div>
+							<div id="taxFlgForeignTaxLabelArea">
+								<span class="tax_flg_label_text">
+									<span>(税抜)</span>
+								</span>
+							</div>
+						</div>
+					</div>
+					
+					<!-- 消費税率の選択 -->
+					<div class="form-group align-self-end col-auto mb-0 pl-3">
+						<label class="input_parts_label" for="ankenMeisaiDto.taxRate">消費税</label>
+						<div class="hoshu_block">
+							<select id="taxRate" class="form-control" th:field="*{ankenMeisaiDto.taxRate}" th:disabled="*{disabledFlg}">
+								<option th:each="enum : ${T(jp.loioz.common.constant.CommonConstant$TaxRate).values()}" th:value="${enum.cd}">
+									<th:block th:unless="${enum == T(jp.loioz.common.constant.CommonConstant$TaxRate).TAX_FREE}" th:text="|${enum.val}%|"></th:block>
+									<th:block th:if="${enum == T(jp.loioz.common.constant.CommonConstant$TaxRate).TAX_FREE}" th:text="なし"></th:block>
+								</option>
+							</select>
+						</div>
+					</div>
+				</div>
+				
+				<div class="form-row">
+					<!-- 金額、単価のバリデーションエラーメッセージ -->
+					<div class="form-group col-md-12">
+						<div class="error_mag_point pt-0 pb-0 hidden" id="itemMsg_ankenMeisaiDto.kingaku"></div>
+						<div class="error_mag_point pt-0 pb-0 hidden" id="itemMsg_ankenMeisaiDto.timeChargeTanka"></div>
+						<div class="error_mag_point pt-0 pb-0 hidden" id="itemMsg_ankenMeisaiDto.taxFlg"></div>
+					</div>
+				</div>
+				
+				<!-- 源泉徴収の有無の選択 -->
+				<div class="form-row">
+					<div class="form-group col-md-7">
+						<label class="input_parts_label" for="ankenMeisaiDto.gensenchoshuFlg">源泉徴収</label>
+						<div class="hoshu_block">
+							<div>
+								<label id="meisaiGensenchoshuFlgLabel" class="radio_btn mb-0" th:each="enum : ${T(jp.loioz.common.constant.CommonConstant$GensenChoshu).values()}">
+									<input type="radio" id="meisaiGensenchoshuFlg" class="radio_input c_orng" th:field="*{ankenMeisaiDto.gensenchoshuFlg}" th:value="${enum.cd}" th:disabled="*{disabledFlg}">
+									<span class="radio_txt" th:text="${enum.val}"></span>
+								</label>
+							</div>
+							<div class="error_mag_point hidden" id="itemMsg_ankenMeisaiDto.gensenchoshuFlg"></div>
+						</div>
+					</div>
+				</div>
+				
+				<!-- 時間の指定方法 -->
+				<div id="timeChargeShitei">
+					<div class="form-row">
+						<div class="form-group col-md-12 mb-4">
+							<label class="input_parts_label"id="timeChargeTime">時間</label>
+							<span class="mark_equired">必須</span>
+							<div>
+								<label class="radio_btn">
+									<input type="radio" class="radio_input c_orng" name="souhushoType" th:field="*{ankenMeisaiDto.timeChargeTimeShitei}"
+									th:value="${T(jp.loioz.common.constant.CommonConstant$TimeChargeTimeShitei).START_END_TIME.getCd()}" th:disabled="*{disabledFlg}">
+									<span class="radio_txt">開始・終了時間を指定</span>
+								</label>
+								<label class="radio_btn">
+									<input type="radio" class="radio_input c_orng" name="souhushoType" th:field="*{ankenMeisaiDto.timeChargeTimeShitei}"
+									th:value="${T(jp.loioz.common.constant.CommonConstant$TimeChargeTimeShitei).MINUTES.getCd()}" th:disabled="*{disabledFlg}">
+									<span class="radio_txt">時間(分)を指定</span>
+								</label>
+							</div>
+							<!-- 時間 -->
+							<div class="time_charge_block">
+								<div id="timeChargeInfo" class="d-flex">
+									<!-- 開始日時 -->
+									<div id="timeCharge-startTime-tr" class="form-group col-auto pl-0 mb-0">
+										<span id="timeChargeStartTime">
+											<label>開始日時</label>
+										</span>
+										<div class="mr-2">
+											<div class="d-flex align-items-center">
+												<div class="mr-2">
+													<input type="text" id="start-date-select" class="form-control  timeChargeDate" th:field="*{ankenMeisaiDto.timeChargeStartDate}" th:disabled="*{disabledFlg}" data-click-sync="#start-date-selectCal">
+													<button type="button" id="start-date-selectCal" class="btn btn_popcal hidden" data-target="#start-date-select" data-toggle="datepicker">カレンダー</button>
+												</div>
+												<div class="d-flex align-items-center">
+													<input type="text" id="start-time-select" class="viewPoptime form-control form_clock time_charge_input" th:field="*{ankenMeisaiDto.timeChargeStartTime}" readonly>
+												</div>
+											</div>
+											<div class="error_mag_point pt-0 pb-0 hidden" id="itemMsg_ankenMeisaiDto.timeChargeStartDate"></div>
+										</div>
+									</div>
+									<!-- 終了日時 -->
+									<div id="timeCharge-endTime-tr" class="form-group col-auto pl-0 mb-0">
+										<span id="timeChargeEndTime">
+											<label>終了日時</label>
+										</span>
+										<div class="mr-2">
+											<div class="d-flex align-items-center">
+												<div class="mr-2">
+													<input type="text" id="end-date-select" class="form-control  timeChargeDate" th:field="*{ankenMeisaiDto.timeChargeEndDate}" th:disabled="*{disabledFlg}" data-click-sync="#end-date-selectCal">
+													<button type="button" id="end-date-selectCal" class="btn btn_popcal hidden" data-target="#end-date-select" data-toggle="datepicker">カレンダー</button>
+												</div>
+												<div class="d-flex align-items-center">
+													<input type="text" id="end-time-select" class="viewPoptime form-control form_clock time_charge_input" th:field="*{ankenMeisaiDto.timeChargeEndTime}" readonly>
+												</div>
+											</div>
+											<div class="error_mag_point pt-0 pb-0 hidden" id="itemMsg_ankenMeisaiDto.timeChargeEndDate"></div>
+										</div>
+									</div>
+									<!-- 時間(分) -->
+									<div class="form-group col-auto pl-0 mb-0">
+										<span>
+											<label id="timeChargeTime">時間</label>
+										</span>
+										<div>
+											<div class="d-flex align-items-center">
+												<div class="mr-2">
+													<input type="text" id="timeText" class="form-control form_minutes input_number_only timeChargeMinutes" th:field="*{ankenMeisaiDto.timeChargeTime}" maxlength="5" readonly>
+												</div>
+												<div>分</div>
+											</div>
+										</div>
+									</div>
+								</div>
+								<div>
+									<div class="error_mag_point pt-0 pb-0 hidden" id="itemMsg_ankenMeisaiDto.timeChargeTime"></div>
+								</div>
+								
+							</div>
+						</div>
+					</div>
+				</div>
+				
+				<div class="hoshu_detail_area mb-3">
+					<!-- 報酬額 -->
+					<div class="form-row pr-3 pl-4">
+						<div class="form-group col-md-12 mb-0">
+							<div class="hoshu_block hoshu_detail_row">
+								<div class="d-flex justify-content-end align-items-baseline">
+									<div class="komoku_block">
+										<span>報酬額</span>
+									</div>
+									<div class="mr-2">
+										<input type="text" id="hoshuGakuText" class="form-control view_money" th:field="*{ankenMeisaiDto.hoshuGaku}" readonly>
+									</div>
+									<div class="sub_text">円</div>
+								</div>
+							</div>
+						</div>
+					</div>
+				
+					<!-- 消費税 -->
+					<div class="form-row pr-3 pl-4">
+						<div class="form-group col-md-12 mb-0">
+							<div class="hoshu_block hoshu_detail_row">
+								<div class="d-flex justify-content-end align-items-baseline">
+									<div class="komoku_block">
+										<span>消費税</span>
+									</div>
+									<div class="mr-2">
+										<input type="text" id="taxText" class="form-control view_money" th:field="*{ankenMeisaiDto.taxGaku}" readonly>
+									</div>
+									<div class="sub_text">円</div>
+								</div>
+							</div>
+						</div>
+					</div>
+					
+					<!-- 源泉徴収 -->
+					<div class="form-row pr-3 pl-4">
+						<div class="form-group col-md-12 mb-0">
+							<div id="hoshuDetailGensenRow" class="hoshu_block hoshu_detail_row">
+								<div class="d-flex justify-content-end align-items-baseline">
+									<div class="komoku_block">
+										<span>源泉徴収</span>
+									</div>
+									<div class="mr-2">
+										<input type="text" id="gensenText" class="form-control view_money" th:classappend="*{T( jp.loioz.common.utility.StringUtils).isMinusDicimalStr(ankenMeisaiDto.gensenchoshuGaku)}? 'minus_money_text'" th:field="*{ankenMeisaiDto.gensenchoshuGaku}" readonly>
+									</div>
+									<div class="sub_text">円</div>
+								</div>
+							</div>
+						</div>
+					</div>
+					<div class="form-row justify-content-end pr-3 pl-4 mb-2">
+						<div class="form-group col-auto mb-0">
+							<div id="calcFormula" class="hoshu_block hoshu_detail_row">
+								<div class="d-flex formula_area">
+									<div class="formula_area_title mr-3">
+										<span>（計算式）</span>
+									</div>
+									<div class="gensen_calc">
+										<div id="calcFormulaLabel1" class="formula_font_size" th:text="*{ankenMeisaiDto.calcFormula1}"></div>
+										<div id="calcFormulaLabel2" class="formula_font_size" th:text="*{ankenMeisaiDto.calcFormula2}"></div>
+									</div>
+								</div>
+							</div>
+						</div>
+					</div>
+					
+					<div class="horizon"></div>
+					
+					<!-- 報酬計 -->
+					<div class="form-row pr-3 pl-4 mt-2">
+						<div class="form-group col-md-12 mb-0">
+							<div class="hoshu_block hoshu_detail_row">
+								<div class="d-flex justify-content-end align-items-baseline">
+									<div class="komoku_block">
+										<span>報酬計</span>
+									</div>
+									<div class="mr-2">
+										<input type="text" id="hoshuText" class="form-control view_money sum_money" th:field="*{ankenMeisaiDto.hoshuTotal}" readonly>
+									</div>
+									<div class="sub_text">円</div>
+								</div>
+							</div>
+						</div>
+					</div>
+				</div>
+				
+				<!-- 摘要 -->
+				<div class="form-row">
+					<div class="form-group col-md-12">
+						<label class="input_parts_label" for="ankenMeisaiDto.tekiyo">摘要</label>
+						<textarea id="meisaiTekiyo" class="form-control fw_full" rows="3" cols="40" th:field="*{ankenMeisaiDto.tekiyo}" th:disabled="*{disabledFlg}" maxlength="10000"></textarea>
+						<div class="error_mag_point hidden" id="itemMsg_ankenMeisaiDto.tekiyo"></div>
+					</div>
+				</div>
+				
+				<!-- 登録者 -->
+				<div id="meisaiDispLastCreatedByNameDateTime-tr" th:if="*{ankenMeisaiDto.dispLastEditByNameDateTime !=null}">
+					<div class="form-row">
+						<div class="form-group col-md-6 mb-0">
+							<label class="input_parts_label">登録者</label>
+							<div id="meisaiCreateBy" th:text="*{ankenMeisaiDto.dispCreatedByNameDateTime}" ></div>
+						</div>
+						<!-- 更新者 -->
+						<div class="form-group col-md-6 mb-0">
+							<div id="meisaiDispLastEditByNameDateTime-tr" th:if="*{ankenMeisaiDto.dispLastEditByNameDateTime !=null &&ankenMeisaiDto.dispLastEditByNameDateTime != ''}">
+								<label class="input_parts_label">更新者</label>
+								<div id="meisaiEditBy" th:text="*{ankenMeisaiDto.dispLastEditByNameDateTime}" ></div>
+							</div>
+						</div>
+					</div>
+				</div>
+				
+			</div>
+			
+		</div>
+
+		<!-- コマンド -->
+		<div class="modal-footer">
+			<button type="button" class="btn btn-light delete mr-auto" name="deleteAnkenMeisai" th:if="*{updateFlg && !disabledFlg}"><i class="far fa-trash-alt"></i>削除</button>
+			<input type="hidden" th:field="*{ankenMeisaiDto.kaikeiKirokuSeq}">
+			<button type="button" class="btn btn-info multiSave mr-4" th:if="*{!updateFlg &&!disabledFlg}"><i class="fas fa-plus-circle mr-2"></i>連続登録</button>
+			<button type="button" class="btn btn-info save" th:if="*{!disabledFlg and ankenMeisaiDto.kaikeiKirokuSeq == null}"><i class="fas fa-check"></i>登録</button>
+			<button type="button" class="btn btn-info save" th:if="*{!disabledFlg and ankenMeisaiDto.kaikeiKirokuSeq != null}" th:data-seq="*{ankenMeisaiDto.kaikeiKirokuSeq}"><i class="fas fa-check"></i>保存</button>
+			<button type="button" id="hoshu-cancel" class="btn btn-light" data-dismiss="modal"><i class="fas fa-times"></i>閉じる</button>
+		</div>
+
+	</div>
+	<!-- 報酬登録モーダル end -->
+	
+</body>
+</html>

@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+	layout:decorator="commonLayout">
+<head>
+<meta charset="UTF-8">
+</head>
+<body>
+
+<div class="nav_sidebar_setting" th:fragment="selectMenu(cd)">
+	<div class="nav_sidebar_setting_inner">
+		<ul>
+			<li class="category">事務所設定</li>
+			<li>
+				<ul class="nav_sidebar_office__menu_items">
+					<li th:classappend="${cd == T(jp.loioz.common.constant.CommonConstant$SystemSettingMenu).OFFICE_EDIT.getCd()} ? 'selected' ">
+						<a href="/user/officeSetting/">事務所情報の設定</a>
+					</li>
+					<th:block th:if="${T(jp.loioz.common.utility.SessionUtils).isSystemMng()}">
+						<li th:classappend="${cd == T(jp.loioz.common.constant.CommonConstant$SystemSettingMenu).OFFICE_BUMON.getCd()} ? 'selected' ">
+							<a href="/user/bushoManagement/list">部門の設定</a>
+						</li>
+						<li th:classappend="${cd == T(jp.loioz.common.constant.CommonConstant$SystemSettingMenu).DATA_ROOM.getCd()} ? 'selected' ">
+							<a href="/user/roomManagement/list">施設の設定</a>
+						</li>
+					</th:block>
+					<th:block th:if="${T(jp.loioz.common.utility.SessionUtils).isSystemMng()}">
+						<!-- /* システム管理者のみ表示 */ -->
+						<li th:classappend="${cd == T(jp.loioz.common.constant.CommonConstant$SystemSettingMenu).STORAGE.getCd()} ? 'selected' ">
+							<a href="/user/fileManagementSetting/">外部サービス連携</a>
+						</li>
+					</th:block>
+				</ul>
+			</li>
+			
+	<!-- /* システム管理者のみ表示 */ -->
+	<th:block th:if="${T(jp.loioz.common.utility.SessionUtils).isSystemMng()}">
+	
+		<!-- /* 会計機能の利用判定 */ -->
+		<th:block th:if="${T(jp.loioz.common.utility.SessionUtils).canUsePlanFunc(T(jp.loioz.common.constant.plan.PlanConstant$PlanFuncRestrict).PF0002)}">
+			<!-- /* ロイオズ管理者制御による利用判定 */ -->
+			<th:block th:if="${T(jp.loioz.common.constant.CommonConstant$SystemFlg).FLG_ON.equalsByCode(
+				T(jp.loioz.common.utility.SessionUtils).getLoiozAdminControlValue(T(jp.loioz.common.constant.LoiozAdminControlConstant$LoiozAdminControl).OLD_KAIKEI_OPEN)
+			)}">
+			
+			<!-- /* ※※ 現在は、機能設定のメニュー項目に、「旧会計管理」のメニューしかないため、会計機能を利用できない状態の場合は機能設定のメニュー項目ごと非表示としている */ -->
+			
+			<li class="category">機能設定</li>
+			<li>
+				<ul class="nav_sidebar_office__menu_items">
+					<li th:classappend="${cd == T(jp.loioz.common.constant.CommonConstant$SystemSettingMenu).FUNC_OLD_KAIKEI_SETTING.getCd()} ? 'selected' ">
+						<a href="/user/funcOldKaikeiSetting/">旧会計管理
+							<i class="fas fa-exclamation-circle exclamation_circle isRegistOfficeKoza hidden"></i>
+						</a>
+					</li>
+				</ul>
+			</li>
+			
+			</th:block>
+		</th:block>
+		
+		<!-- /* 会計機能の利用判定 */ -->
+		<th:block th:if="${T(jp.loioz.common.utility.SessionUtils).canUsePlanFunc(T(jp.loioz.common.constant.plan.PlanConstant$PlanFuncRestrict).PF0002)}">
+			<li class="category">会計設定</li>
+			<li>
+				<ul class="nav_sidebar_office__menu_items">
+					<li th:classappend="${cd == T(jp.loioz.common.constant.CommonConstant$SystemSettingMenu).OFFICE_KOZA.getCd()} ? 'selected' ">
+						<a href="/user/officeKozaList/">事務所口座の設定
+							<i class="fas fa-exclamation-circle exclamation_circle isRegistOfficeKoza hidden"></i>
+						</a>
+					</li>
+					<li th:classappend="${cd == T(jp.loioz.common.constant.CommonConstant$SystemSettingMenu).FRACTION_SETTING.getCd()} ? 'selected' ">
+						<a href="/user/fractionSetting/">端数処理</a>
+					</li>
+					<li th:classappend="${cd == T(jp.loioz.common.constant.CommonConstant$SystemSettingMenu).ACCG_FEE_MST.getCd()} ? 'selected' ">
+						<a href="/user/feeMaster/">報酬項目の設定</a>
+					</li>
+					<li th:classappend="${cd == T(jp.loioz.common.constant.CommonConstant$SystemSettingMenu).ACCG_DEPOSIT_MST.getCd()} ? 'selected' ">
+						<a href="/user/depositRecvMaster/">預り金／実費項目の設定</a>
+					</li>
+				</ul>
+			</li>
+			<li class="category">帳票設定</li>
+			<li>
+				<ul class="nav_sidebar_office__menu_items">
+					<li th:classappend="${cd == T(jp.loioz.common.constant.CommonConstant$SystemSettingMenu).DOC_INVOICE.getCd()} ? 'selected' ">
+						<a href="/user/invoiceSetting/">請求書</a>
+					</li>
+					<li th:classappend="${cd == T(jp.loioz.common.constant.CommonConstant$SystemSettingMenu).DOC_STATEMENT.getCd()} ? 'selected' ">
+						<a href="/user/statementSetting/">精算書</a>
+					</li>
+				</ul>
+			</li>
+		</th:block>
+		<!-- /* 会計機能の利用判定 end */ -->
+			
+			<li class="category">データ設定</li>
+			<li>
+				<ul class="nav_sidebar_office__menu_items">
+					<li th:classappend="${cd == T(jp.loioz.common.constant.CommonConstant$SystemSettingMenu).DATA_BUNYA.getCd()} ? 'selected' ">
+						<a href="/user/bunyaManagement/list"><span class="side_menu_txt">分野の設定</span></a>
+					</li>
+					<li th:classappend="${cd == T(jp.loioz.common.constant.CommonConstant$SystemSettingMenu).DATA_SAIBANSHO.getCd()} ? 'selected' ">
+						<a href="/user/saibanshoManagement/list">裁判所の設定</a>
+					</li>
+					<li th:classappend="${cd == T(jp.loioz.common.constant.CommonConstant$SystemSettingMenu).DATA_SOSAKIKAN.getCd()} ? 'selected' ">
+						<a href="/user/sosakikanManagement/list">捜査機関の設定</a>
+					</li>
+					<li th:classappend="${cd == T(jp.loioz.common.constant.CommonConstant$SystemSettingMenu).DATA_SODANKEIRO.getCd()} ? 'selected' ">
+						<a href="/user/selectListManagement/list" data-type="08"><span class="side_menu_txt">相談経路の設定</span></a>
+					</li>
+				</ul>
+			</li>
+			
+		<!-- /* 会計機能の利用判定 */ -->
+		<th:block th:if="${T(jp.loioz.common.utility.SessionUtils).canUsePlanFunc(T(jp.loioz.common.constant.plan.PlanConstant$PlanFuncRestrict).PF0002)}">
+			<li class="category">メール設定</li>
+			<li>
+				<ul class="nav_sidebar_office__menu_items">
+					<li th:classappend="${cd == T(jp.loioz.common.constant.CommonConstant$SystemSettingMenu).MAIL_BASE.getCd()} ? 'selected' ">
+						<a href="/user/mailBaseSetting/">基本設定</a>
+					</li>
+					<li th:classappend="${cd == T(jp.loioz.common.constant.CommonConstant$SystemSettingMenu).MAIL_TEMPLATE.getCd()} ? 'selected' ">
+						<a href="/user/mailTemplate/"><span class="side_menu_txt">メールテンプレート</span></a>
+					</li>
+				</ul>
+			</li>
+		</th:block>
+		<!-- /* 会計機能の利用判定 end */ -->
+			
+	</th:block>
+	<!-- /* システム管理者のみ表示 end */ -->
+	
+			<li class="category">契約管理</li>
+			<li>
+				<ul class="nav_sidebar_office__menu_items">
+					<li th:classappend="${cd == T(jp.loioz.common.constant.CommonConstant$SystemSettingMenu).OFFICE_CONTRACT_MANAGER.getCd()} ? 'selected' ">
+						<a href="/user/officeContractManageSetting/">契約担当者の設定</a>
+					</li>
+					<li th:classappend="${cd == T(jp.loioz.common.constant.CommonConstant$SystemSettingMenu).KEIYAKU_ACCOUNT.getCd()} ? 'selected' ">
+						<a href="/user/officeAccountSetting/list">
+							<!-- /* システム管理者の場合 */ -->
+							<th:block th:if="${T(jp.loioz.common.utility.SessionUtils).isSystemMng()}">アカウントの管理</th:block>
+							<!-- /* システム管理者以外の場合 */ -->
+							<th:block th:unless="${T(jp.loioz.common.utility.SessionUtils).isSystemMng()}">アカウント一覧</th:block>
+						</a>
+					</li>
+					<!-- /* システム管理者のみ表示 */ -->
+					<th:block th:if="${T(jp.loioz.common.utility.SessionUtils).isSystemMng()}">
+						<li th:classappend="${cd == T(jp.loioz.common.constant.CommonConstant$SystemSettingMenu).KEIYAKU_PLAN.getCd()} ? 'selected' ">
+							<a class="openPlanSetting" href="javascript:void(0);" th:text="${T(jp.loioz.common.utility.SessionUtils).isFreePlanStatus()} ? 'ご利用プランの設定' : 'ご利用プラン／請求情報' ">ご利用プラン／請求情報</a>
+						</li>
+					</th:block>
+				</ul>
+			</li>
+	
+		</ul>
+	</div>
+	<script type="text/javascript" th:inline="javascript">
+	<!--/* 事務所口座の登録有無を確認する */-->
+	let ajaxRunning = false;
+	$(function() {
+		<!-- /* プランが口座情報を変更できる場合に口座登録有無を確認する */ -->
+		if ([[${T(jp.loioz.common.utility.SessionUtils).canUsePlanFunc(T(jp.loioz.common.constant.plan.PlanConstant$PlanFuncRestrict).PF0002)}]]) {
+			if(ajaxRunning){
+				return false;
+			}
+			let url = "/common/isRegistOfficeKoza";
+			ajaxRunning = true;
+			$.ajax({
+				url : url,
+				type : "POST",
+			}).done(function(result) {
+				if (!result.isRegist) {
+					<!-- /* 事務所口座に登録がない場合は(！)を表示する */ -->
+					$(".isRegistOfficeKoza").removeClass("hidden");
+				}
+			}).always(function() {
+				ajaxRunning = false;
+			});
+		}
+	});
+	</script>
+</div>
+</body>
+</html>

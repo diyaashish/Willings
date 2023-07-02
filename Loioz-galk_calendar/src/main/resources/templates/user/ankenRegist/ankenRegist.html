@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+	xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+	xmlns:xtra="https://github.com/connect-group/thymeleaf-extras"
+	layout:decorator="commonLayout">
+<head>
+<meta charset="utf-8" th:remove="tag" />
+<title layout:fragment="title-contents">
+	[[${T(jp.loioz.common.utility.LoiozUtils).getHtmlTitle("案件新規登録", T(jp.loioz.common.utility.SessionUtils).getTenantName())}]]
+</title>
+<th:block th:with="version=${@environment.getProperty('app.version')}">
+	<link th:href="@{/css/anken/case.css?{ver}(ver=${version})}" rel="stylesheet" type="text/css"/>
+</th:block>
+
+<script th:inline="javascript">
+
+<!--/*
+ 二重送信防止対応用の値。
+ このHTMLに差し込まれるfragment内のScriptの処理も、共通してこの変数を利用する。
+*/-->
+let ajaxRunning = false;
+
+<!--/* 顧客の追加エリア表示 */-->
+function showCustomerAddArea() {
+
+	<!--/* 登録の種別 */-->
+	let registCustomerType = $('input[name="registCustomerType"]:checked').val();
+	const newRegist = /*[[${T(jp.loioz.common.constant.CommonConstant$RegistCustomerType).NEW.cd}]]*/ '';
+	const registered = /*[[${T(jp.loioz.common.constant.CommonConstant$RegistCustomerType).REGISTERED.cd}]]*/ '';
+
+	<!--/* 顧客が上限数より小さくなったので、顧客登録エリアを表示する */-->
+	switch (registCustomerType) {
+		case newRegist:
+			<!--/* 「新規に名簿を追加し設定する」を選択している場合 */-->
+			$('#customerRegistBasicInputFragment .customerNew').removeClass('hidden');
+			break;
+			
+		case registered:
+			<!--/* 「登録済みの名簿から設定する」を選択している場合 */-->
+			$('#customerRegistBasicInputFragment .customerRegistered').removeClass('hidden');
+			break;
+		default:
+	}
+}
+
+<!--/* 顧客の追加エリア非表示 */-->
+function hiddenCustomerAddArea() {
+	
+	<!--/* 追加顧客上限件数 */-->
+	let customerAddLimit = /*[[${T(jp.loioz.common.constant.CommonConstant).CUSTOMER_ADD_LIMIT}]]*/''
+	
+	<!--/* 選択中の顧客件数 */-->
+	let customerInputFormCount = $('#customerRegistBasicInputFragment .selectCustomerList button').length;
+	
+	if (customerInputFormCount >= customerAddLimit) {
+		<!--/* 顧客が上限数に達している場合は顧客登録エリアを非表示にする */-->
+		$('#customerRegistBasicInputFragment .customerNew').addClass('hidden');
+		$('#customerRegistBasicInputFragment .customerRegistered').addClass('hidden');
+	}
+}
+
+
+</script>
+
+</head>
+<body>
+	<div layout:fragment="main-contents" th:remove="tag">
+		
+		<!--/* メインコンテンツの外側 */-->
+		<div class="contents_wrapper">
+			
+			<div class="container-fluid container_limited_new_regist">
+				
+				<div th:replace="common/messageArea::messageArea"></div>
+				
+				<main>
+					<div class="new_regist_container">
+						<div class="new_regist_container__title">
+							案件登録<span class="fs14 fw0 ml-3">データ登録後に、相手方等の情報を設定いただけます。</span>
+						</div>
+						
+						<!--/* 案件ブロック */-->
+						<div class="new_regist_container__edit">
+							<div id="ankenRegistBasicFragmentWrap" th:insert="user/ankenRegist/ankenRegistFragment::ankenRegistBasicInputFragment(${ankenRegistBasicInputForm})">
+								<!-- 案件の基本情報の表示 -->
+							</div>
+						</div>
+					</div>
+				</main>
+				
+			</div>
+		</div>
+	</div>
+
+</body>
+</html>

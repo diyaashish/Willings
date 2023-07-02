@@ -1,0 +1,2174 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+	xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+	xmlns:xtra="https://github.com/connect-group/thymeleaf-extras"
+	layout:decorator="commonLayout">
+<head>
+<meta charset="utf-8" th:remove="tag" />
+<title layout:fragment="title-contents">
+	[[${T(jp.loioz.common.utility.LoiozUtils).getHtmlTitle("メッセージ", T(jp.loioz.common.utility.SessionUtils).getTenantName())}]]
+</title>
+<th:block th:with="version=${@environment.getProperty('app.version')}">
+	<link th:href="@{/css/mail/mail.css?{ver}(ver=${version})}" rel="stylesheet" type="text/css" />
+	<script type="text/javascript" th:src="@{/js/dengon/dengon-edit.js?{ver}(ver=${version})}"></script>
+</th:block>
+
+<style th:fragment="dengonStyle">
+.dengon_form_col_title {
+	font-weight: bold;
+	font-size: 1.5rem;
+	color: var(--loioz-blue);
+	width: 60px;
+	line-height: 1;
+}
+.msg_listitem {
+	cursor: pointer;
+}
+.msg_bh_task .msgitem_task {
+	cursor: pointer;
+}
+.msg_list_disp_over {
+	-webkit-flex: 1;
+	flex: 1;
+	overflow: hidden;
+	white-space: nowrap;
+	text-overflow: ellipsis;
+	cursor: pointer;
+	letter-spacing: 1px;
+}
+.user_selectbtn_over {
+	width: 136px !important;
+}
+.msg_body_header_data1 .msg_list_disp_over {
+	cursor: auto;
+}
+.limit_create_folder {
+	display: none;
+}
+.user_selectbtn_selected {
+	display: none !important;
+}
+.name_disp_over {
+	flex: 1;
+	overflow: hidden;
+	white-space: nowrap;
+	text-overflow: ellipsis;
+}
+.add_user_selectbox {
+	margin: 0px;
+	border: none;
+}
+.send_user_selectbox {
+	min-height: 39px;
+	max-height: 101px;
+	height: auto;
+	overflow: hidden;
+	width: initial;
+	margin: 0px;
+	border: none;
+	padding: 3px 3px 3px 3px;
+}
+.add_user_btn {
+	display: inline-block !important;
+	max-width: 140px;
+	padding: 5px 0px 4px 5px !important;
+}
+#userSelectModal .user_selectbox {
+	height: 300px;
+}
+.msg_bh_relation .relation_id {
+	min-width: 90px;
+}
+.none_events {
+	opacity: 0.0;
+	pointer-events: none;
+}
+.form_btn_to_search {
+	padding-left: 30px !important;
+	padding-right: 16px !important;
+	margin-top: 2px !important;
+	margin-bottom: 2px !important;
+}
+.popover .user_selectbox {
+	height: 300px;
+}
+.popover-footer {
+	padding: 0px .7rem .7rem 0px;
+	float: right;
+}
+.receiver_panel_btn {
+	width: 60px;
+	font-size: 1.2rem;
+	border-color: #34A598;
+	border-radius: 10px;
+	padding: 0px 2px;
+}
+.toggle_receiver_panel {
+	padding-left: 3px;
+	margin-right: 6px;
+	bottom: 100%;
+	position: sticky;
+}
+.modal-atesaki {
+	max-width: 270px;
+	position: relative;
+	left: 537px;
+	top: -85px;
+}
+.select-atesaki {
+	width: 200px;
+}
+.atesaki_area {
+	flex: 1;
+	position: relative;
+	margin: 5px 0 3px;
+	border-radius: 6px;
+}
+.border_bottom {
+	border-top: none;
+	border-left: none;
+	border-right: none;
+	border-radius: 0px;
+}
+#dengonCreateModal .user_selectbox {
+	width: 100%;
+	height: 100%;
+	max-height: 95px;
+	margin-top: 6px;
+}
+
+/** メッセージの一覧では、グレーアウトのお気に入りを表示しない */
+.msg_list .checkbox_btn_star .checkbox_input:not(:checked) ~ .checkbox_txt {
+	display: none;
+}
+
+<!--/* 宛先コンテンツのスタイル */-->
+.inline_input_container {
+	display : flex;
+	flex-direction: row;
+	flex-wrap: wrap;
+	width: 100%;
+	height: 100%;
+	padding-bottom: 1px;
+	border-bottom: 1px solid #BCBCBC;
+}
+.inline_input_container.atesaki_focus {
+	border-bottom: 1px solid rgba(102, 175, 233, .6);
+	-webkit-box-shadow: inset 0px 0px 0px rgb(0,0,0,.075), 0px 1px 0px rgb(102, 175, 233, .6);
+	box-shadow: inset 0px 0px 0px rgb(0,0,0,.075), 0px 1px 0px rgb(102, 175, 233, .6);
+}
+.inline_input_container button.add_user {
+	min-width: 100px;
+	max-width: 140px;
+	padding: 2px 24px 2px 5px;
+	margin: 2px 5px 2px 0;
+	background-color: #edfcff;
+	text-align: left;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+	border-radius: 2px;
+	background-image: url(/img/icon_btn_close.svg);
+	background-repeat: no-repeat;
+	background-position: right 6px center;
+	background-size: 10px;
+	border: 1px solid #b5ccd0;
+}
+
+.form-control.form_search{
+	width:100%;
+	min-width:200px;
+	margin: 3px 0 0;
+	border: 0!important;
+	outline: 0!important;
+	border-radius: 0;
+}
+.form-control.form_search:focus{
+	-webkit-box-shadow: inset 0px 0px 0px rgb(0,0,0), 0px 0px 0px rgb(102, 175, 233, .6);
+	box-shadow: inset 0px 0px 0px rgb(0,0,0,.075), 0px 0px 0px rgb(102, 175, 233, .6);
+}
+
+.btn_user_select .icon-color {
+	color: #fff;
+}
+.btn_user_select {
+	color:#fff;
+	background-color: #63595c;
+}
+
+.popover_info {
+	font-size: 1.2rem;
+}
+.atesaki_poper {
+	display : flex;
+	flex-direction: row;
+	flex-wrap: wrap;
+	width: 130px;
+}
+.atesaki_poper button.add_user {
+	width: 100%;
+	padding: 2px 5px;
+	margin: 3px 0 0 0;
+	text-align: left;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+	border-radius: 0;
+	background-color: #fff;
+}
+.atesaki_poper button.add_user[aria-selected=true] {
+	background-color: #e2f2fa;
+}
+.atesaki_poper button.add_user:hover {
+	background-color: #e2f2fa;
+}
+
+.atesaki_list {
+	font-size: 1.3rem;
+}
+.atesaki_list .popover-header{
+	font-size: 1.3rem;
+}
+.atesaki_select_poper{
+	display : flex;
+	flex-direction: column;
+	flex-wrap: wrap;
+	width: 170px;
+}
+.atesaki_select_poper .user_select_list {
+	width: 100%;
+	height: 300px;
+	overflow-y: auto;
+}
+.atesaki_select_poper button.add_user{
+	width: 100%;
+	padding: 2px 5px;
+	margin: 3px 0 0 0;
+	text-align: left;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+	border-radius: 0;
+	background-color: #fff;
+}
+
+.atesaki_select_poper button.add_user:hover {
+	background-color: #e2f2fa;
+}
+
+.customer_select_area button.add_customer {
+	padding: 2px 24px 2px 5px;
+	margin: 2px 5px 2px 0;
+	background-color: #edfcff;
+	text-align: left;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+	border-radius: 2px;
+	background-image: url(/img/icon_btn_close.svg);
+	background-repeat: no-repeat;
+	background-position: right 6px center;
+	background-size: 10px;
+	border: 1px solid #b5ccd0;
+}
+.customer_search {
+	display : flex;
+	flex-direction: row;
+	flex-wrap: wrap;
+	max-width: 740px;
+}
+.customerSearchPoper {
+	max-width: initial;
+}
+.customer_search button.add_customer {
+	width: 180px;
+	padding: 2px 5px;
+	margin: 3px 3px 0 0;
+	text-align: left;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+	border-radius: 0;
+	background-color: #fff;
+}
+.customer_search button.add_customer[aria-selected=true] {
+	background-color: #e2f2fa;
+}
+.customer_search button.add_customer:hover {
+	background-color: #e2f2fa;
+}
+</style>
+
+<!--/* ヘッダ部の未読/既読にする */-->
+<script type="text/javascript" th:inline="javascript">
+
+$(function() {
+	let ajaxRunningForUnRead = false;
+	$(document).on("click", "#headerUnReadBtn, #headerReadBtn", function() {
+
+		// 選択しているフォルダ
+		let mailBoxType = $(".current-box").data("mail-box-type");
+
+		// 送信BOX、送信、ごみ箱は利用不可
+		if (mailBoxType == /*[[${T(jp.loioz.common.constant.CommonConstant$MailBoxType).SEND.getCd()}]]*/"4"
+			|| mailBoxType == /*[[${T(jp.loioz.common.constant.CommonConstant$MailBoxType).DRAFT.getCd()}]]*/"5"
+			|| mailBoxType ==  /*[[${T(jp.loioz.common.constant.CommonConstant$MailBoxType).TRASHED.getCd()}]]*/"6") {
+			showErrorMessageForJs("受信BOX・カスタムフォルダのメッセージのみ変更できます");
+			return false;
+		}
+
+		let dengonSeqList = getSelectedDengonSeqList();
+		if (dengonSeqList.length > 0) {
+			// 選択したメッセージを設定
+			dengonSeqList.push(dengonSeqList);
+
+		} else {
+			// 対象メールとなるメッセージが選択していない
+			showErrorMessageForJs("対象となるメッセージを選択してください");
+			return false;
+
+		}
+
+		let btnId = $(this).attr("id");
+		let openFlg = "0";
+		if (btnId == "headerReadBtn") {
+			openFlg = "1";
+		}
+		
+		if (ajaxRunningForUnRead) {
+			return false;
+		}
+		ajaxRunningForUnRead = true;
+		
+		$.ajax({
+			url : "/user/dengon/changeOpen",
+			type : "POST",
+			data : {"dengonSeqList" : String(dengonSeqList), "openFlg" : openFlg},
+		}).done(function(response) {
+			if (response.succeeded) {
+
+				// メッセージ表示
+				showInfoMessageForJs(response.message);
+				firstViewFlg = true;
+				$(".current-box").trigger("click");
+
+			} else {
+				// エラーメッセージ
+				showErrorMessageForJs(response.message);
+
+			}
+
+		}).fail(function(jqXHR, textStatus, errorThrown) {
+		}).always(function() {
+			ajaxRunningForUnRead = false;
+		});
+	});
+
+	$(document).on("change", "#filterSearch", function() {
+
+		// 絞り込みフィルタ値
+		let filterType = $(this).val();
+		if (filterType.length == 0) {
+			// フィルタ（未選択）を選択
+			$("#searchMail").trigger("click");
+			return false;
+		}
+
+		// フォルダSEQを取得する / フォルダ以外ならnullになる
+		// 選択しているフォルダSEQ
+		let dengonFolderSeq = $(".current-box").closest("li").data("seq");
+		if (dengonFolderSeq == undefined) {
+			dengonFolderSeq = null;
+		}
+
+		// 検索文字
+		let searchMailText = $("#searchMailText").val();
+		if (!searchMailText) {
+			searchMailText = null;
+		}
+
+		// 選択しているフォルダ
+		let mailBoxType = $(".current-box").data("mail-box-type");
+
+		let formData = [];
+		formData.push(
+				{name : "filterType", value : filterType},
+				{name : "mailBoxType", value : mailBoxType},
+				{name : "searchMailText", value : searchMailText},
+				{name : "dengonFolderSeq", value : dengonFolderSeq},
+				{name : "page", value : null},
+		);
+
+		$.ajax({
+			url : "/user/dengon/filter",
+			type : "POST",
+			data : formData,
+		}).done(function(data) {
+
+			// 先頭と末尾のdivタグを削除する
+			data = data.replace('<div class="msg_list_body hover_scroll">', '').slice(0, -6);
+			$('.msg_list_body').empty();
+			$('.msg_list_body').html(data);
+			$('.msg_body').empty();
+			page = 1;
+
+		}).fail(function(jqXHR, textStatus, errorThrown) {
+		}).always(function() {
+			limitReloadDengon = $('.msg_listitem').length % 50 == 0 && $('.msg_listitem').length != 0;
+		});
+	});
+
+
+	<!--/* メッセージ一覧先頭SEQ */-->
+	let firstDataObj;
+	<!--/* メッセージ一覧最後SEQ */-->
+	let endDataObj;
+	<!--/* 選択したメッセージ */-->
+	let selectDengonObj;
+
+	<!--/* 初期表示で受信BOX最新のメッセージを選択する */-->
+	let firstViewFlg;
+	$(document).ready(function() {
+		$(".msg_listitem:first").click();
+		_setFirstEndSeq();
+		firstViewFlg = true;
+	});
+
+	<!--/* メッセージ一覧をクリック */-->
+	let dengonDetailRunning = false;
+	$(document).on("click", ".msg_listitem", function() {
+
+		// 選択済みのメッセージ or ロード用のメッセージ一覧部クリック時
+		if ($(this).hasClass("loading_listitem") || $(this).hasClass("selected")) {
+			return false;
+		}
+
+		let dengonSeq = $(this).data("seq");
+		if (!dengonSeq) {
+			return false;
+		}
+
+		// 行選択したオブジェクト
+		selectDengonObj = $(this);
+
+		/* メッセージ詳細表示 */
+		displayDengonDetail(dengonSeq);
+	});
+
+	<!--/* メッセージ詳細表示 */-->
+	function displayDengonDetail(dengonSeq, selectedData) {
+
+		let formData = [];
+		let mailBoxType = $(".current-box").data("mail-box-type");
+		let sendFlg = /*[[${T(jp.loioz.common.constant.CommonConstant$SystemFlg).FLG_OFF.getCd()}]]*/"0";
+
+		if ($(selectDengonObj).hasClass("is_send")) {
+			// 送信メッセージ
+			sendFlg = /*[[${T(jp.loioz.common.constant.CommonConstant$SystemFlg).FLG_ON.getCd()}]]*/"1";
+		}
+		formData.push(
+				{name : "dengonSeq", value : dengonSeq},
+				{name : "mailBoxType", value : mailBoxType},
+				{name : "sendFlg", value : sendFlg},
+		);
+
+		if(dengonDetailRunning) {
+			return false;
+		}
+		dengonDetailRunning = true;
+
+		$.ajax({
+			url : "/user/dengon/detail",
+			type : "POST",
+			data : formData,
+		}).done(function(data) {
+			// データ取得成功
+			$(".msg_body").html(data);
+
+			/* クリックしたメッセージの表示を選択状態にする */
+			$(".msg_listitem").removeClass("selected");
+			$(selectDengonObj).addClass("selected");
+
+			/* 詳細表示したメッセージの未読/既読を既読に変更する */
+			if (checkReceiveBox(mailBoxType)) {
+				if (!firstViewFlg) {
+					firstDataObj = $(".msg_listitem:first");
+					if(firstDataObj.hasClass('is_midoku')){
+						firstDataObj.removeClass("is_midoku");
+						firstDataObj.addClass("is_kidoku");
+						firstDataObj.find(".msgitem_data1").find(".is_unread").addClass("is_read").removeClass("is_unread");
+					}
+					// 初期画面遷移時の既読をつけない
+					$(selectDengonObj).removeClass("is_midoku");
+					$(selectDengonObj).addClass("is_kidoku");
+					$(selectDengonObj).find(".msgitem_data1").find(".msgitem_status > svg").remove();
+				} else {
+					firstViewFlg = false;
+
+				}
+			}
+
+			// 本文のHTMLタグを有効にする
+			$(".msg_body_main").html($(".msg_body_main").text());
+
+			// 未読件数を設定する
+			setUnreadCount();
+
+			// 次へ前へボタンの表示制御
+			_viewNextPrevBtn();
+
+			// ツールチップ
+			$('[data-toggle="tooltip"]').tooltip();
+
+		}).fail(function(jqXHR, textStatus, errorThrown) {
+		}).always(function() {
+			dengonDetailRunning = false;
+			// 受信者の表示制御
+			_setReceiverOpenBtn();
+		});
+	}
+
+	<!--/* メッセージ一覧をすべて読み込んだかの判定フラグ */-->
+	let limitReloadDengon = $('.msg_listitem').length % 50 == 0 && $('.msg_listitem').length != 0;
+	<!--/* 一覧を読み込んだ回数 */-->
+	let page = 1;
+	<!--/* メッセージ一覧を最下部までスクロールしたら追加読み込み */-->
+	$(".msg_list_body").on("scroll", function() {
+
+		if (limitReloadDengon) {
+			
+			<!--/* 
+			 下記で行う、「スクロールが最下部まで来た」かの判定で利用する値についての説明
+			 
+			 ※画面の解像度やブラウザの倍率などにより、各値で少数値が発生することで、スクロールを最下部まで行っても、「スクロールが最下部まで来た」の判定にかからないケースがある。
+			   そのため、「スクロールが最下部まで来た」かどうかの判定に幅を持たせるため、各値に補正（バッファ）値を加えて、判定処理を行う。
+			   （これにより、実際はスクロールが最下部の少し前の状態でも「スクロールが最下部まで来た」の判定にかかるようになる。）
+			 
+			 ■メインとして扱う値
+			 scrollHeight: 画面の解像度やブラウザの倍率などにより、JSの内部的に端数が発生するが、自動で整数に丸められた値となる（切り下げ、切り上げのどちらになっているかは不明）
+			 innerHeight(): 画面の解像度やブラウザの倍率などにより、少数を含む値になり、整数値が想定より少し小さくなるケースがあるため、Math.ceilで切り上げた値を扱うようにする
+			 scrollTop(): innerHeight()と理由は同様で、Math.ceilで切り上げた値を扱うようにする
+			
+			 ■メインの値の補正（バッファ）分の値
+			 offsetScrollHeight: 自動で丸められた（切り下げが行われた）値のための補正値「1」と、バッファとしての補正値「1」を合わせた補正値「2」
+			 offsetInnerHeight: バッファとしての補正値「1」
+			 offsetScrollTop: バッファとしての補正値「1」
+			 
+			 ※各値の「バッファとしての補正値「1」」は不要な可能性もあるが、念のため確保している。
+			   （innerHeight()、scrollTop()に対して行うMath.ceilによる切り上げの補正と、scrollHeightの丸めに対しての補正「1」のみで、動作検証上は十分だったが、
+			     画面の状態やブラウザの状態によっては、少数が発生する部分のズレが大きくなる可能性も考え、少し多めにバッファを取るために、「バッファとしての補正値「1」」を加えている。）
+			*/-->
+			
+			let scrollHeight = $("div.msg_list_body").get(0).scrollHeight;
+			let scrollPosition = Math.ceil($("div.msg_list_body").innerHeight()) + Math.ceil($("div.msg_list_body").scrollTop());
+			
+			const offsetScrollHeight = 2;
+			const scrollHeightIncludingOffset = scrollHeight - offsetScrollHeight;
+			
+			const offsetInnerHeight = 1;
+			const offsetScrollTop = 1;
+			const scrollPositionIncludingOffset = scrollPosition + (offsetInnerHeight + offsetScrollTop);
+
+			<!--/*
+			 スクロールが最下部まで来たか判定（trueの場合「最下部まで来た」ことになる）。
+			 分子側にプラスの補正値、分母側にマイナスの補正値を加えているため、計算結果は1より大きくなる場合がある。
+			*/-->
+			if (scrollPositionIncludingOffset / scrollHeightIncludingOffset >= 1) {
+				let mailBoxType = $(".current-box").data("mail-box-type");
+				let dengonFolderSeq = $(".current-box").closest("li").data("seq");
+				if (dengonFolderSeq == undefined) {
+					dengonFolderSeq = null;
+				}
+
+				let filterType = $("#filterSearch").val();
+				let searchMailText = $('input.form_msg_search_hidden').val().trim();
+
+				let formData = [];
+				formData.push(
+						{name : "filterType", value : filterType},
+						{name : "mailBoxType", value : mailBoxType},
+						{name : "searchMailText", value : searchMailText},
+						{name : "dengonFolderSeq", value : dengonFolderSeq},
+						{name : "page", value : page}
+				);
+
+				let url;
+				if (filterType.length > 0) {
+					// フィルターをしている場合
+					url = "/user/dengon/filter";
+
+				} else if (searchMailText.length > 0) {
+					// 検索文字を入れている場合
+					url = "/user/dengon/search";
+
+				} else {
+					// 選択している場合
+					url = "/user/dengon/selectMailBox";
+
+				}
+				// 読み込み画像のhtml
+				let loadingHtml =
+					'<div class="msg_listitem loading_listitem text-center">' +
+						'<i class="fa fa-spinner fa-spin fa-2x fa-fw"></i>' +
+						'<span class="sr-only"></span>' +
+						'<span class="ml-2">読み込み中…</span>' +
+					'</div>';
+
+				// 読み込みのhtmlを挿入
+				$('.msg_list_body').append(loadingHtml);
+
+				limitReloadDengon = false;
+
+				// 追加前のメッセージの件数を記憶する
+				let countOldDengonNum = $('.msg_listitem').length;
+
+				$.ajax({
+					url : url,
+					type : "POST",
+					data : formData,
+				}).done(function(data) {
+
+					// 先頭と末尾のdivタグを削除する
+					data = data.replace('<div class="msg_list_body hover_scroll">', '').slice(0, -6);
+
+					$('.msg_list_body').append(data);
+
+					// ページを更新
+					page += 1;
+
+				}).fail(function(jqXHR, textStatus, errorThrown) {
+				}).always(function() {
+					// 読み込み画像を削除
+					$('.loading_listitem').remove();
+					// 読み込み判定を更新
+					limitReloadDengon = $('.msg_listitem').length % 50 == 0 && $('.msg_listitem').length != 0;
+
+					// 追加のメッセージが0件の場合、無限読み込みしないようにフラグを変更する
+					if (countOldDengonNum == $('.msg_listitem').length) {
+						limitReloadDengon = false;
+					}
+				});
+			}
+		}
+	});
+
+	<!--/* メッセージ一覧の開始SEQと終了SEQを設定 */-->
+	function _setFirstEndSeq() {
+		// 開始と終了のSEQを設定
+		firstDataObj = $(".msg_listitem:first");
+		endDataObj = $(".msg_listitem:last");
+	}
+
+	<!--/* 受信BOXーカスタムフォルダ、カスタムサブフォルダ判定 */-->
+	function checkReceiveBox(mailBoxType) {
+		let receiveBoxFlg = false;
+		if (mailBoxType == /*[[${T(jp.loioz.common.constant.CommonConstant$MailBoxType).RECEIVE.getCd()}]]*/"1"
+			|| mailBoxType == /*[[${T(jp.loioz.common.constant.CommonConstant$MailBoxType).RECEIVE_CUSTOM.getCd()}]]*/"2"
+			|| mailBoxType == /*[[${T(jp.loioz.common.constant.CommonConstant$MailBoxType).RECEIVE_SUB_CUSTOM.getCd()}]]*/"3") {
+			receiveBoxFlg = true;
+		}
+		return receiveBoxFlg;
+	}
+
+	<!--/* メッセージ一覧を表示 */-->
+	$(document).on("click", ".switchMailBoxType", function() {
+
+		// フォルダの選択状態を解除
+		$('.current-box').closest('li').removeClass('selected');
+		$('.current-box').removeClass('current-box');
+
+		// フォルダを選択状態にする
+		$(this).addClass('current-box');
+		$('.current-box').closest('li').addClass('selected');
+
+		/* メッセージ詳細を消す */
+		$('.msg_body').empty();
+
+		// メッセージ検索フォームを空欄にする
+		$("#searchMailText").val("");
+
+		// 記憶用の検索ワードを消す
+		$('.form_msg_search_hidden').val("");
+
+		// 選択したフォルダタイプ
+		let mailBoxType = $(this).data("mail-box-type");
+		let dengonFolderSeq = $(this).closest("li").data("seq");
+		if (dengonFolderSeq == undefined) {
+			dengonFolderSeq = null;
+		}
+
+		// リクエストパラメータ
+		let formData = [];
+		formData.push(
+				{name : "mailBoxType", value : mailBoxType},
+				{name : "dengonFolderSeq", value : dengonFolderSeq},
+				{name : "page", value : null}
+		);
+
+		$.ajax({
+			url : "/user/dengon/selectMailBox",
+			type : "POST",
+			data : formData,
+		}).done(function(data) {
+			// 先頭と末尾のdivタグを削除する
+			data = data.replace('<div class="msg_list_body hover_scroll">', '').slice(0, -6);
+			$('.msg_list_body').empty();
+			$('.msg_list_body').html(data);
+			$('.msg_listitem:first').click();
+			page = 1;
+
+		}).fail(function(jqXHR, textStatus, errorThrown) {
+
+		}).always(function() {
+			limitReloadDengon = $('.msg_listitem').length % 50 == 0 && $('.msg_listitem').length != 0;
+			_setHeaderNaviSub(mailBoxType);
+			_setDraftCount();
+			_setFirstEndSeq();
+		});
+	});
+
+	<!--/* メッセージ詳細 ゴミ箱ボタン押下時 */-->
+	let ajaxRunningForTrashed = false;
+	$(document).on("click", "#detailTrashedBtn, #headerTrashedBtn, .deleteMailBtn", function() {
+
+		// 詳細表示しているメッセージ
+		let detailDengonSeq;
+		// 受信メッセージの選択データ
+		let receiveDengonSeqList;
+		// 送信メッセージの選択データ
+		let sendDengonSeqList;
+
+		let btnId = $(this).attr("id");
+		if (btnId == "headerTrashedBtn") {
+			// ヘッダのごみ箱ボタン押下時
+
+			// 受信メッセージの選択取得
+			receiveDengonSeqList = getSelectedReceiveDengonSeqList();
+			// 送信メッセージの選択取得
+			sendDengonSeqList = getSelectedSendDengonSeqList();
+
+			// 選択状態の確認
+			let checkCnt = receiveDengonSeqList.length + sendDengonSeqList.length;
+			if (checkCnt == 0) {
+				// 未選択
+				showErrorMessageForJs("メッセージ一覧のメッセージをチェックしてください");
+				return false;
+			}
+
+		} else {
+			// 詳細メッセージのごみ箱
+			detailDengonSeq = $(this).parents('.msg_body_dengon_seq').data("seq");
+			if (!detailDengonSeq) {
+				return false;
+			}
+
+		}
+
+		// POST先
+		let url = "trashedDengon";
+
+		// 確認メッセージ
+		let mailBoxType = $(".current-box").data("mail-box-type");
+		if (mailBoxType == /*[[${T(jp.loioz.common.constant.CommonConstant$MailBoxType).DRAFT.getCd()}]]*/"5") {
+			// 下書き
+			if (!confirm("下書きを削除します。よろしいですか？")) {
+				return false;
+			}
+			// 完全削除
+			url = "deletedDraft";
+
+		} else if (mailBoxType ==  /*[[${T(jp.loioz.common.constant.CommonConstant$MailBoxType).TRASHED.getCd()}]]*/"6") {
+			// ゴミ箱
+			if (!confirm("メッセージを完全に削除します。元には戻せませんがよろしいですか？")) {
+				return false;
+			}
+			// 完全削除
+			url = "deletedDengon";
+
+		} else {
+			// その他の場合
+			if (!confirm("メッセージをごみ箱に送ります。よろしいですか？")) {
+				return false;
+			}
+		}
+
+		// リクエストパラメータ
+		let formData = [];
+		formData.push(
+				{name : "dengonSeq", value : detailDengonSeq},
+				{name : "mailBoxType", value : mailBoxType},
+				{name : "receiveDengonSeqList", value : String(receiveDengonSeqList)},
+				{name : "sendDengonSeqList", value : String(sendDengonSeqList)},
+		);
+
+		if (ajaxRunningForTrashed) {
+			// 2重押下防止
+			return false;
+		}
+		ajaxRunningForTrashed = true;
+		
+		$.ajax({
+			url : "/user/dengon/" + url,
+			type : "POST",
+			data : formData,
+		}).done(function(response) {
+
+			if (response.succeeded) {
+				// メッセージ表示
+				showInfoMessageForJs(response.message);
+
+				if (btnId == "headerTrashedBtn") {
+					// 一括の場合は、選択フォルダを再度表示
+					$(".current-box").trigger("click");
+
+				} else {
+					// 次へ前へ
+					_setNextDengon();
+
+				}
+
+			} else {
+				// メッセージ表示
+				showErrorMessageForJs(response.message);
+			}
+
+		}).fail(function(jqXHR, textStatus, errorThrown) {
+		}).always(function() {
+			// 下書き件数の更新
+			_setDraftCount();
+			// 先頭と最後のSEQを更新
+			_setFirstEndSeq();
+			ajaxRunningForTrashed = false;
+		});
+	});
+
+	<!--/* ヘッダ部の３点リーダメニューとフィルタの表示制御 */-->
+	function _setHeaderNaviSub(mailBoxType) {
+		let navi = $('dl.msg_header_navi_sub');
+		let naviSubLi = $('ul.msg_header_navi_sub_list li');
+
+		// メニューを表示
+		$(navi).removeClass("hidden");
+		$(naviSubLi).removeClass("hidden");
+
+		// 絞り込みのフィルタの表示切替
+		if (checkReceiveBox(mailBoxType)) {
+			// 受信BOX、カスタムフォルダ、カスタムサブフォルダの場合
+
+			// フィルタを表示
+			$("li.msg_header_navi_last").show();
+			$("select.filter_select").prop("disabled", false);
+
+			// フィルターを初期化する
+			$("select.filter_select option:first").prop("selected", true);
+
+			// メニューの表示制御
+			$(naviSubLi).removeClass('hidden');
+			$('li.msg_header_navi_sub_trashed').addClass('hidden');
+
+			// 選択したフォルダの値を取得する
+			dengonFolderSeq = $(this).closest("li").data("seq");
+			$('#headerTrashedBtn > span').text("ごみ箱");
+		} else {
+			// 送信BOX、下書き、ゴミ箱の場合
+			//ごみ箱の場合,ごみ箱ボタンの名前を一括削除に変更する。
+			if(mailBoxType ==  /*[[${T(jp.loioz.common.constant.CommonConstant$MailBoxType).TRASHED.getCd()}]]*/"6"){
+				$('#headerTrashedBtn > span').text("一括削除");
+			}else{
+				$('#headerTrashedBtn > span').text("ごみ箱");
+			}
+			// フィルタを非表示
+			$("li.msg_header_navi_last").hide();
+			$("select.filter_select").prop("disabled", true);
+
+			// 3点リーダのメニュー表示
+			if (mailBoxType == /*[[${T(jp.loioz.common.constant.CommonConstant$MailBoxType).SEND.getCd()}]]*/"4"
+				|| mailBoxType == /*[[${T(jp.loioz.common.constant.CommonConstant$MailBoxType).DRAFT.getCd()}]]*/"5") {
+
+				// 送信BOX、下書きの場合、メニューを非表示
+				$(navi).addClass("hidden");
+
+			} else {
+				// 削除BOXのメニューを表示制御
+				$(naviSubLi).addClass("hidden");
+				// BOXに戻すのみ表示
+				$("li.msg_header_navi_sub_trashed").removeClass("hidden");
+
+			}
+		}
+
+	}
+
+	<!--/* ヘッダ部の３点リーダメニューの下書き件数を表示 */-->
+	function _setDraftCount() {
+		$.ajax({
+			url : "/user/dengon/draftCount",
+			type : "POST",
+		}).done(function(data) {
+			// 下書き件数を更新
+			$('.draft_count').text(Number(data) > 0 ? " (" + data + ")" : "");
+
+		}).fail(function(jqXHR, textStatus, errorThrown) {
+		}).always(function() {
+		});
+	}
+
+	<!--/* メッセージ詳細 削除したメッセージの次のメッセージを表示 */-->
+	function _setNextDengon() {
+		if ($(selectDengonObj).hasClass("selected")) {
+			$(".msg_body").empty();
+			let prev = $(selectDengonObj).prev("div.msg_listitem");
+			let next = $(selectDengonObj).next("div.msg_listitem");
+			// 選択されたオブジェクトを削除
+			$(selectDengonObj).remove();
+			if (next.length == 1) {
+				// 次のメッセージをクリック
+				$(next).trigger("click");
+
+			} else if (prev.length == 1) {
+				// 前のメッセージをクリック
+				$(prev).trigger("click");
+
+			}
+		}
+	}
+
+	<!--/* メッセージ詳細の上下選択ボタン押下 */-->
+	$(".msg_body").on("click", ".detailMsgNext, .detailMsgPrev", function() {
+		if ($(this).hasClass("detailMsgNext")) {
+			// 前へ
+			$(selectDengonObj).prev("div.msg_listitem").click();
+		} else {
+			// 次へ
+			$(selectDengonObj).next("div.msg_listitem").click();
+		}
+	});
+
+	<!--/* 次へ前へボタンの表示制御 */-->
+	function _viewNextPrevBtn() {
+		// 選択しているメッセージ
+		let currentDengonSeq = $(selectDengonObj).data("seq");
+		let currentIsSend = $(selectDengonObj).hasClass("is_send");
+
+		// 先頭のメッセージ
+		let firstDengonSeq = firstDataObj.data("seq");
+		let firstIsSend = firstDataObj.hasClass("is_send");
+		// 最後のメッセージ
+		let endDengonSeq = endDataObj.data("seq");
+		let endIsSend = endDataObj.hasClass("is_send");
+
+		if (currentDengonSeq == endDengonSeq && currentIsSend == endIsSend &&
+				currentDengonSeq == firstDengonSeq && currentIsSend == firstIsSend) {
+			// 1件のみ
+			$(".detailMsgPrev").css("visibility", "hidden");
+			$(".detailMsgNext").css("visibility", "hidden");
+
+		} else if (currentDengonSeq == endDengonSeq && currentIsSend == endIsSend) {
+			// 次へ：非表示
+			// 前へ：表示
+			$(".detailMsgPrev").css("visibility", "hidden");
+			$(".detailMsgNext").css("visibility", "");
+
+		} else if (currentDengonSeq == firstDengonSeq && currentIsSend == firstIsSend) {
+			// 次へ：表示
+			// 前へ：非表示
+			$(".detailMsgPrev").css("visibility", "");
+			$(".detailMsgNext").css("visibility", "hidden");
+
+		} else {
+			// 前へ：表示
+			// 次へ：表示
+			$(".detailMsgPrev").css("visibility", "");
+			$(".detailMsgNext").css("visibility", "");
+
+		}
+
+	}
+
+	<!--/* メッセージ詳細部分のステータス（要返信）を押下 */-->
+	let mailReplyAjaxRunning = false;
+	$(".msg_body").on("click", "#mailReply", function() {
+
+		// ごみ箱は何もできない
+		let trashedFlg = $(this).data("trashed-flg");
+		if (trashedFlg == /*[[${T(jp.loioz.common.constant.CommonConstant$SystemFlg).FLG_ON.getCd()}]]*/"1") {
+			return false;
+		}
+
+		let detailDengonSeq = $(this).parents(".msg_body_dengon_seq").data("seq");
+		if (detailDengonSeq == null) {
+			return false;
+		}
+
+		// 赤く表示する
+		$(this).toggleClass("is_reply");
+
+		if(mailReplyAjaxRunning) {
+			return false;
+		}
+		mailReplyAjaxRunning = true;
+		
+		$.ajax({
+			url : "/user/dengon/updateYohenshin",
+			type : "POST",
+			data : {"dengonSeq" : detailDengonSeq},
+
+		}).done(function(response) {
+			if (response.succeeded) {
+
+				// 一覧のメッセージにも要返信をつける
+				$('.msg_listitem.selected').find('.msgitem_task').toggle();
+
+			} else {
+				// エラーメッセージ表示
+				showErrorMessageForJs(response.message);
+
+			}
+
+		}).fail(function(jqXHR, textStatus, errorThrown) {
+		}).always(function() {
+			mailReplyAjaxRunning = false;
+		});
+	});
+
+	<!--/* メッセージ詳細部分の重要ボタン押下 */-->
+	let maiImportantAjaxRunning = false
+	$(".msg_body").on("click", "#maiImportant", function() {
+
+		// ごみ箱は何もできない
+		let trashedFlg = $(this).data("trashed-flg");
+		if (trashedFlg == /*[[${T(jp.loioz.common.constant.CommonConstant$SystemFlg).FLG_ON.getCd()}]]*/"1") {
+			return false;
+		}
+
+		let detailDengonSeq = $(this).parents(".msg_body_dengon_seq").data("seq");
+		if (detailDengonSeq == null) {
+			return false;
+		}
+
+		if(maiImportantAjaxRunning) {
+			return false;
+		}
+		maiImportantAjaxRunning = true;
+		
+		$.ajax({
+			url : "/user/dengon/updateImportant",
+			type : "POST",
+			data : {"dengonSeq" : detailDengonSeq},
+		}).done(function(response) {
+			if (response.succeeded) {
+				// 成功
+
+				// 一覧のメッセージにも重要を付与
+				if (response.importantFlg == /*[[${T(jp.loioz.common.constant.CommonConstant$SystemFlg).FLG_ON.getCd()}]]*/"1") {
+					// 付与
+					$('.msg_listitem.selected').find('.checkbox_btn_star').find('input.checkbox_input').prop('checked', true);
+
+				} else {
+					// はずす
+					$('.msg_listitem.selected').find('.checkbox_btn_star').find('input.checkbox_input').prop('checked', false);
+
+				}
+
+			} else {
+				// エラーメッセージ表示
+				showErrorMessageForJs(response.message);
+
+			}
+
+		}).fail(function(jqXHR, textStatus, errorThrown) {
+		}).always(function() {
+			maiImportantAjaxRunning = false;
+		});
+	});
+
+	<!--/* 検索ボタンを押下 */-->
+	$(document).on("click", "#searchMail", function() {
+		_searchMailList();
+	});
+
+	<!--/* 検索入力欄でエンターキー押下時 */-->
+	$("#searchMailText").keypress(function(e) {
+		if (e.which === 13) {
+			_searchMailList();
+		}
+	});
+
+	<!--/* 検索処理 */-->
+	function _searchMailList() {
+		let searchMailText = $("#searchMailText").val();
+		if (!searchMailText) {
+			// 未入力の場合は、選択しているフォルダを再検索
+			$(".current-box").trigger("click");
+			return false;
+		}
+
+		// 選択しているフォルダ
+		let mailBoxType = $(".current-box").data("mail-box-type");
+		let dengonFolderSeq = $(".current-box").closest("li").data("seq");
+		if (dengonFolderSeq == undefined) {
+			dengonFolderSeq = null;
+		}
+
+		let formData = [];
+		formData.push(
+				{name : "searchMailText", value : searchMailText},
+				{name : "mailBoxType", value : mailBoxType},
+				{name : "dengonFolderSeq", value : dengonFolderSeq},
+				{name : "page", value : null}
+		);
+
+		$.ajax({
+			url : "/user/dengon/search",
+			type : "POST",
+			data : formData,
+		}).done(function(data) {
+
+			// 先頭と末尾のdivタグを削除する
+			data = data.replace('<div class="msg_list_body hover_scroll">', '').slice(0, -6);
+			$('.msg_list_body').empty();
+			$('.msg_list_body').html(data);
+			$('.msg_body').empty();
+			page = 1;
+			$('.form_msg_search_hidden').val(searchMailText);
+
+		}).fail(function(jqXHR, textStatus, errorThrown) {
+		}).always(function() {
+			limitReloadDengon = $('.msg_listitem').length % 50 == 0 && $('.msg_listitem').length != 0;
+		});
+	}
+
+	/** メッセージ詳細の宛先が見きれる場合に開閉ボタンの表示制御 */
+	function _setReceiverOpenBtn() {
+		// 受信者のエリアが表示エリアを超えたら、開閉ボタンを表示
+		if ($("#detailReceiverArea").width() < $("#detailReceiverName").width()) {
+			$("#detailReceiverAll").removeClass("hidden");
+		}
+	}
+
+	// 未読のメッセージ件数を設定する関数
+	function setUnreadCount() {
+		$.ajax({
+			url : '/user/dengon/unreadCount',
+			type : "POST",
+		}).done(function(data) {
+			data.header > 0 ? $('.is_message span.msgCnt').text(data.header).show() : $('.is_message span.msgCnt').text("").hide();
+			data.receive > 0 ? $('.unread_count').text(" (" + data.receive + ")").show() : $('.unread_count').text("").hide();
+		}).fail(function(jqXHR, textStatus, errorThrown) {
+		}).always(function() {
+		});
+	}
+
+});
+</script>
+
+<!--/* フォルダ移動モーダル表示処理 */-->
+<script type="text/javascript" th:inline="javascript">
+$(function() {
+	
+	let ajaxRunning = false;
+
+	// モーダル閉じる処理
+	$('#dengonFolderMoveModal').on('hide.bs.modal', function (e) {
+		// 初期化する
+		$('.dengon-move-modal-body').html('');
+	})
+
+	<!--/* フォルダ移動モーダル表示処理 */-->
+	$(document).on("click", ".folderSelectModalOpen", function() {
+
+		let dengonSeqList = getSelectedDengonSeqList();
+		if (dengonSeqList.length == 0) {
+			mailHeaderNaviSub();
+			// 対象メッセージとなるメッセージが選択していない
+			showErrorMessageForJs("対象となるメッセージを選択してください");
+			return false;
+
+		}
+		// メニューを閉じる
+		mailHeaderNaviSub();
+
+		let formData = [];
+		formData.push(
+				{name : "dengonSeq", value : null},
+		);
+		
+		if(ajaxRunning) {
+			return false;
+		}
+		ajaxRunning = true;
+		
+		$.ajax({
+			url : "/user/dengon/folder/folderMoveModalOpen",
+			type : "POST",
+			data : formData
+		}).done(function(val) {
+			// モーダルの表示
+			$('.dengon-move-modal-body').html(val);
+			// モーダルを表示する
+			$('#dengonFolderMoveModal').modal('show');
+		}).fail(function(jqXHR, textStatus, errorThrown) {
+		}).always(function() {
+			ajaxRunning = false;
+		});
+	});
+
+	<!--/* フォルダ移動モーダル表示処理(メッセージ詳細のBOXに戻すボタン) */-->
+	$(document).on("click", "#reBoxBtn", function() {
+
+		// モーダルを表示する
+		$('#dengonFolderMoveModal').modal('show');
+		let moveDengonSeq = $('.msg_body_dengon_seq').data('seq');
+		let formData = [];
+		formData.push(
+				{name : "dengonSeq", value : moveDengonSeq},
+		);
+		
+		if(ajaxRunning) {
+			return false;
+		}
+		ajaxRunning = true;
+		
+		$.ajax({
+			url : "/user/dengon/folder/folderMoveModalOpen",
+			type : "POST",
+			data : formData
+		}).done(function(val) {
+			// モーダルの表示
+			$('.dengon-move-modal-body').html(val);
+		}).fail(function(jqXHR, textStatus, errorThrown) {
+		}).always(function() {
+			ajaxRunning = false;
+		});
+	});
+})	;
+</script>
+
+<!--/* フォルダ移動モーダル-移動確定処理 */-->
+<script type="text/javascript" th:inline="javascript">
+
+$(function() {
+	
+	let ajaxRunning = false;
+
+	/* 確定ボタン押下時 */
+	$(document).on("click", "#confirmBtn", function() {
+
+		let dengonFolderSeq = $("#moveFolderSelectBox").val();
+		dengonFolderSeq = typeof(dengonFolderSeq) !== 'undefined' ? dengonFolderSeq : null;
+		let receiveDengonSeqList = [];
+		let sendDengonSeqList = [];
+		if($('#moveDengonSeq').val()){
+			if($('#moveDengonSendFlg').val() == "true"){
+				sendDengonSeqList.push($('#moveDengonSeq').val());
+			}else{
+				receiveDengonSeqList.push($('#moveDengonSeq').val());
+			}
+		}else{
+		// 受信メッセージの選択データ
+		receiveDengonSeqList = getSelectedReceiveDengonSeqList();
+		// 送信メッセージの選択データ
+		sendDengonSeqList= getSelectedSendDengonSeqList();
+		}
+		let formData = [];
+		formData.push(
+				{name : "receiveDengonSeqList", value : String(receiveDengonSeqList)},
+				{name : "sendDengonSeqList", value : String(sendDengonSeqList)},
+				{name : "dengonFolderSeq", value : dengonFolderSeq},
+		);
+
+		if(ajaxRunning) {
+			return false;
+		}
+		ajaxRunning = true;
+		
+		$.ajax({
+			url : "/user/dengon/folder/moveMail",
+			type : "POST",
+			data : formData
+		}).done(function(response) {
+			if (response.succeeded) {
+				// 成功
+
+				// メッセージ表示
+				showInfoMessageForJs(response.message);
+
+				$("#dengonFolderMoveModal").modal("hide");
+				$('.current-box').trigger("click");
+
+			} else {
+				// エラーメッセージ表示
+				showErrorMessageForJs(response.message);
+			}
+
+		}).fail(function(jqXHR, textStatus, errorThrown) {
+		}).always(function() {
+			ajaxRunning = false;
+		});
+	});
+})
+</script>
+
+<!--/* カスタムフォルダ新規登録/編集ボタン押下時のモーダル表示 */-->
+<script type="text/javascript" th:inline="javascript">
+$(function() {
+	
+	let ajaxRunning = false;
+
+	// モーダル閉じる処理
+	$('#dengonFolderEditModal').on('hide.bs.modal', function (e) {
+		// 初期化する
+		$('.dengon-edit-modal-body').html('');
+	})
+
+	$(document).on("click", ".folderEditModalOpen", function() {
+		
+		// モーダルタイプ
+		let dataModalType = $(this).data("modal-type");
+		let dengonFolderSeq;
+		let trashedFlg;
+		if (dataModalType == "create") {
+			// フォルダ新規作成
+			dengonFolderSeq = null;
+			trashedFlg = null;
+		} else if (dataModalType == "trashed") {
+			// ごみ箱（カスタムフォルダ）
+			dengonFolderSeq = $(this).closest("li").data("seq");
+			trashedFlg = "1";
+		} else {
+			// フォルダ編集
+			dengonFolderSeq = $(this).closest("li").data("seq");
+			trashedFlg = null;
+		}
+		let formData = [];
+		formData.push(
+				{name : "dengonFolderSeq", value : dengonFolderSeq},
+				{name : "trashedFlg", value : trashedFlg},
+		);
+
+		if(ajaxRunning) {
+			return false;
+		}
+		ajaxRunning = true;
+		
+		$.ajax({
+			url : "/user/dengon/folder/folderEditModalOpen",
+			type : "POST",
+			data: formData,
+		}).done(function(val) {
+
+			// モーダルの表示
+			$(".dengon-edit-modal-body").html(val);
+
+		}).fail(function(jqXHR, textStatus, errorThrown) {
+		}).always(function() {
+			ajaxRunning = false;
+		});
+	});
+});
+</script>
+<!--/* カスタムフォルダ編集 更新・削除・ごみ箱に戻す */-->
+<script type="text/javascript" th:inline="javascript">
+$(function() {
+	
+	let ajaxRunningFolderEdit = false;
+	$(document).on("click", ".dengonFolderActionBtn", function() {
+
+		let url;
+		let btnName = $(this).attr("name");
+		let deleteFlg = false;
+
+		// 選択フォルダ
+		let dengonFolderSeq = $(".current-box").closest("li").data("seq");
+
+		if (btnName == "trashed") {
+			// ごみ箱へ
+			url = "trashedFolder";
+			if (!confirm("フォルダ内のメッセージ、及びサブフォルダもごみ箱に送られます。よろしいですか？")) {
+				return false;
+			}
+
+		} else if (btnName == "delete") {
+			// 完全削除
+			url = "delete";
+			if (!confirm("完全に削除します。元には戻せませんがよろしいですか？")) {
+				return false;
+			}
+			deleteFlg = true;
+
+		} else if (btnName == "remove") {
+			// ごみ箱へ戻す
+			url = "remove";
+
+		} else if (btnName == "regist") {
+			// 登録
+			url = "regist";
+
+		} else if (btnName == "update") {
+			// 保存
+			url = "update";
+
+		} else {
+			// それ以外は存在しない
+			return false;
+		}
+
+		let modal = $(this).closest(".modal");
+		let formData = $('.dengon-edit-modal-body [name^="dto."]').serializeArray();
+
+		// 選択しているフォルダ
+		let currentDengonFolderSeq = $("#currentDengonFolderSeq").val();
+		if (!currentDengonFolderSeq) {
+			currentDengonFolderSeq = null;
+		}
+		formData.push(
+				{name : "currentDengonFolderSeq", value :currentDengonFolderSeq},
+		);
+
+		// 2重押下防止
+		if (ajaxRunningFolderEdit) {
+			return false;
+		}
+		ajaxRunningFolderEdit = true;
+		
+		$.ajax({
+			url : "/user/dengon/folder/" + url,
+			type : "POST",
+			data : formData,
+		}).done(function(response) {
+			if (response.succeeded) {
+				// メッセージ表示
+				showInfoMessageForJs(response.message);
+
+				// モーダル閉じる
+				modal.modal("hide");
+
+				if (btnName == "regist") {
+					// 新規登録の場合は登録後のフォルダSEQを設定
+					dengonFolderSeq = response.dengonFolderSeq;
+				}
+
+				refreshTrashedFolderMenu(dengonFolderSeq);
+				refreshFolderMenu(dengonFolderSeq);
+
+				if (deleteFlg) {
+					// 削除の場合は、受信BOXを選択状態とする
+					$(".msgfld_receive").addClass("current-box");
+					$(".current-box").closest("li").addClass("selected");
+					$(".current-box").find(".switchMailBoxType").trigger("click");
+				}
+
+			} else {
+				// エラーメッセージ
+				showErrorMessage(response.message, modal, response.errors);
+
+			}
+		}).fail(function() {
+			// システムエラー
+			window.location.href = "/systemError";
+		}).always(function(){
+			ajaxRunningFolderEdit = false;
+
+		});
+	});
+
+	/* 呼び出し時にメニューのフォルダ部分を更新する関数 */
+	function refreshFolderMenu(dengonFolderSeq) {
+		$.ajax({
+			url : "/user/dengon/refreshFolderMenu",
+			type : "POST",
+		}).done(function(data) {
+			$('.msg_folder_list_custom').html(data);
+
+			// フォルダを選択状態にする
+			$('[data-seq=' + dengonFolderSeq + ']').addClass("current-box");
+			$('.current-box').closest('li').addClass('selected');
+			$(".current-box").find(".switchMailBoxType").trigger("click");
+
+		}).fail(function(jqXHR, textStatus, errorThrown) {
+		}).always(function() {
+			hiddenCreateFolderButton();
+		});
+	}
+
+	/* 呼び出し時にメニューのごみ箱フォルダ部分を更新する関数 */
+	function refreshTrashedFolderMenu(dengonFolderSeq) {
+		$.ajax({
+			url : "/user/dengon/refreshTrashedFolderMenu",
+			type : "POST",
+		}).done(function(data) {
+			$('li.msgfld_trash').next('ul li').html(data);
+
+			// フォルダを選択状態にする
+			$('[data-seq=' + dengonFolderSeq + ']').addClass("current-box");
+			$('.current-box').closest('li').addClass('selected');
+			$(".current-box").find(".switchMailBoxType").trigger("click");
+
+		}).fail(function(jqXHR, textStatus, errorThrown) {
+		}).always(function() {
+		});
+	}
+
+	// フォルダー作成上限数に到達した場合にヘッダー部のフォルダー追加ボタンを非表示にする関数
+	function hiddenCreateFolderButton() {
+		if ($('div.msg_add_folder').is(':visible')) {
+			$('button.icon_msg_addf').parent('li').removeClass('limit_create_folder');
+		} else {
+			$('button.icon_msg_addf').parent('li').addClass('limit_create_folder');
+		}
+	}
+})
+</script>
+
+<script type="text/javascript">
+$(function(){
+	$(document).ready(function() {
+		$('[data-target="#userSelectModal"]').tooltip({trigger: 'hover'});
+	});
+	// モーダル多層表示時に、オーバレイ->モーダル->オーバーレイ->モーダル->オーバーレイ...と交互に重なるようCSS:z-index値調整
+	$(document).on('click', '#selectModal', function(event) {
+		if (event.target.getAttribute('data-toggle') == 'modal') {
+			window.setTimeout(function () {
+				// オーバーレイ要素が</body>直前に追加されるのを待つ
+				// Bootstrap3モーダル要素CSS:z-index初期値を設定
+				const defaultZindexValOfOverlay = 1040;
+				const defaultZindexValOfModal = 1050;
+
+				// イベント編集に関わるモーダル要素を取得
+				var overlay = document.querySelectorAll('.modal-backdrop'); // オーバーレイ要素は増減する
+				var modalWindow = document.querySelectorAll('#selectModal .show'); // モーダル画面要素は増減しない
+
+				if (overlay.length >= 2) { // 多層表示時に限り各モーダル要素のCSS:z-index値を調整
+					closePopover();
+					for (var i = 0; i < modalWindow.length; i++) {
+						var addValue = i == 0 ? 0 : 10 * (i + 1);
+
+						// 要素の増減有無に応じたz-indexの設定をする必要がある
+						if (i < overlay.length) {
+							overlay[i].style.zIndex = defaultZindexValOfOverlay + addValue;
+						}
+						if (modalWindow[i].classList.contains('modal')) {
+							modalWindow[i].style.zIndex = defaultZindexValOfModal + addValue;
+						}
+					}
+				}
+			}, 10);
+		}
+	});
+
+	function closePopover() {
+		$('#popoverAccountList').popover('hide');
+	}
+
+	$(document).on('click', '.popover_close_btn', function() {
+		closePopover()
+	})
+
+});
+</script>
+</head>
+<body class="bg2">
+
+	<!--/* メインコンテンツ */-->
+	<div layout:fragment="main-contents">
+		<div class="wrapper">
+			<div class="block_content px-4 pt-3">
+
+				<!-- メッセージ表示領域 -->
+				<div th:replace="common/messageArea::messageArea" th:fragment="messageArea"></div>
+
+				<!-- ヘッダエリア -->
+				<div class="msg_header">
+
+					<ul class="msg_header_navi">
+						<li>
+							<button type="button" class="btn btn-primary createNewMessage" data-toggle="modal"
+								data-target="#dengonCreateModal"><i class="fas fa-plus"></i>新規作成</button>
+						</li>
+						<li>
+							<button type="button" class="btn btn-light" id="headerTrashedBtn">
+								<i class="far fa-trash-alt"></i><span>ごみ箱</span>
+							</button>
+						</li>
+						<li>
+							<dl class="msg_header_navi_sub">
+								<dt>サブメニュー</dt>
+								<dd>
+									<ul class="msg_header_navi_sub_list">
+										<li class="msg_header_navi_sub_create_folder" th:classappend="${viewForm.creatableFolder} ? '' : 'limit_create_folder'">
+											<button type="button" class="btn btn-light border-0 w-100 text-left folderEditModalOpen" th:data-modal-type="create" data-toggle="modal" data-target="#dengonFolderEditModal">
+												<i class="fas fa-folder-plus"></i>フォルダー追加
+											</button>
+										</li>
+										<li class="msg_header_navi_sub_move">
+											<button type="button" class="btn btn-light border-0 w-100 text-left folderSelectModalOpen">
+												<i class="fas fa-exchange-alt"></i>移動
+											</button>
+										</li>
+										<li class="msg_header_navi_sub_unread">
+											<button type="button" class="btn btn-light border-0 w-100 text-left" id="headerUnReadBtn">
+												<i class="fas fa-envelope"></i>未読にする</button>
+										</li>
+										<li class="msg_header_navi_sub_read">
+											<button type="button" class="btn btn-light border-0 w-100 text-left" id="headerReadBtn">
+												<i class="far fa-envelope-open"></i>既読にする</button>
+										</li>
+										<li class="msg_header_navi_sub_trashed hidden">
+											<button type="button" class="btn btn-light border-0 w-100 text-left folderSelectModalOpen">
+												<i class="far fa-folder"></i>BOXに戻す</button>
+										</li>
+									</ul>
+								</dd>
+							</dl>
+						</li>
+						<li class="msg_header_navi_last">
+							<div class="input-group">
+								<div class="input-group-prepend">
+									<div class="input-group-text bg-dark px-3 msg_filter_label "><i class="fas fa-filter text-light fa-lg"></i></div>
+								</div>
+								<dl>
+									<dt></dt>
+									<dd>
+										<select class="form-control filter_select" id="filterSearch">
+											<option value="">フィルタ</option>
+											<option th:each="enum : ${T(jp.loioz.common.constant.CommonConstant$MailFilterType).values()}"
+													th:value="${enum.cd}" th:text="${enum.val}">
+										</select>
+									</dd>
+								</dl>
+							</div>
+						</li>
+					</ul>
+
+				</div>
+				<!-- ヘッダエリア ここまで -->
+
+				<!--/* コンテンツエリア */-->
+				<div th:object="${viewForm}">
+					<div class="block_msg">
+						<div class="msg_fl">
+
+							<!--/* フォルダエリア */-->
+							<div class="msg_folder">
+
+								<!--/* 受信Boxエリア */-->
+								<ul class="msg_folder_list_main mb-0">
+									<li class="msgfld_receive selected">
+										<div
+											class="msg_folder_name msg_list_disp_over current-box switchMailBoxType"
+											th:data-mail-box-type="*{T(jp.loioz.common.constant.CommonConstant$MailBoxType).RECEIVE.getCd()}"
+											th:box="receive" th:filter="true">
+											<i class="fas fa-inbox"></i>受信BOX<span class="unread_count">[[*{unreadCount > 0 ? " ("+unreadCount+")" : ""}]]</span>
+										</div>
+									</li>
+								</ul>
+
+								<!--/* 作成フォルダエリア */-->
+								<div class="msg_folder_list_custom" th:fragment="folderTree">
+
+									<ul>
+										<!--/* 第１階層フォルダ */-->
+										<li th:each="parent : *{customeFolderList}"
+											th:data-seq="${parent.dengonFolderSeq}"
+											th:if="!${parent.trashedFlg} and ${#strings.isEmpty(parent.parentDengonFolderSeq)}">
+
+											<!--/* フォルダ */-->
+											<div class="msgfld_custom switchMailBoxType"
+												th:data-mail-box-type="*{T(jp.loioz.common.constant.CommonConstant$MailBoxType).RECEIVE_CUSTOM.getCd()}">
+
+												<!--/* フォルダ名 */-->
+												<div class="msg_folder_name msg_list_disp_over"
+													th:box="custome" th:filter="true">
+													<i class="fas fa-folder"></i><span th:text="${parent.dengonFolderName}">フォルダ名</span></div>
+
+												<!--/* 編集ボタン */-->
+												<div class="msg_folder_edit stop-events">
+													<button type="button" class="btn btn_msg_folder folderEditModalOpen"
+														th:data-modal-type="update" data-toggle="modal" data-target="#dengonFolderEditModal">編集</button>
+												</div>
+
+											</div>
+
+											<ul>
+												<!--/* 第２階層サブフォルダ */-->
+												<li th:each="children : *{customeFolderList}"
+													th:data-seq="${children.dengonFolderSeq}"
+													th:if="!${children.trashedFlg} and ${children.parentDengonFolderSeq} == ${parent.dengonFolderSeq}">
+
+													<!--/* サブフォルダ名 */-->
+													<div class="msgfld_custom switchMailBoxType"
+														th:data-mail-box-type="*{T(jp.loioz.common.constant.CommonConstant$MailBoxType).RECEIVE_SUB_CUSTOM.getCd()}">
+														<div class="msg_folder_name msg_list_disp_over"
+															th:box="custome" th:filter="true">
+															<i class="far fa-folder"></i><span th:text="${children.dengonFolderName}">サブフォルダ名</span></div>
+
+														<!--/* 編集ボタン */-->
+														<div class="msg_folder_edit stop-events">
+															<button type="button" class="btn btn_msg_folder folderEditModalOpen"
+																th:data-modal-type="update" data-toggle="modal" data-target="#dengonFolderEditModal">編集</button>
+														</div>
+													</div>
+												</li>
+											</ul>
+										</li>
+									</ul>
+
+									<!--/* 追加フォルダエリア */-->
+									<div class="msg_add_folder" th:if="*{creatableFolder}">
+										<button type="button" class="btn btn_add_msg_folder folderEditModalOpen"
+											th:data-modal-type="create" data-toggle="modal" data-target="#dengonFolderEditModal"><i class="fas fa-plus-circle"></i>フォルダーを追加</button>
+									</div>
+
+								</div>
+								<!--/* 作成フォルダエリア ここまで */-->
+
+								<!--/* その他エリア */-->
+								<ul class="msg_folder_list_main mt-0">
+									<li class="msgfld_send">
+										<div
+											class="msg_folder_name msg_list_disp_over switchMailBoxType"
+											th:data-mail-box-type="*{T(jp.loioz.common.constant.CommonConstant$MailBoxType).SEND.getCd()}"
+											th:box="send" th:filter="false"><i class="fas fa-paper-plane"></i>送信BOX</div>
+									</li>
+									<li class="msgfld_draft">
+										<div
+											class="msg_folder_name msg_list_disp_over switchMailBoxType"
+											th:box="draft" th:filter="false"
+											th:data-mail-box-type="*{T(jp.loioz.common.constant.CommonConstant$MailBoxType).DRAFT.getCd()}">
+											<i class="fas fa-pencil-alt"></i>下書き<span class="draft_count">[[*{draftCount > 0 ? " ("+draftCount+")" : ""}]]</span>
+										</div>
+									</li>
+									<li class="msgfld_trash">
+										<div class="msg_folder_name msg_list_disp_over switchMailBoxType"
+											th:data-mail-box-type="*{T(jp.loioz.common.constant.CommonConstant$MailBoxType).TRASHED.getCd()}"
+											th:box="trashed" th:filter="false"> <i class="far fa-trash-alt"></i>ごみ箱</div>
+									</li>
+
+									<!--/* ごみ箱エリア */-->
+									<li class="msgfld_trash">
+										<ul th:fragment="trashedFolderTree">
+											<li class="trashBox d-flex" th:each="folder : *{customeFolderList}" th:data-seq="${folder.dengonFolderSeq}" th:if="${folder.trashedFlg}">
+
+												<!--/* ごみ箱フォルダ名 */-->
+												<div class="msg_folder_name msg_list_disp_over btn_msgfld_trash switchMailBoxType msgfld_custom"
+													th:data-mail-box-type="*{T(jp.loioz.common.constant.CommonConstant$MailBoxType).TRASHED.getCd()}"
+													th:box="custome" th:filter="false" th:text="${folder.dengonFolderName}">
+												</div>
+
+												<!--/* ごみ箱フォルダ-編集ボタン */-->
+												<div class="msg_folder_edit my-auto mr-2">
+													<button type="button" class="btn btn_msg_folder folderEditModalOpen"
+														th:data-mail-box-type="*{T(jp.loioz.common.constant.CommonConstant$MailBoxType).TRASHED.getCd()}"
+														th:data-modal-type="trashed" data-toggle="modal" data-target="#dengonFolderEditModal">編集</button>
+												</div>
+											</li>
+										</ul>
+									</li>
+
+								</ul>
+								<!--/* その他エリア ここまで */-->
+
+							</div>
+							<!--/* フォルダエリア ここまで */-->
+
+							<!-- メッセージ一覧エリア -->
+							<div class="msg_list">
+								<!-- メッセージ一覧 ヘッダ -->
+								<div class="msg_list_header">
+									<div class="msg_list_selectall msgCheckAll text-white cursor_pointer">
+										<i class="fas fa-check-square fa-lg mr-2"></i>全て選択
+									</div>
+									<div class="msg_search">
+										<div class="input-group">
+											<input type="search" class="form-control fcAddTextClear" id="searchMailText" maxlength="100" placeholder="メッセージを検索">
+											<div class="input-group-append">
+												<button class="btn btn-dark pt-1 pb-0 px-3" type="button" id="searchMail"><i class="fas fa-search fa-lg mr-0"></i></button>
+											</div>
+										</div>
+										<input type="hidden" class="form_msg_search_hidden">
+									</div>
+								</div>
+								<!-- メッセージ一覧 ヘッダ ここまで -->
+
+								<!-- メッセージ一覧 中身 -->
+								<div class="msg_list_body hover_scroll" th:fragment="dengonList">
+
+									<!-- メッセージ各行 -->
+									<div class="msg_listitem" th:each="dengon : *{dengonList}"
+										th:object="${dengon}" th:data-seq="*{dengonSeq}"
+										th:classappend="(${dengon.openFlg} ? 'is_kidoku' : 'is_midoku') + (${#strings.isEmpty(dengon.sendAccountName)} ? ' ' + is_send : '')">
+
+										<!--/* メッセージ一覧詳細 1行目 */-->
+										<div class="msgitem_head">
+											<div class="msgitem_head_check stop-events">
+												<label class="checkbox_btn no_text">
+													<input type="checkbox" class="checkbox_input msgitem_check" th:data-check-dengon-seq="*{dengonSeq}"
+														th:data-check-dengon-send-flg="${#strings.isEmpty(dengon.sendAccountName)} ? '1' : '0' ">
+													<span class="checkbox_txt"></span>
+												</label>
+											</div>
+											<div class="msgitem_head_title" th:text="${#strings.isEmpty(dengon.title)} ? '(件名なし)' : ${dengon.title}">タイトル</div>
+											<div class="msgitem_date" th:text="*{createdAt}">作成日時</div>
+										</div>
+										<!--/* メッセージ一覧詳細 1行目 ここまで */-->
+
+										<!--/* メッセージ一覧詳細 2行目 */-->
+										<div class="msgitem_data1">
+
+											<!--/* 開封アイコン */-->
+											<div class="msgitem_status"
+												th:classappend="(*{#strings.isEmpty(sendAccountName)} ? ' hidden' : '')
+												 + (*{#bools.isTrue(draftFlg)} ? ' hidden' : '')">
+												 <th:block th:if="*{#bools.isFalse(openFlg)}">
+													<i class="fas fa-envelope"></i>
+												 </th:block>
+											</div>
+
+											<!--/* 送信者 */-->
+											<div class="msgitem_sender"
+												th:if="!*{#strings.isEmpty(sendAccountName)}">
+												<i class="far fa-paper-plane"></i>
+												<span class="msgitem_name" th:text="*{sendAccountName}"></span>
+											</div>
+
+											<!--/* 受信者 */-->
+											<div class="msgitem_receiver msg_list_disp_over"
+												th:if="!*{#strings.isEmpty(receiveAccountNameList)}">
+												<i class="fas fa-user-circle"></i>
+												<span class="msgitem_name"
+													th:text="*{receiveAccountNameList}"></span>
+											</div>
+
+										</div>
+										<!--/* メッセージ一覧詳細 2行目 ここまで */-->
+
+										<!--/* メッセージ一覧詳細 3行目 ID、要返信、お気に入り選択 */-->
+										<div class="msgitem_data2">
+											<!--/* 要返信 */-->
+											<div class="msgitem_task is_reply" th:if="!*{#strings.isEmpty(sendAccountName)}"
+												th:styleappend="*{dengonStatusId} == *{T(jp.loioz.common.constant.CommonConstant$DengonStatus).YOUHENSHIN.getCd()} ? '' : 'display: none;'">
+												要返信
+											</div>
+
+											<!--/* 重要マーク */-->
+											<div class="msgitem_head_favo" th:classappend="!*{draftFlg} and *{sendAccountName} ? '' : 'none_events'">
+												<label class="checkbox_btn_star">
+													<input type="checkbox" class="checkbox_input" th:checked="${dengon.importantFlg}" disabled="disabled">
+													<span class="checkbox_txt"></span>
+												</label>
+											</div>
+
+											<div class="d-flex ml-auto">
+												<!--/* 顧客紐付け */-->
+												<div class="relation_link d-flex align-items-center" th:if="!*{#lists.isEmpty(selectedCustomerList)}">
+													<th:block th:each="customer : *{selectedCustomerList}">
+														<div class="char_ellipsis mxw150 fs12" th:title="${customer.customerName}">
+															<i class="fas fa-hashtag mr-1"></i><span th:text="${customer.customerName}">顧客名</span>
+														</div>
+														<div class="ml-2">
+															<span class="sub_text fs11" th:text="|&#40;${customer.customerIdDisp}&#41;|">顧客ID</span>
+														</div>
+													</th:block>
+												</div>
+
+											<!--/* 業歴（履歴登録元：顧客） */-->
+<!--/*/ 								<th:block th:if="${T(jp.loioz.common.constant.CommonConstant$TransitionType).CUSTOMER.equalsByCode(dengon.transitionType)}"> /*/-->
+												<div class="relation_link d-flex align-items-center" th:if="!*{#lists.isEmpty(relatedCustomerList)}">
+													<th:block th:each="customer : *{relatedCustomerList}">
+														<div class="char_ellipsis mxw150 fs12" th:title="${customer.customerName}">
+															<i class="fas fa-hashtag mr-1"></i><span th:text="${customer.customerName}">顧客名</span>
+														</div>
+														<div class="ml-2">
+															<span class="sub_text fs11" th:text="|&#40;${customer.customerId}&#41;|">顧客ID</span>
+														</div>
+													</th:block>
+												</div>
+<!--/*/ 								</th:block> /*/-->
+
+											<!--/* 業歴（履歴登録元：案件） */-->
+<!--/*/ 								<th:block th:if="${T(jp.loioz.common.constant.CommonConstant$TransitionType).ANKEN.equalsByCode(dengon.transitionType)}"> /*/-->
+												<div class="relation_link d-flex align-items-center" th:if="!*{#lists.isEmpty(relatedAnkenList)}">
+													<th:block th:each="anken : *{relatedAnkenList}">
+														<div class="char_ellipsis mxw150 fs12" th:title="${anken.ankenName}">
+															<i class="fas fa-hashtag mr-1"></i><span th:text="${#strings.isEmpty(anken.ankenName) ? '(案件名未入力)' : anken.ankenName}"></span>
+														</div>
+														<div class="ml-2">
+															<span class="sub_text fs11" th:text="|&#40;${anken.ankenId}&#41;|">顧客ID</span>
+														</div>
+													</th:block>
+												</div>
+<!--/*/ 								</th:block> /*/-->
+
+											</div>
+
+										</div>
+										<!--/* メッセージ一覧詳細 3行目 ID、要返信、お気に入り選択 ここまで */-->
+
+									</div>
+									<!--/* メッセージ一覧各行 ここまで */-->
+
+								</div>
+								<!--/* メッセージ一覧中身 ここまで */-->
+
+							</div>
+							<!--/* メッセージ一覧エリア ここまで */-->
+
+						</div>
+
+						<!-- メッセージの詳細 -->
+						<div class="msg_body hover_scroll">
+							<div class="msg_body_dengon_seq" th:fragment="dengonDetail" th:data-seq="${dto} != null ? ${dto.dengonSeq} : ''">
+
+<!--/*/ 				<th:block th:if="${dto} != null"> /*/-->
+								<div class="msg_body_header">
+									<!--/* メッセージ詳細エリア-送信者、受信者 */-->
+									<h2 class="msg_bh_title" th:text="${#strings.isEmpty(dto.title)} ? '(件名なし)' : ${dto.title}">件名</h2>
+									
+									<!--/* メッセージ詳細エリア-ボタンエリア */-->
+									<ul class="msg_bh_fn">
+<!--/*/ 						<th:block th:if="${#bools.isTrue(dto.draftFlg)}"> /*/-->
+										<li>
+											<button type="button"
+												class="btn btn-light btn-sm" name="draft"
+												data-toggle="modal" data-target="#dengonCreateModal"><i class="fas fa-pencil-alt"></i>下書き編集</button>
+										</li>
+										<li>
+											<button type="button" name="trashed" class="btn btn-light btn-sm deleteMailBtn"><i class="fas fa-minus-circle"></i>削除</button>
+										</li>
+<!--/*/ 						</th:block> /*/-->
+										<li th:if="(${#bools.isFalse(dto.trashedFlg)} and ${#bools.isFalse(dto.sendMailFlg)} and ${#bools.isFalse(dto.draftFlg)})
+												or (${#bools.isFalse(dto.sendTrashedFlg)} and  ${#bools.isTrue(dto.sendMailFlg)} and ${#bools.isFalse(dto.draftFlg)})">
+											<button type="button"
+												class="btn btn-primary btn-sm" name="reply"
+												data-toggle="modal" data-target="#dengonCreateModal"><i class="fas fa-reply mr-3"></i>返信</button>
+										</li>
+									<!--/* 複数人に送信している場合 */-->
+<!--/*/ 						<th:block th:if="${#bools.isTrue(dto.manyReceiveFlg)}"> /*/-->
+										<li th:if="(${#bools.isFalse(dto.trashedFlg)} and ${#bools.isFalse(dto.sendMailFlg)} and ${#bools.isFalse(dto.draftFlg)})
+												or (${#bools.isFalse(dto.sendTrashedFlg)} and  ${#bools.isTrue(dto.sendMailFlg)} and ${#bools.isFalse(dto.draftFlg)})">
+											<button type="button" class="btn btn-primary btn-sm reply_all" name="reply" data-toggle="modal"
+												data-target="#dengonCreateModal"><i class="fas fa-reply-all"></i>全員に返信</button>
+										</li>
+<!--/*/ 						</th:block> /*/-->
+										<!--/* (メッセージがごみ箱にない、かつ 受信メッセージ) or  (メッセージが送信者のごみ箱にない、かつ 自身の送信メッセージ) */-->
+										<li th:if="(${#bools.isFalse(dto.trashedFlg)} and ${#bools.isFalse(dto.sendMailFlg)} and ${#bools.isFalse(dto.draftFlg)})
+												or (${#bools.isFalse(dto.sendTrashedFlg)} and  ${#bools.isTrue(dto.sendMailFlg)} and ${#bools.isFalse(dto.draftFlg)})">
+											<button type="button" name="trashed" id="detailTrashedBtn" class="btn btn-light btn-sm"><i class="far fa-trash-alt"></i>ごみ箱</button>
+										</li>
+										<!--/* (メッセージがごみ箱、かつ 受信メッセージ) or  (メッセージが送信者のごみ箱、かつ 自身の送信メッセージ) */-->
+										<li th:if="(${#bools.isTrue(dto.trashedFlg)} and ${#bools.isFalse(dto.sendMailFlg)} and ${#bools.isFalse(dto.draftFlg)})
+											or (${#bools.isTrue(dto.sendTrashedFlg)} and  ${#bools.isTrue(dto.sendMailFlg)} and ${#bools.isFalse(dto.draftFlg)})">
+											<button type="button" name="trashed" class="btn btn-light deleteMailBtn btn-sm"><i class="fas fa-minus-circle"></i>削除</button>
+										</li>
+										<li th:if="(${#bools.isTrue(dto.trashedFlg)} and ${#bools.isFalse(dto.sendMailFlg)} and ${#bools.isFalse(dto.draftFlg)})
+											or (${#bools.isTrue(dto.sendTrashedFlg)} and  ${#bools.isTrue(dto.sendMailFlg)} and ${#bools.isFalse(dto.draftFlg)})">
+											<button type="button" id="reBoxBtn" class="btn btn-light btn-sm"><i class="far fa-folder"></i>BOXに戻す</button>
+										</li>
+									</ul>
+									<ul class="msg_body_header_navi">
+										<li>
+											<button type="button" class="btn btn-light detailMsgNext"><i class="fas fa-angle-up"></i></button>
+										</li>
+										<li>
+											<button type="button" class="btn btn-light detailMsgPrev"><i class="fas fa-angle-down"></i></button>
+										</li>
+									</ul>
+								</div>
+
+								<!--/* メッセージ詳細エリア-送信者、受信者 */-->
+								<div class="msg_body_header_data1">
+
+									<!--/* メッセージ詳細エリア-送信者 */-->
+									<div class="msg_bh_sender" th:if="!${#strings.isEmpty(dto.sendAccountName)}">
+										<div class="sender_receiver_title"><i class="far fa-paper-plane mr-2"></i>送信者：</div>
+										<span th:text="${dto.sendAccountName}"></span>
+
+										<!--/* メッセージ詳細エリア-送信日時（作成日時） */-->
+										<div class="msg_bh_date" th:text="${dto.createdAt}"></div>
+
+									</div>
+
+									<div class="d-flex">
+										<!--/* メッセージ詳細エリア-受信者 */-->
+										<div class="msg_bh_receiver receiver_panel char_ellipsis" id="detailReceiverArea" th:if="!${#strings.isEmpty(dto.receiveAccountNameList)}">
+											<div class="sender_receiver_title"><i class="fas fa-user-circle mr-2"></i>宛　先：</div>
+											<span id="detailReceiverName" th:text="${dto.receiveAccountNameList}"></span>
+										</div>
+
+										<!--/* メッセージ詳細エリア-受信者 開く閉じるボタン */-->
+										<div class="msg_bh_open_receive hidden" id="detailReceiverAll">
+											<button type="button" class="btn btn_down_arrow"
+												id="detailReceiverAllBtn">開く・閉じる</button>
+										</div>
+									</div>
+
+								</div>
+
+								<!--/* メッセージ詳細エリア-2行目 */-->
+								<div class="msg_body_header_data2">
+
+									<div class="d-flex justify-content-end">
+										<!--/* メッセージ詳細 要返信 */-->
+										<div class="msg_bh_task">
+											<div class="msgitem_task" id="mailReply"
+												data-boundary="window" data-container="body" data-toggle="tooltip" data-trigger="hover" title="要返信"
+												th:if="${#bools.isFalse(dto.sendMailFlg)} and ${#bools.isFalse(dto.draftFlg)}"
+												th:data-trashed-flg="(${#bools.isTrue(dto.sendMailFlg)} and ${#bools.isTrue(dto.sendTrashedFlg)})
+													or (${#bools.isFalse(dto.sendMailFlg)} and ${#bools.isTrue(dto.trashedFlg)}) ? '1' : '0' "
+												th:classappend="(${!#strings.isEmpty(dto.dengonStatusId)}? ' is_reply' : ' ' )
+													+ (${#bools.isTrue(dto.sendMailFlg)} and ${#bools.isTrue(dto.sendTrashedFlg)} ? ' stop-events' : ' ' )
+													+ (${#bools.isFalse(dto.sendMailFlg)} and ${#bools.isTrue(dto.trashedFlg)} ? ' stop-events' : ' ' )">要返信
+											</div>
+										</div>
+
+										<!--/* メッセージ詳細 重要 */-->
+										<div class="msg_bh_favo" data-toggle="tooltip" title="" data-trigger="hover" data-original-title="重要"
+												th:if="${#bools.isFalse(dto.sendMailFlg)} and ${#bools.isFalse(dto.draftFlg)}">
+											<label class="checkbox_btn_star">
+												<input type="checkbox" class="checkbox_input" id="maiImportant" th:checked="${dto.importantFlg}"
+													th:data-trashed-flg="(${#bools.isTrue(dto.sendMailFlg)} and ${#bools.isTrue(dto.sendTrashedFlg)})
+														or (${#bools.isFalse(dto.sendMailFlg)} and ${#bools.isTrue(dto.trashedFlg)}) ? '1' : '0' ">
+												<span class="checkbox_txt" th:classappend="(${!#strings.isEmpty(dto.dengonStatusId)}? ' is_reply' : ' ' )
+													+ (${#bools.isTrue(dto.sendMailFlg)} and ${#bools.isTrue(dto.sendTrashedFlg)} ? ' stop-events' : ' ' )
+													+ (${#bools.isFalse(dto.sendMailFlg)} and ${#bools.isTrue(dto.trashedFlg)} ? ' stop-events' : ' ' )">
+												</span>
+											</label>
+										</div>
+									</div>
+								</div>
+
+								<!--/* メッセージ詳細エリア-3行目 */-->
+								<div class="msg_body_header_data3">
+
+								<!--/* 顧客情報が紐付いたメッセージ情報 */-->
+<!--/*/ 					<th:block th:if="!${#lists.isEmpty(dto?.selectedCustomerList)}"> /*/-->
+									<a class="relation_link" th:each="customer : *{dto?.selectedCustomerList}"
+										th:href="@{/user/personManagement/edit/{customerId}/(customerId=${customer.customerId})}"
+										data-boundary="window" data-container="body" data-toggle="tooltip" data-trigger="hover" title="名簿情報へ">
+										<i class="fas fa-hashtag mr-1"></i><span class="relation_link_text" th:text="${customer.customerName}"></span>
+										<span class="sub_text fs11" th:text="|&#40;${customer.customerIdDisp}&#41;|">顧客ID</span>
+									</a>
+<!--/*/ 					</th:block> /*/-->
+
+								<!--/* 業務履歴に紐付いたメッセージ情報 */-->
+<!--/*/ 					<th:block th:if="${dto.relatedCustomerList} or ${dto.relatedAnkenList}"> /*/-->
+									<div class="row row_list">
+										<!--/* 削除された顧客・案件 */-->
+										<span th:if="${dto.gyomuHistoryDeleted}" th:text="業務履歴からメッセージ送信した顧客・案件は削除されています"></span>
+
+									<!--/* 顧客情報 */-->
+<!--/*/ 						<th:block th:if="${dto.relatedCustomerList}" th:each="relatedCustomer : ${dto.relatedCustomerList}"> /*/-->
+										<div class="col-auto mb-1">
+											<a th:href="@{/user/personManagement/edit/{customerId}/(customerId=${relatedCustomer.customerId.asLong()})}"
+													class="relation_link mr-3"
+													data-boundary="window" data-container="body" data-toggle="tooltip" data-trigger="hover" title="名簿情報へ">
+												<i class="fas fa-hashtag mr-1"></i><span class="relation_link_text" th:text="${relatedCustomer.customerName}"></span>
+												<span class="sub_text fs11" th:text="|&#40;${relatedCustomer.customerId}&#41;|">顧客ID</span>
+											</a>
+										</div>
+<!--/*/ 						</th:block> /*/-->
+
+									<!--/* 案件情報 */-->
+<!--/*/ 						<th:block th:if="${dto.relatedAnkenList}" th:each="relatedAnken : ${dto.relatedAnkenList}"> /*/-->
+										<div class="col-auto mb-1">
+											<a th:href="@{/user/ankenDashboard/{ankenId}/(ankenId=${relatedAnken.ankenId.asLong()})}"
+												class="relation_link mr-3"
+												data-boundary="window" data-container="body" data-toggle="tooltip" data-trigger="hover" title="案件ダッシュボードへ">
+												<i class="fas fa-hashtag mr-1"></i><span class="relation_link_text" th:text="${#strings.isEmpty(relatedAnken.ankenName) ? '(案件名未入力)' : relatedAnken.ankenName}"></span>
+												<span class="sub_text fs11" th:text="|&#40;${relatedAnken.ankenId}&#41;|">案件ID</span>
+											</a>
+										</div>
+<!--/*/ 						</th:block> /*/-->
+
+									<!--/* 裁判情報 */-->
+<!--/*/ 						<th:block th:if="${dto.saibanBranchNo != null}"> /*/-->
+										<div class="col-auto mb-1">
+											<a th:href="@{/user/saibanManagement/{ankenId}/{branchNumber}/(ankenId=${dto.ankenId.asLong()}, branchNumber=${dto.saibanBranchNo})}" 
+												class="relation_link"
+												data-boundary="window" data-container="body" data-toggle="tooltip" data-trigger="hover" title="裁判管理へ">
+												<i class="fas fa-hashtag mr-1"></i><span class="relation_link_text mxw200" th:text="${#strings.isEmpty(dto.saibanName) ? '(事件名未入力)' : dto.saibanName}"></span>
+												<span class="sub_text fs11" th:text="|&#40;${dto.ankenId}&#41;|">案件ID</span>
+											</a>
+										</div>
+<!--/*/ 						</th:block> /*/-->
+
+									</div>
+									<div class="kanren_flg_text sub_text">
+										※
+<!--/*/ 						<th:block th:if="${T(jp.loioz.common.constant.CommonConstant$TransitionType).ANKEN.equalsByCode(dto.transitionType)}"> /*/-->
+
+<!--/*/ 							<th:block th:if="${dto.relatedAnkenList}" th:each="relatedAnken : ${dto.relatedAnkenList}"> /*/-->
+											<span th:text="${#strings.isEmpty(relatedAnken.ankenName) ? '(案件名未入力)' : relatedAnken.ankenName}"></span>
+											<span th:text="${'(' + relatedAnken.ankenId + ')'}">案件ID</span>
+<!--/*/ 							</th:block> /*/-->
+
+<!--/*/ 						</th:block> /*/-->
+
+<!--/*/ 						<th:block th:if="${T(jp.loioz.common.constant.CommonConstant$TransitionType).CUSTOMER.equalsByCode(dto.transitionType)}"> /*/-->
+
+<!--/*/ 							<th:block th:if="${dto.relatedCustomerList}" th:each="relatedCustomer : ${dto.relatedCustomerList}"> /*/-->
+											<span th:text="${relatedCustomer.customerName}"></span>
+											<span th:text="${'(' + relatedCustomer.customerId + ')'}">顧客ID</span>
+<!--/*/ 							</th:block> /*/-->
+
+<!--/*/ 						</th:block> /*/-->
+
+									<span>の業務履歴から送信されたメッセージです。</span>	
+									</div>
+
+<!--/*/ 					</th:block> /*/-->
+								</div>
+
+								<!--/* 本文 */-->
+								<div class="msg_body_main text-break">
+									<div th:text="${dto.body}"></div>
+								</div>
+
+<!--/*/ 				</th:block> /*/-->
+							</div>
+						</div>
+					</div>
+				</div>
+			</div>
+		</div>
+
+		<!--/* モーダルエリア */-->
+		<div id="selectModal">
+			<!--/* メッセージ作成モーダル */-->
+			<div	th:replace="::dengonCreateModaTemplate(target='dengon-create-modal-body')"></div>
+			<!--/* フォルダ編集モーダル */-->
+			<div th:replace="::dengonFolderEditTemplate(target='dengon-edit-modal-body')"></div>
+			<!--/* フォルダ移動モーダル */-->
+			<div th:replace="::dengonFolderMoveTemplate(target='dengon-move-modal-body')"></div>
+		</div>
+	</div>
+
+	<!--/* メッセージ作成モーダル */-->
+	<div th:fragment="dengonCreateModaTemplate(target)" id="dengonCreateModal" class="modal fade" tabindex="-1" role="dialog" aria-hidden="true" data-backdrop="static">
+		<div class="modal-dialog modal-dialog-centered modal_mail_edit" role="document">
+			<div class="modal-content">
+				<div th:class="${target}"></div>
+			</div>
+		</div>
+	</div>
+
+	<!--/* フォルダ編集モーダル */-->
+	<div th:fragment="dengonFolderEditTemplate(target)" id="dengonFolderEditModal" class="modal fade" tabindex="-1" role="dialog" aria-hidden="true" data-backdrop="static">
+		<div class="modal-dialog modal-dialog-centered" role="document">
+			<div class="modal-content">
+				<div th:class="${target}"></div>
+			</div>
+		</div>
+	</div>
+
+	<!--/* フォルダ移動モーダル */-->
+	<div th:fragment="dengonFolderMoveTemplate(target)" id="dengonFolderMoveModal" class="modal fade" tabindex="-1" role="dialog" aria-hidden="true" data-backdrop="static">
+		<div class="modal-dialog modal-dialog-centered" role="document">
+			<div class="modal-content">
+				<div th:class="${target}"></div>
+			</div>
+		</div>
+	</div>
+
+</body>
+</html>

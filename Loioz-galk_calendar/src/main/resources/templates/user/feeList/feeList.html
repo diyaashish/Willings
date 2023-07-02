@@ -1,0 +1,273 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+	xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+	layout:decorator="commonLayout">
+<head>
+<meta charset="utf-8" />
+<title layout:fragment="title-contents">
+	[[${T(jp.loioz.common.utility.LoiozUtils).getHtmlTitle("報酬管理", T(jp.loioz.common.utility.SessionUtils).getTenantName())}]]
+</title>
+<th:block th:with="version=${@environment.getProperty('app.version')}">
+	<link href="./css/accg/accg.css" th:href="@{/css/accg/accg.css?{ver}(ver=${version})}" rel="stylesheet" type="text/css" />
+</th:block>
+<script type="text/javascript" th:inline="javascript">
+<!--/*
+ 二重送信防止対応用の値。
+ このHTMLに差し込まれるfragment内のScriptの処理も、共通してこの変数を利用する。
+*/-->
+let ajaxRunning = false;
+
+</script>
+<script type="text/javascript" th:inline = "javascript">
+
+<!--/* 検索条件フラグメント再表示 */-->
+function renderFeeSearchFormFragment(formData) {
+	return new Promise((resolve, reject) => {
+		<!--/* 案件検索条件フラグメント表示処理 */-->
+		$.ajax({
+			url : "/user/feeList/displayFeeListSearchForm",
+			type : "GET",
+			data : formData,
+			dataType: 'html',
+		}).done(function(data, status, jqXHR) {
+			if (isAjaxProcSuccess(jqXHR)) {
+				<!--/* 処理成功 */-->
+				$('#feeListSearchFragmentWrap').html(data);
+				return resolve();
+			} else {
+				<!--/* 処理失敗 */-->
+				const errorMsg = getAjaxProcResutlMessage(jqXHR);
+				showErrorMessageForJs(errorMsg);
+				return reject(errorMsg);
+			}
+		}).fail(function() {
+			showErrorMessageForJs(/*[[#{E00059}]]*/ "データの取得に失敗しました。");
+			return reject();
+		})
+	});
+}
+
+<!--/* 検索ワードを使用した一覧画面検索処理 */-->
+function searchFeeListUsingSearchWord(formData) {
+	return new Promise((resolve, reject) => {
+		<!--/* 検索処理 */-->
+		$.ajax({
+			url : "/user/feeList/searchFeeListUsingSearchWord",
+			type : "GET",
+			data : formData,
+			dataType: 'html',
+		}).done(function(data, status, jqXHR) {
+			if (isAjaxProcSuccess(jqXHR)) {
+				<!--/* 処理成功 */-->
+				<!--/* ツールチップを非表示にする */-->
+				$('[data-toggle="tooltip"]').tooltip('hide');
+				<!-- /* 一覧フラグメント更新 */ -->
+				$('#feeListViewFragmentWrap').replaceWith($(data).find("#feeListViewFragmentWrap"));
+				<!-- /* ページングフラグメント更新 */ -->
+				$('#feeListPagerWrap').replaceWith($(data).find("#feeListPagerWrap"));
+				return resolve();
+			} else {
+				<!--/* 処理失敗 */-->
+				const errorMsg = getAjaxProcResutlMessage(jqXHR);
+				showErrorMessageForJs(errorMsg);
+				return reject(errorMsg);
+			}
+		}).fail(function() {
+			showErrorMessageForJs(/*[[#{E00059}]]*/ "データの取得に失敗しました。");
+			return reject();
+		})
+	});
+}
+
+<!--/* 検索条件を使用した一覧画面検索処理 */-->
+function searchFeeListUsingSearchCondition(formData) {
+	return new Promise((resolve, reject) => {
+		<!--/* 検索処理 */-->
+		$.ajax({
+			url : "/user/feeList/searchFeeListUsingSearchCondition",
+			type : "GET",
+			data : formData,
+			dataType: 'html',
+		}).done(function(data, status, jqXHR) {
+			if (isAjaxProcSuccess(jqXHR)) {
+				<!--/* 処理成功 */-->
+				<!--/* ツールチップを非表示にする */-->
+				$('[data-toggle="tooltip"]').tooltip('hide');
+				<!-- /* 一覧フラグメント更新 */ -->
+				$('#feeListViewFragmentWrap').replaceWith($(data).find("#feeListViewFragmentWrap"));
+				<!-- /* ページングフラグメント更新 */ -->
+				$('#feeListPagerWrap').replaceWith($(data).find("#feeListPagerWrap"));
+				return resolve();
+			} else {
+				<!--/* 処理失敗 */-->
+				const errorMsg = getAjaxProcResutlMessage(jqXHR);
+				showErrorMessageForJs(errorMsg);
+				return reject(errorMsg);
+			}
+		}).fail(function() {
+			showErrorMessageForJs(/*[[#{E00059}]]*/ "データの取得に失敗しました。");
+			return reject();
+		})
+	});
+}
+
+<!--/* 検索条件クリア処理 */-->
+function initFeeSearchCondition() {
+	$.ajax({
+		url : "/user/feeList/initFeeSearchCondition",
+		type : "GET",
+		dataType: 'html',
+	}).done(function(data, status, jqXHR) {
+		if (isAjaxProcSuccess(jqXHR)) {
+			<!--/* 処理成功 */-->
+			<!--/* ツールチップを非表示にする */-->
+			$('[data-toggle="tooltip"]').tooltip('hide');
+			<!--/* 検索条件フラグメント更新 */-->
+			$('#feeListSearchFragmentWrap').html(data);
+			<!-- /* 検索処理　画面上の検索条件をFormデータとして渡さず、セッションで保持しているクリア済みの検索条件を使用する */ -->
+			searchFeeListUsingSearchCondition();
+		} else {
+			<!--/* 処理失敗 */-->
+			const errorMsg = getAjaxProcResutlMessage(jqXHR);
+			showErrorMessageForJs(errorMsg);
+		}
+	}).fail(function() {
+		showErrorMessageForJs(/*[[#{E00059}]]*/ "データの取得に失敗しました。");
+	}).always(function() {
+	});
+}
+
+<!--/* 報酬一覧ソート処理 */-->
+function sortFeeList(optionParam) {
+	return new Promise((resolve, reject) => {
+		$.ajax({
+			url : "/user/feeList/sort",
+			type : "GET",
+			data : optionParam,
+			dataType: 'html',
+		}).done(function(data, status, jqXHR) {
+			if (isAjaxProcSuccess(jqXHR)) {
+				<!--/* 処理成功 */-->
+				<!--/* ツールチップを非表示にする */-->
+				$('[data-toggle="tooltip"]').tooltip('hide');
+				<!-- /* 一覧フラグメント更新 */ -->
+				$('#feeListViewFragmentWrap').replaceWith($(data).find("#feeListViewFragmentWrap"));
+				<!-- /* ページングフラグメント更新 */ -->
+				$('#feeListPagerWrap').replaceWith($(data).find("#feeListPagerWrap"));
+				return resolve();
+			} else {
+				<!--/* 処理失敗 */-->
+				const errorMsg = getAjaxProcResutlMessage(jqXHR);
+				let sessionTimeOutKey = /*[[${T(jp.loioz.common.constant.MessageEnum).MSG_E00161.messageKey}]]*/'';
+				if (sessionTimeOutKey == errorMsg) {
+					window.location.href = "/user/feeList/";
+				} else {
+					showErrorMessageForJs(errorMsg);
+				}
+				return reject(errorMsg);
+			}
+		}).fail(function() {
+			showErrorMessageForJs(/*[[#{E00059}]]*/ "データの取得に失敗しました。");
+			return reject();
+		});
+	});
+};
+
+<!--/* ページネーション処理 */-->
+function getListOfPageNumber(pageNumber) {
+
+	<!--/* パラメータ */-->
+	const formData = {
+		"page" : pageNumber
+	}
+
+	<!--/* ページング処理 */-->
+	$.ajax({
+		url : '/user/feeList/pager',
+		type : "GET",
+		data : formData,
+		dataType: 'html',
+	}).done(function(data, status, jqXHR) {
+		if (isAjaxProcSuccess(jqXHR)) {
+			<!--/* 処理成功 */-->
+			<!--/* ツールチップを非表示にする */-->
+			$('[data-toggle="tooltip"]').tooltip('hide');
+			<!-- /* 一覧フラグメント更新 */ -->
+			$('#feeListViewFragmentWrap').replaceWith($(data).find("#feeListViewFragmentWrap"));
+			<!-- /* ページングフラグメント更新 */ -->
+			$('#feeListPagerWrap').replaceWith($(data).find("#feeListPagerWrap"));
+		} else {
+			<!--/* 処理失敗 */-->
+			const errorMsg = getAjaxProcResutlMessage(jqXHR);
+			let sessionTimeOutKey = /*[[${T(jp.loioz.common.constant.MessageEnum).MSG_E00161.messageKey}]]*/'';
+			if (sessionTimeOutKey == errorMsg) {
+				window.location.href = "/user/feeList/";
+			} else {
+				showErrorMessageForJs(errorMsg);
+			}
+		}
+	}).fail(function() {
+		showErrorMessageForJs(/*[[#{E00059}]]*/ "データの取得に失敗しました。");
+	}).always(function() {
+	});	
+};
+
+</script>
+
+</head>
+<body>
+	<div layout:fragment="main-contents" th:remove="tag">
+		
+		<div class="contents_sidebar_wrapper_user accg_side_menu">
+			
+			<!--/* 会計管理メニュー */-->
+			<div id="accgMenuFragmentWrap"
+				th:replace="common/accg/accgMenu::accgMenuFragment(${T(jp.loioz.common.constant.CommonConstant$AccgMenu).FEE.getCd()})">
+			</div>
+			
+			<!--/* メインコンテンツの外側 */-->
+			<div class="contents_wrapper">
+				<div class="container-fluid">
+					<main class="content">
+						
+						<!--/* メッセージエリア */-->
+						<div th:replace="common/messageArea::messageArea"></div>
+						
+						<!--/* 一覧画面 */-->
+						<div class="page_list">
+							<div class="vertical_block_wrapper">
+								
+								<!--/* vertical_block_header */-->
+								<div class="vertical_block_header">
+									<!--/* 検索条件 */-->
+									<div id="feeListSearchFragmentWrap">
+										<div th:replace="user/feeList/feeListFragment::feeListSearchFragment(${feeListSearchForm})"></div>
+									</div>
+								</div>
+								<!--/* vertical_block_header end */-->
+								
+								<!--/* vertical_block_body */-->
+								<div class="vertical_block_body">
+									<!--/* 一覧結果 */-->
+									<div id="feeListFragmentWrap">
+										<div id="feeListViewFragmentWrap" th:insert="user/feeList/feeListFragment::feeListFragment(${viewForm})"></div>
+									</div>
+								</div>
+								<!--/* vertical_block_body end */-->
+								
+								<!--/* vertical_block_footer */-->
+								<div class="vertical_block_footer">
+									<!--/* ページング */-->
+									<div id="feeListPagerWrap" th:insert="user/feeList/feeListFragment::feeListPagerFragment(${viewForm.page})"></div>
+								</div>
+								<!--/* vertical_block_footer end */-->
+								
+							</div>
+						</div>
+					</main>
+				</div>
+			</div>
+		</div>
+	</div>
+</body>
+</html>

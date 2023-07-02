@@ -1,0 +1,1262 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+<meta charset="utf-8" />
+<th:block th:fragment="css"
+	th:with="
+		id=${id}?: 'scheduleModal',
+		useScheduleRefer=${useScheduleRefer}?: true">
+<style th:replace="user/schedule/scheduleCalendar::css"></style>
+<style th:inline="css">
+
+<!--/* モーダル属性毎の表示制御 */-->
+#[[${id}]].isCreate .hideIfCreate {
+	display: none;
+}
+#[[${id}]].isUpdate .hideIfUpdate {
+	display: none;
+}
+#[[${id}]].isUnmodifiable .hideIfUnmodifiable {
+	display: none;
+}
+
+#[[${id}]].isCustomer .hideIfCustomer {
+	display: none;
+}
+#[[${id}]]:not(.isCustomer) .hideIfNotCustomer {
+	display: none;
+}
+#[[${id}]].isAnken .hideIfAnken {
+	display: none;
+}
+#[[${id}]]:not(.isAnken) .hideIfNotAnken {
+	display: none;
+}
+#[[${id}]].isSaiban .hideIfSaiban {
+	display: none;
+}
+#[[${id}]]:not(.isSaiban) .hideIfNotSaiban {
+	display: none;
+}
+
+#[[${id}]].isShokaiMendan .hideIfShokaiMendan {
+	display: none;
+}
+#[[${id}]]:not(.isShokaiMendan) .hideIfNotShokaiMendan {
+	display: none;
+}
+#[[${id}]].isSaibanLimit .hideIfSaibanLimit {
+	display: none;
+}
+#[[${id}]]:not(.isSaibanLimit) .hideIfNotSaibanLimit {
+	display: none;
+}
+
+#[[${id}]].isShutteiNotRequired .hideIfShutteiNotRequired {
+	display: none;
+}
+#[[${id}]]:not(.isShutteiNotRequired) .hideIfShutteiRequired {
+	display: none;
+}
+#[[${id}]].isShutteiNotRequired .modal_subtitle {
+	margin-top: 0;
+}
+
+#[[${id}]].isCopyMode .modalheader_title {
+	background-color: #ff8f00;
+}
+#[[${id}]].isCopyMode .hideIfCopyMode {
+	display: none;
+}
+#[[${id}]]:not(.isCopyMode) .hideIfNotCopyMode {
+	display: none;
+}
+#[[${id}]].isScheduleReferMode .hideIfScheduleReferMode {
+	display: none;
+}
+#[[${id}]]:not(.isScheduleReferMode) .hideIfNotScheduleReferMode {
+	display: none;
+}
+
+<!--/* 参加者の表示制御 部署 */-->
+/*[# th:each="busho : ${scheduleCommonViewForm.bushoList}"]*/
+#[[${id}]] .memberCandidates[data-type="[[${busho.bushoId}]]"] .member:not([data-type~="[[${busho.bushoId}]]"]) {
+	display: none;
+}
+/*[/]*/
+<!--/* 参加者の表示制御 未所属 */-->
+#[[${id}]] .memberCandidates[data-type="0"] .member:not([data-type~="0"]) {
+	display: none;
+}
+<!--/* 参加者の表示制御 ALL */-->
+#[[${id}]] .memberCandidates[data-type="[[${T(jp.loioz.common.constant.CommonConstant).SANKASHA_SELECT_OPTION_ALL}]]"] .member:not([data-type~="[[${T(jp.loioz.common.constant.CommonConstant).SANKASHA_SELECT_OPTION_ALL}]]"]) {
+	display: none;
+}
+<!--/* 参加者の表示制御 案件担当 */-->
+#[[${id}]] .memberCandidates[data-type="[[${T(jp.loioz.common.constant.CommonConstant).SANKASHA_SELECT_OPTION_ANKEN_TANTO}]]"] .member:not(.isAnkenTanto) {
+	display: none;
+}
+<!--/* 参加者の表示制御 裁判担当 */-->
+#[[${id}]] .memberCandidates[data-type="[[${T(jp.loioz.common.constant.CommonConstant).SANKASHA_SELECT_OPTION_SAIBAN_TANTO}]]"] .member:not(.isSaibanTanto) {
+	display: none;
+}
+
+<!--/* 削除ボタン位置 */-->
+.footer_cal_delete_btn {
+	position: absolute;
+	left: 25px;
+}
+<!--/* オプション表示 */-->
+.form_block_option_area {
+	border-top: none;
+}
+.other_opption_area {
+	width: 170px;
+	margin-bottom: auto;
+	margin-top: auto;
+}
+</style>
+<!--/* 空き状況確認のスタイル */-->
+<th:block th:if="${useScheduleRefer}">
+<style th:inline="css">
+#[[${id}]].isScheduleReferMode .modal_schedule {
+	width: 1005px;
+}
+#[[${id}]].isScheduleReferMode .modalbody {
+	max-height: calc(100vh - 55px - 3.5rem);
+	min-height: 710px;
+	height: 710px;
+	width: 1000px;
+	display: flex;
+	flex-direction: column;
+}
+#[[${id}]].isScheduleReferMode .block_schedule_main {
+	flex: 1;
+	margin-right: 0;
+}
+#[[${id}]].isScheduleReferMode .modalbody {
+	margin: 0;
+}
+</style>
+</th:block><!--/* 空き状況確認用スタイル end */-->
+</th:block><!--/* モーダル用スタイル end */-->
+
+<th:block th:fragment="scripts"
+	th:with="
+		id=${id}?: 'scheduleModal',
+		useScheduleRefer=${useScheduleRefer}?: true">
+<script th:replace="user/schedule/scheduleCalendar::scripts"></script>
+<!--/* 予定登録モーダル */-->
+<script type="text/javascript" th:inline="javascript">
+benzo.global.scheduleModal = {};
+
+<!--/* 予定表初期データ */-->
+benzo.global.scheduleModal.emptyScheduleData = {
+	"scheduleSeq": null,
+	"subject": null,
+	"dateFrom": null,
+	"dateTo": null,
+	"timeFrom": null,
+	"timeTo": null,
+	"hourFrom": 0,
+	"minFrom": 0,
+	"hourTo": 0,
+	"minTo": 0,
+	"allday": false,
+	"roomSelected": false,
+	"roomId": null,
+	"place": null,
+	"memo": null,
+	"openRange": /*[[${T(jp.loioz.common.constant.CommonConstant$SchedulePermission).ALL.cd}]]*/ 0,
+	"editRange": /*[[${T(jp.loioz.common.constant.CommonConstant$SchedulePermission).ALL.cd}]]*/ 0,
+	"member": [],
+	"createUserName": null,
+	"createdAt": null,
+	"updateUserName": null,
+	"updatedAt": null,
+	"placeDisp": null,
+	"customerId": null,
+	"customerIdDisp": null,
+	"customerName": null,
+	"ankenId": null,
+	"ankenIdDisp": null,
+	"ankenName": null,
+	"bunyaName": null,
+	"keiji":false,
+	"shokaiMendan": false,
+	"saibanSeq": null,
+	"saibanId": null,
+	"caseNumber": null,
+	"jikenName": null,
+	"tojishaNameTitleLabel": null,
+	"tojishaNameLabel": null,
+	"aitegataNameTitleLabel": null,
+	"aitegataNameLabel": null,
+	"saibanLimit": false,
+	"saibanLimitSeq": null,
+	"shutteiType": null,
+	"forbidden": false,
+	"weekViewCnt": 0,
+	"weekViewDate": null,
+	"holiday":false,
+};
+
+<!--/* モーダルを開く */-->
+benzo.global.scheduleModal.openModal = function(scheduleData, config){
+	let modal = benzo.global.scheduleModal.modal;
+
+	<!--/* モーダル状態を初期化 */-->
+	clearAllMessages(modal);
+	modal.removeClass("isCreate");
+	modal.removeClass("isUpdate");
+	modal.removeClass("isUnmodifiable");
+	modal.removeClass("isCustomer");
+	modal.removeClass("isAnken");
+	modal.removeClass("isSaiban");
+	modal.removeClass("isShokaiMendan");
+	modal.removeClass("isSaibanLimit");
+	modal.removeClass("isCopyMode");
+	modal.removeClass("isScheduleReferMode");
+	modal.find(".otherOpenCloseAct")
+		.text("その他オプションを表示")
+		.removeClass("otherOpen")
+		.addClass("otherClose");
+	modal.find("#otherOptionArea").addClass("hidden");
+	modal.find(".scheduleModalForm").find("input, textarea, select, button").prop("disabled", false);
+	modal.find(".scheduleModalForm").find(".select").attr("disabled", false);
+	modal.find('[name="roomId"] option').removeClass("hidden");
+	modal.find(".member").removeClass("isMain");
+	<!--/* 案件担当プルダウン周り */-->
+	modal.find('[data-contents="ankenTantoOption"]').remove();
+	modal.find(".member").removeClass("isAnkenTanto");
+	<!--/* 裁判担当プルダウン周り */-->
+	modal.find('[data-contents="saibanTantoOption"]').remove();
+	modal.find(".member").removeClass("isSaibanTanto");
+	
+	<!--/* 予定表データをモーダルに反映 */-->
+	benzo.global.scheduleModal.populateScheduleDataToModal(scheduleData, modal);
+
+	if(config.isCreate){
+		<!--/* 新規 */-->
+		modal.addClass("isCreate");
+	} else {
+		<!--/* 編集 */-->
+		modal.addClass("isUpdate");
+	}
+
+	<!--/* 編集権限制御 */-->
+	if(config.isUnmodifiable
+			|| (
+				scheduleData.editRange == /*[[${T(jp.loioz.common.constant.CommonConstant$SchedulePermission).MEMBER.cd}]]*/ 1
+				&& !scheduleData.member.includes(/*[[${T(jp.loioz.common.utility.SessionUtils).getLoginAccountSeq()}]]*/ 1)
+			)){
+		<!--/* この予定に対して編集権限がない場合 */-->
+		modal.addClass("isUnmodifiable");
+		modal.find(".scheduleModalForm").find("input, textarea, select, button").prop("disabled", true);
+		modal.find(".scheduleModalForm").find(".select").attr("disabled", true);
+	}
+
+	<!--/* 顧客表示制御 */-->
+	if(scheduleData.customerId){
+		modal.addClass("isCustomer");
+	}
+	<!--/* 案件表示制御 */-->
+	if(scheduleData.ankenId){
+		modal.addClass("isAnken");
+	}
+	<!--/* 裁判表示制御 */-->
+	if(scheduleData.saibanId){
+		modal.addClass("isSaiban");
+	}
+	<!--/* 初回面談表示制御 */-->
+	if(scheduleData.shokaiMendan){
+		modal.addClass("isShokaiMendan");
+	}
+	<!--/* 裁判期日表示制御 */-->
+	if(scheduleData.saibanLimit){
+		modal.addClass("isSaibanLimit");
+	}
+
+	<!--/* モーダルを表示 */-->
+	modal.modal("show");
+	
+	<!-- /** スクロールを一番上に固定 */ -->
+	modal.find(".modalbody_schedule").scrollTop(0);
+
+	return modal;
+}
+
+<!--/* 予定表データをモーダルに反映 */-->
+benzo.global.scheduleModal.populateScheduleDataToModal = function(data, modal){
+	<!--/* 項目値を反映 */-->
+	populateObjectToHtml(data, modal);
+	
+	<!--/* 日時選択時の自動設定に必要な属性値を設定 */-->
+	const timeFrom = modal.find("[name='timeFrom']");
+	timeFrom.attr("data-before", timeFrom.val());
+	const timeTo = modal.find("[name='timeTo']");
+	timeTo.attr("data-before", timeTo.val());
+	
+	<!--/* 参加者選択状態を反映 */-->
+	modal.find(".memberGroup option:first-child").prop("selected", true);
+	modal.find(".removeAllMember").trigger("click");
+
+	modal.find(".memberCandidates .member[data-enabled=false]").addClass("hidden");
+	$.each(data["member"], function(key, value){
+		modal.find(".memberCandidates .member[data-seq='" + value + "']").removeClass("hidden");
+		modal.find(".memberCandidates .member[data-seq='" + value + "']").trigger("click");
+	});
+	sortMember = function(container){
+		container.find(".member").sort(function(a, b){
+			if($(a).data("type") != $(b).data("type")){
+				return $(a).data("type") - $(b).data("type");
+			} else {
+				return $(a).data("seq") - $(b).data("seq");
+			}
+		})
+		.appendTo(container);
+	};
+	sortMember(modal.find(".memberCandidates"));
+	sortMember(modal.find(".memberList"));
+
+	<!--/* 登録者・更新者の表示制御 */-->
+	if(!data.createUserName && !data.createdAt){
+		modal.find('[data-contains="createUser"]').addClass("hidden");
+	} else {
+		modal.find('[data-contains="createUser"]').removeClass("hidden");
+	}
+	if(!data.updateUserName && !data.updatedAt){
+		modal.find('[data-contains="updateUser"]').addClass("hidden");
+	} else {
+		modal.find('[data-contains="updateUser"]').removeClass("hidden");
+	}
+	
+	<!--/* 選択状態に連動した必須アイコン変更 */-->
+	if(data.roomSelected) {
+		<!--/* 施設選択 */-->
+		modal.find(".placeRquiredIcon").removeClass("hidden");
+		modal.find(".placeSelectBox").removeClass("hidden");
+		modal.find(".placeInputBox").addClass("hidden");
+	} else {
+		<!--/* その他選択 */-->
+		modal.find(".placeRquiredIcon").addClass("hidden");
+		modal.find(".placeSelectBox").addClass("hidden");
+		modal.find(".placeInputBox").removeClass("hidden");
+	}
+
+	<!--/* 選択状態に連動したイベントを発火 */-->
+	modal.find('[name="allday"]').trigger("change", {suppressGetRoomAvailability: true});
+	modal.find('[data-contains="date"]').trigger("change");
+	modal.find('.memberGroup').trigger("change");
+	modal.find('[name="shutteiType"]').trigger("change");
+	
+	<!--/* 出廷不要の場合、詳細を表示 */-->
+	const optionContents = modal.find(".otherOpenCloseAct");
+	if(data["shutteiType"] == /*[[${T(jp.loioz.common.constant.CommonConstant$ShutteiType).NOT_REQUIRED.cd}]]*/ 2){
+		if (optionContents.hasClass("otherClose")){
+			// 出廷不要かつ詳細が閉じられているとき -> 切り替え処理
+			optionContents.trigger("click");
+		}
+	} else {
+		if (!optionContents.hasClass("otherClose")){
+			// 出廷不要以外、詳細が開かれているとき -> 切り替え処理
+			optionContents.trigger("click");
+		}
+	}
+	
+	setUpCustomSelectBox();
+}
+
+<!--/* モーダルのフォームパラメータを取得 */-->
+benzo.global.scheduleModal.getModalFormParams = function(){
+	let modal = benzo.global.scheduleModal.modal;
+
+	<!--/* 一時的に非活性を解除 */-->
+	let disabledItems = modal.find(".scheduleModalForm *:disabled");
+	disabledItems.prop("disabled", false);
+
+	<!--/* パラメータを取得 */-->
+	let params = modal.find(".scheduleModalForm")
+		.serializeArray()
+		.reduce(function(map, param){
+			map[param.name] = param.value;
+			return map;
+		}, {});
+
+	<!--/* 解除した非活性を元に戻す */-->
+	disabledItems.prop("disabled", true);
+
+	<!--/* 参加者をリクエストパラメータに設定 */-->
+	let csvMemberSeq = modal.find(".memberList .member").map(function(){
+		return $(this).data("seq");
+	})
+	.get()
+	.join(",");
+	params["member"] = csvMemberSeq;
+
+	return params;
+}
+
+<!--/* 案件担当者プルダウンを設定 */-->
+benzo.global.scheduleModal.setUpAnkenTantoOption = function(ankenId){
+	let modal = benzo.global.scheduleModal.modal;
+	const optVal =/*[[${T(jp.loioz.common.constant.CommonConstant).SANKASHA_SELECT_OPTION_ANKEN_TANTO}]]*/"";
+	const options = [
+		$('<option value="'+optVal+'" data-contents="ankenTantoOption">(案件担当者)</option>'),
+		$('<option disabled data-contents="ankenTantoOption">--------------</option>')
+	];
+	
+	$.ajax({
+		type : "POST",
+		url : "/user/schedule/getAnkenTanto",
+		data : {"ankenId" : ankenId},
+	}).done(function(result) {
+		
+		if (!result.ankenTanto.length){
+			return;
+		}
+
+		<!--/* 一番上に追加(一番上に追加なので選択状態にする) */-->
+		modal.find(".memberGroup")
+			.prepend(options) <!--/* 一番上に追加 */-->
+			.val(optVal) <!--/* 選択状態にする */-->
+			.trigger("change"); <!--/* 表示切り替え処理を発火させる */-->
+		
+		<!--/* 主担当アイコンの設定 */-->
+		modal.find(".member").each((i,val) => {
+			const $member = $(val);
+			const acconutSeq = $member.data("seq");
+			const isTanto = result.ankenTanto.some((value) => value == acconutSeq);
+			if (isTanto) {
+				$member.addClass("isAnkenTanto");
+			} else {
+				$member.removeClass("isAnkenTanto");
+			}
+		});
+	}).fail(function() {
+		<!--/* 取得に失敗しても動作に影響しないので、なにもしない */-->
+	});
+}
+
+<!--/* 裁判担当者プルダウンを設定 */-->
+benzo.global.scheduleModal.setUpSaibanTantoOption = function(saibanSeq){
+	let modal = benzo.global.scheduleModal.modal;
+	const optVal =/*[[${T(jp.loioz.common.constant.CommonConstant).SANKASHA_SELECT_OPTION_SAIBAN_TANTO}]]*/"";
+	const options = [
+		$('<option value="'+optVal+'" data-contents="saibanTantoOption">(裁判担当者)</option>'),
+		$('<option disabled data-contents="saibanTantoOption">--------------</option>')
+	];
+	
+	$.ajax({
+		type : "POST",
+		url : "/user/schedule/getSaibanTanto",
+		data : {"saibanSeq" : saibanSeq},
+	}).done(function(result) {
+
+		if (!result.saibanTanto.length){
+			return;
+		}
+		
+		<!--/* 一番上に追加(一番上に追加なので選択状態にする) */-->
+		modal.find(".memberGroup")
+			.prepend(options) <!--/* 一番上に追加 */-->
+			.val(optVal) <!--/* 選択状態にする */-->
+			.trigger("change"); <!--/* 表示切り替え処理を発火させる */-->
+		
+		<!--/* 主担当アイコンの設定 */-->
+		modal.find(".member").each((i,val) => {
+			const $member = $(val);
+			const acconutSeq = $member.data("seq");
+			const isTanto = result.saibanTanto.some((value) => value == acconutSeq);
+			if (isTanto) {
+				$member.addClass("isSaibanTanto");
+			} else {
+				$member.removeClass("isSaibanTanto");
+			}
+		});
+	}).fail(function() {
+		<!--/* 取得に失敗しても動作に影響しないので、なにもしない */-->
+	});
+}
+
+<!--/* 案件主担当を参加者に設定 */-->
+benzo.global.scheduleModal.setAnkenMain = function(ankenId){
+	let modal = benzo.global.scheduleModal.modal;
+	$.ajax({
+		type : "POST",
+		url : "/user/schedule/getAnkenMainTanto",
+		data : {"ankenId" : ankenId},
+	}).done(function(result) {
+		<!--/* 主担当アイコンの設定 */-->
+		modal.find(".member").each((i,val) => {
+			const $member = $(val);
+			const acconutSeq = $member.data("seq");
+			const isMein = result.mainTanto.some((value) => value == acconutSeq);
+			if (isMein) {
+				$member.addClass("isMain");
+			} else {
+				$member.removeClass("isMain");
+			}
+		});
+	}).fail(function() {
+		// 取得に失敗しても動作に影響しないので、なにもしない
+	});
+}
+
+<!--/* 裁判主担当を参加者に設定 */-->
+benzo.global.scheduleModal.setSaibanMain = function(saibanSeq){
+	let modal = benzo.global.scheduleModal.modal;
+	$.ajax({
+		type : "POST",
+		url : "/user/schedule/getSaibanMainTanto",
+		data : {"saibanSeq" : saibanSeq},
+	}).done(function(result) {
+		<!--/* 主担当アイコンの設定 */-->
+		modal.find(".member").each((i,val) => {
+			const $member = $(val);
+			const acconutSeq = $member.data("seq");
+			const isMein = result.mainTanto.some((value) => value == acconutSeq);
+			if (isMein) {
+				$member.addClass("isMain");
+			} else {
+				$member.removeClass("isMain");
+			}
+		});
+	}).fail(function() {
+		// 取得に失敗しても動作に影響しないので、なにもしない
+	});
+}
+
+<!--/* 他画面から予定登録を開くときのデフォルト日時情報 */-->
+benzo.global.scheduleModal.getDefaultDateForOther = function() {
+	const now = new Date();
+	
+	let from = new Date();
+	from.setHours(now.getHours(), floor(now.getMinutes(), 5)); // 5分で切り捨て
+	let to = new Date(from);
+	to.setTime(from.getTime() + (60 * 60 * 1000)); //1時間に設定
+	if(from.getDate() !== to.getDate()){
+		to.setHours(23, 55); // 日をまたぐ場合は、23:55を設定
+	}
+	
+	return dateSetting = {
+		"dateFrom": $.datepicker.formatDate("yy/mm/dd", from),
+		"dateTo": $.datepicker.formatDate("yy/mm/dd", to),
+		"timeFrom": formatHHMMSS(from.getHours(), from.getMinutes(), 0),
+		"timeTo": formatHHMMSS(to.getHours(), to.getMinutes(), 0),
+		"hourFrom": from.getHours(),
+		"minFrom": from.getMinutes(),// 倍数の切り捨て
+		"hourTo": to.getHours(),
+		"minTo": to.getMinutes(),// 倍数の切り上げ
+	};
+}
+
+$(function() {
+	let modal = $("#" + /*[[${id}]]*/"");
+	benzo.global.scheduleModal.modal = modal;
+
+	<!--/* 時間項目の選択制御 */-->
+	modal.on("change", "[name='timeFrom']", function() {
+		const timeFrom = $(this);
+		const timeTo = modal.find("[name='timeTo']");
+
+		// HH:mm:ss → hhmmssの数値に変換
+		const timeFromInt = Number(timeFrom.val().replace(/:/g,''));
+		const timeToInt = Number(timeTo.val().replace(/:/g,''));
+		if (timeFromInt > timeToInt) {
+			// もともと設定している時間差分だけ timeToを遅らせる
+			
+			//date型使用したいだけなので、インスタンス化時の日付は何日でも問題ない
+			const beforeDateObj = new Date("2020-01-01"+" "+ timeFrom.attr("data-before"));
+			const nowDateObj = new Date("2020-01-01"+" "+ timeFrom.val());
+			const duration = nowDateObj.getTime() - beforeDateObj.getTime();			
+			const timeToDateObj = new Date("2020-01-01"+" "+ timeTo.val());
+			const resulDate = new Date(timeToDateObj.getTime() + duration);
+			
+			if(timeToDateObj.getDate() != resulDate.getDate()) {
+				// 設定する時間が24時を超えた場合、23:45を設定
+				timeTo.closest(".custom_selectbox_container").find(".option:last-child").trigger("click");
+			} else {
+				const hours = lpad(resulDate.getHours(),2,"0");
+				const minutes = lpad(resulDate.getMinutes(),2,"0");
+				const resultTime = `${hours}:${minutes}:00`;
+				timeTo.closest(".custom_selectbox_container").find(".option[data-value='"+ resultTime +"']").trigger("click");
+			}
+		}
+
+		// 現在設定されている時間をbeforeに設定
+		timeFrom.attr("data-before", timeFrom.val());
+	});
+	
+	<!--/* 時間項目の選択制御 */-->
+	modal.on("change", "[name='timeTo']", function() {
+		const timeTo = $(this);
+		const timeFrom = modal.find("[name='timeFrom']");
+		
+		// HH:mm:ss → hhmmssの数値に変換
+		const timeToInt = Number(timeTo.val().replace(/:/g,''));
+		const timeFromInt = Number(timeFrom.val().replace(/:/g,''));
+		if (timeFromInt > timeToInt) {
+			// もともと設定している時間差分だけ timeFromを早める
+			//date型使用したいだけなので、インスタンス化時の日付は何日でも問題ない
+			const beforeDateObj = new Date("2020-01-01"+" "+ timeTo.attr("data-before")); // 時間の判定がしたいだけなので、日付はなんでもいい
+			const nowDateObj = new Date("2020-01-01"+" "+ timeTo.val());
+			const duration = nowDateObj.getTime() - beforeDateObj.getTime();
+			const timeFromDateObj = new Date("2020-01-01"+" "+ timeFrom.val());
+			const resulDate = new Date(timeFromDateObj.getTime() + duration);
+			if (timeFromDateObj.getDate() != resulDate.getDate()) {
+				// 設定する時間が0時より前(前日)の場合、00:00を設定
+				timeFrom.closest(".custom_selectbox_container").find(".option:first-child").trigger("click");
+			} else {
+				const hours =lpad(resulDate.getHours(),2,"0");
+				const minutes =lpad(resulDate.getMinutes(),2,"0");
+				const resultTime = `${hours}:${minutes}:00`;
+				timeFrom.closest(".custom_selectbox_container").find(".option[data-value='"+ resultTime +"']").trigger("click");
+			}
+		}
+
+		// 現在設定されている時間をbeforeに設定
+		timeTo.attr("data-before", timeTo.val());
+	});
+	
+	<!--/* 日時項目の表示制御 */-->
+	modal.on("change", '[name="allday"]', function(){
+		let isAllday = modal.find('[name="allday"]').prop("checked");
+
+		<!--/* 繰り返し期間指定なしの場合 */-->
+		modal.find(".scheduleDateFrom").removeClass("hidden");
+
+		<!--/* 「終日」「繰り返し」が両方チェックされた場合の表示制御 */-->
+		modal.find(".scheduleDate").removeClass("hidden");
+		modal.find(".scheduleDateToItems").removeClass("hidden");
+
+	});
+	<!--/* 終日チェック */-->
+	modal.on("change", '[name="allday"]', function(){
+		if($(this).prop("checked")){
+			modal.find(".alldayShowItem").removeClass("hidden");
+			modal.find(".alldayHideItem").addClass("hidden");
+		} else {
+			modal.find(".alldayShowItem").addClass("hidden");
+			modal.find(".alldayHideItem").removeClass("hidden");
+		}
+	});
+	<!--/* 場所変更 */-->
+	modal.on("change", '[name="roomId"]', function(){
+		<!--/* 施設選択 */-->
+		modal.find(".placeRquiredIcon").removeClass("hidden");
+		modal.find('[name="roomSelected"][value="true"]').prop("checked", true);
+		modal.find(".placeSelectBox").removeClass("hidden");
+		modal.find(".placeInputBox").addClass("hidden");
+	});
+	modal.on("change", '[name="place"]', function(){
+		<!--/* その他選択 */-->
+		modal.find(".placeRquiredIcon").addClass("hidden");
+		modal.find('[name="roomSelected"][value="false"]').prop("checked", true);
+		modal.find(".placeSelectBox").addClass("hidden");
+		modal.find(".placeInputBox").removeClass("hidden");
+	});
+	modal.on("change", '[name="roomSelected"]', function() {
+		if("true" === $(this).val()) {
+			modal.find(".placeRquiredIcon").removeClass("hidden");
+			modal.find(".placeSelectBox").removeClass("hidden");
+			modal.find(".placeInputBox").addClass("hidden");
+		} else {
+			modal.find(".placeRquiredIcon").addClass("hidden");
+			modal.find(".placeSelectBox").addClass("hidden");
+			modal.find(".placeInputBox").removeClass("hidden");
+		}
+	})
+	<!--/* 参加者グループ変更 */-->
+	modal.find(".memberGroup").on("change", function(){
+		modal.find(".memberCandidates").attr("data-type", $(this).val());
+	});
+	<!--/* 参加者クリック */-->
+	modal.find(".memberCandidates").on("click", ".member", function(){
+		modal.find(".memberList").append($(this));
+	});
+	modal.find(".memberList").on("click", ".member", function(){
+		modal.find(".memberCandidates").append($(this));
+	});
+	<!--/* その他オプションクリック */-->
+	modal.find(".otherOpenCloseAct").on("click", function(){
+		if ($(this).hasClass("otherClose")){
+			// その他オプションを開く
+			$(this).text("その他オプション閉じる");
+			$(this).addClass("otherOpen");
+			$(this).removeClass("otherClose");
+			modal.find("#otherOptionArea").removeClass("hidden");
+			$(".modalbody_schedule").animate({scrollTop:500});
+
+		} else {
+			// その他オプションを閉じる
+			$(this).text("その他オプションを表示");
+			$(this).removeClass("otherOpen");
+			$(this).addClass("otherClose");
+			modal.find("#otherOptionArea").addClass("hidden");
+		}
+	});
+	
+	<!--/* その他オプションを開く */-->
+	function openOtherOption() {
+		// その他オプションを開く
+		modal.find(".otherOpenCloseAct").text("その他オプションを閉じる");
+		modal.find(".otherOpenCloseAct").addClass("otherOpen");
+		modal.find(".otherOpenCloseAct").removeClass("otherClose");
+		modal.find("#otherOptionArea").removeClass("hidden");
+		$(".modalbody_schedule").animate({scrollTop:500});
+	}
+
+	<!--/* 出廷不要の場合は予定に関する項目を非表示 */-->
+	modal.on("change", '[name="shutteiType"]', function(){
+		let shutteiType = $(this).val();
+		if(shutteiType == /*[[${T(jp.loioz.common.constant.CommonConstant$ShutteiType).NOT_REQUIRED.cd}]]*/ 2){
+			modal.addClass("isShutteiNotRequired");
+			modal.find('[name="roomSelected"][value="false"]').prop("checked", true);
+			<!--/* 値の変更を通知（表示切り替えなど） */-->
+			modal.find('[name="roomSelected"]').trigger("change");
+			openOtherOption(); //その他オプションを開く
+		} else {
+			modal.removeClass("isShutteiNotRequired");
+		}
+	});
+
+	<!--/* 日時が変更されたら、その条件で施設予約状況を取得する */-->
+	modal.on("change", '[data-contains="date"]', function(event, extraParams){
+
+		if(extraParams && extraParams.suppressGetRoomAvailability){
+			return;
+		}
+
+		<!--/* モーダル全体のフォームパラメータ */-->
+		let modalFormParams = benzo.global.scheduleModal.getModalFormParams();
+
+		<!--/* 予約条件項目のパラメータ名 */-->
+		let inputNames = uniqueArray(
+				modal.find('[data-contains="date"] [name]').map(function(){
+					return $(this).attr("name");
+				}).get()
+			);
+		inputNames.push("scheduleSeq");
+
+		<!--/* モーダル全体のパラメータから予約条件パラメータを抽出 */-->
+		let params = {};
+		inputNames.forEach(function(name){
+			if(modalFormParams.hasOwnProperty(name)){
+				params[name] = modalFormParams[name];
+			}
+		});
+
+		<!--/* 予約状況を取得 */-->
+		let roomSelect = modal.find('[name="roomId"]');
+		$.ajax({
+			type : "POST",
+			url : /*[[(@{/user/schedule/getRoomAvailability})]]*/ "/",
+			data : params,
+			dataType : "json"
+		})
+		.done(function(result) {
+			// safariではoptionをhiddenにできないので、spanタグでラップする
+			const wrapTag = "<span class='hidden'>";
+			<!--/* 予約できない会議室を非表示 */-->
+			roomSelect.find("span [data-room-id]").unwrap();
+			roomSelect.find("[data-room-id]").removeClass("hidden");
+			result.unavailableRoomId.forEach(function(roomId){
+				roomSelect.find(`[data-room-id='${roomId}']`)
+					.addClass("hidden")
+					.wrap(wrapTag);
+			});
+			<!--/* 現在選択中の施設が予約できない場合は未選択状態にする */-->
+			if(roomSelect.find("option:selected").is(".hidden")){
+				roomSelect.val(null);
+			}
+		})
+		.fail(function() {
+			roomSelect.find("[data-room-id]").addClass("hidden");
+			roomSelect.val(null);
+		});
+	});
+
+	<!--/* コピーボタン */-->
+	let modalCopyOrgContext = {"modal": null, "select": {}};
+	modal.on("click", ".copyButton", function(){
+		<!--/* 現在のモーダルをイベントごとclone */-->
+		modalCopyOrgContext.modal = modal.clone(true);
+
+		<!--/* select選択状態はcloneできないので別途取得 */-->
+		let selectParams = {};
+		modal.find("select[name]").each(function(){
+			selectParams[$(this).attr("name")] = $(this).val();
+		});
+		modalCopyOrgContext.select = selectParams;
+
+		<!--/* コピーモードON */-->
+		modal.addClass("isCopyMode");
+		modal.addClass("isCreate");
+		modal.removeClass("isUpdate");
+		modal.removeClass("isUnmodifiable");
+		modal.find(".scheduleModalForm").find("input, textarea, select, button").prop("disabled", false);
+		modal.find('.scheduleModalForm').find(".select").attr("disabled", false);
+
+		<!--/* コピーした予定は無効アカウントは選択肢から外し、hidden化 */-->
+		modal.find(".memberList .member[data-enabled=false]").addClass("hidden");
+		modal.find(".memberList .member[data-enabled=false]").trigger("click");
+
+		<!--/* コピーした予定は新規登録するため、予定SEQをクリア */-->
+		modal.find('[name="scheduleSeq"]').val("");
+
+		<!--/* 施設予約状況を再取得 */-->
+		modal.find('[data-contains="date"]').trigger("change");
+	});
+
+	<!--/* コピーキャンセルボタン */-->
+	modal.on("click", ".cancelCopy", function(){
+		<!--/* コピーボタン押下時点のモーダル状態を復元 */-->
+		modal.html(modalCopyOrgContext.modal.children());
+		modal.attr("class", modalCopyOrgContext.modal.attr("class"));
+		modal.find("select[name]").each(function(){
+			if(typeof modalCopyOrgContext.select[$(this).attr("name")] !== "undefined"){
+				$(this).val(modalCopyOrgContext.select[$(this).attr("name")]);
+			}
+		});
+		<!--/* datepickerイベントはcloneできないので再設定 */-->
+		modal.find("[data-toggle='datepicker']").filter("[data-target], [data-target-name]").each(function(){
+			setUpDatepickerButton(this);
+		});
+	});
+
+	<!--/* 閉じるボタン */-->
+	modal.on("click", ".closeButton", function(){
+		clearAllMessages(modal);
+		clearAllItemMsg();
+	});
+
+});
+</script>
+<!--/* 空き状況確認のスクリプト */-->
+<th:block th:if="${useScheduleRefer}">
+<!--/* 予定登録モーダル */-->
+<script type="text/javascript" th:inline="javascript">
+$(function() {
+	let modal = $("#" + /*[[${id}]]*/"");
+
+	<!--/* 空き状況確認ボタン */-->
+	modal.on("click", ".scheduleReferButton", function(){
+
+		<!--/* 部署(ユーザー)タブを選択状態にする */-->
+		const selectTypeOfBusho = /*[[${T(jp.loioz.app.user.schedule.enums.UserSelectType).BUSHO.cd}]]*/ 1;
+		<!--/* 予定の参加者を選択中ユーザーとして抽出 */-->
+		const selectedUsers = modal.find(".memberList .member").map(function(){
+			return $(this).data("seq");
+		})
+		.get();
+		<!--/* 選択中ユーザーをカレンダーに設定 */-->
+		initUserSelectTab(selectTypeOfBusho, selectedUsers);
+
+		<!--/* カレンダーを週表示に設定 */-->
+		const dispTypeOfWeekly = /*[[${T(jp.loioz.app.user.schedule.enums.CalendarDispType).WEEKLY.cd}]]*/ 2;
+		setCurrentCalendarDispType(dispTypeOfWeekly);
+
+		<!--/* 日付From/繰り返し日Fromのうち、現在表示されている方を基準日として取得 */-->
+		let $dateFrom = modal.find('[name="dateFrom"]:visible');
+		let date;
+		if($dateFrom.length){
+			date = new Date($dateFrom.eq(0).val());
+		} else {
+			date = new Date();
+			date.setHours(0, 0, 0, 0);
+		}
+		<!--/* カレンダーに基準日を設定 */-->
+		currentMainCalendarDate = date;
+		currentMiniCalendarDate = date;
+
+		<!--/* カレンダーを表示 */-->
+		modal.addClass("isScheduleReferMode");
+		$(".calendarScrollArea:visible").scrollTop(defaultScrollPosition);
+		changeMainCalendar(date);
+		changeMiniCalendar(date);
+	});
+
+	<!--/* 空き状況確認カレンダーを閉じる */-->
+	modal.on("click", ".closeScheduleRefer", function(){
+		modal.removeClass("isScheduleReferMode");
+	});
+
+	<!--/* 空き状況確認カレンダー上で日時を選択したら予定登録モーダルに反映 */-->
+	benzo.global.scheduleCalendar.onDateTimeSelect = function(dateTimeParams, event){
+
+		<!--/* 反映するデータを作成 */-->
+		let partialScheduleData = $.extend(true, {}, dateTimeParams);
+		if(partialScheduleData.roomId){
+			partialScheduleData.roomSelected = true;
+		} else {
+			delete partialScheduleData.roomId;
+		}
+		<!--/* 初回面談・裁判期日では終日設定は不可 */-->
+		if(modal.is(".isShokaiMendan") || modal.is(".isSaibanLimit")){
+			partialScheduleData.allday = false;
+		}
+
+		<!--/* モーダルに反映 */-->
+		populateObjectToHtml(partialScheduleData, modal);
+		modal.find('[name="allday"]').trigger("change", {suppressGetRoomAvailability: true});
+		modal.find('[data-contains="date"]').trigger("change");
+		
+		<!-- カスタムセレクトのセットアップ処理 -->
+		setUpCustomSelectBox();
+
+		<!--/* カレンダーを閉じる */-->
+		modal.removeClass("isScheduleReferMode");
+	}
+});
+</script>
+<!--/* 共通 */-->
+<script type="text/javascript" th:inline="javascript">
+<!--/* カレンダー選択状態をセッションに保存する */-->
+function saveCalendarStatus(){
+	<!--/* 空き状況確認ではセッションを変更しないので、空の関数を定義 */-->
+}
+</script>
+</th:block><!--/* 空き状況確認用スクリプト end */-->
+</th:block><!--/* モーダル用スクリプト end */-->
+</head>
+<body>
+	<th:block th:fragment="modal"
+		th:with="
+			id=${id}?: 'scheduleModal',
+			useScheduleRefer=${useScheduleRefer}?: true">
+		<div th:replace="common/modal::modalSchedule(
+			title=${title}?: '予定登録',
+			headerNaviList=${headerNaviList}?: ~{::headerContents},
+			bodyContents=${bodyContents}?: ~{::bodyContents},
+			footerContents=${footerContents}?: ~{::footerContents})">
+		</div>
+	</th:block>
+
+	<th:block th:fragment="headerContents"
+		th:with="
+			createUrl=${createUrl}?: @{/user/schedule/create},
+			updateUrl=${updateUrl}?: @{/user/schedule/update},
+			deleteUrl=${deleteUrl}?: @{/user/schedule/delete}">
+	</th:block>
+
+	<th:block th:fragment="bodyContents"
+		th:with="
+			id=${id}?: 'scheduleModal',
+			useScheduleRefer=${useScheduleRefer}?: true">
+		<div th:replace="common/messageArea::jsMessageArea" class="hideIfScheduleReferMode"></div>
+
+		<form class="scheduleModalForm hideIfScheduleReferMode" th:action="@{/}" method="post" th:autocomplete="off">
+			<input type="hidden" name="scheduleSeq">
+
+			<div class="modalbody_schedule">
+
+				<!--/* 入力エリア */-->
+				<div class="modal_input_area pr-2">
+					<!--/* 件名 */-->
+					<div class="form-row hideIfShutteiNotRequired" data-contains="subject">
+						<div class="form-group col-md-12">
+							<label class="input_parts_label">件名</label>
+							<span class="mark_equired">必須</span>
+							<input type="text" class="form-control" name="subject"  maxlength="30">
+							<div class="error_mag_point hidden" id="itemMsg_subject"></div>
+						</div>
+					</div>
+					<div class="form-row" data-contains="date">
+						<!--/* 予定日時 */-->
+						<div class="form-group col-md-7">
+							<label class="input_parts_label">日時</label>
+							<div class="d-flex scheduleDate">
+								<span class="scheduleDateFrom">
+									<input type="text" class="form-control digit7 inputDateSlash" name="dateFrom" th:data-click-sync="|#${id}_dateFrom|">
+									<button th:id="|${id}_dateFrom|" type="button" class="btn btn_popcal hidden" data-toggle="datepicker" th:data-target="|#${id} [name='dateFrom']|">カレンダー</button>
+								</span>
+								<div class="alldayHideItem d-inline ml-2">
+									<div class="custom_selectbox_container" tabindex="0" data-enter-sync="#timeFromCustom">
+										<div id="timeFromCustom" class="select form-control">00:00</div>
+										<input type="hidden" class="customeSelectInput" name="timeFrom">
+										<div class="custom_pulldown_container hidden">
+											<th:block th:each="hour : ${#numbers.sequence(0,23)}" th:fragment="timeSelectOptions">
+												<th:block th:each="min : ${#numbers.sequence(0,59,5)}">
+													<div class="option" tabindex="0" role="option" aria-selected="false" th:data-value="|${#numbers.formatInteger(hour, 2)}:${#numbers.formatInteger(min,2)}:00|" th:text="|${#numbers.formatInteger(hour, 2)}:${#numbers.formatInteger(min,2)}|"></div>
+												</th:block>
+											</th:block>
+										</div>
+									</div>
+								</div>
+								<div class="scheduleDateToItems hideIfShutteiNotRequired d-flex align-items-center">
+									<span class="fs15 mx-2">〜</span>
+									<span class="alldayShowItem">
+										<input type="text" class="form-control digit7 inputDateSlash" name="dateTo" th:data-click-sync="|#${id}_dateTo|">
+										<button th:id="|${id}_dateTo|" type="button" class="btn btn_popcal hidden" data-toggle="datepicker" th:data-target="|#${id} [name='dateTo']|">カレンダー</button>
+									</span>
+									<div class="alldayHideItem d-inline">
+										<div class="custom_selectbox_container" tabindex="0" data-enter-sync="#timeToCustom">
+											<div id="timeToCustom" class="select form-control">00:00</div>
+											<input type="hidden" class="customeSelectInput" name="timeTo">
+											<div class="custom_pulldown_container hidden">
+												<th:block th:replace="::timeSelectOptions"></th:block>
+											</div>
+										</div>
+									</div>
+								</div>
+								<div class="hideIfShokaiMendan hideIfSaibanLimit ml-2">
+									<label class="checkbox_btn_box pt-1">
+										<input type="checkbox" class="checkbox_input" name="allday">
+										<span class="checkbox_txt">終日</span>
+									</label>
+								</div>
+							</div>
+							<div class="error_mag_point hidden" id="itemMsg_dateFrom"></div>
+							<div class="error_mag_point hidden" id="itemMsg_dateTo"></div>
+							<div class="error_mag_point hidden" id="itemMsg_timeFrom"></div>
+							<div class="error_mag_point hidden" id="itemMsg_timeTo"></div>
+						</div>
+
+						<!--/* 出廷要否 */-->
+						<div class="form-group col-md-4 hideIfNotSaibanLimit" data-contains="saibanLimit">
+							<label class="input_parts_label" data-contains="shutteiType">出廷要否</label>
+							<input type="hidden" name="saibanLimitSeq">
+							<div data-contains="shutteiType">
+								<select class="form-control" name="shutteiType">
+									<option th:each="enum : ${T(jp.loioz.common.constant.CommonConstant$ShutteiType).values()}"
+											th:value="${enum.cd}" th:text="${enum.val}"></option>
+								</select>
+							</div>
+						</div>
+					</div>
+					<!--/* 予定日時 end */-->
+
+					<!--/* 場所 */-->
+					<div class="form-row" data-contains="place">
+						<div class="form-group col-md-12 mb-1">
+							<label class="input_parts_label">場所</label>
+							<span class="mark_equired placeRquiredIcon">必須</span>
+							<div class="d-flex align-items-center hideIfShutteiNotRequired">
+								<label class="radio_btn mb-0 hideIfShutteiNotRequired">
+									<input type="radio" class="radio_input" name="roomSelected" value="true">
+									<span class="radio_txt">施設</span>
+								</label>
+								<label class="radio_btn mb-0 hideIfShutteiNotRequired">
+									<input type="radio" class="radio_input" name="roomSelected" value="false">
+									<span class="radio_txt">その他</span>
+								</label>
+							</div>
+						</div>
+						<div class="form-group col-md-12">
+							<!--/* 施設選択 */-->
+							<select class="form-control placeSelectBox hideIfShutteiNotRequired" name="roomId">
+								<option value="">-</option>
+								<option th:each="room : ${scheduleCommonViewForm.roomList}"
+									th:data-room-id="${room.roomId}"
+									th:value="${room.roomId}" th:text="${room.roomName}"></option>
+							</select>
+							<!--/* その他入力 */-->
+							<input type="text" class="form-control placeInputBox hidden" name="place" maxlength="100">
+							<div class="error_mag_point hidden" id="itemMsg_roomId"></div>
+							<div class="error_mag_point hidden" id="itemMsg_place"></div>
+						</div>
+					</div>
+
+					<!--/* 参加者 */-->
+					<div class="form-row hideIfShutteiNotRequired" data-contains="member">
+						<div class="form-group col-md-12 mb-0">
+							<label class="input_parts_label">参加者</label>
+							<span class="mark_equired">必須</span>
+							<div class="user_selectblock">
+								<div class="schedule_user_selectcol_l">
+									<div class="memberList user_selectbox is_participantlist text-break"></div>
+									<a href="javascript:void(0);" class="removeAllMember" th:data-click-sync="|#${id} .memberList .member|">全員削除</a>
+								</div>
+								<div class="user_selectcol_c"></div>
+								<div class="schedule_user_selectcol_r">
+									<select class="memberGroup form-control">
+										<option th:value="${T(jp.loioz.common.constant.CommonConstant).SANKASHA_SELECT_OPTION_ALL}">全員</option>
+										<option th:each="busho : ${scheduleCommonViewForm.bushoList}"
+												th:value="${busho.bushoId}" th:text="${busho.bushoName}">部署</option>
+									</select>
+									<!--/* 参加者候補 */-->
+									<div class="memberCandidates user_selectbox is_userlist text-break" data-type="0">
+										<button th:each="account : ${scheduleCommonViewForm.accountList}"
+											type="button" class="user_selectbtn member" th:classappend="${!account.Enabled} ? 'hidden'"
+											th:data-seq="${account.accountSeq}" th:data-type="${account.shozokuBushoIdStr}" th:data-enabled="${account.Enabled}"
+											th:text="${account.accountName}"></button>
+									</div>
+									<a href="javascript:void(0);" th:data-click-sync="|#${id} .memberCandidates .member:visible|">全員追加</a>
+									<a href="javascript:void(0);" class="flt_r scheduleReferButton" th:if="${useScheduleRefer}">空き状況確認</a>
+								</div>
+							</div>
+							<div class="error_mag_point hidden" id="itemMsg_member"></div>
+						</div>
+					</div>
+
+					<!--/* メモ・手続き */-->
+					<div class="form-row hideIfShutteiNotRequired" data-contains="memo">
+						<div class="form-group col-md-12">
+							<label class="input_parts_label hideIfSaibanLimit">メモ</label>
+							<label class="input_parts_label hideIfNotSaibanLimit">手続き</label>
+							<textarea rows="4" class="form-control" name="memo" maxlength="3000"></textarea>
+							<div class="error_mag_point hidden" id="itemMsg_memo"></div>
+						</div>
+					</div>
+
+					<!--/* その他オプションを表示 */-->
+					<div  id="otherOptionArea">
+						<hr class="my-2">
+						<!--/* プライバシー設定 */-->
+						<div class="form-row hideIfShutteiNotRequired" data-contains="openRange editRange">
+							<div class="form-group col-md-12">
+								<label><i class="fas fa-lock mr-2"></i>プライバシー設定</label>
+								<div>
+									<span class="privacy_label">公開範囲</span>
+									<label class="radio_btn mb-0">
+										<input type="radio" name="openRange" class="radio_input"
+										th:value="${T(jp.loioz.common.constant.CommonConstant$SchedulePermission).ALL.cd}" checked>
+										<span class="radio_txt">全員</span>
+									</label>
+									<label class="radio_btn mb-0">
+										<input type="radio" name="openRange" class="radio_input"
+											th:value="${T(jp.loioz.common.constant.CommonConstant$SchedulePermission).MEMBER.cd}">
+										<span class="radio_txt">参加者</span>
+									</label>
+								</div>
+								<div class="mb-2">
+									<span class="privacy_label">編集権限</span>
+									<label class="radio_btn mb-0">
+										<input type="radio" name="editRange" class="radio_input"
+											th:value="${T(jp.loioz.common.constant.CommonConstant$SchedulePermission).ALL.cd}" checked>
+										<span class="radio_txt">全員</span>
+									</label>
+									<label class="radio_btn mb-0">
+										<input type="radio" name="editRange" class="radio_input"
+											th:value="${T(jp.loioz.common.constant.CommonConstant$SchedulePermission).MEMBER.cd}">
+										<span class="radio_txt">参加者</span>
+									</label>
+								</div>
+							</div>
+						</div>
+						<!--/* プライバシー設定 end */-->
+
+						<!--/* 登録者情報 */-->
+						<div class="hideIfCreate" data-contains="createUser updateUser">
+							<div class="form-row">
+								<div class="form-group col-md-6">
+									<label class="input_parts_label"><i class="fas fa-user-plus mr-2"></i>登録者情報</label>
+									<span class="d-block" data-text-name="createUserName"></span>
+									<span class="d-block sub_text" data-text-name="createdAt"></span>
+								</div>
+								<div class="form-group col-md-6">
+									<label class="input_parts_label"><i class="fas fa-user-edit mr-2"></i>更新者情報</label>
+									<span class="d-block" data-text-name="updateUserName"></span>
+									<span class="d-block sub_text" data-text-name="updatedAt"></span>
+								</div>
+							</div>
+						</div>
+
+						<!--/* 顧客情報 */-->
+						<div class="hideIfNotCustomer" data-contains="customer">
+							<div class="form-row">
+								<div class="form-group col-md-12">
+									<label class="input_parts_label"><i class="far fa-user mr-2"></i>顧客情報</label>
+									<div class="infoname" data-text-name="customerName"></div>
+									<div class="sub_text">
+										<span data-text-name="customerIdDisp"></span>
+									</div>
+									<input type="hidden" name="customerId">
+								</div>
+							</div>
+						</div>
+						
+						<!-- /.初回面談情報  表示はしないがパラメータを送るので必要-->
+						<div class="hidden" data-contains="shokaiMendan">
+							<div class="smart_form_col_title">
+								<label class="txt_label">初回面談</label>
+							</div>
+							<div class="smart_form_col_data">
+								<label class="checkbox_btn_box">
+									<input type="checkbox" name="shokaiMendan" class="checkbox_input" disabled>
+									<span class="checkbox_txt">初回面談</span>
+								</label>
+							</div>
+						</div>
+
+						<!--/* 案件情報 */-->
+						<div class="hideIfSaiban hideIfNotAnken" data-contains="anken">
+							<div class="form-row">
+								<div class="form-group col-md-12">
+									<label class="input_parts_label"><i class="far fa-file-alt mr-2"></i>案件情報</label>
+									<div class="infoname" data-text-name="ankenName"></div>
+									<div class="sub_text">
+										<span data-text-name="ankenIdDisp"></span>
+										<span data-text-name="bunyaName"></span>
+									</div>
+								</div>
+								<input type="hidden" name="ankenId">
+							</div>
+						</div>
+
+						<!--/* 裁判情報 */-->
+						<div class="hideIfNotSaiban" data-contains="saiban">
+							<div class="form-row">
+								<div class="form-group col-md-12">
+									<label class="input_parts_label"><i class="fas fa-gavel reverses_text mr-2"></i>裁判情報</label>
+									<div class="sub_text">
+										<span data-text-name="caseNumber"></span>
+									</div>
+								</div>
+								<input type="hidden" name="saibanSeq">
+							</div>
+						</div>
+
+					</div>
+					<!--/* その他オプションを表示 end */-->
+
+				</div>
+			</div>
+		</form>
+
+		<!--/* 予定表カレンダー */-->
+		<div class="calendar_view calendarContainer hideIfNotScheduleReferMode" th:if="${useScheduleRefer}">
+			<div class="block_schedule">
+				<div class="block_schedule_left" th:replace="user/schedule/scheduleCalendar::block_schedule_left"></div>
+				<div class="block_schedule_main" th:replace="user/schedule/scheduleCalendar::block_schedule_main"></div>
+			</div>
+		</div>
+	</th:block>
+
+	<!--/* フッター */-->
+	<th:block th:fragment="footerContents">
+
+		<!--/* 新規登録 */-->
+		<div class="hideIfUpdate hideIfCopyMode hideIfScheduleReferMode">
+				<a href="javascript:void(0);" class="otherOpenCloseAct otherClose mr-3">その他オプションを表示</a>
+				<button type="button" class="btn btn-info saveSchedule createButton" th:data-url="${createUrl}"><i class="fas fa-check"></i>登録</button>
+				<button type="button" class="btn btn-light closeButton" data-dismiss="modal"><i class="fas fa-times"></i>閉じる</button>
+		</div>
+
+		<!--/* 予定更新 */-->
+		<div class="hideIfCreate hideIfCopyMode hideIfScheduleReferMode">
+			<button type="button" class="btn btn-light saveSchedule deleteButton hideIfUnmodifiable footer_cal_delete_btn" th:data-url="${deleteUrl}" data-contains="deleteButton"><i class="far fa-trash-alt"></i>削除</button>
+			<button type="button" class="hideIfShokaiMendan hideIfSaibanLimit btn btn-primary copyButton"><i class="fas fa-copy"></i>予定コピー</button>
+			<a href="javascript:void(0);" class="otherOpenCloseAct otherClose mx-2">その他オプションを表示</a>
+			<button type="button" class="btn btn-info saveSchedule updateButton hideIfUnmodifiable" th:data-url="${updateUrl}"><i class="fas fa-check"></i>保存</button>
+			<button type="button" class="btn btn-light closeButton" data-dismiss="modal"><i class="fas fa-times"></i>閉じる</button>
+		</div>
+
+		<!--/* 予定登録コピーモード */-->
+		<div class="hideIfNotCopyMode">
+			<a href="javascript:void(0);" class="otherOpenCloseAct otherClose mr-3">その他オプションを表示</a>
+			<button type="button" class="btn btn-info saveSchedule createButton" th:data-url="${createUrl}"><i class="fas fa-check"></i>登録</button>
+			<button type="button" class="btn btn-light cancelCopy"><i class="fas fa-undo"></i>戻る</button>
+		</div>
+
+		<!--/* 空き状況確認 */-->
+		<div class="hideIfNotScheduleReferMode">
+			<div>
+				<button type="button" class="btn btn-light closeScheduleRefer"><i class="fas fa-times"></i>閉じる</button>
+			</div>
+		</div>
+
+	</th:block>
+</body>
+</html>

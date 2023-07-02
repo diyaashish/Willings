@@ -1,0 +1,1115 @@
+@charset "UTF-8";
+
+/********************************************************
+ * 会計汎用
+********************************************************/
+/* 報酬明細・預り金明細・請求書／精算書（一覧）の画面分割 */
+.accg_main_split {
+	display: -ms-flexbox;
+	display: flex;
+	gap: 15px;
+}
+.accg_main_split__left {
+	flex: 1 0;
+}
+/* 複数顧客の場合表示 */
+.accg_main_split__right {
+	flex: 0 1 250px;
+}
+
+/* 報酬明細・預り金明細・請求書／精算書（一覧）の案件とサマリの画面分割 */
+.accg_main_top_split {
+	display: -ms-flexbox;
+	display: flex;
+}
+.accg_main_top_split__case {
+	flex: 1;
+}
+.accg_main_top_split__total {
+	flex: 0 0 430px;
+}
+
+
+/* 請求書・精算書類のラベル */
+.doc_label {
+	color: var(--text-color-sub);
+	font-weight: normal;
+	font-size: 1.2rem;
+	margin-bottom: 1px;
+}
+
+/* 請求書・精算書類の値 */
+.doc_value {
+	font-size: 1.7rem;
+}
+.doc_view {
+	padding: 0 2px;
+}
+
+.amount_value {
+	font-size: 1.5rem;
+}
+.jp_yen {
+	font-size: 1.2rem;
+	padding-left: 3px;
+}
+
+/* 項目選択データリスト */
+.item_search_data_list {
+	border-right: 0;
+	border-left: 0;
+	border-top: 1px solid var(--bor-color-main);
+	border-bottom: 1px solid var(--bor-color-main);
+	font-size: 1.3rem;
+	padding: 5px 0;
+	margin-bottom: -1px;
+	white-space: nowrap;
+	overflow-x: hidden;
+	text-overflow: ellipsis;
+}
+.item_search_data_list:hover{
+	cursor: default;
+	background-color: var(--bg-color-row-hover);
+	transition: all 0.1s;
+}
+
+/* 会計情報サマリ */
+.section_accg_summary {
+	margin: 10px 0;
+}
+.row_amount {
+	-ms-flex-align: baseline;
+    align-items: baseline;
+	display: -ms-flexbox;
+	display: flex;
+	flex-wrap: wrap;
+}
+.row_amount__value {
+	font-size: 1.45rem;
+	flex: 1 0 100px;
+	text-align: right;
+}
+.row_amount__label {
+	flex: 0 0 70px;
+	font-size: 1.3rem;
+}
+.row_amount__label_sm {
+	font-size: 1.3rem;
+	flex-basis: 55px;
+}
+.row_amount__label_mid {
+	font-size: 1.3rem;
+	flex-basis: 68px;
+}
+.row_amount__label_lg {
+	font-size: 1.3rem;
+	flex-basis: 100px;
+}
+.row_amount__label_2x {
+	font-size: 1.3rem;
+	flex-basis: 130px;
+}
+
+/************ 報酬-スタータス色 ***************/
+/* 1:未請求  */
+.status_unclaimed {
+	background-color: var(--lz-gray-700);
+	border-radius: 3px;
+	color: var(--white);
+	font-size: 1.3rem;
+	font-weight: 400;
+	height: 23px;
+	padding: 5px 7px;
+}
+.status_unclaimed_text {
+	color: var(--lz-gray-700);
+}
+/* 2:入金待ち  */
+.status_awaiting_payment {
+	color: #d18024;
+}
+/* 3:入金済み  */
+.status_deposited {
+	color: var(--loioz-success);
+}
+/* 4:一部入金 */
+.status_partial_deposit {
+	color: var(--loioz-danger);
+}
+/* 5:回収不能 */
+.status_uncollectible {
+	color: var(--loioz-danger);
+}
+
+
+/* 発行ステータス 1：下書き */
+.issue_status_1 > svg {
+	color: var(--lz-gray-600);
+}
+.issue_status_1 {
+	color: var(--lz-gray-800);
+}
+.issue_status_1.issue_status_doc_view {
+	background-color: #f3f3f3;
+	padding: 5px 10px;
+}
+/* 発行ステータス 2：送付待ち */
+.issue_status_2 {
+	color: #d18024;
+}
+.issue_status_2.issue_status_doc_view {
+	background-color: var(--loioz-warning-shadow);
+	padding: 5px 10px;
+}
+/* 発行ステータス 3：送付済み */
+.issue_status_3 {
+	color: var(--loioz-success);
+}
+.issue_status_3.issue_status_doc_view {
+	background-color: var(--loioz-success-shadow);
+	padding: 5px 10px;
+}
+
+/* 請求書入金ステータス標準スタイル */
+.invoice_status_wrapper_bg {
+	font-size: 1.7rem;
+	font-weight: 600;
+	text-align: center;
+	padding: 7px 10px 5px;
+}
+/* 請求書入金ステータス 1：発行待ち */
+.invoice_nyukin_status_wrapper1 {
+	background-color: var(--loioz-secondary-bg);
+	color: var(--lz-gray-800);
+}
+/* 請求書入金ステータス 2：入金待ち */
+.invoice_nyukin_status_wrapper2 {
+	background-color: #fbf5d9;
+	color: #d18024;
+}
+/* 請求書入金ステータス 3：入金済み */
+.invoice_nyukin_status_wrapper3 {
+	background-color: var(--loioz-success-shadow);
+	color: var(--loioz-success);
+}
+/* 請求書入金ステータス 4：一部入金 */
+.invoice_nyukin_status_wrapper4 {
+	background-color: var(--loioz-danger-shadow);
+	color: var(--loioz-danger);
+}
+/* 請求書入金ステータス 5：過入金 */
+.invoice_nyukin_status_wrapper5 {
+	background-color: var(--loioz-danger-shadow);
+	color: var(--loioz-danger);
+}
+/* 請求書入金ステータス 6：回収不能*/
+.invoice_nyukin_status_wrapper6 {
+	background-color: var(--loioz-danger-shadow);
+	color: var(--loioz-danger);
+}
+
+.invoice_nyukin_status_1 {
+	color: var(--lz-gray-800);
+}
+/* 請求書入金ステータス 2：入金待ち */
+.invoice_nyukin_status_2, a.invoice_nyukin_status_2:hover {
+	color: #d18024;
+}
+/* 請求書入金ステータス 3：入金済み */
+.invoice_nyukin_status_3, a.invoice_nyukin_status_3:hover {
+	color: var(--loioz-success);
+}
+/* 請求書入金ステータス 4：一部入金 */
+.invoice_nyukin_status_4, a.invoice_nyukin_status_4:hover {
+	color: var(--loioz-danger);
+}
+/* 請求書入金ステータス 5：過入金 */
+.invoice_nyukin_status_5, a.invoice_nyukin_status_5:hover {
+	color: var(--loioz-danger);
+}
+/* 請求書入金ステータス 6：回収不能*/
+.invoice_nyukin_status_6, a.invoice_nyukin_status_6:hover {
+	color: var(--loioz-danger);
+}
+
+/* 精算書返金ステータス標準スタイル */
+.statement_wrapper_bg {
+	font-size: 1.7rem;
+	font-weight: 600;
+	text-align: center;
+	padding: 7px 10px 5px;
+}
+/* 精算書返金ステータス 1：発行待ち */
+.statement_status_wrapper1 {
+	background-color: var(--loioz-secondary-bg);
+	color: var(--lz-gray-800);
+}
+/* 精算書返金ステータス 2：精算待ち */
+.statement_status_wrapper2 {
+	background-color: #fbf5d9;
+	color: #d18024;
+}
+/* 精算書返金ステータス3：精算済み */
+.statement_status_wrapper3 {
+	background-color: var(--loioz-success-shadow);
+	color: var(--loioz-success);
+}
+
+/* 精算ステータス 1：発行待ち */
+.statement_status_1 {
+	color: var(--loioz-dark);
+}
+/* 精算ステータス 2：精算待ち */
+.statement_status_2 {
+	color: #d18024;
+}
+/* 精算ステータス 3：精算済み */
+.statement_status_3 {
+	color: var(--loioz-success);
+}
+
+/* 精算書-精算ステータス 1：発行待ち */
+.statement_henkin_status_1 {
+	color: var(--lz-gray-800);
+}
+/* 精算書-精算ステータス 2：精算待ち */
+.statement_henkin_status_2, a.statement_henkin_status_2:hover {
+	color: #d18024;
+}
+/* 精算書-精算ステータス 3：精算済み */
+.statement_henkin_status_3, a.statement_henkin_status_3:hover {
+	color: var(--loioz-success);
+}
+
+
+/****************** 請求書／精算書メイン *******************/
+/* メイン画面分割 */
+.doc_page_split {
+	display: -ms-flexbox;
+	display: flex;
+	gap: 10px 30px;
+}
+/* メイン */
+.doc_page_split__main {
+	flex: 0 1 825px;
+}
+/* サブ */
+.doc_page_split__sub {
+	flex: 0 0 auto;
+	margin: 13px 0;
+}
+/* サブの内部 */
+.doc_page_split__sub__inner {
+	background-color: var(--bg-color-view);
+	margin-bottom: -60px;
+	top: 60px;
+	padding: 10px;
+}
+/* メインの画面上部 */
+.accg_doc_main_top {
+	-ms-flex-align: center;
+	align-items: center;
+	display: -ms-flexbox;
+	display: flex;
+	margin: 13px 0 15px;
+	text-align: right;
+}
+
+.accg_doc_container {
+	background-color: var(--white);
+	border: 1px solid var(--bor-color-main);
+	border-radius: 3px;
+	padding: 10px 15px 5px;
+}
+.accg_doc_container__header {
+	-ms-flex-align: center;
+	align-items: center;
+	border-bottom: 1px solid var(--bor-color-main);
+	display: -ms-flexbox;
+	display: flex;
+	padding: 0 5px 8px;
+}
+.accg_doc_container__header__title {
+	color: var(--text-color-sub);
+	font-weight: 600;
+	font-size: 1.6rem;
+}
+.accg_doc_container__body {
+	padding: 10px 5px 5px;
+}
+
+/* 報酬明細、預り金明細一覧テーブル-表示行 */
+.accg_row {
+	height: 45px;
+}
+.accg_row__delete {
+	display: none;
+}
+.accg_row__edit {
+	display: none;
+}
+.accg_row:hover .accg_row__delete {
+	font-size: 1.4rem;
+	display: inline-block;
+} 
+.accg_row:hover .accg_row__edit {
+	font-size: 1.4rem;
+	display: inline-block;
+}
+
+/* 報酬明細、預り金明細一覧テーブル-編集行 */
+.accg_edit_row {
+	background-color: var(--bg-color-edit);
+	padding: 20px 25px;
+	width: 100%;
+}
+.accg_record_edit_row {
+	background-color: var(--bg-color-edit);
+	padding: 15px;
+}
+
+/* 基本情報のwrapper */
+.doc_base_wrapper {
+	border-radius: 2px;
+	margin: 5px 0;
+	background-color: #fdfeff00;
+	border-bottom: 1px solid var(--bor-color-main);
+	border-left: 1px solid var(--bor-color-main);
+	border-right: 1px solid var(--bor-color-main);
+	border-top: 4px solid #17a2b8;
+}
+/* 基本情報コンテナ */
+.doc_base_container {
+	background-color: var(--white);
+	padding: 20px 0 10px 0;
+}
+/* 基本情報各ブロック */
+.doc_base_inner {
+	margin: 5px;
+	padding: 5px 10px;
+}
+/* 基本情報各ブロック内hover */
+.doc_base_inner.doc_edit_target:hover {
+	box-shadow: 0 0 0 1px var(--bor-color-main);
+	border: none;
+}
+
+/* 表示部 */
+.doc_view_wrapper {
+	border-radius: 2px;
+	border: 1px solid var(--bor-color-main);
+	margin: 5px 0;
+	padding: 10px;
+}
+
+/* 会計系の編集モード対象のhover時 */
+.doc_edit_target:hover {
+	background-color: var(--bg-color-edit);
+	border-radius: 2px;
+	border: 1px solid var(--bor-color-main);
+	cursor: pointer;
+}
+/* 会計系の編集モード */
+.edit_mode {
+	background-color: var(--bg-color-edit);
+	border: 1px solid var(--bor-color-main);
+	border-radius: 2px;
+	cursor: default!important;
+	margin: 10px;
+}
+/* 会計系の編集モード（通常の編集エリア） */
+.doc_view_wrapper.edit_mode {
+	margin: 0;
+}
+.doc_view_edit {
+	padding: 0 2px;
+}
+
+/******************* プレビューエリア **************************/
+.doc_preview {
+	background-color: #e9f0f4;
+	border-radius: 2px;
+	padding: 20px;
+}
+
+
+/******************* 2分割画面 **************************/
+.doc_info {
+	display: flex;
+	flex-wrap: nowrap;
+}
+/* 2分割画面（左） */
+.doc_info_l {
+	flex: 0 0 50%;
+	padding: 0 10px 0 0;
+}
+/* 2分割画面（右） */
+.doc_info_r {
+	flex: 0 0 50%;
+	padding: 0 5px 0 0;
+}
+
+/* 宛名ブロックタイトル */
+.select_person_title {
+    border-bottom: 1px solid var(--bor-color-main);
+	color: var(--text-color-sub);
+	font-size: 1.3rem;
+	font-weight: 600;
+	margin-bottom: 5px;
+	padding-bottom: 4px;	
+}
+/* 宛名 */
+.doc_atena__name {
+	font-size: 1.7rem;
+	margin-bottom: 5px;
+}
+/* 送り先住所 */
+.doc_atena__to {
+	padding: 0;
+	margin-bottom: 10px;
+}
+
+/* 振込先ブロック */
+.doc_payee_wrapper {
+	margin: .5rem 0;
+}
+.doc_payee {
+	margin: 1.5rem 0;
+	font-size: 1.3rem;
+}
+
+/* 差出人表記 */
+.office_name {
+	font-size: 1.7rem;
+}
+.lawyer_name {
+	font-size: 1.4rem;
+}
+.office_address {
+	font-size: 1.4rem;
+	margin-top: 3px;
+}
+.tanto_selected_btn.selected_lawyer {
+	background-color: var(--white);
+}
+
+/* 進捗ステータス */
+.doc_status {
+	-ms-flex-align: baseline;
+	align-items: baseline;
+	display: -ms-flexbox;
+	display: flex;
+}
+.doc_status__title {
+	font-weight: 600;
+	font-size: 1.6rem;
+	color: var(--text-color-sub);
+}
+.doc_status__view {
+	color: var(--text-color-sub);
+	margin-left: auto;
+}
+/* 下書きの色 */
+.doc_status__view > svg.status_draft {
+	color: var(--lz-gray-400);
+	font-size: 1.1rem;
+}
+
+/*********** 既入金項目／請求項目 ****************/
+/* 編集行のオプション */
+.doc_detail_list_option {
+	-ms-flex-align: flex-start;
+	align-items: flex-start;
+	display: -ms-flexbox;
+	display: flex;
+	margin-bottom: 5px;
+	padding-bottom: 5px;
+}
+.doc_detail_list_option__title {
+	color: var(--text-color-sub);
+	font-size: 1.5rem;
+	font-weight: 600;
+	margin-right: 30px;
+}
+/* 預り金等の編集行のヘッダー */
+.doc_detail_list_head {
+	-ms-flex-align: center;
+	align-items: center;
+	display: -ms-flexbox;
+	display: flex;
+	color: var(--text-color-sub);
+	font-weight: 600;
+}
+.doc_detail_list_head > div {
+	background-color: var(--case-color);
+	color: var(--white);
+	font-size: 1.4rem;
+	font-weight: normal;
+	padding-left: 5px;
+	padding: 3px 0 3px 6px;
+}
+.doc_detail_list_head > div:first-child {
+	border-left: 1px solid var(--bor-color-main);
+}
+/* 預り金等の編集行のリスト */
+ul.doc_detail_list {
+	list-style: none;
+	margin: 0;
+	padding: 0;
+}
+ul.doc_detail_list > li {
+	background-color: var(--bg-color-edit);
+}
+ul.doc_detail_list li {
+	border-bottom: 1px solid var(--bor-color-main);
+	padding: 8px 0px 5px;
+}
+ul.doc_detail_list li:first-child {
+	border-top: 1px solid var(--bor-color-main);
+}
+.doc_row_data {
+	-ms-flex-align: flex-start;
+	align-items: flex-start;
+	display: -ms-flexbox;
+	display: flex;
+}
+.doc_row_no_data {
+	background-color: var(--white);
+	border-left: 1px solid var(--bor-color-main); 
+	border-right: 1px solid var(--bor-color-main); 
+	padding: 5px;
+}
+.doc_row_data > div {
+	padding: 0 10px 0 5px;
+}
+.doc_grip_vertical {
+	min-width: 35px;
+	max-width: 35px;
+}
+.doc_data_date {
+	min-width: 115px;
+}
+.doc_data_contetns {
+	min-width: 320px;
+	max-width: 320px;
+}
+.doc_data_amount {
+	min-width: 130px;
+	max-width: 130px;
+}
+.doc_data_amount_tax {
+	align-items: center;
+	display: flex;
+	font-size: 1.3rem;
+	margin-top: 3px;
+	margin-bottom: 3px;
+}
+.doc_data_amount_tax > span {
+	margin: 0 auto;
+}
+.doc_data_amount_tax > select {
+	margin-left: auto;
+	width: 60px;
+}
+.doc_data_type {
+	min-width: 143px;
+	max-width: 143px;
+}
+.doc_data_type__tax_withholding {
+	padding: 7px 0 0;
+}
+.doc_data_action {
+	min-width: 50px;
+}
+
+/* 小計エリア */
+.subtotal_invoice {
+	margin: 5px 4px 0 0;
+}
+.subtotal_row {
+	align-items: center;
+	display: flex;
+	justify-content: flex-end;
+	line-height: 1.25;
+	padding: 0 5px 2px;
+}
+.subtotal_tax {
+	margin: 0;
+	padding-right: 0;
+}
+.subtotal_row__label {
+	min-width: 90px;
+	text-align: right;
+}
+.subtotal_row__amount {
+	font-size: 1.5rem;
+	min-width: 100px;
+	text-align: right;
+}
+
+/* 合計金額 */
+.total_amount_label {
+	background-color: var(--bg-color-edit);
+	font-size: 1.6rem;
+	padding: 3px 5px 1px;
+	min-width: 105px;
+	text-align: right;
+}
+/* 預り金と報酬 */
+.badge.accg_label {
+	border-radius: 3px;
+	font-size: 1.3rem;
+	min-width: 80px;	
+	padding: 5px 3px;
+}
+.badge.accg_label_min {
+	border-radius: 3px;
+	font-size: 1.3rem;
+	min-width: 60px;	
+	padding: 5px 3px;
+}
+.badge.accg_label_record_value {
+	border-radius: 3px;
+	padding: 5px 8px 5px 5px;
+	text-align: right;
+	min-width: 75%;
+}
+.doc_container section {
+	margin-bottom: 25px;
+}
+.doc_container .section_block_title {
+	color: var(--text-color-main);
+	font-weight: normal;
+	font-size: 1.5rem;
+}
+
+.add_description {
+	-ms-flex-align: flex-start;
+	align-items: flex-start;
+	background-color: var(--white);
+	border: 1px solid var(--bor-color-main);
+	display: -ms-flexbox;
+	display: flex;
+	column-gap: 10px;
+	padding: 8px 10px 5px;
+	margin: 1px 0;
+}
+.add_description .add_link_wrap svg {
+	/* aタグの色と合わせている */
+	color: var(--text-color-link);
+}
+.add_description__col1 {
+	flex: 0 0 180px;
+}
+.add_description__col2 {
+	flex: 0 0 180px;
+}
+.add_description__col3 {
+	flex: 1 0;
+}
+.row_tax {
+	-ms-flex-align: baseline;
+	align-items: baseline;
+	display: -ms-flexbox;
+	display: flex;
+	column-gap: 15px;
+	-ms-flex-pack: end;
+	justify-content: flex-end;
+}
+.row_tax__ratio {
+	flex: 0 0 80px;
+}
+.row_tax__text {
+	flex: 0 0 50px;
+}
+.row_tax__val {
+	flex: 0 0 85px;
+}
+
+
+/****************** 請求書／精算書サイド *******************/
+/* サマリ用コンテナ */
+.doc_summary_container {
+	background-color: var(--white);
+	border: 1px solid var(--bor-color-main);
+	border-radius: 3px;
+	margin: 0 0 20px 0;
+	min-height: 200px;
+	padding: 10px 15px 15px;
+	width: 305px;
+}
+
+/* 金額詳細 */
+.doc_amount_detail {
+	border-top: 1px solid var(--bor-color-main);
+	margin-top: 8px;
+	margin-bottom: 15px;
+}
+/* 金額内訳 */
+.doc_amount_detail__list {
+	list-style: none;
+	padding: 0;
+	margin: 10px 0;
+}
+/* 金額内訳-詳細 */
+.doc_amount_detail__list.break_down_list li {
+	margin-bottom: 3px;
+}
+/* 金額行 */
+.amount_row {
+	-ms-flex-align: baseline;
+	align-items: baseline;
+	display: -ms-flexbox;
+	display: flex;
+	padding: 0 12px 0 3px;
+}
+/* 金額行（サマリ行） */
+.amount_row.summary_total {
+	align-items: center;
+	margin-left: 5px;
+}
+.deposit_recv_amount {
+	color: var(--text-color-gray);
+	font-size: 1.2rem;
+	text-align: right;
+	margin-bottom: 4px;
+	padding-right: 8.5px;
+}
+.amount_row__label {
+	color: var(--text-color-sub);
+	font-size: 1.4rem;
+	padding-left: 5px;
+	padding-right: 10px;
+}
+.amount_row__amount {
+	margin-left: auto;
+	line-height: 1.2;
+}
+.summary_total .amount_row__label {
+	background-color: #f3f3f3;
+	color: #2c4a68;
+	font-size: 1.4rem;
+	padding: 2px 12px 1px;
+}
+.summary_total .amount_value {
+	display: inline-block;
+	font-size: 2.6rem;
+	font-weight: 600;
+	min-width: 120px;
+	text-align: right;
+}
+
+/*********** 進捗詳細 ****************/
+.doc_action_container {
+	background-color: var(--white);
+	border: 1px solid var(--bor-color-main);
+	border-radius: 3px;
+	min-height: 200px;
+	padding: 10px 15px;
+	width: 305px;
+}
+/* 進捗詳細 */
+.doc_status_detail {
+	border-bottom: 1px solid var(--bor-color-main);
+	border-top: 1px solid var(--bor-color-main);
+	margin-top: 8px;
+	margin-bottom: 15px;
+}
+/* 進捗一覧 */
+.doc_status_detail__list {
+	list-style: none;
+	padding: 0;
+	margin: 10px 0;
+}
+.doc_status_detail__list li {
+	margin-bottom: 3px;
+}
+.doc_status_detail__list li .action_title {
+	color: var(--text-color-sub);
+	font-weight: 600;
+	min-width: 80px;
+}
+.doc_status_detail__list li .action_title svg {
+	font-size: 1.3rem;
+	margin-right: 1px;
+	margin-bottom: 1px;
+}
+.doc_status_detail__list li .action_data {
+	border-left: 2px solid var(--bor-color-main);
+	margin-left: 5px;
+	padding: 5px 10px;
+}
+.show_last:not(:last-child) {
+	display: none;
+}
+
+/*********** 内部メモ ****************/
+.doc_memo_container {
+	background-color: var(--white);
+	border: 1px solid var(--bor-color-main);
+	border-radius: 3px;
+	padding: 10px 15px;
+}
+.doc_memo_container__header {
+	font-weight: 600;
+	font-size: 1.6rem;
+	color: var(--text-color-sub);
+}
+.doc_memo_container__body {
+	max-width: 272px;
+}
+
+/********************************************************
+ * 取引実績
+********************************************************/
+/* 取引状況（取引実績で使用） */
+.record_container {
+	display: -ms-flexbox;
+	display: flex;
+	margin-top: 10px;
+	gap: 20px;
+}
+/* 会計書類情報 */
+.record_container__doc {
+	-ms-flex: 0 0 30%;
+	flex: 0 0 30%;
+	max-width: 30%;
+}
+/* 取引実積一覧 */
+.record_container__list {
+	-ms-flex: 1;
+	flex: 1;
+}
+
+/* 個別入力 */
+.input_record_parts {
+	-ms-flex-align: center;
+	align-items: center;
+	display: -ms-flexbox;
+	display: flex;
+}
+.input_record_parts > span {
+	margin-right: 5px;
+}
+
+/*********** 会計書類状況 ****************/
+.record_sum_container {
+	background-color: var(--white);
+	border: 1px solid var(--bor-color-main);
+	border-radius: 3px;
+	padding: 10px 15px 5px;
+}
+.record_sum_container__header {
+	-ms-flex-align: center;
+	align-items: center;
+	border-bottom: 1px solid var(--bor-color-main);
+	display: -ms-flexbox;
+	display: flex;
+	padding: 0 5px 5px;
+}
+.record_sum_container__header__title {
+	color: var(--text-color-sub);
+	font-weight: 600;
+	font-size: 1.6rem;
+}
+.record_sum_container__body {
+	padding: 5px;
+}
+.sum_container__body__status {
+	margin: 5px 0;
+}
+.sum_container__body__no {
+	margin: 8px 0;
+}
+.sum_container__body__amount {
+	column-gap: 30px;
+	display: -ms-flexbox;
+	display: flex;
+	flex-wrap: wrap;
+	row-gap: 10px;
+	margin-bottom: 15px;
+}
+.sum_container__body__amount_left {
+	flex: 1;
+}
+.sum_container__body__amount_right {
+	flex: 1;
+}
+.breakdown_row {
+	align-items: baseline;
+	display: -ms-flexbox;
+	display: flex;
+	flex-wrap: wrap;
+	row-gap: 5px;
+	margin-bottom: 5px;
+}
+.breakdown_label {
+	flex-basis: 30px;
+}
+.breakdown_value {
+	margin-left: auto;
+	padding-left: 5px;
+}
+
+.sum_container__body__info {
+	display: -ms-flexbox;
+	display: flex;
+	margin-bottom: 10px;
+}
+.sum_container__body__target {
+	margin-bottom: 10px;
+}
+.doc_summary_container_sm .doc_status__title {
+	font-size: 1.5rem;
+}
+.doc_summary_container_sm .doc_amount_detail {
+	border-bottom: none;
+	margin-bottom: 0;
+	margin-top: 5px;
+	padding-right: 7px;
+}
+.doc_summary_container_sm .summary_total .amount_value {
+	font-size: 2rem;
+}
+
+/********************************************************
+ * 請求書・精算書作成モーダル start
+********************************************************/
+.customer_select_area button.add_customer {
+	background-color: #edfcff;
+	background-image: url(/img/icon_btn_close.svg);
+	background-repeat: no-repeat;
+	background-position: right 6px center;
+	background-size: 10px;
+	border: 1px solid #b5ccd0;
+	border-radius: 2px;
+	font-size: 1.3rem;
+	text-align: left;
+	text-overflow: ellipsis;
+	overflow: hidden;
+	padding: 5px 6px;
+	white-space: nowrap;
+}
+.customer_search {
+	display : flex;
+	flex-direction: column;
+	width: 500px;
+}
+.accg_customer_search_wrapper {
+	top: 55px;
+	max-width: initial;
+}
+.customer_search button.add_customer {
+	background-color: var(--white);
+	border-radius: 0;
+	margin: 3px 3px 0 0;
+	overflow: hidden;
+	text-align: left;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+	width: 98%;
+	padding: 2px 5px;
+}
+.customer_search button.add_customer[aria-selected=true] {
+	background-color: #e2f2fa;
+}
+.customer_search button.add_customer:hover {
+	background-color: #e2f2fa;
+}
+/********************************************************
+ * 請求書・精算書作成モーダル end
+********************************************************/
+
+/* 口座選択モーダル */
+.modal_account_select {
+	width: 850px!important;
+	max-width: 100%;
+}
+/* 未精算報酬選択モーダル */
+.modal_un_paid_fee_select {
+	width: 700px!important;
+	max-width: 100%;
+}
+/* 預り金選択モーダル */
+.modal_deposit_recv_select {
+	width: 940px!important;
+	max-width: 100%;
+}
+
+/********************************************************
+ * 支払い計画モーダル start
+********************************************************/
+.modal_payment_plan {
+	width: 650px!important;
+	max-width: 100%;
+}
+.shiharai_plan_edit {
+	background-color: var(--bg-color-view);
+	padding: 5px 15px 5px 30px;
+}
+.shiharai_plan_top {
+	margin-bottom: 30px;
+}
+.shiharai_summary_block {
+	padding: 5px 35px 5px 5px;
+}
+.shiharai_summary_block .row {
+	height: 45px;
+	align-items: center;
+	border-bottom: 1px solid var(--bor-color-main);
+	margin-top: 5px;
+}
+.shiharai_summary_block .summary_title {
+	font-size: 1.6rem;
+	font-weight: 600;
+	color: var(--text-color-sub);
+}
+.summary_money {
+	font-size: 2.2rem;
+	margin-right: 5px;
+	font-weight: 600;
+	color: var(--text-color-sub);
+}
+.zankin_chackbox {
+	font-size: 1.5rem;
+	color: var(--danger);
+}
+.zankin_chackbox .checkbox_btn .checkbox_input:checked ~ .checkbox_txt {
+	color: var(--danger);
+}
+.sagaku_block {
+	border-bottom: 1px solid var(--bor-color-main);
+	-ms-flex-align: center;
+	align-items: center;
+	display: -ms-flexbox;
+	display: flex;
+	margin-right: auto;
+}
+.sagaku_label {
+	font-size: 1.8rem;
+	font-weight: 600;
+	color: var(--text-color-sub);
+	line-height: 1.2;
+	margin-right: 5px;
+}
+.sagaku_detail_label {
+	font-size: 1.3rem;
+	margin-right: 10px;
+}
+.sagaku_input > input.form-control[readonly] {
+	background: var(--white);
+	border: none;
+	font-size: 2rem;
+	height: 30px;/* Macのsafariだと、上記のfont-sizeの変更により、文字が少し隠れてしまうので、form-controlの高さをデフォルトより少し大きくする */
+	width: 130px;
+	text-align: right;
+	color: var(--text-color-sub);
+}
+.sagaku_input > input.form-control[readonly]:focus {
+	outline: 0;
+	box-shadow: none;
+}
+
+/********************************************************
+ * 支払い計画モーダル end
+********************************************************/

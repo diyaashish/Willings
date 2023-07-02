@@ -1,0 +1,386 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout">
+<head>
+<meta name="viewport" content="width=device-width,initial-scale=1.0,minimum-scale=1.0">
+<meta charset="utf-8">
+<meta content="IE=edge" http-equiv="X-UA-Compatible">
+<meta name="robots" content="noindex,nofollow">
+<title>
+	[[${T(jp.loioz.common.utility.LoiozUtils).getHtmlTitle("無料トライアル申込み", T(jp.loioz.common.utility.SessionUtils).getTenantName())}]]
+</title>
+<th:block th:with="version=${@environment.getProperty('app.version')}">
+	<link th:href="@{/css/bootstrap.min.css?{ver}(ver=${version})}" rel="stylesheet" type="text/css"/><!--/* ファイル内のmapファイルの参照処理の削除を反映させるためにversionを追加 */-->
+	<link th:href="@{/css/bootstrap-overwrite.css?{ver}(ver=${version})}" rel="stylesheet" type="text/css"/>
+	<link th:href="@{/css/base.css?{ver}(ver=${version})}" rel="stylesheet" type="text/css"/>
+	<link th:href="@{/css/noLogin.css?{ver}(ver=${version})}" rel="stylesheet" type="text/css"/>
+	<link th:href="@{/css/content.css?{ver}(ver=${version})}" rel="stylesheet" type="text/css"/>
+	<script type="text/javascript" th:src="@{/webjars/jquery/3.3.1/jquery.min.js}"></script>
+	<script type="text/javascript" th:src="@{/js/jquery-ui-1.12.1.min.js}"></script>
+	<script type="text/javascript" th:src="@{/js/common.js?{ver}(ver=${version})}"></script>
+	<script type="text/javascript" th:src="@{/js/bootstrap.min.js?{ver}(ver=${version})}"></script><!--/* ファイル内のmapファイルの参照処理の削除を反映させるためにversionを追加 */-->
+	<script type="text/javascript" th:src="@{/js/fontawesome-5.15.2-all.min.js}"></script>
+	<script type="text/javascript" th:src="@{/js/Sortable.min.js}"></script>
+	<script type="text/javascript" th:src="@{/js/addclear.js}"></script>
+	<script type="text/javascript" th:src="@{/js/navigation.js?{ver}(ver=${version})}"></script>
+</th:block>
+
+<script type="text/javascript">
+	$(function() {
+		judgeBrowser();
+	});
+</script>
+
+</head>
+<body>
+
+<th:block th:if="${T(jp.loioz.common.constant.CommonConstant.SystemFlg).FLG_OFF.equalsByCode(@environment.getProperty('app.devMode'))}">
+<!-- Google Tag Manager (noscript) -->
+<noscript><iframe src="https://www.googletagmanager.com/ns.html?id=GTM-TVP5T44"
+height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
+<!-- End Google Tag Manager (noscript) -->
+</th:block>
+
+	<!--/* ヘッダー */-->
+	<header>
+		<div class="tenant_no_login_header">
+			<div class="header_inner">
+				<a href="https://www.loioz.co.jp/">
+					<img class="loioz_logo" th:src="@{/img/logo_1.png}" width="144" height="40">
+				</a>
+			</div>
+		</div>
+	</header>
+	<!--/* ヘッダー end */-->
+
+	<div id="main-contents">
+		<main class="loioz_hp_contetns">
+			<!--/* タイトル帯 */-->
+			<div class="main_title">
+				<div class="title_inner">
+					<h1>無料トライアル申込みフォーム</h1>
+				</div>
+			</div>
+			<!--/* タイトル帯 end */-->
+
+			<!--/* パンくず */-->
+			<div class="loioz_hp_breadcrumb">
+				<div class="loioz_hp_breadcrumb_inner">
+					<span>
+						<a href="https://www.loioz.co.jp">弁護士事務所向け業務管理システム</a>
+					</span>
+					 &gt; 
+					<span>
+						<span>無料トライアル申込みフォーム</span>
+					</span>
+				</div>
+			</div>
+			<!--/* パンくず end */-->
+
+			<!--/* section */-->
+			<div class="section">
+
+				<!--/* section_inner */-->
+				<div class="section_inner">
+
+					<h2 class="section_title">
+						14日間、無料でお試しいただけます！！
+					</h2>
+
+					<div class="section_desc">
+						<p>簡単なWEB上のお手続きで、お申し込みをしたその日から利用することができます。</p>
+						<p>導入をご検討中のお客様は、ぜひお試しください。</p>
+					</div>
+
+					<!--/* section_content */-->
+					<div class="section_content">
+						<!--/* row */-->
+						<div class="row">
+							<!--/* col-md-5 ① */-->
+							<div class="col-md-5">
+								<div class="loioz_pc_block">
+									<img class="loioz_pc" th:src="@{/img/loioz_pc.png}">
+								</div>
+							</div>
+							<!--/* col-md-5 ① end */-->
+
+							<!--/* col-md-6 ② */-->
+							<div class="col-md-6">
+								<!--/* メールアドレス入力 */-->
+								<div class="mail_block">
+
+									<div class="mail_support_text">
+										<span class="hp_text_point">簡単登録。すぐにお試し可能です！！</span>
+										<span>（目安３分）</span>
+									</div>
+
+									<div class="mail_input">
+										<!--/* form */-->
+										<form class="preventDoubleSubmit" th:action="@{/user/accountRegist/form}" th:object="${tenantRegistApplyForm}" method="post">
+											<div class="input-group">
+												<!--/* メールアドレス */-->
+												<input type="email" class="form-control mail_input_text input_half" th:field="*{mailAddress}" th:autocomplete="off"
+													th:classappend="${#fields.hasErrors('mailAddress')} ? 'is-invalid'" maxlength="255" placeholder="メールアドレスをご入力ください">
+												<!--/* 送信ボタン */-->
+												<div class="input-group-append">
+													<button type="submit" class="btn btn-danger pt-1 pb-0 px-3" id="registButton" name="regist">無料で試してみる</button>
+												</div>
+											</div>
+											<!--/* エラーメッセージ */-->
+											<div class="invalid-feedback error_mag_point d-flex" th:errors="*{mailAddress}"></div>
+										</form>
+										<!--/* form end */-->
+
+									</div>
+
+									<!--/* 規約・プライバシーポリシー */-->
+									<div class="mail_sub_text">
+										<div>・ご入力いただいたメールアドレス宛に、お手続きのためのリンクをお送りいたします。</div>
+										<div>
+										・<a href="javascript:void(0);" data-toggle="modal" data-target="#termsModal" target="_blank" rel="noopener">利用規約</a>、
+											<a href="javascript:void(0);" data-toggle="modal" data-target="#policyModal" target="_blank" rel="noopener">プライバシーポリシー</a>
+											に同意の上、お申し込みください。
+										</div>
+									</div>
+									<!--/* 規約・プライバシーポリシー end */-->
+
+									<div class = "browser_message error_msg_browser_tenant px-4 m-0" style = "display:none;">
+										<div class="d-flex mb-3">
+											<div><i class="fas fa-exclamation-triangle mr-2 text-danger"></i></div>
+											<div>
+												<div>現在ご利用のブラウザは推奨環境ではありません。</div>
+												<div>動作保証している下記ブラウザをご利用ください。</div>
+											</div>
+										</div>
+										<div>
+											<div><i class="fas fa-circle fs9 mr-2"></i>Windows10</div>
+											<div class="d-flex flex-wrap pl-4">
+												<div>推奨ブラウザ：</div>
+												<div>
+													<div>Google Chrome 最新Version</div>
+													<div>Microsoft Edge 最新Version</div>
+												</div>
+											</div>
+										</div>
+										<div>
+											<div><i class="fas fa-circle fs9 mr-2"></i>macOS</div>
+											<div class="d-flex flex-wrap pl-4">
+												<div>推奨ブラウザ：</div>
+												<div>
+													<div>Safari 最新Version</div>
+													<div>Google Chrome 最新Version</div>
+												</div>
+											</div>
+										</div>
+										<div class="mt-4 text-center">
+											Google Chromeのダウンロードは、<a href="https://www.google.com/chrome/" target="_blank">こちら</a>
+										</div>
+									</div>
+
+								</div>
+								<!--/* メールアドレス入力 end */-->
+
+							</div>
+							<!--/* col-md-6 ② end */-->
+						</div>
+						<!--/* row end */-->
+
+					</div>
+					<!--/* section_content end */-->
+				</div>
+				<!--/* section_inner end */-->
+			</div>
+			<!--/* section end */-->
+
+			<!--/* section */-->
+			<div class="section section_light_blue">
+				<!--/* ご利用開始までの流れ */-->
+				<div class="section_inner">
+					<h2 class="section_title">ご利用開始までの流れ</h2>
+					<div class="section_content use_step">
+						<div class="row justify-content-md-center">
+							<!--/* STEP1 */-->
+							<div class="col-md-2 step_arrow">
+								<div class="step_nav">
+									STEP
+									<span class="hp_text_point d-block">１</span>
+								</div>
+								<div class="step_img">
+									<div class="loioz_step1"></div>
+								</div>
+								<div class="step_text">
+									<span class="d-block">本画面から申請</span>
+								</div>
+							</div>
+							<!--/* STEP2 */-->
+							<div class="col-md-2 step_arrow">
+								<div class="step_nav">
+									STEP<span class="hp_text_point d-block">２</span>
+								</div>
+								<div class="step_img">
+									<div class="loioz_step2"></div>
+								</div>
+								<div class="step_text">
+									<span class="d-block">案内メールに記載された</span>
+									<span class="d-block">URLにアクセス</span>
+								</div>
+							</div>
+							<!--/* STEP3 */-->
+							<div class="col-md-2 step_arrow">
+								<div class="step_nav">
+									STEP<span class="hp_text_point d-block">３</span>
+								</div>
+								<div class="step_img">
+									<div class="loioz_step3"></div>
+								</div>
+								<div class="step_text">
+									<span class="d-block">利用開始の準備を</span>
+									<span class="d-block">整える</span>
+								</div>
+							</div>
+							<!--/* STEP4 */-->
+							<div class="col-md-2 step_arrow">
+								<div class="step_nav">
+									STEP<span class="hp_text_point d-block">４</span>
+								</div>
+								<div class="step_img">
+									<div class="loioz_step4"></div>
+								</div>
+								<div class="step_text">
+									<span class="d-block">専用環境を</span>
+									<span class="d-block">自動作成</span>
+								</div>
+							</div>
+							<!--/* STEP5 */-->
+							<div class="col-md-2">
+								<div class="step_nav">
+									STEP<span class="hp_text_point d-block">５</span>
+								</div>
+								<div class="step_img">
+									<div class="loioz_step5"></div>
+								</div>
+								<div class="step_text">
+									ご利用開始
+								</div>
+							</div>
+						</div>
+						<div class="row justify-content-md-center">
+							<div class="col-md-8">
+								<div class="step_summary">
+									<div class="summary_border">
+										<span class="summary_text">とても簡単なWEB入力だけ！！</span>
+									</div>
+								</div>
+							</div>
+							<div class="col-md-2 pr-0">
+								<div class="step_summary">
+									<div class="summary_border">
+										<span class="summary_text hp_text_point px-2">１４日間</span>
+									</div>
+								</div>
+							</div>
+						</div>
+						<div class="row justify-content-md-center mt-5">
+							<div class="col-md-10 pr-5">
+								<ul>
+									<li>ご利用開始日から14日間は無料で利用することができます。</li>
+									<li>無料期間終了後、自動的に有料プランに切り替わることはありません。</li>
+								</ul>
+							</div>
+						</div>
+					</div>
+				</div>
+			</div>
+			<!--/* section end */-->
+
+			<!--/* section */-->
+			<div class="section">
+				<!--/* 無料トライアルでお試しいただけること */-->
+				<div class="section_inner">
+					<h2 class="section_title">お試しいただけること</h2>
+					<div class="section_desc">
+						<p>すべての機能をご利用いただくことができます。</p>
+						<p>資料だけではわからない画面や操作性を是非ご確認ください。</p>
+					</div>
+					<div class="section_content use_trial px-4">
+						<div class="row justify-content-md-center">
+							<!--/* 1枚目 */-->
+							<div class="col-md-3">
+								<div class="info_card">
+									<div class="info_title">
+										実際のデータを登録することができます。
+									</div>
+									<div class="info_img img_trial1"></div>
+									専用環境のため、本番データの登録が可能です。
+									顧客情報や事件、会計データなど、実際の運用を想定した確認ができます。
+								</div>
+							</div>
+							<!--/* 2枚目 */-->
+							<div class="col-md-3">
+								<div class="info_card">
+									<div class="info_title">
+										利用人数、利用形態に合わせたお試しが可能です！
+									</div>
+									<div class="info_img img_trial2"></div>
+										無料期間中でもユーザーアカウントを追加することで、
+										弁護士1名の個人利用から事務所全体で試用など、
+										様々な利用形態で確認することができます。
+								</div>
+							</div>
+							<!--/* 3枚目 */-->
+							<div class="col-md-3">
+								<div class="info_card">
+									<div class="info_title">
+										登録したデータは契約後も使用できます！
+									</div>
+									<div class="info_img img_trial3"></div>
+									登録したデータは導入後も継続して利用できるため、
+									本格運用への切り替えもスムーズに行えます。
+								</div>
+							</div>
+							<!--/* 4枚目 */-->
+							<div class="col-md-3">
+								<div class="info_card">
+									<div class="info_title">
+										疑問点や不明点はサポートが解決します！
+									</div>
+									<div class="info_img img_trial4"></div>
+									無料期間中でも、サポートが不明点や疑問点を解決します。
+									実際画面を利用した操作説明会や導入に向けた支援まで、
+									あるゆる場面で万全のサポートをご提供いたします。
+								</div>
+							</div>
+						</div>
+					</div>
+				</div>
+			</div>
+			<!--/* section end */-->
+		</main>
+	</div>
+	<footer>
+		<div class="copyright">
+			copyright loioz inc./ 株式会社ロイオズ All Rights Reserved.
+		</div>
+	</footer>
+
+	<!-- /** 利用規約モーダル START*/ -->
+	<div id="modalArea">
+		<div th:replace="common/static/privacyPolicy::policyModal"></div>
+		<div th:replace="common/static/terms::termsModal"></div>
+	</div>
+	<!-- /** 利用規約モーダル END*/ -->
+
+<th:block th:if="${T(jp.loioz.common.constant.CommonConstant.SystemFlg).FLG_OFF.equalsByCode(@environment.getProperty('app.devMode'))}">
+
+	<!-- Google Tag Manager -->
+	<script>(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
+	new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
+	j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
+	'https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);
+	})(window,document,'script','dataLayer','GTM-TVP5T44');</script>
+	<!-- End Google Tag Manager -->
+
+</th:block>
+
+</body>
+</html>

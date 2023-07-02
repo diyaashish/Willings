@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html  xmlns:th="http://www.thymeleaf.org"
+	xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+	layout:decorator="noLoginCommonLayout">
+<head>
+<title layout:fragment="title-contents">
+	[[${T(jp.loioz.common.utility.LoiozUtils).getHtmlTitle("認証エラー", "")}]]
+</title>
+</head>
+<body>
+	<main class="loioz_hp_contetns" layout:fragment="main-contents">
+		<!--/* タイトル帯 */-->
+		<div class="main_title">
+			<div class="title_inner">
+				<h1>アクセスが正常に行えませんでした</h1>
+			</div>
+		</div>
+		<!--/* タイトル帯 end */-->
+
+		<!--/* section */-->
+		<div class="section">
+			<!--/* section_inner */-->
+			<div class="section_inner">
+				<h2 class="section_title">
+					認証の失敗により、アクセスが正常に行えませんでした。<br/>
+					お手数ですが、ログイン画面からもう一度アクセスをお願いします。
+				</h2>
+				<!--/*
+				ログイン画面へのアクセスボタンはログイン状態の場合のみ表示（未ログイン状態でのプラン画面へのURL直アクセスなどのケースはここは表示しない）。
+				（未ログイン状態の場合はサブドメインがわからず、プラン画面のサブドメインでこの画面を表示するようにするため、ログイン画面へのアクセスはさせないようにする。）
+				*/-->
+				<div th:if="${T(jp.loioz.common.utility.SessionUtils).isAlreadyLoggedUser()}" class="section_content">
+					<div class="text-center h2">
+						<a id="logoutButton" href="javascript:void(0);" onclick="$('#logoutForm').submit();">ログイン画面へ</a>
+						<form role="form" id="logoutForm" th:action="@{/user/logout}" method="post"></form>
+					</div>
+				</div>
+			</div>
+		</div>
+	</main>
+</body>
+</html>

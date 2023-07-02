@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+	xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+	layout:decorator="commonLayout">
+<head>
+<title layout:fragment="title-contents">
+	[[${T(jp.loioz.common.utility.LoiozUtils).getHtmlTitle("外部サービス連携", T(jp.loioz.common.utility.SessionUtils).getTenantName())}]]
+</title>
+<meta charset="utf-8" />
+
+<script type="text/javascript" th:inline="javascript">
+<!--/* 外部ストレージの連携失敗処理 */-->
+function failerConnectFnc(errorMsg) {
+	// 子タブを閉じる処理を完了するまで待つ
+	setTimeout(function() {
+		showErrorMessageForJs(errorMsg);
+	}, 100)
+}
+<!--/* 外部ストレージの連携成功処理 */-->
+function successConnectFnc(successMsg) {
+	// 子タブを閉じる処理を完了するまで待つ
+	setTimeout(function() {
+		Promise.resolve()
+		.then(() => renderExternalStorageSelectView())
+		.then(() => showInfoMessageForJs(successMsg))
+		.catch((errors) => console.log(errors));
+	}, 100);
+}
+
+<!--/* 外部ストレージの選択エリアの再レンダリング処理 */-->
+function renderExternalStorageSelectView() {
+	return new Promise((resolve,reject) => {
+		$.ajax({
+			url : /*[[@{/user/fileManagementSetting/getExternalStorageSelectView}]]*/"",
+			type : "GET",
+			dataType: 'html',
+		})
+		.done(function(data, status, jqXHR) {
+			if (isAjaxProcSuccess(jqXHR)) {
+				// 親HTMLのID
+				$('#externalStorageSelectViewFragmentWrap').html(data);
+				return resolve();
+			} else {
+				// 処理失敗
+				const errorMsg = getAjaxProcResutlMessage(jqXHR);
+				showErrorMessageForJs(errorMsg);
+				return reject();
+			}
+		})
+		.fail(function(jqXHR, status, errorThrown) {
+			showErrorMessageForJs(/*[[#{E00091}]]*/ "error");
+			return reject();
+		});
+	});
+}
+</script>
+</head>
+<body>
+	<div class="contents_sidebar_wrapper_setting" layout:fragment="main-contents">
+		<!-- サイドメニュー -->
+		<div th:replace="common/systemSettingMenu::selectMenu(${T(jp.loioz.common.constant.CommonConstant$SystemSettingMenu).STORAGE.getCd()})"></div>
+
+		<!-- コンテンツ -->
+		<div class="contents_wrapper" th:object="${viewForm}">
+			<!--/* メッセージエリア */-->
+			<div th:replace="common/messageArea::messageArea"></div>
+
+			<!--/* contents_limited_width_setting サイズ幅(maxサイズ）start */-->
+			<div class="container-fluid contents_limited_width_setting">
+
+				<!--/* パンくず*/-->
+				<div class="breadcrumb_area">
+					<ul>
+						<li><span>事務所設定</span></li>
+						<li><i class="fas fa-angle-right"></i></li>
+						<li>外部サービス連携</li>
+					</ul>
+				</div>
+
+				<!--/* コンテンツブロック start */-->
+				<div class="contents_block">
+					
+					<!--/* 外部ストレージサービスの連携選択エリア */-->
+					<div id="externalStorageSelectViewFragmentWrap" th:insert="user/fileManagementSetting/fileManagementSettingFragment::externalStorageSelectViewFragment(${viewForm.externalStorageSelectViewForm})"></div>
+					
+				</div>
+			</div>
+		</div>
+	</div>
+</body>
+</html>

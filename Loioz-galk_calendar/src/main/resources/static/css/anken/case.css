@@ -1,0 +1,330 @@
+@charset "UTF-8";
+
+/********************************************************
+ * 案件新規登録
+*********************************************************/
+.anken_customer_select {
+	background: var(--white);
+	border: 1px solid var(--loioz-primary);
+	border-radius: 3px;
+	padding: 8px 10px;
+	margin: 10px 10px 8px 0;
+}
+/* 顧客名検索エリア */
+.customer_search {
+	display : flex;
+	flex-direction: row;
+	flex-wrap: wrap;
+	max-width: 510px;
+}
+.customerSearchPoper {
+	max-width: initial;
+}
+.customer_search button.add_customer {
+	width: 165px;
+	padding: 2px 5px;
+	margin: 3px 3px 0 0;
+	text-align: left;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+	border-radius: 0;
+	background-color: #fff;
+}
+.customer_search button.add_customer[aria-selected=true] {
+	background-color: #e2f2fa;
+}
+.customer_search button.add_customer:hover {
+	background-color: #e2f2fa;
+}
+.popover_info {
+	font-size: 1.2rem;
+}
+
+/* テキストと線 */
+.text_line {
+	display: flex;
+	margin: 10px 0 5px;
+}
+.text_line > div {
+	color: var(--text-color-sub);
+	font-weight: 600;
+	width: fit-content;
+}
+.text_line > hr {
+	flex: 1 1 auto;
+	margin: auto 5px auto 10px;
+}
+/* テキストと線 end */
+
+/********************************************************
+ * 案件情報
+*********************************************************/
+.case_edit {
+	margin-bottom: 15px;
+}
+.case_edit_split {
+	display: -ms-flexbox;
+	display: flex;
+	flex-wrap: wrap;
+	row-gap: 10px;
+	padding: 0 5px;
+}
+.case_edit_split__left {
+	flex: 0 0 60%;
+	padding-right: 20px;
+}
+.case_edit_split__right {
+	flex: 0 0 40%;
+}
+
+.case_edit_top {
+	-ms-flex-align: center;
+	align-items: center;
+	display: -ms-flexbox;
+	display: flex;
+	gap: 10px;
+	margin-top: 10px;
+}
+.case_edit_top__info {
+	margin-left: 5px;
+	padding-bottom: 8px;
+}
+.case_edit_top__btn {
+	display: -ms-flexbox;
+	display: flex;
+	margin-left: auto;
+	min-width: 200px;
+	gap: 15px;
+	justify-content: flex-end;
+}
+.case_edit_top__attribute {
+	-ms-flex-align: center;
+	align-items: center;
+	display: -ms-flexbox;
+	display: flex;
+	flex: 1 0 auto;
+	flex-wrap: wrap;
+	margin-top: 3px;
+}
+.case_edit_top__attribute .badge {
+	margin-right: 10px;
+	margin-bottom: 2px;
+}
+/* 裁判 */
+.case_edit_court {
+	padding: 0 5px;
+}
+.btn_case_no_cp {
+	margin-top: -2px;
+	padding: 2px 7px;
+	position: absolute;
+}
+.btn_case_no_cp > svg {
+	font-size: 1.4rem;
+}
+.case_person_contact {
+	display: -ms-flexbox;
+	display: flex;
+	flex-wrap: wrap;
+	gap: 10px 30px;
+	margin-bottom: 5px;
+	margin-top: 0;
+}
+.case_person_contact__data {
+	display: -ms-flexbox;
+	display: flex;
+	flex-wrap: wrap;
+	margin-left: auto;
+	row-gap: 10px;
+}
+
+/* 裁判情報 */
+.case_detail__court_other {
+	display: -ms-flexbox;
+	display: flex;
+	flex-wrap: wrap;
+	gap: 10px 30px;
+}
+.court_info {
+	flex: 0 1 350px;
+}
+.court_info__contact {
+	display: -ms-flexbox;
+	display: flex;
+	flex-wrap: wrap;
+	gap: 10px 15px;
+}
+.contact_data {
+	min-width: 135px;
+	font-size: 1.3rem;
+}
+.contact_value {
+	font-size: 1.4rem;
+}
+.court_other {
+	flex: 1;
+	max-width: 470px
+}
+.court_judgment {
+	flex: 1;
+}
+.court_judgment.court_criminal {
+	flex: 1;
+	max-width: 300px;
+}
+.court_add_prosecution {
+	flex: 1;
+	max-width: 250px;
+}
+.court_date {
+	display: -ms-flexbox;
+	display: flex;
+	gap: 10px;
+}
+.court_date__left {
+	flex: 1;
+	max-width: 130px;
+}
+.court_date__right {
+	flex: 1;
+	max-width: 130px;
+}
+.court_info__base {
+	display: -ms-flexbox;
+	display: flex;
+	flex-wrap: wrap;
+}
+
+.box_header_title {
+	min-width: 100px;
+}
+
+/* タブ内一覧 */
+.row.row_list.sub_row {
+	font-size: 1.2rem;
+	padding-right: .25rem;
+	padding-left: .25rem;
+}
+
+
+/************** 案件（刑事）************/
+/* 顧客情報＋事件一覧ブロック */
+.customer_jiken_block {
+	margin: 0 0 25px;
+}
+
+/* 共犯者＋被害者ブロック */
+.kanyosha_block {
+	margin: 0 0 25px;
+}
+
+/* 捜査機関ブロック */
+.sosakikan_block {
+	margin: 0 0 35px;
+}
+
+/* 顧客-事件ブロック */
+.tab_inner_list {
+	overflow-y: visible;
+	padding: 0;
+	overflow-x: hidden;
+}
+/* 顧客-事件ブロック内のヘッダ行 */
+.tab_inner_list .row.row_list.list_header {
+	background: var(--bg-color-view);
+	color: var(--text-color-sub);
+	font-weight: 600;
+	top: 0px;
+	z-index: 999;
+}
+.tab_inner_list .row.row_list.list_header.row_completed {
+	background-color: #f2f2f3;
+}
+/* 顧客-行追加エリア */
+.add_row_area {
+	position: sticky;
+	bottom: 0px;
+	background-color: var(--white);
+	padding: 8px 0 0;
+}
+.add_row_area.row_completed{
+	background-color: #f2f2f3;
+}
+
+/************** 顧客検索ダイアログ テーブル列幅 ************/
+.custeomerAnkenDialog .col_search_select {
+	width: 50px;
+	min-width: 50px;
+	max-width: 50px;
+	text-align: center;
+}
+.custeomerAnkenDialog .col_select {
+	width: 40px;
+	max-width: 40px;
+	text-align: center!important;
+}
+.custeomerAnkenDialog .col_customerId {
+	width: 100px;
+	max-width: 100px;
+	min-width: 100px;
+	text-align: center;
+}
+.custeomerAnkenDialog .col_customerName {
+	width: 210px;
+	max-width: 210px;
+}
+.custeomerAnkenDialog .col_birthDay {
+	width: 135px;
+	max-width: 135px;
+}
+.custeomerAnkenDialog .col_address {
+	width: 280px;
+	max-width: 280px;
+}
+.custeomerAnkenDialog .col_telNo {
+	width: 142px;
+	max-width: 142px;
+}
+.custeomerAnkenDialog .col_no_data {
+	width: 908px;
+	max-width: 908px;
+}
+.popover_delete_anken_msg {
+	font-size: 1.2rem!important;
+	max-width: 490px!important;
+	padding: 5px 0 0 4px;
+}
+.popover_delete_anken_msg ul {
+	padding-left: 3rem!important;
+}
+.popover{
+	max-width: 620px;
+}
+.popover_anken_msg {
+	font-size: 1.2rem;
+}
+.popover_anken_msg ul {
+	padding-left: 3rem;
+}
+
+/************** 案件削除モーダル ************/
+.delete_modal_header_title {
+    color: #fff;
+    font-weight: bold;
+    font-size: 1.6rem;
+    background-color: #DE3D64;
+    padding: 10px 40px;
+    min-width: 240px;
+    text-align: center;
+    border-radius: 6px 0 7px 0;
+    letter-spacing: 1px;
+    line-height: 1.1;
+}
+.popover_delete_anken_msg {
+    font-size: 1.2rem;
+    max-width: 400px;
+}
+.popover_delete_anken_msg ul {
+    padding-left: 3rem!important;
+}

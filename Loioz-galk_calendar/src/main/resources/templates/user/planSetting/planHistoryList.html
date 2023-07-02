@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+	xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+	layout:decorator="commonLayout">
+<head>
+<meta charset="utf-8" />
+</head>
+<body>
+	<div th:fragment="select-modal" class="select-modal">
+		<div th:object="${planHistoryListForm}">
+
+		<div class="modal-content">
+			<div class="modal-header">
+				<h2 class="modalheader_title">請求履歴</h2>
+			</div>
+			<div class="modal-body">
+				<div class="header_fixed_table_wrapper table_seikyu_rireki mt-4">
+					<table class="table table_standard table-sm table_fixed  table-striped">
+						<thead>
+							<tr>
+								<th class="col_20">日付</th>
+								<th class="col_20">ご利用プラン</th>
+								<th class="col_15">ライセンス数</th>
+								<th class="col_20">ストレージ容量(GB)</th>
+								<th class="col_15">請求金額(円)</th>
+								<th class="col_20">月末での利用状況</th>
+							</tr>
+						</thead>
+						<tbody>
+							<tr th:each ="history : *{planHistoryList}">
+								<td th:text="${history.getChargeDateStr()}">2019/01/25</td>
+								<td th:text="${history.getPlanTypeTitle()}"></td>
+								<td class="text-right pr-5">[[${#numbers.formatInteger(history.licenseCount, 1, 'COMMA')}]]</td>
+								<td class="text-right pr-5">[[${#numbers.formatInteger(history.storageCapacity, 1, 'COMMA')}]]</td>
+								<td class="text-right pr-5">[[${#numbers.formatInteger(history.chargeThisMonthIncludedTax, 1, 'COMMA')}]]</td>
+								<td th:text="${history.getPlanStatusStr()}">有効</td>
+							</tr>
+						</tbody>
+					</table>
+				</div>
+			</div>
+			<div class="modal-footer">
+				<button type="button" class="btn btn-light" data-dismiss="modal"><i class="fas fa-times"></i>閉じる</button>
+			</div>
+		</div>
+		</div>
+	</div>
+</body>
+</html>

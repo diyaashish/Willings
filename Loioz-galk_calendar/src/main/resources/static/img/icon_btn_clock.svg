@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="18.743" height="20.261" viewBox="0 0 18.743 20.261">
+  <g id="icon_btn_clock" transform="translate(-1626.518 -1538)">
+    <circle id="楕円形_117" data-name="楕円形 117" cx="8.871" cy="8.871" r="8.871" transform="translate(1627.018 1540.018)" fill="none" stroke="#fff" stroke-miterlimit="10" stroke-width="1"/>
+    <path id="パス_221" data-name="パス 221" d="M.613.146h.809L2,6.033H0Z" transform="matrix(0.695, -0.719, 0.719, 0.695, 1630.599, 1545.615)" fill="#fff"/>
+    <path id="パス_222" data-name="パス 222" d="M.613.146h.809L2,7.392H0Z" transform="matrix(0.719, 0.695, -0.695, 0.719, 1640.582, 1543.064)" fill="#fff"/>
+    <circle id="楕円形_118" data-name="楕円形 118" cx="2" cy="2" r="2" transform="translate(1634 1547)" fill="#fff"/>
+    <rect id="長方形_630" data-name="長方形 630" width="4" height="2" transform="translate(1634 1538)" fill="#fff"/>
+  </g>
+</svg>

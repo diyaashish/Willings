@@ -1,0 +1,302 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+	layout:decorator="commonLayout">
+<head>
+<meta charset="utf-8" />
+</head>
+<body>
+
+<th:block th:fragment="detailInfo" 
+	th:with="ankenId=${wrapHeaderAnkenId}?: null,
+					customerId=${wrapHeaderCustomerId}?: null,
+					pageName=${pageName}?: null">
+
+	<!--/* 案件軸 start */-->
+	<th:block th:if="${ankenId}" th:with="ankenHeader=${wrapAnkenHeader.get(ankenId)}">
+		
+		<div class="px-2">
+			<div class="case_type">
+				<span class="main_view_title">[[${pageName}]]</span>
+			</div>
+			
+			<!--/* 案件詳細 */-->
+			<div class="case_detail">
+				<div class="case_detail__image">
+					<div th:class="|case_image_wrapper${ankenHeader.ankenType?.cd}|">
+						<!--/* 案件区分 */-->
+						<img class="img-thumbnail person_case_img"
+							th:src="@{/img/case_type{typeCd}.svg?{ver}(typeCd=${ankenHeader.ankenType?.cd}, ver=${@environment.getProperty('app.version')})}">
+					</div>
+				</div>
+				<div class="case_detail__case_name">
+					<!--/* 分野 */-->
+					<div class="fs13">
+						
+	<!--/* 案件区分 */-->
+	<!--/* 事務所 */-->
+	<th:block th:if="${T(jp.loioz.common.constant.CommonConstant$AnkenType).JIMUSHO.equals(ankenHeader.ankenType)}">
+						<i class="far fa-building"></i>
+	</th:block>
+	<!--/* 個人 */-->
+	<th:block th:if="${T(jp.loioz.common.constant.CommonConstant$AnkenType).KOJIN.equals(ankenHeader.ankenType)}">
+						<i class="fas fa-briefcase mr-1"></i>
+	</th:block>
+						<!--/* 案件種別 */-->
+						<span th:text="${ankenHeader.ankenType?.val}"></span>
+						<span>／</span>
+						<span th:text="${ankenHeader.getBunya().getVal()}">分野</span>
+		<th:block th:if="${!#strings.isEmpty(ankenHeader.getBengoTypeVal())}">
+							<span>／</span>
+							<span th:text="${ankenHeader.getBengoTypeVal()}">私選・国選</span>
+		</th:block>
+					</div>
+					<!--/* 案件名 */-->
+					<span class="fs30 fw600 lh1_4" th:text="${#strings.isEmpty(ankenHeader.ankenName)} ? '(案件名未入力)' : ${ankenHeader.ankenName}">案件名</span>
+					<div>
+						<!--/* 案件ID */-->
+						<span class="app_id_link case_link mr-3" th:text="|案件ID：${ankenHeader.ankenId.asLong()}|">案件ID</span>
+						
+						<!--/* 登録日 */-->
+						<span class="mr-3 badge badge_square badge_tag">
+							<i class="far fa-calendar-check fc_title mr-2"></i>登録日：<span th:text ="${ankenHeader.ankenCreatedDate == null ? '' : #temporals.format(ankenHeader.ankenCreatedDate, 'yyyy/MM/dd')}"></span>
+						</span>
+						
+					</div>
+				</div>
+			</div>
+			<!--/* 案件名 end */-->
+			
+			<div class="case_person">
+				
+				<!--/* 民事分野 */-->
+	<!--/*/	<th:block th:unless="${T(jp.loioz.common.constant.CommonConstant$BunyaType).KEIJI.equalsByCode({ankenHeader.bunya.bunyaType})}"> /*/-->
+				<!--/* 顧客情報 */-->
+				<div class="case_person__customer">
+					<div class="case_person_title">
+						<span class="badge badge-pill badge_square badge_blue"><i class="far fa-id-card mr-2"></i>顧客情報</span>
+					</div>
+					<div class="case_person_name">
+						<span th:each="customer, i : ${ankenHeader.relatedCustomer}" th:text="${i.first} ? ${customer.customerName}:_"></span>
+						<span th:if="${ankenHeader.relatedCustomer?.size() > 1}" th:text="| 外${ankenHeader.relatedCustomer?.size() - 1}名|"></span>
+					</div>
+				</div>
+				
+				<!--/* 相手方情報 */-->
+				<div class="case_person__other">
+					<div class="case_person_title">
+						<span class="badge badge-pill badge_square badge_green pr-2"><i class="fas fa-user mr-2 ml-1"></i>相手方情報</span>
+					</div>
+					<div class="case_person_name">
+						<th:block th:if="${ankenHeader.relatedAitegata.size() == 0}">(未設定)</th:block>
+						<span th:each="aitegata, i : ${ankenHeader.relatedAitegata}" th:text="${i.first} ? ${aitegata.kanyoshaName}:_"></span>
+						<span th:if="${ankenHeader.relatedAitegata?.size() > 1}" th:text="| 外${ankenHeader.relatedAitegata?.size() - 1}名|"></span>
+					</div>
+				</div>
+	<!--/*/ </th:block> /*/-->
+				<!--/* 民事分野 end */-->
+			
+				<!--/* 刑事分野 */-->
+	<!--/*/ <th:block th:if="${T(jp.loioz.common.constant.CommonConstant$BunyaType).KEIJI.equalsByCode({ankenHeader.bunya.bunyaType})}"> /*/-->
+				<!--/* 被疑者（顧客）情報 */-->
+				<div class="case_person__customer">
+					<div class="case_person_title">
+						<span class="badge badge-pill badge_square badge_blue px-3"><i class="far fa-id-card mr-2"></i>被疑者（顧客）情報</span>
+					</div>
+					<div class="case_person_name">
+						<span th:each="customer, i : ${ankenHeader.relatedCustomer}" th:text="${i.first} ? ${customer.customerName}:_"></span>
+						<span th:if="${ankenHeader.relatedCustomer?.size() > 1}" th:text="| 外${ankenHeader.relatedCustomer?.size() - 1}名|"></span>
+					</div>
+				</div>
+	<!--/*/ </th:block> /*/-->
+				<!--/* 刑事分野 end */-->
+				
+				<!--/* 担当情報 */-->
+				<div class="case_person__contact">
+					<div class="case_person_contact m-0">
+						<div class="mr-4">
+							<span class="badge badge-pill data_label badge_gray badge_square">弁護士</span>
+							<div class="data_label_value">
+	<th:block th:if="${ankenHeader.tantoLaywer.size() == 0}">
+								<div class="">(未設定)</div>
+	</th:block>
+								<div class="case_person_contact__data">
+	<th:block th:each="tantoLaywer : ${ankenHeader.tantoLaywer}">
+									<div class="case_account">
+										<i class="fas fa-user-circle" th:style="|color : ${tantoLaywer.accountColor};|"></i>
+										<div class="person_contact_wrapper mr-3">
+											<div class="person_contact__name">
+												<span th:if="${tantoLaywer.Main}" class="mr-1 fs12 fc_sub">(主担当)</span>
+												<span th:text="${tantoLaywer.accountName}"></span>
+											</div>
+										</div>
+									</div>
+	</th:block>
+								</div>
+							</div>
+						</div>
+						<div>
+							<span class="badge badge-pill data_label badge_gray badge_square">事務職員</span>
+							<div class="data_label_value">
+	<th:block th:if="${ankenHeader.tantoJimu.size() == 0}">
+								<div class="">(未設定)</div>
+	</th:block>
+								<div class="case_person_contact__data">
+	<th:block th:each="tantoJimu : ${ankenHeader.tantoJimu}">
+									<div class="case_account">
+										<i class="fas fa-user-circle" th:style="|color : ${tantoJimu.accountColor};|"></i>
+										<div class="person_contact_wrapper mr-3">
+											<div class="person_contact__name">
+												<span th:if="${tantoJimu.Main}" class="mr-1 fs12 fc_sub">(主担当)</span>
+												<span th:text="${tantoJimu.accountName}"></span>
+											</div>
+										</div>
+									</div>
+	</th:block>
+								</div>
+							</div>
+						</div>
+					</div>
+				</div>
+			</div>
+		</div>
+	</th:block>	
+	<!--/* 案件軸 end */-->
+
+
+	<!--/* 名簿軸 start */-->
+	<th:block th:if="${customerId}" th:with="customerHeader=${wrapCustomerHeader.get(customerId)}">
+		
+	<div class="px-2">
+		
+		<!--/* 名簿詳細 */-->
+		<div class="person_attr">
+			<!--/* 名簿属性 */-->
+			<span th:class="|badge badge-pill detail_attr person_type${customerHeader.personAttribute.getCd().getCd()}|">
+				[[${customerHeader.personAttribute.getCd().getVal()}]]
+			</span>
+		</div>
+		<div class="person_detail">
+			
+			<!--/* 名簿画像 */-->
+			<div class="person_detail__image">
+				
+				<!--/* 名簿属性 */-->
+				<span th:class="|person_type${customerHeader.personAttribute.getCd().getCd()} person_type_label|"></span>
+					
+				<!--/* 名簿属性ラベル */-->
+				<div th:class="|person_image_wrapper${customerHeader.personAttribute.getCd().getCd()}|">
+					<!--/* 個人アイコン */-->
+					<img th:if="${customerHeader.customerType} == ${T(jp.loioz.common.constant.CommonConstant$CustomerType).KOJIN}" 
+						class="img-thumbnail person_image" th:src="@{/img/person_kojin.svg}"
+						data-boundary="window" data-container="body" data-toggle="tooltip" data-trigger="hover" th:title="個人">
+						
+					<!--/* 企業・団体アイコン */-->
+					<img th:if="${customerHeader.customerType} == ${T(jp.loioz.common.constant.CommonConstant$CustomerType).HOJIN}"
+						class="img-thumbnail person_image" th:src="@{/img/person_hojin.svg}"
+						data-boundary="window" data-container="body" data-toggle="tooltip" data-trigger="hover" th:title="企業・団体">
+						
+					<!--/* 弁護士アイコン */-->
+					<img th:if="${customerHeader.customerType} == ${T(jp.loioz.common.constant.CommonConstant$CustomerType).LAWYER}" 
+						class="img-thumbnail person_image" th:src="@{/img/person_bengoshi.svg}"
+						data-boundary="window" data-container="body" data-toggle="tooltip" data-trigger="hover" th:title="弁護士">
+				</div>
+			</div>
+			<!--/* 名簿画像 end */-->
+			
+			<!--/* 名前ブロック */-->
+			<div class="person_detail__info">
+				
+				<!--/* 名前 */-->
+				<div class="info__person_name">
+					
+					<!--/* ふりがな */-->
+					<div class="person_name__kana">
+						<span th:text="${customerHeader.customerNameKana}">名前（かな）</span>
+					</div>
+					
+					<!--/* 顧客名（姓） */-->
+					<span th:text="${customerHeader.customerName}">顧客名</span>
+					<!--/* 旧姓 */-->
+					<span th:if="${customerHeader.isKojin()} and ${customerHeader.oldName != null}"
+						class="old_name" th:text=" '（旧姓：' + ${customerHeader.oldName} + '）'"></span>
+					<!--/* 故人 */-->
+					<span class="fs15 fw0 fc_sub" th:if="${customerHeader.deathFlg}">（故人）</span>
+					
+				</div>
+				
+				<!--/* 名簿付帯情報 */-->
+				<div class="info__person_other">
+				
+					<!--/* 名簿ID */-->
+					<span class="app_id_link mr-3">
+						<span>名簿ID：</span>
+						<span th:text ="${customerHeader.personId.asLong()}"></span>
+					</span>
+					
+					<!--/* 登録日 */-->
+					<span class="mr-3 badge badge_square badge_tag">
+						<i class="far fa-calendar-check fc_title mr-2"></i>登録日：<span th:text ="${customerHeader.customerCreatedDate == null ? '' : #temporals.format(customerHeader.customerCreatedDate, 'yyyy/MM/dd')}"></span>
+					</span>
+					
+		<!--/* 個人 */-->
+		<th:block th:if="${customerHeader.customerType} == ${T(jp.loioz.common.constant.CommonConstant$CustomerType).KOJIN}"
+						th:with="birthdaySeireki=${customerHeader.getBirthdaySeireki()}, ageNumber=${customerHeader.getAgeNumber()}">
+					<!--/* 生年月日 */-->
+					<span class="mr-3 badge badge_square badge_tag">
+						<i class="fas fa-birthday-cake fc_title mr-2"></i>生年月日：<span th:text="${not #strings.isEmpty(birthdaySeireki)} ? ${customerHeader.getBirthdayWareki()} : '' ">（昭和58年）</span>
+						<span th:if="${birthdaySeireki != null}" th:text="${not #strings.isEmpty(birthdaySeireki)} ? ${birthdaySeireki} : '不明' ">1983年1月13日 生まれ</span>
+						<span th:if="${birthdaySeireki != null}" th:text="${not #strings.isEmpty(ageNumber)} ? |(${ageNumber}歳)| : '' ">38歳</span>
+					</span>
+					<!--/* 性別 */-->
+					<span class="mr-3 badge badge_square badge_tag">
+						<i class="fas fa-venus-mars fc_title mr-1"></i>
+						性別：<span th:text="${customerHeader.gender != null} ? ${customerHeader.gender.getVal()} : '不明'"></span>
+					</span>
+		</th:block>
+					
+		<!--/* 企業・団体 */-->
+		<th:block th:if="${customerHeader.customerType} == ${T(jp.loioz.common.constant.CommonConstant$CustomerType).HOJIN}">
+					
+					<!--/* 代表者 */-->
+					<span class="mr-3 badge badge_square badge_tag">
+						<i class="fas fa-user fc_title mr-2"></i>代表者：<span th:if="${customerHeader.daihyoName == null && customerHeader.daihyoNameKana == null}" th:text="|(氏名なし)|">(氏名なし)</span>
+						<span th:text="${customerHeader.daihyoName}"></span>
+						<span th:text="${customerHeader.daihyoPositionName}"></span>
+					</span>
+					
+					<!--/* 担当者 */-->
+					<span class="mr-3 badge badge_square badge_tag">
+						<i class="far fa-user fc_title mr-2"></i>担当者：<span th:if="${customerHeader.tantoName == null && customerHeader.tantoNameKana == null}" th:text="|(氏名なし)|">(氏名なし)</span>
+						<span th:text="${customerHeader.tantoName}"></span>
+					</span>
+					
+		</th:block>
+					
+		<!--/* 弁護士 */-->
+		<th:block th:if="${customerHeader.customerType} == ${T(jp.loioz.common.constant.CommonConstant$CustomerType).LAWYER}">
+					
+					<!--/* 事務所名 */-->
+					<span class="mr-3 badge badge_square badge_tag">
+						<i class="far fa-building mr-2"></i>事務所名：<span th:unless="${#strings.isEmpty(customerHeader.lawyerJimushoName)}" th:text="${customerHeader.lawyerJimushoName}"></span>
+						<span th:if="${#strings.isEmpty(customerHeader.lawyerJimushoName)}" th:text="|(未設定)|">(未設定)</span>
+						<!--/* 部署・役職名 */-->
+						<span th:unless="${#strings.isEmpty(customerHeader.lawyerBushoName)}" th:text="${customerHeader.lawyerBushoName}"></span>
+					</span>
+				
+		</th:block>
+				</div>
+				<!--/* 名前 end */-->
+				
+			</div>
+			<!--/* 名前ブロック end */-->
+			
+		</div>
+		<!--/* 名簿詳細 end */-->
+	</div>
+		
+	</th:block>
+	<!--/* 名簿軸 end */-->
+	
+</th:block>
+</body>
+</html>

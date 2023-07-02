@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="24" height="18" viewBox="0 0 24 18">
+  <g id="icon_btn_draft" transform="translate(-1615 -72.513)">
+    <path id="パス_6" data-name="パス 6" d="M7.216,13.564,3.1,14.318,3.876,10.2l3.34-3.34L10.578,3.5l1.659,1.681,1.681,1.681-3.34,3.34Z" transform="translate(1623.9 70.077)" fill="none" stroke="#fff" stroke-miterlimit="10" stroke-width="1.5"/>
+    <line id="線_6" data-name="線 6" x1="5.179" y2="5.179" transform="translate(1630.329 76.479)" fill="none" stroke="#fff" stroke-width="1.5"/>
+    <g id="長方形_863" data-name="長方形 863" transform="translate(1616 77)" fill="none" stroke="#fff" stroke-width="1">
+      <rect width="8" height="12" stroke="none"/>
+      <rect x="-0.5" y="-0.5" width="9" height="13" fill="none"/>
+    </g>
+    <line id="線_806" data-name="線 806" x2="5" transform="translate(1617.5 79.5)" fill="none" stroke="#fff" stroke-width="1"/>
+    <line id="線_807" data-name="線 807" x2="5" transform="translate(1617.5 82.5)" fill="none" stroke="#fff" stroke-width="1"/>
+    <line id="線_808" data-name="線 808" x2="3" transform="translate(1617.5 85.5)" fill="none" stroke="#fff" stroke-width="1"/>
+  </g>
+</svg>

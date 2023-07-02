@@ -1,0 +1,434 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+	xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+	layout:decorator="commonLayout">
+<head>
+<meta charset="UTF-8">
+<title layout:fragment="title-contents">
+	[[${T(jp.loioz.common.utility.LoiozUtils).getHtmlTitle(T(jp.loioz.common.constant.CommonConstant$SystemSettingMenu).DATA_SAIBANSHO.getVal(), T(jp.loioz.common.utility.SessionUtils).getTenantName())}]]
+</title>
+<script type="text/javascript" th:inline="javascript">
+<!-- 裁判所一覧スクリプト -->
+$(function() {
+
+	benzo.global.saibanshoEdit = {saibanshoBuListModal: {}};
+
+	<!--/* 都道府県を変更したら検索実行 */-->
+	$("#saibanshoSearchForm").on("change", "[name='todofukenId']", function() {
+		$("#saibanshoSearchForm").submit();
+	});
+
+	<!-- /** 裁判所編集モーダルの呼び出し処理 */ -->
+	$(document).on("click", '.openSaibanshoEditModal', function() {
+		let action = /*[[@{/user/saibanshoManagement/create}]]*/"";
+		let saibanshoId = $(this).attr('data-id');
+		if (saibanshoId) {
+			action = /*[[@{/user/saibanshoManagement/edit}]]*/"";
+		}
+		$.ajax({
+				url : action,
+				type : "POST",
+				data :{ 'saibanshoEditData.saibanshoId' : saibanshoId},
+			}).done(function(val) {
+				// モーダルの表示
+				$('.saibashoEditBody').html(val);
+			}).fail(function(jqXHR, textStatus, errorThrown) {
+			}).always(function() {
+		});
+	});
+
+	<!-- /** 裁判所係属部一覧モーダルの呼び出し処理 */ -->
+	$(document).on("click", '.openSaibanshoBuListModal', function() {
+
+		const saibanshoId = $(this).attr('data-id');
+		const action = /*[[@{/user/saibanshoBuManagement/getSaibanshoBuList}]]*/"";
+		const params = {'saibanshoId' : saibanshoId};
+		const ajaxRequest = (action, params) => {
+			$.ajax({
+				url : action,
+				type : "POST",
+				data : params,
+			}).done(function(result) {
+				const newContents = $(result)
+				newContents.find("[data-toggle='tooltip']").tooltip();
+				// モーダルの表示
+				$('.saibanshoBuListBody').html(newContents);
+			}).fail(function(jqXHR, textStatus, errorThrown) {
+			}).always(function() {
+			});
+		};
+		ajaxRequest(action,params);
+
+		// 開いたモーダル情報をJsonに保持させる
+		benzo.global.saibanshoEdit.saibanshoBuListModal.params = params;
+		benzo.global.saibanshoEdit.saibanshoBuListModal.action = action;
+		benzo.global.saibanshoEdit.saibanshoBuListModal.openModalAjax = ajaxRequest;
+
+	});
+
+});
+</script>
+<script type="text/javascript" th:inline="javascript">
+<!-- /** 裁判所編集スクリプト */ -->
+$(function(){
+
+	// 裁判所編集モーダルを閉じる処理
+	$('#saibanshoEditModal').on('hidden.bs.modal', function (e) {
+		// 初期化する
+		$('.saibashoEditBody').html('');
+	})
+
+	<!--/* 登録・更新・削除ボタン */-->
+	let ajaxRunning = false;
+	$('.saibashoEditBody').on("click", '#regist, #update', function() {
+		// 2重押下防止
+		if(ajaxRunning){
+			return false;
+		}
+		// 押下したボタンのIDをアクションとして取得し実行する
+		let action = /*[[@{/user/saibanshoManagement/}]]*/"";
+		action += $(this).attr('id');
+
+		let modal = $(this).closest('.modal');
+		let params = modal.find('#editForm').serializeArray();
+		ajaxRunning = true;
+		$.ajax({
+			type : "POST",
+			url : action,
+			data : params,
+		})
+		.done(function(result) {
+			if(result.succeeded){
+				alert(result.message);
+				modal.modal("hide");
+				location.reload();
+			} else {
+				showErrorMessage(result.message, modal, result.errors);
+			}
+		})
+		.fail(function() {
+			window.location.href = "/systemError";// システムエラー
+		})
+		.always(function(){
+			ajaxRunning = false;
+		});
+	});
+
+	// 削除処理
+	$('.saibashoEditBody').on("click", '#delete', function() {
+		if (!confirm('削除します。よろしいですか?')){
+			return false;
+		}
+		// 2重押下防止
+		if(ajaxRunning){
+			return false;
+		}
+		let action = /*[[@{/user/saibanshoManagement/delete}]]*/"";
+
+		let modal = $(this).closest('.modal');
+		let params = modal.find('#editForm').serializeArray();
+		ajaxRunning = true;
+		$.ajax({
+			url : action,
+			type : "POST",
+			data : params,
+		})
+		.done(function(result) {
+			if(result.succeeded){
+				alert(result.message);
+				modal.modal("hide");
+				location.reload();
+			} else {
+				showErrorMessage(result.message, modal, result.errors);
+			}
+		})
+		.fail(function() {
+			window.location.href = "/systemError";// システムエラー
+		})
+		.always(function(){
+			ajaxRunning = false;
+		});
+	});
+
+});
+</script>
+<script type="text/javascript" th:inline="javascript">
+<!-- /** 裁判所係属部一覧スクリプト */ -->
+$(function() {
+
+	<!-- /** 裁判所係属部モーダルを閉じる処理 */ -->
+	$('#saibanshoBuListModal').on('hidden.bs.modal', function (e) {
+		// 初期化する
+		$('.saibanshoBuListBody').html('');
+		benzo.global.saibanshoEdit.saibanshoBuListModal = {};
+	})
+
+	<!-- /** 裁判所係属部編集モーダルの呼び出し処理 */ -->
+	$(document).on("click", '.openSaibanshoBuEditModal', function() {
+
+		// 呼び出し元のモーダルを隠す
+		$("#saibanshoBuListModal").addClass("hidden");
+
+		let action = /*[[@{/user/saibanshoBuManagement/create}]]*/"";
+		let saibanshoId = $(this).data("saibanshoId");
+		let keizokuBuId = $(this).attr('data-id');
+		if (keizokuBuId) {
+			action = /*[[@{/user/saibanshoBuManagement/edit}]]*/"";
+		}
+		$.ajax({
+				url : action,
+				type : "POST",
+				data :{
+					'saibanshoBuEditData.keizokuBuId' : keizokuBuId,
+					'saibanshoBuEditData.saibanshoId' : saibanshoId,
+				},
+			}).done(function(val) {
+				// モーダルの表示
+				$('.saibashoBuEditBody').html(val);
+			}).fail(function(jqXHR, textStatus, errorThrown) {
+			}).always(function() {
+		});
+	});
+
+});
+</script>
+<script type="text/javascript" th:inline="javascript">
+<!-- /** 裁判所係属部編集スクリプト */ -->
+$(function() {
+
+	<!-- /** 裁判所係属部編集モーダルを閉じる処理 */ -->
+	$('#saibanshoBuEditModal').on('hidden.bs.modal', function (e) {
+		// 呼び出し元のモーダルを表示する
+		$("#saibanshoBuListModal").removeClass("hidden");
+		// 初期化する
+		$('.saibashoBuEditBody').html('');
+	});
+
+	<!--/* 登録・更新・削除ボタン */-->
+	let ajaxRunning = false;
+	$('.saibashoBuEditBody').on("click", '#regist, #update', function() {
+		// 2重押下防止
+		if(ajaxRunning){
+			return false;
+		}
+		// 押下したボタンのIDをアクションとして取得し実行する
+		let action = /*[[@{/user/saibanshoBuManagement/}]]*/"";
+		action += $(this).attr('id');
+
+		let modal = $(this).closest('.modal');
+		let params = modal.find('#editForm').serializeArray();
+		ajaxRunning = true;
+		$.ajax({
+			type : "POST",
+			url : action,
+			data : params,
+		})
+		.done(function(result) {
+			if(result.succeeded){
+				alert(result.message);
+
+				// モーダルを閉じる
+				modal.modal("hide");
+				refleshSaibanshoBuListModal();
+
+			} else {
+				showErrorMessage(result.message, modal, result.errors);
+			}
+		})
+		.fail(function() {
+			window.location.href = "/systemError";// システムエラー
+		})
+		.always(function(){
+			ajaxRunning = false;
+		});
+	});
+
+	// 削除処理
+	$('.saibashoBuEditBody').on("click", '#delete', function() {
+		if (!confirm('削除します。よろしいですか?')){
+			return false;
+		}
+		// 2重押下防止
+		if(ajaxRunning){
+			return false;
+		}
+		let action = /*[[@{/user/saibanshoBuManagement/delete}]]*/"";
+
+		let modal = $(this).closest('.modal');
+		let params = modal.find('#editForm').serializeArray();
+		ajaxRunning = true;
+		$.ajax({
+			url : action,
+			type : "POST",
+			data : params,
+		})
+		.done(function(result) {
+			if(result.succeeded){
+				alert(result.message);
+
+				// モーダルを閉じる
+				modal.modal("hide");
+				refleshSaibanshoBuListModal();
+			} else {
+				showErrorMessage(result.message, modal, result.errors);
+			}
+		})
+		.fail(function() {
+			window.location.href = "/systemError";// システムエラー
+		})
+		.always(function(){
+			ajaxRunning = false;
+		});
+	});
+
+	<!--/* 裁判所係属部一覧を最新の状態にする */-->
+	function refleshSaibanshoBuListModal() {
+		const openSaibanshoBuListAction = benzo.global.saibanshoEdit.saibanshoBuListModal.action;
+		const openSaibanshoBuListParam = benzo.global.saibanshoEdit.saibanshoBuListModal.params;
+		benzo.global.saibanshoEdit.saibanshoBuListModal.openModalAjax(openSaibanshoBuListAction, openSaibanshoBuListParam);
+	}
+
+});
+</script>
+</head>
+<body>
+	<div class="contents_sidebar_wrapper_setting" layout:fragment="main-contents">
+		<!-- サイドメニュー -->
+		<div th:replace="common/systemSettingMenu::selectMenu(${T(jp.loioz.common.constant.CommonConstant$SystemSettingMenu).DATA_SAIBANSHO.getCd()})"></div>
+
+		<!-- コンテンツ -->
+		<div class="contents_wrapper" th:object="${viewForm}">
+			<!-- メッセージ表示領域 -->
+			<div th:replace="common/messageArea::messageArea"></div>
+
+			<!-- contents_limited_width_setting サイズ幅(maxサイズ）start -->
+			<div class="container-fluid contents_limited_width_setting">
+				<!-- パンくず-->
+				<div class="breadcrumb_area">
+					<ul>
+						<li><span>データ設定</span></li>
+						<li><i class="fas fa-angle-right"></i></li>
+						<li th:text="${T(jp.loioz.common.constant.CommonConstant$SystemSettingMenu).DATA_SAIBANSHO.getVal()}">裁判所の設定</li>
+					</ul>
+				</div>
+
+				<!--/* ブロック start */-->
+				<div class="contents_block">
+
+					<!--/* 画面タイトル */-->
+					<div class="block_title">裁判所マスタ</div>
+
+					<!--/* 画面詳細エリア */-->
+					<div class="block_detail">
+						<p>裁判所マスタで登録したデータは、裁判情報の管轄裁判所として選択することができます。</p>
+
+						<!--/* 検索 start */-->
+						<div class="search_conditions">
+							<form th:action="@{/user/saibanshoManagement/search}" id="saibanshoSearchForm" method="get" autocomplete="off" th:object="${saibanshoSearchForm}">
+								<div class="form-row">
+									<!--/* 検索条件部 start */-->
+									<div class="col-sm-2">
+										<label for="search-todofukenId" class="input_parts_label">都道府県</label>
+										<select th:field="*{todofukenId}" class="form-control col-8" id="search-todofukenId">
+											<option value="">-</option>
+											<option th:each="enum : ${T(jp.loioz.common.constant.CommonConstant$CompanyTodofuken).values()}"
+											th:value="${enum.cd}" th:text="${enum.val}">
+											</option>
+										</select>
+									</div>
+									<div class="col-sm">
+										<label for="search-saibanshoName" class="input_parts_label">裁判所名</label>
+										<div class="input-group mb-3">
+											<input type="text" class="form-control fcAddTextClear" id="search-saibanshoName" 
+												th:field="*{saibanshoName}" maxlength="30">
+											<div class="input-group-append">
+												<button class="btn btn-dark pt-1 pb-0 px-3" type="submit" onclick="submit();"><i class="fas fa-search fa-lg mr-0"></i></button>
+											</div>
+										</div>
+									</div>
+									<!--/* アクションボタン */-->
+									<div class="block_action mb-2">
+										<button type="button" class="btn btn-primary openSaibanshoEditModal" data-toggle="modal" data-target="#saibanshoEditModal">
+											<i class="fas fa-plus"></i>新規登録
+										</button>
+									</div>
+								</div>
+							</form>
+						</div>
+						<!--/* 検索 end */-->
+					</div>
+
+					<!--/* 一覧表示 */-->
+					<div class="list_area">
+						<table class="table table_standard table-sm table_fixed table-striped">
+							<thead>
+								<tr>
+									<th class="col_15">都道府県</th>
+									<th class="col_30">裁判所名</th>
+									<th class="col_40">住所</th>
+									<th class="col_15" colspan="2">操作</th>
+								</tr>
+							</thead>
+							<tbody>
+<!--/*/ 					<th:block th:if="${viewForm.saibanshoList.size() == 0}"> /*/-->
+								<tr>
+									<td colspan="5" class="no_data_table_list">
+										<span th:text="#{I00021}">MSG_I00021</span>
+									</td>
+								</tr>
+<!--/*/ 					</th:block> /*/-->
+								<tr th:each="saibansho : *{saibanshoList}" th:object="${saibansho}">
+									<td th:text="${T(jp.loioz.common.constant.CommonConstant$CompanyTodofuken).of(saibansho.todofukenId).getVal()}"></td>
+									<td th:text="*{saibanshoName}"></td>
+									<td>
+										<div class="data_zip_address">
+											<div th:if="!*{#strings.isEmpty(saibanshoZip)}">
+												<span th:text="|〒*{saibanshoZip}|"></span>
+											</div>
+											<span th:if="!*{#strings.isEmpty(saibanshoAddress1)}" th:text="*{saibanshoAddress1}"></span>
+											<span th:if="!*{#strings.isEmpty(saibanshoAddress2)}" th:text="*{saibanshoAddress2}"></span>
+										</div>
+									</td>
+									<td class="pr-0">
+										<span class="d-inline-block" data-toggle="tooltip" title="裁判所を編集" data-trigger="hover">
+											<button class="btn btn-light btn-sm openSaibanshoEditModal" data-toggle="modal" data-target="#saibanshoEditModal" th:data-id="*{saibanshoId}">
+												<i class="fas fa-edit mr-1"></i>
+												<span>編集</span>
+											</button>
+										</span>
+									</td>
+									<td>
+										<span class="d-inline-block" data-toggle="tooltip" title="係属部を編集" data-trigger="hover">
+											<button class="btn btn-light btn-sm openSaibanshoBuListModal" data-toggle="modal" data-target="#saibanshoBuListModal" th:data-id="*{saibanshoId}">
+												<i class="fas fa-list-ul mr-1"></i>
+												<span>編集</span>
+											</button>
+										</span>
+									</td>
+								</tr>
+							</tbody>
+						</table>
+					</div>
+					<th:block th:if="*{page.hasPrevious() || page.hasNext()}">
+						<div th:replace="common/pager::pager(page=*{page}, url=@{/user/saibanshoManagement/pageList})"></div>
+					</th:block>
+				</div>
+
+			</div>
+		</div>
+		<div th:replace="::modalTemplate(id='saibanshoEditModal', target='saibashoEditBody')"></div>
+		<div th:replace="::modalTemplate(id='saibanshoBuListModal', target='saibanshoBuListBody', modalWidthCss='modal_keizokubu_list')"></div>
+		<div th:replace="::modalTemplate(id='saibanshoBuEditModal', target='saibashoBuEditBody')"></div>
+	</div>
+
+	<!-- モーダルテンプレート -->
+	<div th:fragment="modalTemplate(target)" th:id="${id}" class="modal fade" tabindex="-1" role="dialog" aria-hidden="true" data-backdrop="static">
+		<div class="modal-dialog modal-dialog-centered" role="document" th:classappend="${modalWidthCss}?: _">
+			<div class="modal-content">
+				<div th:class="${target}"></div>
+			</div>
+		</div>
+	</div>
+
+</body>
+</html>

@@ -1,0 +1,443 @@
+ <!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+<meta charset="utf-8" />
+</head>
+<body>
+
+<th:block>
+
+<!--/* 本処理は、モーダルを扱うFragment領域で定義する */-->
+<script type="text/javascript" th:fragment="customerRegistModalFragmentObjJs" th:inline="javascript">
+	benzo.global.fragment.customerRegistModalFragmentObj = {
+		<!--/* 呼び出し元で定義が可能な処理 */-->
+		setUpObj : {
+			
+			// 登録側
+			registAction: () => {
+				throw new Error('registActionのセットアップ処理がされていません');
+			},
+			initRenderRegistViewAction: () => {
+				throw new Error('編集エリアの初期レンダリング処理がセットアップされていません');
+			},
+			
+			// 検索側
+			searchRegistAction: () => {
+				throw new Error('searchRegistActionのセットアップ処理がされていません');
+			},
+			searchRenderPromise: () => {
+				throw new Error('searchRenderPromiseのセットアップ処理がされていません');
+			},
+			initRenderSearchViewAction: () => {
+				throw new Error('検索エリアの初期レンダリング処理がセットアップされていません');
+			},
+
+		},
+		
+		<!--/* フラグメントのパラメータに関連する処理 */-->
+		paramObj : {
+			
+			<!--/* モーダルの表示名 ※default値は顧客追加*/-->
+			modalNameLabel : '顧客追加',
+
+			<!--/* フォームパラメータの取得処理 */-->
+			getRegistFormParams: (modal) => {
+				let formParams = modal.find("#customerRegistModalForm").serializeArray();
+				let cd = $(modal).find(".customerType").val();
+				switch (cd) {
+					case /*[[${T(jp.loioz.common.constant.CommonConstant$CustomerType).KOJIN}]]*/""
+						:
+							formParams.push({name:"kojin",value: "kojin"});
+							break;
+					case /*[[${T(jp.loioz.common.constant.CommonConstant$CustomerType).HOJIN}]]*/""
+						:
+							formParams.push({name:"hojin",value: "hojin"});
+							break;
+					case /*[[${T(jp.loioz.common.constant.CommonConstant$CustomerType).LAWYER}]]*/""
+						:
+							formParams.push({name:"lawyer",value: "lawyer"});
+							break;
+					default
+						: break;
+				}
+				return formParams;
+			},
+			
+			<!--/* 検索フォームパラメータの取得処理 */-->
+			getSearchFormParams: (modal) => {
+				let formParams = modal.find("#personSearchFragmentSearchForm").serializeArray();
+				return formParams;
+			} ,
+
+			<!--/* 検索結果フォームパラメータの取得処理 */-->
+			getSearchResultFormParams: (modal) => {
+				let formParams = modal.find("#personSearchFragmentResultForm").serializeArray();
+				return formParams;
+			},
+
+		},
+		
+		<!--/* 
+			本フラグメント以外でも扱う処理
+			基本的には書き換えを行わない。
+		*/-->
+		commonFn : {
+			
+			<!--/* モーダルが閉じたときに発火する処理 */-->
+			modalHiddenAction:(modal) => {
+				const $customerRegistModalFragmentWrap = $(modal).find(".customerRegistModalFragmentWrap");
+				$customerRegistModalFragmentWrap.html("");
+			},
+		},
+	};
+</script>
+
+<!--/* 顧客登録モーダル */-->
+<div id="customerRegistModalFragment" th:fragment="customerRegistModalFragment" th:object="${registFragmentInputForm}">
+	<script type="text/javascript" th:inline="javascript">
+		$(function() {
+			<!--/* 複数モーダルを表示するということはしない */-->
+			const $customerRegistModalFragment = $("#customerRegistModalFragment");
+			const $customerRegistModal = $customerRegistModalFragment.closest(".modal");
+			const $customerRegistModalFragmentWrap = $customerRegistModal.find(".customerRegistModalFragmentWrap");
+			
+			commonSetUpElement();
+			let ajaxRunning = false;
+			
+			<!--/* 可変することでモーダルのサイズ変更クラスを外す */-->
+			$customerRegistModal.find(".resizeToggleClassTarget").removeClass("modal_customerSearch");
+			
+			<!--/* 
+				モーダルのラベル名を設定する 
+				※基本的に表示する内容等はレンダリング処理後は操作しない方針だが、モーダルの表示名は特別扱いする
+			*/-->
+			$customerRegistModalFragment.find(".modalNameLabel").text(benzo.global.fragment.customerRegistModalFragmentObj.paramObj.modalNameLabel);
+			
+			<!--/* 個人フォーム：姓(かな) */-->
+			$.fn.autoKana($customerRegistModalFragment.find("[id='kojin.customerNameSei']"), $customerRegistModalFragment.find("[id='kojin.customerNameSeiKana']"), {
+			});
+			<!--/* 個人フォーム：名(かな) */-->
+			$.fn.autoKana($customerRegistModalFragment.find("[id='kojin.customerNameMei']"), $customerRegistModalFragment.find("[id='kojin.customerNameMeiKana']"), {
+			});
+			
+			<!--/* 法人フォーム：会社・組織名(かな) */-->
+			$.fn.autoKana($customerRegistModalFragment.find("[id='hojin.customerNameSei']"), $customerRegistModalFragment.find("[id='hojin.customerNameSeiKana']"), {
+			});
+			
+			<!--/* 顧客検索フラグメントの切り替え */-->
+			$customerRegistModalFragment.on("click", ".renderSearchFragment", function() {
+				benzo.global.fragment.customerRegistModalFragmentObj.setUpObj.initRenderSearchViewAction($(this));
+			});
+			
+			<!--/* 顧客種別の変更処理 */-->
+			$customerRegistModalFragment.on("change", ".customerType", function() {
+				const kubunCd = $(this).val();
+				switch (kubunCd) {
+					case /*[[${T(jp.loioz.common.constant.CommonConstant$CustomerType).KOJIN}]]*/""
+						:  
+							$customerRegistModalFragment.find(".kojinNameRow").removeClass("hidden").find("input").attr("form", "customerRegistModalForm");
+							$customerRegistModalFragment.find(".hojinNameRow").addClass("hidden").find("input").attr("form", "");
+							break;
+					case /*[[${T(jp.loioz.common.constant.CommonConstant$CustomerType).HOJIN}]]*/""
+						:
+							$customerRegistModalFragment.find(".kojinNameRow").addClass("hidden").find("input").attr("form", "");
+							$customerRegistModalFragment.find(".hojinNameRow").removeClass("hidden").find("input").attr("form", "customerRegistModalForm");
+							break;
+					default
+						: break;
+				}
+			});
+			
+			<!--/* 顧客の登録処理*/-->
+			$customerRegistModalFragment.on("click", ".customerRegist", function() {
+				benzo.global.fragment.customerRegistModalFragmentObj.setUpObj.registAction($(this));
+			});
+			
+			<!--/* モーダルを閉じたときの処理 */-->
+			$customerRegistModal.off("hidden.bs.modal.commonHiddenAction");
+			$customerRegistModal.one("hidden.bs.modal.commonHiddenAction", function(){
+				benzo.global.fragment.customerRegistModalFragmentObj.commonFn.modalHiddenAction($customerRegistModal);
+			});
+		});
+	</script>
+	<!--/* ヘッダー */-->
+	<div class="modal-header">
+		<h2 class="modalheader_title modalNameLabel"></h2>
+	</div>
+	
+	<!--/* ボディ */-->
+	<div class="modal-body">
+		<div class="modal_description">
+			<p>新たに「名簿情報を登録」し、対象案件の「顧客」に設定します。</p>
+			<p><a class="renderSearchFragment" href="javascript:void(0);">登録済みの名簿から選択する<i class="far fa-arrow-alt-circle-right ml-2"></i></a></p>
+		</div>
+		<div th:replace="common/messageArea::jsMessageArea"></div>
+		<div class="modal_input_area">
+			<form id="customerRegistModalForm" autocomplete="off"></form>
+			
+			<!--/* フォームオブジェクト */-->
+			<input type="hidden" form="customerRegistModalForm" th:field="*{ankenId}">
+			<!-- 入力エリア -->
+			<div class="modal_input_area pb-0">
+				<div class="form-row">
+					<!--/* 氏名 */-->
+					<div class="form-group col-md-12">
+						<label class="input_parts_label">顧客種別</label>
+						<span class="mark_equired">必須</span>
+						<div>
+							<select class="form-control digit8 customerType" form="customerRegistModalForm" th:field = "*{customerType}">
+								<option th:each = "enum : ${T(jp.loioz.common.constant.CommonConstant$CustomerType).getValuesExcludedLawyer()}"
+									th:value="${enum.cd}" th:text="${enum.val}" />
+							</select>
+						</div>
+						<div class="error_mag_point hidden" id="itemMsg_customerType"></div>
+					</div>
+				</div>
+				
+				<div class="form-row kojinNameRow" th:with="show=*{T(jp.loioz.common.constant.CommonConstant$CustomerType).KOJIN == customerType}" th:classappend="${show}? '': 'hidden'">
+					<div class="form-group col-md-12 mb-0">
+						<label class="input_parts_label">名前</label>
+						<span class="mark_equired">必須</span>
+					</div>
+					<div class="form-group col-md-6 mb-2">
+						<input type="text" th:form="${show}? 'customerRegistModalForm' " class="form-control" id="kojin.customerNameSei" th:field="*{customerNameSei}" maxlength="24" placeholder="姓">
+						<div th:if="*{#fields.hasErrors('customerNameSei')}" th:errors="*{customerNameSei}" class="error_mag_point">error</div>
+					</div>
+					<div class="form-group col-md-6 mb-2">
+						<input type="text" th:form="${show}? 'customerRegistModalForm' " class="form-control" id="kojin.customerNameMei" th:field="*{customerNameMei}" maxlength="24" placeholder="名">
+						<div th:if="*{#fields.hasErrors('customerNameMei')}" th:errors="*{customerNameMei}" class="error_mag_point">error</div>
+					</div>
+					<div class="form-group col-md-6 mb-2">
+						<input type="text" th:form="${show}? 'customerRegistModalForm' " class="form-control" id="kojin.customerNameSeiKana" th:field="*{customerNameSeiKana}" maxlength="64" placeholder="せい">
+						<div th:if="*{#fields.hasErrors('customerNameSeiKana')}" th:errors="*{customerNameSeiKana}" class="error_mag_point">error</div>
+					</div>
+					<div class="form-group col-md-6 mb-2">
+						<input type="text" th:form="${show}? 'customerRegistModalForm' " class="form-control" id="kojin.customerNameMeiKana" th:field="*{customerNameMeiKana}" maxlength="64" placeholder="めい">
+						<div th:if="*{#fields.hasErrors('customerNameMeiKana')}" th:errors="*{customerNameMeiKana}" class="error_mag_point">error</div>
+					</div>
+				</div>
+				
+				<div class="form-row hojinNameRow" th:with="show=*{T(jp.loioz.common.constant.CommonConstant$CustomerType).HOJIN == customerType}" th:classappend="${show}? '': 'hidden'">
+					<div class="form-group col-md-12 mb-0">
+						<label class="input_parts_label">名前</label>
+						<span class="mark_equired">必須</span>
+					</div>
+					<div class="form-group col-md-12 mb-2">
+						<input type="text" th:form="${show}? 'customerRegistModalForm' " class="form-control" id="hojin.customerNameSei" th:field="*{customerNameSei}" maxlength="64" placeholder="企業・団体名">
+						<div th:if="*{#fields.hasErrors('customerNameSei')}" th:errors="*{customerNameSei}" class="error_mag_point">error</div>
+					</div>
+					<div class="form-group col-md-12 mb-2">
+						<input type="text" th:form="${show}? 'customerRegistModalForm' " class="form-control" id="hojin.customerNameSeiKana" th:field="*{customerNameSeiKana}" maxlength="128" placeholder="ふりがな">
+						<div th:if="*{#fields.hasErrors('customerNameSeiKana')}" th:errors="*{customerNameSeiKana}" class="error_mag_point">error</div>
+					</div>
+				</div>
+				
+			</div>
+			<!--/* フォームオブジェクト end */-->
+		</div>
+	</div>
+	
+	<!--/* フッター */-->
+	<div class="modal-footer">
+		<button type="button" class="btn btn-info customerRegist"><i class="fas fa-check"></i><span>登録</span></button>
+		<button type="button" class="btn btn-light" data-dismiss="modal"><i class="fas fa-times"></i>閉じる</button>
+	</div>
+</div>
+
+<!--/* 顧客検索モーダル */-->
+<div id="customerSearchModalFragment" th:fragment="customerSearchModalFragment" th:object="${searchFragmentViewForm}">
+		<script type="text/javascript" th:inline="javascript">
+		$(function() {
+			const $customerSearchModalFragment = $("#customerSearchModalFragment");
+			const $customerSearchModal= $customerSearchModalFragment.closest(".modal");
+			const $customerSearchModalFragmentWrap = $customerSearchModal.find(".customerSearchModalFragmentWrap");
+			
+			commonSetUpElement();
+			let ajaxRunning = false;
+			
+			<!--/* 可変することでモーダルのサイズ変更クラスを付ける */-->
+			$customerSearchModal.find(".resizeToggleClassTarget").addClass("modal_customerSearch");
+			
+			<!--/* 
+				モーダルのラベル名を設定する 
+				※基本的に表示する内容等はレンダリング処理後は操作しない方針だが、モーダルの表示名は特別扱いする
+			*/-->
+			$customerSearchModalFragment.find(".modalNameLabel").text(benzo.global.fragment.customerRegistModalFragmentObj.paramObj.modalNameLabel);
+			
+			<!--/* 顧客追加フラグメントの切り替え */-->
+			$customerSearchModalFragment.on("click", ".renderRegistFragment", function() {
+				benzo.global.fragment.customerRegistModalFragmentObj.setUpObj.initRenderRegistViewAction($(this));
+			});
+			
+			<!-- クリアボタン -->
+			$customerSearchModalFragment.find(".clearButton").on('click',  function(){
+				$customerSearchModalFragment.find('#personSearchFragmentSearchForm')
+					.find("input[type='text']").val('')
+					.end();
+				searchFn();
+			});
+			
+			<!--/* 顧客の検索ボタン */-->
+			$customerSearchModalFragment.on("click", ".ankenCustomerSearch", function() {
+				searchFn();
+			});
+			
+			<!--/* ラジオボタン押下時に登録ボタンの有効化 */-->
+			$customerSearchModalFragment.find(".personRadio").on("change", function() {
+				if($customerSearchModalFragment.find(".personRadio:checked").length) {
+					$customerSearchModalFragment.find(".searchResultRegist").attr("disabled", false);
+				}
+			});
+			
+			<!--/* 顧客結果の登録ボタン */-->
+			$customerSearchModalFragment.on("click", ".searchResultRegist", function() {
+				benzo.global.fragment.customerRegistModalFragmentObj.setUpObj.searchRegistAction($(this));
+			});
+			
+			<!--/* モーダルを閉じたときの処理 */-->
+			$customerSearchModal.off("hidden.bs.modal.commonHiddenAction");
+			$customerSearchModal.one("hidden.bs.modal.commonHiddenAction", function(){
+				benzo.global.fragment.customerRegistModalFragmentObj.commonFn.modalHiddenAction($customerSearchModal);
+			});
+			
+			function searchFn() {
+				if (ajaxRunning) {
+					return false;
+				}
+				ajaxRunning = true;
+				Promise.resolve()
+					.then(() => benzo.global.fragment.customerRegistModalFragmentObj.setUpObj.searchRenderPromise())
+					.catch((errors) => console.log(errors))
+					.finally(() => ajaxRunning = false);
+			}
+
+		});
+		</script>
+		<div>
+			<!--/* ヘッダー */-->
+			<div class="modal-header">
+				<h2 class="modalheader_title modalNameLabel"></h2>
+			</div>
+			<!--/* ボディ */-->
+			<div class="modal-body">
+				<div class="modal_description">
+					<p>「登録済みの名簿」から対象案件の「顧客」に設定します。</p>
+					<p><a class="renderRegistFragment" href="javascript:void(0);"><i class="far fa-arrow-alt-circle-left mr-2"></i>新規追加に戻る</a></p>
+				</div>
+				<div th:replace="common/messageArea::jsMessageArea"></div>
+				<form id="personSearchFragmentSearchForm">
+					
+					<input type="hidden" th:name="OpenSearchResult" th:value="true" />
+					<input type="hidden" th:field="${searchFragmentSearchForm.ankenId}" />
+					<!-- メッセージ -->
+					<div class="list_filters_container mb-3 pb-1">
+						<!--/* 検索条件部 */-->
+						<fieldset>
+							<legend>検索条件</legend>
+							<div class="form-row">
+								<div class="form-group col-md-auto">
+									<label class="input_parts_label">名簿ID</label>
+									<input type="text" class="form-control digit6 inputNumberOnly" th:field="${searchFragmentSearchForm.personId}" maxlength="10">
+								</div>
+								<div class="form-group col-md-auto">
+									<label class="input_parts_label">名前</label>
+									<input type="text" class="form-control digit15" th:field="${searchFragmentSearchForm.customerName}" maxlength="20">
+								</div>
+							</div>
+							<div class="form-row">
+								<div class="form-group col-md-12 text-center">
+									<button type="button" class="btn btn-dark ankenCustomerSearch">
+										<i class="fas fa-search"></i>検索
+									</button>
+									<button type="button" class="btn btn-light ml-3 clearButton">キャンセル</button>
+								</div>
+							</div>
+						</fieldset>
+					</div>
+				</form>
+				<!-- 検索条件領域 end -->
+				
+				<form id="personSearchFragmentResultForm" th:if="${searchFragmentSearchForm.OpenSearchResult}">
+					<input type="hidden" th:field="*{ankenId}">
+					<th:block th:if="*{overViewCntFlg}">
+						<div class="pl-2">
+							<div>最大表示件数は[[${T(jp.loioz.common.constant.CommonConstant).OVER_VIEW_LIMIT}]]件までです。</div>
+							該当データが見つからない場合は、再度条件を指定し検索してください。
+						</div>
+					</th:block>
+					<!-- 検索結果 -->
+					<div class="header_fixed_table_wrapper custeomerAnkenDialog mt-4">
+						<table class="table table_standard table-sm table_fixed table-hover">
+							<thead>
+								<tr>
+									<th class="col_5">選択</th>
+									<th class="col_7">属性</th>
+									<th class="col_20">名前</th>
+									<th class="col_25">住所</th>
+								</tr>
+							</thead>
+							<tbody>
+	<!--/*/ 			<th:block th:if="*{searchResultList.size() == 0}"> /*/-->
+								<tr>
+									<td colspan="4" class="no_data col_no_data" th:text="#{I00022}">MSG_I00022</td>
+								</tr>
+	<!--/*/ 			</th:block> /*/-->
+								<tr th:each=" customer : *{searchResultList}" data-click-sync-for-descendants=".personRadio">
+									<!-- 選択ラジオボタン -->
+									<td>
+										<label class="radio_btn no_text">
+											<input type="radio" class="radio_input personRadio" name="personId" th:value="${customer.personId.asLong()}">
+											<span class="radio_txt"></span>
+										</label>
+									</td>
+									<!-- 属性 -->
+									<td>
+										<!--/* 名簿属性 */-->
+										<th:block  th:switch="${customer.personAttribute.getCd()}">
+											<span th:case="${T(jp.loioz.common.constant.CommonConstant$PersonAttributeCd).CUSTOMER}"
+												class="badge badge-pill list_attr badge_blue" th:text="${customer.personAttribute.getName()}">顧客</span>
+											<span th:case="${T(jp.loioz.common.constant.CommonConstant$PersonAttributeCd).ADVISOR}"
+												class="badge badge-pill list_attr badge_wine_red" th:text="${customer.personAttribute.getName()}">顧問先</span>
+											<span th:case="${T(jp.loioz.common.constant.CommonConstant$PersonAttributeCd).LAWYER}"
+												class="badge badge-pill list_attr badge_purple" th:text="${customer.personAttribute.getName()}">弁護士</span>
+											<span th:case="${T(jp.loioz.common.constant.CommonConstant$PersonAttributeCd).OTHER}"
+												class="badge badge-pill list_attr badge_green" th:text="${customer.personAttribute.getName()}">その他</span>
+											<span th:case="*"></span>
+										</th:block>
+									</td>
+									<!-- 顧客名 -->
+									<td>
+										<div class="char_ellipsis" th:text="${customer.customerName}"></div>
+										<div class="row_sub_data sub_text" th:text="${customer.personId}"></div>
+									</td>
+									<!-- 住所 -->
+									<td>
+										<div class="data_zip_address">
+											<div class="row_sub_data lh1">
+												<span th:text="${!#strings.isEmpty(customer.zipCode) ? '〒' + customer.zipCode : '' }"></span>
+											</div>
+											<span th:text="${customer.address1}"></span>
+											<span th:text="${customer.address2}"></span>
+										</div>
+									</td>
+								</tr>
+							</tbody>
+						</table>
+					</div>
+					<!-- 検索結果 end -->
+				</form>
+				
+			</div>
+			
+			<!--/* フッター */-->
+			<div class="modal-footer">
+				<button type="button" class="btn btn-info searchResultRegist" disabled><i class="fas fa-check"></i><span>登録</span></button>
+				<button type="button" class="btn btn-light" data-dismiss="modal"><i class="fas fa-times"></i>閉じる</button>
+			</div>
+		</div>
+	</div>
+	
+</th:block>
+
+</body>
+</html>

@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+	xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+	layout:decorator="commonLayout">
+<head>
+<meta charset="UTF-8">
+</head>
+<body>
+	<div th:fragment="select-modal" class="select-modal">
+		<div th:object="${saibanshoBuEditForm}">
+			<div class="modal-header">
+				<h2 class="modalheader_title" th:text="*{isNew()} ? '裁判所 係属部登録' : '裁判所 係属部更新'"></h2>
+			</div>
+			<div class="modal-body">
+				<div th:replace="common/messageArea::jsMessageArea"></div>
+				<form id="editForm" th:action="@{/user/saibanshoBuManagement/}" method="post" autocomplete="off">
+					<input type="hidden" th:field="*{saibanshoBuEditData.saibanshoId}">
+					<input type="hidden" th:field="*{saibanshoBuEditData.keizokuBuId}">
+					<input type="hidden" th:field="*{saibanshoBuEditData.versionNo}">
+					<div class="modal_input_area">
+						<div class="form-row">
+							<div class="form-group col-md-12">
+								<label class="input_parts_label">係属部名</label>
+								<span class="mark_equired">必須</span>
+								<input type="text" class="form-control" th:field="*{saibanshoBuEditData.keizokuBuName}" maxlength="100">
+								<div class="error_mag_point hidden" id="itemMsg_saibanshoBuEditData.keizokuBuName"></div>
+							</div>
+						</div>
+						<div class="form-row">
+							<div class="form-group col-md-4">
+								<label class="input_parts_label">電話番号</label>
+								<input type="text" class="form-control input_num_hyphen" th:field="*{saibanshoBuEditData.keizokuBuTelNo}" maxlength="13" placeholder="00-1234-5678">
+								<div class="error_mag_point hidden" id="itemMsg_saibanshoBuEditData.keizokuBuTelNo"></div>
+							</div>
+							<div class="form-group col-md-4">
+								<label class="input_parts_label">FAX番号</label>
+								<input type="text"  class="form-control input_num_hyphen" th:field="*{saibanshoBuEditData.keizokuBuFaxNo}" maxlength="13" placeholder="00-1234-5678">
+								<div class="error_mag_point hidden" id="itemMsg_saibanshoBuEditData.keizokuBuFaxNo"></div>
+							</div>
+						</div>
+					</div>
+				</form>
+			</div>
+			<div class="modal-footer">
+				<button th:if="*{!isNew()}" type="button" class="btn btn-light mr-auto" id="delete"><i class="far fa-trash-alt"></i>削除</button>
+				<button th:if="*{isNew()}" type="button" class="btn btn-info" id="regist"><i class="fas fa-check"></i>登録</button>
+				<button  th:if="*{!isNew()}" type="button" class="btn btn-info" id="update"><i class="fas fa-check"></i>保存</button>
+				<button type="button" class="btn btn-light" data-dismiss="modal"><i class="fas fa-times"></i>閉じる</button>
+			</div>
+		</div>
+	</div>
+</body>
+</html>

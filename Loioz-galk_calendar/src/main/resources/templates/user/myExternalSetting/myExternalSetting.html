@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html  xmlns:th="http://www.thymeleaf.org"
+	xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+	layout:decorator="commonLayout">
+<head>
+<meta charset="UTF-8">
+<title layout:fragment="title-contents">
+	[[${T(jp.loioz.common.utility.LoiozUtils).getHtmlTitle(T(jp.loioz.common.constant.CommonConstant$AccountSettingMenu).MY_EXTERNAL_SERIVE.getVal(), T(jp.loioz.common.utility.SessionUtils).getTenantName())}]]
+</title>
+<script type="text/javascript" th:inline="javascript">
+<!--/* 別タブの連携失敗処理 */-->
+function failerConnectFnc(errorMsg) {
+	// 子タブを閉じる処理を完了するまで待つ
+	setTimeout(function() {
+		showErrorMessageForJs(errorMsg);
+	}, 100)
+}
+<!--/* 別タブの連携成功処理 */-->
+function successConnectFnc(successMsg) {
+	// 子タブを閉じる処理を完了するまで待つ
+	setTimeout(function() {
+		Promise.resolve()
+		.then(() => renderAccountExternalConnectView())
+		.then(() => showInfoMessageForJs(successMsg))
+		.catch((errors) => console.log(errors));
+	}, 100);
+}
+<!--/* アカウント連携情報の再レンダリング処理 */-->
+function renderAccountExternalConnectView() {
+	return new Promise((resolve,reject) => {
+		$.ajax({
+			url : /*[[@{/user/myExternalSetting/getAccountExternalConnectView}]]*/"",
+			type : "GET",
+			dataType: 'html',
+		})
+		.done(function(data, status, jqXHR) {
+			if (isAjaxProcSuccess(jqXHR)) {
+				// 親HTMLのID
+				$('#accountExternalConnectViewFragmentWrap').html(data);
+				return resolve();
+			} else {
+				// 処理失敗
+				const errorMsg = getAjaxProcResutlMessage(jqXHR);
+				showErrorMessageForJs(errorMsg);
+				return reject();
+			}
+		})
+		.fail(function(jqXHR, status, errorThrown) {
+			showErrorMessageForJs(/*[[#{E00091}]]*/ "error");
+			return reject();
+		});
+	});
+}
+</script>
+</head>
+<body>
+	<div class="contents_sidebar_wrapper_setting" layout:fragment="main-contents">
+		<!-- サイドメニュー -->
+		<div th:replace="common/accountSettingMenu::selectMenu(${T(jp.loioz.common.constant.CommonConstant$AccountSettingMenu).MY_EXTERNAL_SERIVE.getCd()})"></div>
+
+		<!-- コンテンツ -->
+		<div class="contents_wrapper" th:object="${viewForm}">
+			<!--/* メッセージエリア */-->
+			<div th:replace="common/messageArea::messageArea"></div>
+
+			<!-- contents_limited_width_setting サイズ幅(maxサイズ）start -->
+			<div class="container-fluid contents_limited_width_setting">
+
+				<!-- パンくず-->
+				<div class="breadcrumb_area">
+					<ul>
+						<li><span>個人設定</span></li>
+						<li><i class="fas fa-angle-right"></i></li>
+						<li>外部サービス接続</li>
+					</ul>
+				</div>
+
+				<!-- コンテンツブロック start -->
+				<div class="contents_block">
+
+					<!--/* アカウント外部連携情報 */-->
+					<div id="accountExternalConnectViewFragmentWrap" th:insert="user/myExternalSetting/myExternalSettingFragment::accountExternalConnectViewFragment(${viewForm.accountExternalConnectViewForm})"></div>
+
+				</div>
+				<!-- コンテンツブロック end -->
+			</div>
+		</div>
+	</div>
+</body>
+</html>

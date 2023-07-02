@@ -1,0 +1,358 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+	layout:decorator="commonLayout">
+<head>
+<meta charset="utf-8" th:remove="tag" />
+<title layout:fragment="title-contents">
+	[[${T(jp.loioz.common.utility.LoiozUtils).getHtmlTitle("カレンダー", T(jp.loioz.common.utility.SessionUtils).getTenantName())}]]
+</title>
+<th:block th:with="version=${@environment.getProperty('app.version')}">
+	<link th:href="@{/css/task/task.css?{ver}(ver=${version})}" rel="stylesheet" type="text/css"/>
+</th:block>
+<style th:replace="user/schedule/scheduleModal::css(useScheduleRefer=false)"></style>
+<style type="text/css">
+.modal-open .modal {
+	box-shadow: 0 24px 38px 3px rgba(0,0,0,0.14), 0 9px 46px 8px rgba(0,0,0,0.12), 0 11px 15px -7px rgba(0,0,0,0.2);
+	-webkit-box-shadow: 0 24px 38px 3px rgba(0,0,0,0.14), 0 9px 46px 8px rgba(0,0,0,0.12), 0 11px 15px -7px rgba(0,0,0,0.2);
+	overflow: hidden;
+	border-top-left-radius: 0;
+	border-top-right-radius: 0;
+    border-radius: .3rem;
+	-webkit-border-radius: .3rem;
+}
+</style>
+<style th:inline="css">
+
+<!--/* 予定登録モーダル */-->
+<!--/* 裁判期日は予定表からは削除不可 */-->
+#scheduleModal.isSaibanLimit [data-contains="deleteButton"] {
+	display: none;
+}
+</style>
+<style>
+.task_list li{
+	width : 100%!important;
+}
+.cell_id_prj{
+	display: inline-block;
+	padding: 3px 8px 2px;
+}
+.openCloseTask{
+	cursor: pointer !important;
+}
+</style>
+<script type="text/javascript" th:replace="user/taskManagement/taskEditModal::taskModalJs"></script>
+<script th:replace="user/schedule/scheduleModal::scripts(useScheduleRefer=false)"></script>
+<!--/* 共通 */-->
+<script type="text/javascript" th:inline="javascript">
+<!--/* カレンダー選択状態をセッションに保存する */-->
+function saveCalendarStatus(){
+	let params = {};
+	params.dispType = getCurrentCalendarDispType();
+	params.calendarDate = $.datepicker.formatDate("yy/mm/dd", currentMainCalendarDate);
+	params.userSelectType = $(".miniuserselect .userSelectTab.selected").data("userSelectType");
+	params.selectedAccountSeq = uniqueArray(
+		$(".miniuserselect .userCheck:checked").map(function(){
+			return $(this).data("accountSeq");
+		}).get()
+	);
+	params.selectedHoliday = $(".miniuserselect .holidayCheck").prop("checked");
+	if(params.selectedAccountSeq.length == 0){
+		params.selectedAccountSeq = [null];
+	}
+
+	$.ajax({
+		type : "POST",
+		url : /*[[(@{/user/schedule/saveCalendarStatus})]]*/ "/",
+		data : params,
+		dataType : "json",
+		traditional: true
+	});
+}
+</script>
+<!--/* カレンダー */-->
+<script type="text/javascript" th:inline="javascript">
+<!--/* カレンダー初期表示 */-->
+$(function() {
+	setCurrentCalendarDispType(/*[[${{calendarStatusForm.dispType}}]]*/);
+	currentMainCalendarDate = new Date(/*[[${{calendarStatusForm.calendarDate}}]]*/);
+	currentMainCalendarDate.setHours(0, 0, 0, 0);
+	currentMiniCalendarDate = currentMainCalendarDate;
+	changeMainCalendar(currentMainCalendarDate);
+	changeMiniCalendar(currentMiniCalendarDate);
+});
+</script>
+<!--/* ユーザー選択 */-->
+<script type="text/javascript" th:inline="javascript">
+$(function() {
+	<!--/* 初期表示状態でのユーザーグループタブ選択 */-->
+	const userSelectType = /*[[${{calendarStatusForm.userSelectType}}]]*/ null;
+	<!--/* 初期選択状態のユーザー */-->
+	const selectedUsers = [
+		/*[# th:each="accountSeq : ${calendarStatusForm.selectedAccountSeq}"]*/
+		[[${accountSeq}]],
+		/*[/]*/
+	];
+	const  selectedHoliday = /*[[${calendarStatusForm.selectedHoliday}]]*/null;
+	if(selectedHoliday) {
+		// 値を設定するだけ。後続の処理で描写切り替えが行われる
+		$(".miniuserselect .holidayCheck").prop("checked", Boolean(selectedHoliday));
+	}
+	<!--/* カレンダー初期表示 */-->
+	initUserSelectTab(userSelectType, selectedUsers);
+});
+</script>
+<!--/* 予定登録モーダル */-->
+<script type="text/javascript" th:inline="javascript">
+$(function() {
+	let modal = benzo.global.scheduleModal.modal;
+
+	<!--/* 予定がクリックされたらモーダルを開く(編集) */-->
+	benzo.global.scheduleCalendar.onEntryClick = function(scheduleSeq, event){
+		let modalConfig = {
+			isUpdate: true
+		};
+		<!--/* 予定表データを取得 */-->
+		let scheduleData = $.extend(true, {}, scheduleCache[scheduleSeq]);
+
+		<!--/* 非公開の予定はモーダルを開かない */-->
+		if(scheduleData.forbidden){
+			return;
+		}
+
+		<!--/* モーダルを開く */-->
+		benzo.global.scheduleModal.openModal(scheduleData, modalConfig);
+
+		if (scheduleData.saibanSeq) {
+			<!--/* 裁判主担当の設定 */-->
+			benzo.global.scheduleModal.setSaibanMain(scheduleData.saibanSeq);
+			<!--/* 裁判担当者プルダウンを設定 */-->
+			benzo.global.scheduleModal.setUpSaibanTantoOption(scheduleData.saibanSeq);
+		} else if (scheduleData.ankenId) {
+			<!--/* 案件主担当の設定 */-->
+			benzo.global.scheduleModal.setAnkenMain(scheduleData.ankenId);
+			<!--/* 案件担当者のプルダウンを設定 */-->
+			benzo.global.scheduleModal.setUpAnkenTantoOption(scheduleData.ankenId);
+		}
+
+		<!--/* 初回面談・裁判期日は、予定表からは一部項目が編集不可 */-->
+		if(scheduleData.saibanLimit){
+			modal.find('[data-contains="subject"], [data-contains="date"], [data-contains="place"], [data-contains="shokaiMendan"], [data-contains="saibanLimit"]')
+				.find("input, textarea, select, button").prop("disabled", true);
+			modal.find('[data-contains="subject"], [data-contains="date"], [data-contains="place"], [data-contains="shokaiMendan"], [data-contains="saibanLimit"]')
+				.find(".select").attr("disabled",true);
+		}
+	}
+
+	<!--/* カレンダー上で日時を選択したらモーダルを開く(新規) */-->
+	benzo.global.scheduleCalendar.onDateTimeSelect = function(dateTimeParams, event){
+		// 詳細予定を閉じる
+		$('.popover').popover('dispose');
+
+		let modalConfig = {
+			isCreate: true
+		};
+		<!--/* 予定表データを取得 */-->
+		let scheduleData = $.extend(true, {}, benzo.global.scheduleModal.emptyScheduleData, dateTimeParams);
+
+		if(scheduleData.roomId){
+			scheduleData.roomSelected = true;
+		}
+
+		// 新規登録時にログインユーザーを参加者に追加
+		const myAccountSeq = /*[[${T(jp.loioz.common.utility.SessionUtils).getLoginAccountSeq()}]]*/null;
+		scheduleData.member = [myAccountSeq]
+
+		<!--/* モーダルを開く */-->
+		let modal = benzo.global.scheduleModal.openModal(scheduleData, modalConfig);
+		modal.focus();
+	}
+
+	<!--/* 登録・更新・削除ボタン */-->
+	let ajaxRunning = false;
+	modal.find(".saveSchedule").on("click", function(){
+		if(ajaxRunning){
+			return false;
+		}
+
+		let button = $(this);
+		if(button.is(".deleteButton")){
+			if(!confirm("この予定を削除します。よろしいですか？")){
+				return false;
+			}
+		}
+
+		let params = benzo.global.scheduleModal.getModalFormParams();
+		let scheduleSeq = modal.find("[name='scheduleSeq']").val();
+
+		ajaxRunning = true;
+		$.ajax({
+			type : "POST",
+			url : /*[[(@{/user/schedule/needConfirm})]]*/ "/",
+			data : params,
+			dataType : "json"
+		})
+		.done(function(checked) {
+			if(!button.is(".deleteButton")){
+				if(checked.needConfirm &&!confirm(checked.message)){
+					ajaxRunning = false;
+					return false;
+				}
+			}
+			$.ajax({
+				type : "POST",
+				url : button.data("url"),
+				data : params,
+				dataType : "json"
+			})
+			.done(function(result) {
+				if(result.succeeded){
+					modal.modal("hide");
+					<!--/* 更新・削除の場合は、予定データ再読込のためにキャッシュを削除 */-->
+					if(button.is(".updateButton") || button.is(".deleteButton")){
+						delete scheduleCache[scheduleSeq];
+					}
+					showInfoMessageForJs(result.message);
+					changeMainCalendar(currentMainCalendarDate);
+				} else {
+					// エラーメッセージ表示
+					showErrorMessage(result.message, modal, result.errors);
+				}
+			})
+			.fail(function() {
+				showErrorMessage(/*[[#{E00013}]]*/ "error", modal);
+			})
+			.always(function(){
+				ajaxRunning = false;
+			});
+		});
+	});
+});
+</script>
+<script type="text/javascript" th:inline="javascript">
+$(function(){
+
+	<!--/* 【タスクモーダル】モーダルを開いたとき */-->
+	$('#selectTaskModal').on('shown.bs.modal', function(e){
+		<!--/* タイトルの入力項目にフォーカスを当てる */-->
+		const $titleInput = $('#selectTaskModal #title');
+		$titleInput.focus();
+	});
+	
+	<!-- /* 【タスクモーダル】モーダル閉じたときに画面表示を最新化*/ -->
+	$('#selectTaskModal').on('hide.bs.modal', function (e) {
+		const modal = $(this);
+		if(modal.find(".select-modal").is("#taskEditModal")){
+			closeModal();
+		}
+		// 初期化する
+		$('.targetTaskModalBody').html('');
+	});
+
+	<!-- /* カレンダートップのタスク表示・非表示アクション */ -->
+	const duration = 1;
+	const $sidebar = $('.sidebar');
+	const $openCloseTask = $('.openCloseTask');
+	const $scheduleMain = $('.block_schedule_main');
+	const $taskMain = $('.block_schedule_right');
+
+	<!-- /* 開閉イベント実行 */ -->
+	$(document).on("click", ".block_schedule_right .sidebar .openCloseTask", function(){
+		if($(this).hasClass('open')) {
+			// タスク開く
+			$taskMain.css('flex', '0 1 270px');
+			$(".block_header, .task_list, .openMenu").removeClass("hidden");
+			$(".closeMenu").addClass("hidden");
+			saveTaskOpenFlg(true);
+			$scheduleMain.stop().animate({
+				width: '68%'
+			}, duration, 'easeOutQuint');
+		} else {
+			// タスク閉じる
+			$(".block_header, .task_list, .openMenu").addClass("hidden");
+			$(".closeMenu").removeClass("hidden");
+			$taskMain.css('flex', '0 1 69px');
+			saveTaskOpenFlg(false);
+			$scheduleMain.stop().animate({
+				width: '98%'
+			}, duration, 'easeOutQuint');
+		}
+
+		// カレンダーのサイズを調整
+		fixCalendarEntryWidth();
+		$(window).trigger("resize");
+	});
+
+	<!-- /* カレンダートップのタスク表示・非表示アクション時にCookieに保持させる */ -->
+	function saveTaskOpenFlg(scheduleOpenTaskFlg) {
+		$.ajax({
+			url : "/user/schedule/saveOpenTask",
+			type : "POST",
+			data : {"scheduleOpenTaskFlg" : scheduleOpenTaskFlg},
+		}).always(function(jqXHR, textStatus, errorThrown){
+			// Cokkieに値を保持させるだけなので、成功しても失敗してもなにもしない
+		});
+	}
+
+	<!-- モーダルを閉じた時に、情報を更新する -->
+	function closeModal(){
+		let taskSeq = $("#taskEditModal").find("[name='taskSeq']").val();
+		$.ajax({
+			url : "/user/taskManagement/closeModal",
+			type : "POST",
+			data : {
+				"taskSeq" : taskSeq
+				},
+		}).done(function(data) {
+			let newContent = $(data);
+			if(newContent.is("#taskListData")){
+				const replaceId = "#taskData"+taskSeq;
+				const replaceData = $(data).find(replaceId);
+				$(replaceId).replaceWith(replaceData);
+			}
+		}).fail(function(jqXHR, textStatus, errorThrown) {
+			window.location.href = "/systemError";
+		}).always(function() {
+		});
+	}
+
+});
+</script>
+</head>
+<body class="bg2">
+	<div layout:fragment="header-contents">カレンダー</div>
+	<div layout:fragment="main-contents" th:remove="tag">
+		<div class="wrapper">
+			<div class="p-3 calendarContainer">
+				<div th:replace="common/messageArea::messageArea"></div>
+				<div th:replace="user/info/informationArea"></div>
+				<div class="block_schedule" th:with="openFlg=${viewForm.scheduleOpenTaskFlg}">
+					<div class="block_schedule_left" th:replace="user/schedule/scheduleCalendar::block_schedule_left"></div>
+					<div class="block_schedule_main" th:replace="user/schedule/scheduleCalendar::block_schedule_main(mainAreaWidthStyle=${openFlg} ? 'width: 68%;' : 'width: 98%')"></div>
+					<div class="block_schedule_right" th:style="${openFlg} ? 'flex: 0 1 270px' : 'flex: 0 1 69px' ">
+						<!--タスク-->
+						<div id="taskListViewFragmentWrap" class="schedule_task_list" th:insert="user/schedule/scheduleFragment::taskListViewFragment(${viewForm})"></div>
+					</div>
+				</div>
+			</div>
+		</div>
+		<!--/* 予定登録モーダル */-->
+		<div th:replace="user/schedule/scheduleModal::modal(
+			createUrl=@{/user/schedule/create},
+			updateUrl=@{/user/schedule/update},
+			deleteUrl=@{/user/schedule/delete},
+			useScheduleRefer=false,
+			modeless=true)"></div>
+		<!--/* タスク登録モーダル */-->
+		<div th:fragment="modalTemplate" id="selectTaskModal" class="modal fade" tabindex="-1" role="dialog" aria-hidden="true">
+			<div class="modal-dialog modal_task modal-dialog-centered" role="document">
+				<div class="modal-content">
+					<div th:class="targetTaskModalBody"></div>
+				</div>
+			</div>
+		</div>
+
+		<!-- モーダル end -->
+	</div>
+</body>
+</html>

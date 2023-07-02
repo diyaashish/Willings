@@ -1,0 +1,557 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+	xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+	layout:decorator="commonLayout">
+<head>
+<meta charset="utf-8" />
+<title layout:fragment="title-contents">
+	[[${T(jp.loioz.common.utility.LoiozUtils).getHtmlTitle("案件一覧", T(jp.loioz.common.utility.SessionUtils).getTenantName())}]]
+</title>
+<th:block th:with="version=${@environment.getProperty('app.version')}">
+</th:block>
+<script type="text/javascript" th:inline="javascript">
+<!--/*
+ 二重送信防止対応用の値。
+ このHTMLに差し込まれるfragment内のScriptの処理も、共通してこの変数を利用する。
+*/-->
+let ajaxRunning = false;
+
+</script>
+<script type="text/javascript" th:inline = "javascript">
+
+<!--/*
+ * 一覧の表示初期処理
+ *
+ * @param {string} sessionQuickSearchWord   Sessionが保持するクイック検索ワード。この関数を実行する側で取得し値を渡す。
+*/-->
+function showInitAnkenList(sessionQuickSearchWord) {
+
+	<!-- /* Sessionのクイック検索ワードを、ヘッダーの検索ワード入力欄に表示する */ -->
+	<!-- /* ※Sessionの値が存在するのは、「すべて」の一覧の表示の場合のみとなるよう、サーバー側で値を制御しているため、「すべて」以外の場合は入力欄を空にする動作になる。 */ -->
+	$('#headerSearchInput').val(sessionQuickSearchWord);
+}
+
+<!--/* 案件一覧画面検索条件フラグメント再表示（案件一覧、裁判一覧共通） */-->
+function renderAnkenSearchFormFragment(formData) {
+	return new Promise((resolve, reject) => {
+		<!--/* 案件検索条件フラグメント表示処理 */-->
+		$.ajax({
+			url : "/user/ankenList/displayAnkenListSearchForm",
+			type : "GET",
+			data : formData,
+			dataType: 'html',
+		}).done(function(data, status, jqXHR) {
+	
+			if (isAjaxProcSuccess(jqXHR)) {
+				<!--/* 処理成功 */-->
+				$('#ankenListSearchFormFragmentWrap').html(data);
+				return resolve();
+			} else {
+				<!--/* 処理失敗 */-->
+				const errorMsg = getAjaxProcResutlMessage(jqXHR);
+				showErrorMessageForJs(errorMsg);
+				return reject(errorMsg);
+			}
+		}).fail(function() {
+			showErrorMessageForJs(/*[[#{E00059}]]*/ "データの取得に失敗しました。");
+			return reject();
+		})
+	});
+}
+
+<!--/* すべての案件一覧画面検索処理 */-->
+function searchAllAnkenList(formData) {
+	return new Promise((resolve, reject) => {
+		<!--/* 案件一覧画面検索処理 */-->
+		$.ajax({
+			url : "/user/ankenList/searchAllAnkenList",
+			type : "GET",
+			data : formData,
+			dataType: 'html',
+		}).done(function(data, status, jqXHR) {
+			<!--/* ツールチップを非表示にする */-->
+			$('[data-toggle="tooltip"]').tooltip('hide');
+			<!-- /* 一覧フラグメント更新 */ -->
+			$('#ankenListViewFragmentWrap').replaceWith($(data).find("#ankenListViewFragmentWrap"));
+			<!-- /* ページングフラグメント更新 */ -->
+			$('#ankenListPagerWrap').replaceWith($(data).find("#ankenListPagerWrap"));
+			return resolve();
+		}).fail(function() {
+			showErrorMessageForJs(/*[[#{E00059}]]*/ "データの取得に失敗しました。");
+			return reject();
+		})
+	});
+}
+
+<!--/* すべての案件検索条件クリア処理 */-->
+function initAllAnkenSearchCondition() {
+
+	$.ajax({
+		url : "/user/ankenList/initAllAnkenSearchCondition",
+		type : "GET",
+		dataType: 'html',
+	}).done(function(data, status, jqXHR) {
+		<!--/* ツールチップを非表示にする */-->
+		$('[data-toggle="tooltip"]').tooltip('hide');
+		<!--/* 検索条件フラグメント更新 */-->
+		$('#ankenListSearchFormFragmentWrap').html(data);
+		<!-- /* 検索処理 */ -->
+		searchAllAnkenList();
+	}).fail(function() {
+		showErrorMessageForJs(/*[[#{E00059}]]*/ "データの取得に失敗しました。");
+	}).always(function() {
+	});	
+}
+
+<!--/* 自分の担当案件一覧画面検索処理 */-->
+function searchMyAnkenList(formData) {
+	return new Promise((resolve, reject) => {
+		<!--/* 案件一覧画面検索処理 */-->
+		$.ajax({
+			url : "/user/ankenList/searchMyAnkenList",
+			type : "GET",
+			data : formData,
+			dataType: 'html',
+		}).done(function(data, status, jqXHR) {
+			<!--/* ツールチップを非表示にする */-->
+			$('[data-toggle="tooltip"]').tooltip('hide');
+			<!-- /* 一覧フラグメント更新 */ -->
+			$('#ankenListViewFragmentWrap').replaceWith($(data).find("#ankenListViewFragmentWrap"));
+			<!-- /* ページングフラグメント更新 */ -->
+			$('#ankenListPagerWrap').replaceWith($(data).find("#ankenListPagerWrap"));
+			return resolve();
+		}).fail(function() {
+			showErrorMessageForJs(/*[[#{E00059}]]*/ "データの取得に失敗しました。");
+			return reject();
+		})
+	});
+}
+
+<!--/* 自分の担当案件検索条件クリア処理 */-->
+function initMyAnkenSearchCondition() {
+
+	$.ajax({
+		url : "/user/ankenList/initMyAnkenSearchCondition",
+		type : "GET",
+		dataType: 'html',
+	}).done(function(data, status, jqXHR) {
+		<!--/* ツールチップを非表示にする */-->
+		$('[data-toggle="tooltip"]').tooltip('hide');
+		<!--/* 検索条件フラグメント更新 */-->
+		$('#ankenListSearchFormFragmentWrap').html(data);
+		<!-- /* 検索処理 */ -->
+		searchMyAnkenList();
+	}).fail(function() {
+		showErrorMessageForJs(/*[[#{E00059}]]*/ "データの取得に失敗しました。");
+	}).always(function() {
+	});	
+}
+
+<!--/* 顧問案件一覧画面検索処理 */-->
+function searchAdvisorAnkenList(formData) {
+	return new Promise((resolve, reject) => {
+		<!--/* 案件一覧画面検索処理 */-->
+		$.ajax({
+			url : "/user/ankenList/searchAdvisorAnkenList",
+			type : "GET",
+			data : formData,
+			dataType: 'html',
+		}).done(function(data, status, jqXHR) {
+			<!--/* ツールチップを非表示にする */-->
+			$('[data-toggle="tooltip"]').tooltip('hide');
+			<!-- /* 一覧フラグメント更新 */ -->
+			$('#ankenListViewFragmentWrap').replaceWith($(data).find("#ankenListViewFragmentWrap"));
+			<!-- /* ページングフラグメント更新 */ -->
+			$('#ankenListPagerWrap').replaceWith($(data).find("#ankenListPagerWrap"));
+			return resolve();
+		}).fail(function() {
+			showErrorMessageForJs(/*[[#{E00059}]]*/ "データの取得に失敗しました。");
+			return reject();
+		})
+	});
+}
+
+<!--/* 顧問案件検索条件クリア処理 */-->
+function initAdvisorAnkenSearchCondition() {
+
+	$.ajax({
+		url : "/user/ankenList/initAdvisorAnkenSearchCondition",
+		type : "GET",
+		dataType: 'html',
+	}).done(function(data, status, jqXHR) {
+		<!--/* ツールチップを非表示にする */-->
+		$('[data-toggle="tooltip"]').tooltip('hide');
+		<!--/* 検索条件フラグメント更新 */-->
+		$('#ankenListSearchFormFragmentWrap').html(data);
+		<!-- /* 検索処理 */ -->
+		searchAdvisorAnkenList();
+	}).fail(function() {
+		showErrorMessageForJs(/*[[#{E00059}]]*/ "データの取得に失敗しました。");
+	}).always(function() {
+	});	
+}
+
+<!--/* ページング処理（案件一覧、裁判一覧共通） */-->
+function getListOfPageNumber(pageNumber) {
+
+	<!--/* パラメータ */-->
+	const formData = {
+		"page" : pageNumber
+	}
+
+	let url = "";
+	const allAnken = /*[[${T(jp.loioz.common.constant.CommonConstant$AnkenListMenu).All_ANKEN_LIST.cd}]]*/ '';
+	const myAnken = /*[[${T(jp.loioz.common.constant.CommonConstant$AnkenListMenu).MY_ANKEN_LIST.cd}]]*/ '';
+	const advisorAnken = /*[[${T(jp.loioz.common.constant.CommonConstant$AnkenListMenu).ADVISOR_ANKEN_LIST.cd}]]*/ '';
+	const minjiSaiban = /*[[${T(jp.loioz.common.constant.CommonConstant$AnkenListMenu).MINJI_SAIBAN_LIST.cd}]]*/ '';
+	const keijiSaiban = /*[[${T(jp.loioz.common.constant.CommonConstant$AnkenListMenu).KEIJI_SAIBAN_LIST.cd}]]*/ '';
+	const selectedAnkenList = $('#selectedAnkenListMenu').val();
+	switch (selectedAnkenList) {
+		case allAnken:
+			url = "/user/ankenList/allAnkenPager";
+			break;
+		case myAnken:
+			url = "/user/ankenList/myAnkenPager";
+			break;
+		case advisorAnken:
+			url = "/user/ankenList/advisorAnkenPager";
+			break;
+		case minjiSaiban:
+			url = "/user/ankenList/minjiSaibanPager";
+			break;
+		case keijiSaiban:
+			url = "/user/ankenList/keijiSaibanPager";
+			break;
+		default:
+	} 
+
+	<!--/* ページング処理 */-->
+	$.ajax({
+		url : url,
+		type : "GET",
+		data : formData,
+		dataType: 'html',
+	}).done(function(data, status, jqXHR) {
+		<!--/* ツールチップを非表示にする */-->
+		$('[data-toggle="tooltip"]').tooltip('hide');
+		<!--/* 一覧フラグメント更新 */-->
+		$('#ankenListViewFragmentWrap').replaceWith($(data).find("#ankenListViewFragmentWrap"));
+		<!-- /* ページングフラグメント更新 */ -->
+		$('#ankenListPagerWrap').replaceWith($(data).find("#ankenListPagerWrap"));
+	}).fail(function() {
+		showErrorMessageForJs(/*[[#{E00059}]]*/ "データの取得に失敗しました。");
+	}).always(function() {
+	});	
+}
+
+<!--/* 並び替え処理（案件一覧、裁判一覧共通） */-->
+<!--/* sortedKey 現在のソートキー, sortedOrder 現在のソート順, sortKey 並び替えたいソートキー, pageNumber 現在の表示ページ番号（不使用） */-->
+function sortAnkenList(sortedKey, sortedOrder, sortKey, pageNumber) {
+
+	<!--/* 現在のソートキーと並び替えのソートキーを比較してソート順を設定 */-->
+	let sortOrder;
+	if (sortedKey == sortKey) {
+		<!--/* 現在のソートキーと並び替えのソートキーが同じ場合、現在のソート順の逆に並び替える */-->
+		if (sortedOrder == /*[[${T(jp.loioz.common.constant.SortConstant$SortOrder).ASC.cd}]]*/) {
+			sortOrder = /*[[${T(jp.loioz.common.constant.SortConstant$SortOrder).DESC.cd}]]*/;
+		} else {
+			sortOrder = /*[[${T(jp.loioz.common.constant.SortConstant$SortOrder).ASC.cd}]]*/;
+		}
+	} else {
+		<!--/* 現在のソートキーと並び替えのソートキーが異なる場合、降順にする */-->
+		sortOrder = /*[[${T(jp.loioz.common.constant.SortConstant$SortOrder).DESC.cd}]]*/; 
+	}
+
+	<!--/* パラメータ */-->
+	const formData = {
+		"page" : pageNumber,
+		"sortKey" : sortKey,
+		"sortOrder" : sortOrder
+	}
+
+	<!--/* 画面ごとに処理URLを設定 */-->
+	let url = "";
+	const allAnken = /*[[${T(jp.loioz.common.constant.CommonConstant$AnkenListMenu).All_ANKEN_LIST.cd}]]*/ '';
+	const myAnken = /*[[${T(jp.loioz.common.constant.CommonConstant$AnkenListMenu).MY_ANKEN_LIST.cd}]]*/ '';
+	const advisorAnken = /*[[${T(jp.loioz.common.constant.CommonConstant$AnkenListMenu).ADVISOR_ANKEN_LIST.cd}]]*/ '';
+	const minjiSaiban = /*[[${T(jp.loioz.common.constant.CommonConstant$AnkenListMenu).MINJI_SAIBAN_LIST.cd}]]*/ '';
+	const keijiSaiban = /*[[${T(jp.loioz.common.constant.CommonConstant$AnkenListMenu).KEIJI_SAIBAN_LIST.cd}]]*/ '';
+	const selectedAnkenList = $('#selectedAnkenListMenu').val();
+	switch (selectedAnkenList) {
+		case allAnken:
+		case myAnken:
+		case advisorAnken:
+			url = "/user/ankenList/sortAnkenList";
+			break;
+		case minjiSaiban:
+			url = "/user/ankenList/sortMinjiSaibanList";
+			break;
+		case keijiSaiban:
+			url = "/user/ankenList/sortKeijiSaibanList";
+			break;
+		default:
+	} 
+
+	<!--/* 並び替え処理 */-->
+	$.ajax({
+		url : url,
+		type : "GET",
+		data : formData,
+	}).done(function(data, status, jqXHR) {
+		<!--/* ツールチップを非表示にする */-->
+		$('[data-toggle="tooltip"]').tooltip('hide');
+
+		if (isAjaxProcSuccess(jqXHR)) {
+			<!--/* 処理成功 */-->
+			<!--/* 一覧フラグメント更新 */-->
+			$('#ankenListViewFragmentWrap').replaceWith($(data).find("#ankenListViewFragmentWrap"));
+			<!-- /* ページングフラグメント更新 */ -->
+			$('#ankenListPagerWrap').replaceWith($(data).find("#ankenListPagerWrap"));
+		} else {
+			<!--/* 処理失敗 */-->
+			const errorMsg = getAjaxProcResutlMessage(jqXHR);
+			showErrorMessageForJs(errorMsg);
+		}
+	}).fail(function() {
+		showErrorMessageForJs(/*[[#{E00059}]]*/ "データの取得に失敗しました。");
+	}).always(function() {
+	});	
+}
+
+<!--/* 案件一覧CSV出力処理 */-->
+function downloadAnkenListCsv(buttonObj) {
+
+	<!--/* ダウンロード処理 */-->
+	const url = "/user/ankenList/outputAnkenListCsv";
+	const button = buttonObj;
+	let formData = {};
+	downloadCsvFileAjax(url, button, formData);
+
+	return false;
+}
+
+<!--/* 案件一覧EXCEL出力処理 */-->
+function downloadAnkenListExcel(buttonObj) {
+
+	<!--/* ダウンロード処理 */-->
+	const url = "/user/ankenList/outputAnkenListExcel";
+	const button = buttonObj;
+	let formData = {};
+	downloadFileAjax(url, button, formData);
+
+	return false;
+}
+
+<!--/* 民事裁判一覧画面検索処理 */-->
+function searchMinjiSaibanList(formData) {
+	return new Promise((resolve, reject) => {
+		<!--/* 民事裁判一覧画面検索処理 */-->
+		$.ajax({
+			url : "/user/ankenList/searchMinjiSaibanList",
+			type : "GET",
+			data : formData,
+			dataType: 'html',
+		}).done(function(data, status, jqXHR) {
+			<!--/* ツールチップを非表示にする */-->
+			$('[data-toggle="tooltip"]').tooltip('hide');
+			<!-- /* 一覧フラグメント更新 */ -->
+			$('#ankenListViewFragmentWrap').replaceWith($(data).find("#ankenListViewFragmentWrap"));
+			<!-- /* ページングフラグメント更新 */ -->
+			$('#ankenListPagerWrap').replaceWith($(data).find("#ankenListPagerWrap"));
+			return resolve();
+		}).fail(function() {
+			showErrorMessageForJs(/*[[#{E00059}]]*/ "データの取得に失敗しました。");
+			return reject();
+		})
+	});
+}
+
+<!--/* 民事裁判検索条件クリア処理 */-->
+function initMinjiSaibanSearchCondition() {
+
+	$.ajax({
+		url : "/user/ankenList/initMinjiSaibanSearchCondition",
+		type : "GET",
+		dataType: 'html',
+	}).done(function(data, status, jqXHR) {
+		<!--/* ツールチップを非表示にする */-->
+		$('[data-toggle="tooltip"]').tooltip('hide');
+		<!--/* 検索条件フラグメント更新 */-->
+		$('#ankenListSearchFormFragmentWrap').html(data);
+		<!-- /* 検索処理 */ -->
+		searchMinjiSaibanList();
+	}).fail(function() {
+		showErrorMessageForJs(/*[[#{E00059}]]*/ "データの取得に失敗しました。");
+	}).always(function() {
+	});	
+}
+
+<!--/* 民事裁判一覧CSV出力処理 */-->
+function downloadMinjiSaibanListCsv(buttonObj) {
+
+	<!--/* ダウンロード処理 */-->
+	const url = "/user/ankenList/outputMinjiSaibanListCsv";
+	const button = buttonObj;
+	let formData = {};
+	downloadCsvFileAjax(url, button, formData);
+
+	return false;
+}
+
+<!--/* 民事裁判一覧EXCEL出力処理 */-->
+function downloadMinjiSaibanListExcel(buttonObj) {
+
+	<!--/* ダウンロード処理 */-->
+	const url = "/user/ankenList/outputMinjiSaibanListExcel";
+	const button = buttonObj;
+	let formData = {};
+	downloadFileAjax(url, button, formData);
+
+	return false;
+}
+<!--/* 刑事裁判一覧画面検索処理 */-->
+function searchKeijiSaibanList(formData) {
+	return new Promise((resolve, reject) => {
+		<!--/* 刑事裁判一覧画面検索処理 */-->
+		$.ajax({
+			url : "/user/ankenList/searchKeijiSaibanList",
+			type : "GET",
+			data : formData,
+			dataType: 'html',
+		}).done(function(data, status, jqXHR) {
+			<!--/* ツールチップを非表示にする */-->
+			$('[data-toggle="tooltip"]').tooltip('hide');
+			<!-- /* 一覧フラグメント更新 */ -->
+			$('#ankenListViewFragmentWrap').replaceWith($(data).find("#ankenListViewFragmentWrap"));
+			<!-- /* ページングフラグメント更新 */ -->
+			$('#ankenListPagerWrap').replaceWith($(data).find("#ankenListPagerWrap"));
+			return resolve();
+		}).fail(function() {
+			showErrorMessageForJs(/*[[#{E00059}]]*/ "データの取得に失敗しました。");
+			return reject();
+		})
+	});
+}
+
+<!--/* 刑事裁判検索条件クリア処理 */-->
+function initKeijiSaibanSearchCondition() {
+
+	$.ajax({
+		url : "/user/ankenList/initKeijiSaibanSearchCondition",
+		type : "GET",
+		dataType: 'html',
+	}).done(function(data, status, jqXHR) {
+		<!--/* ツールチップを非表示にする */-->
+		$('[data-toggle="tooltip"]').tooltip('hide');
+		<!--/* 検索条件フラグメント更新 */-->
+		$('#ankenListSearchFormFragmentWrap').html(data);
+		<!-- /* 検索処理 */ -->
+		searchKeijiSaibanList();
+	}).fail(function() {
+		showErrorMessageForJs(/*[[#{E00059}]]*/ "データの取得に失敗しました。");
+	}).always(function() {
+	});	
+}
+
+<!--/* 刑事裁判一覧CSV出力処理 */-->
+function downloadKeijiSaibanListCsv(buttonObj) {
+
+	<!--/* ダウンロード処理 */-->
+	const url = "/user/ankenList/outputKeijiSaibanListCsv";
+	const button = buttonObj;
+	let formData = {};
+	downloadCsvFileAjax(url, button, formData);
+
+	return false;
+}
+
+<!--/* 刑事裁判一覧EXCEL出力処理 */-->
+function downloadKeijiSaibanListExcel(buttonObj) {
+
+	<!--/* ダウンロード処理 */-->
+	const url = "/user/ankenList/outputKeijiSaibanListExcel";
+	const button = buttonObj;
+	let formData = {};
+	downloadFileAjax(url, button, formData);
+
+	return false;
+}
+
+
+</script>
+</head>
+<body>
+	<div layout:fragment="main-contents" th:remove="tag">
+	
+		<div class="contents_sidebar_wrapper_user anken_meibo_list">
+			
+			<!--/* 案件一覧サイドメニュー */-->
+			<div id="ankenMenuFragmentWrap" th:insert="user/ankenList/ankenListMenu::ankenListMenu(selectedAnkenListMenu=${ankenListSearchForm.selectedAnkenListMenu})"></div>
+			
+			<!--/* メインコンテンツの外側 */-->
+			<div class="contents_wrapper">
+				<div class="container-fluid">
+					<main class="content">
+
+						<!--/* メッセージエリア */-->
+						<div th:replace="common/messageArea::messageArea"></div>
+
+						<div class="page_list">
+							<div id="ankenList" class="vertical_block_wrapper">
+								<!--/* タイトル - アクション */-->
+								<div class="vertical_block_header">
+									<!--/* 検索条件 */-->
+									<th:block th:if="${T(jp.loioz.common.constant.CommonConstant$AnkenListMenu).All_ANKEN_LIST.equalsByCode({ankenListSearchForm.selectedAnkenListMenu})}">
+										<!--/* 「すべて（終了案件以外）」の検索条件 */-->
+										<div id="ankenListSearchFormFragmentWrap" th:insert="user/ankenList/ankenListFragment::allAnkenListSearchFormFragment(${ankenListSearchForm})"></div>
+									</th:block>
+									<th:block th:if="${T(jp.loioz.common.constant.CommonConstant$AnkenListMenu).MY_ANKEN_LIST.equalsByCode({ankenListSearchForm.selectedAnkenListMenu})}">
+										<!--/* 「自分の担当案件」の検索条件 */-->
+										<div id="ankenListSearchFormFragmentWrap" th:insert="user/ankenList/ankenListFragment::myAnkenListSearchFormFragment(${ankenListSearchForm})"></div>
+									</th:block>
+									<th:block th:if="${T(jp.loioz.common.constant.CommonConstant$AnkenListMenu).ADVISOR_ANKEN_LIST.equalsByCode({ankenListSearchForm.selectedAnkenListMenu})}">
+										<!--/* 「顧問案件」の検索条件 */-->
+										<div id="ankenListSearchFormFragmentWrap" th:insert="user/ankenList/ankenListFragment::advisorAnkenListSearchFormFragment(${ankenListSearchForm})"></div>
+									</th:block>
+									<th:block th:if="${T(jp.loioz.common.constant.CommonConstant$AnkenListMenu).MINJI_SAIBAN_LIST.equalsByCode({ankenListSearchForm.selectedAnkenListMenu})}">
+										<!--/* 「民事裁判」の検索条件 */-->
+										<div id="ankenListSearchFormFragmentWrap" th:insert="user/ankenList/ankenListFragment::minjiSaibanListSearchFormFragment(${ankenListSearchForm})"></div>
+									</th:block>
+									<th:block th:if="${T(jp.loioz.common.constant.CommonConstant$AnkenListMenu).KEIJI_SAIBAN_LIST.equalsByCode({ankenListSearchForm.selectedAnkenListMenu})}">
+										<!--/* 「刑事裁判」の検索条件 */-->
+										<div id="ankenListSearchFormFragmentWrap" th:insert="user/ankenList/ankenListFragment::keijiSaibanListSearchFormFragment(${ankenListSearchForm})"></div>
+									</th:block>
+								</div>
+								
+								<!--/* 一覧データ */-->
+								<div class="vertical_block_body">
+									<!--/* 一覧結果 */-->
+									<th:block th:if="${ankenListSearchForm.isAnkenListMenu()}">
+										<!--/* 案件一覧 */-->
+										<div id="ankenListViewFragmentWrap" th:insert="user/ankenList/ankenListFragment::ankenListViewFragment(${viewForm})"></div>
+									</th:block>
+									<th:block th:if="${T(jp.loioz.common.constant.CommonConstant$AnkenListMenu).MINJI_SAIBAN_LIST.equalsByCode({ankenListSearchForm.selectedAnkenListMenu})}">
+										<!--/* 民事裁判一覧 */-->
+										<div id="ankenListViewFragmentWrap" th:insert="user/ankenList/ankenListFragment::minjiSaibanListViewFragment(${viewForm})"></div>
+									</th:block>
+									<th:block th:if="${T(jp.loioz.common.constant.CommonConstant$AnkenListMenu).KEIJI_SAIBAN_LIST.equalsByCode({ankenListSearchForm.selectedAnkenListMenu})}">
+										<!--/* 刑事裁判一覧 */-->
+										<div id="ankenListViewFragmentWrap" th:insert="user/ankenList/ankenListFragment::keijiSaibanListViewFragment(${viewForm})"></div>
+									</th:block>
+								</div>
+								
+								<!--/* 固定footer */-->
+								<div class="vertical_block_footer">
+									<!--/* ページング */-->
+									<div id="ankenListPagerWrap" th:insert="user/ankenList/ankenListFragment::ankenListPagerFragment(${viewForm.page})"></div>
+								</div>
+								
+							</div>
+						</div>
+					</main>
+				</div>
+			</div>
+		</div>
+	</div>
+</body>
+</html>

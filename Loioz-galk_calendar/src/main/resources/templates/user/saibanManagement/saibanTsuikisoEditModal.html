@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+<meta charset="utf-8" th:remove="tag"/>
+</head>
+<body>
+
+<div th:fragment="editTsuikisoModal" id="editTsuikisoModalFragment">
+	<script th:inline="javascript">
+	$(function() {
+		
+		let ajaxRunningTsuikiso = false;
+		
+		<!-- 追起訴登録・更新ボタン -->
+		$('#editTsuikisoModalFragment #regist, #editTsuikisoModalFragment #update').on("click", function(){
+			// 2重押下防止
+			if(ajaxRunningTsuikiso){
+				return false;
+			}
+			
+			// 押下したボタンのIDをアクションとして取得し、実行する
+			let action = "/user/saibanKeijiManagement/" + $(this).attr('id') + 'Tsuikiso';
+			let modal = $(this).closest('.modal');
+			let params = $('.editTsuikisoBody form').serializeArray();
+			
+			ajaxRunningTsuikiso = true;
+			$.ajax({
+				type : "POST",
+				url : action,
+				data : params,
+			})
+			.done(function(result) {
+				if(result.succeeded){
+					alert(result.message);
+					location.reload();
+				} else {
+					showErrorMessage(result.message, modal, result.errors);
+				}
+			})
+			.fail(function() {
+				showErrorMessage(/*[[#{E00013}]]*/ "error", modal);
+			})
+			.always(function(){
+				ajaxRunningTsuikiso = false;
+			});
+		});
+		
+		<!-- 追起訴削除処理 -->
+		$('#editTsuikisoModalFragment #delete').on('click', function() {
+
+			if (!confirm('削除します。よろしいですか?')){
+				return false;
+			}
+			// 2重押下防止
+			if(ajaxRunningTsuikiso){
+				return false;
+			}
+			let modal = $(this).closest('.modal');
+			let params = $('.editTsuikisoBody form').serializeArray();
+			ajaxRunningTsuikiso = true;
+			$.ajax({
+				url : "/user/saibanKeijiManagement/deleteTsuikiso",
+				type : "POST",
+				data : params,
+			})
+			.done(function(result) {
+				if(result.succeeded){
+					alert(result.message);
+					location.reload();
+				} else {
+					showErrorMessage(result.message, modal, result.errors);
+				}
+			})
+			.fail(function() {
+				showErrorMessage(/*[[#{E00013}]]*/ "error", modal);
+			})
+			.always(function(){
+				ajaxRunningTsuikiso = false;
+			});
+		});
+		
+	});
+	</script>
+
+	<th:block th:object="${editForm}">
+		<div class="modal-header">
+			<h2 class="modalheader_title">追起訴（事件情報の登録）</h2>
+		</div>
+		<div class="modal-body">
+			<div th:replace="common/messageArea::jsMessageArea"></div>
+			<form id="editForm" th:action="@{/user/saibanManagement/}" method="post">
+				<input type="hidden" th:field="*{saibanSeq}">
+				<input type="hidden" th:field="*{jikenSeq}">
+
+				<!-- 入力エリア -->
+				<div class="modal_input_area">
+					<!-- 名称 -->
+					<div class="form-row">
+						<div class="form-group col-md-12">
+							<label class="input_parts_label">事件番号</label>
+							<span class="mark_equired">必須</span>
+							<div class="d-flex align-items-center">
+								<select class="form-control digit5 mr-3" th:field="*{jikenGengo}">
+									<option th:each="enum : ${T(jp.loioz.common.constant.CommonConstant$EraType).saibanValues()}"
+										th:value="${enum.cd}" th:text="${enum.val}">令和</option>
+								</select>
+								<input type="text" class="form-control digit2 input_number_only" th:field="*{jikenYear}" maxlength="2" autocomplete="off">
+								<div class="mx-2">年 (</div>
+								<input type="text" class="form-control digit3" placeholder="符号" th:field="*{jikenMark}" maxlength="2" autocomplete="off">
+								<div class="mx-2">) 第</div>
+								<input type="text" class="form-control digit6 input_number_only" placeholder="番号" th:field="*{jikenNo}" maxlength="7" autocomplete="off">
+								<div class="mx-2">号</div>
+							</div>
+							<div class="error_mag_point hidden" id="itemMsg_jikenGengo"></div>
+							<div class="error_mag_point hidden" id="itemMsg_jikenYear"></div>
+							<div class="error_mag_point hidden" id="itemMsg_jikenMark"></div>
+							<div class="error_mag_point hidden" id="itemMsg_jikenNo"></div>
+						</div>
+					</div>
+					<!-- 名称 end -->
+
+					<!-- 事件名 -->
+					<div class="form-row">
+						<div class="form-group col-md-12">
+							<label class="input_parts_label">事件名</label>
+							<input type="text" class="form-control" th:field="*{jikenName}" maxlength="100" autocomplete="off">
+							<div class="error_mag_point hidden" id="itemMsg_jikenName"></div>
+						</div>
+					</div>
+				</div>
+			</form>
+		</div>
+		<div class="modal-footer">
+			<button th:if="*{!isNew()}" type="button" class="btn btn-light mr-auto" id="delete"><i class="far fa-trash-alt"></i>削除</button>
+			<button th:if="*{isNew()}" type="button" class="btn btn-info" id="regist"><i class="fas fa-check"></i>登録</button>
+			<button th:if="*{!isNew()}" type="button" class="btn btn-info" id="update"><i class="fas fa-check"></i>保存</button>
+			<button type="button" class="btn btn-light" data-dismiss="modal"><i class="fas fa-times"></i>閉じる</button>
+		</div>
+	</th:block>
+</div>
+
+
+</body>
+</html>

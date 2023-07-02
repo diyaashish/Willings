@@ -1,0 +1,1351 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+	xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+	layout:decorator="commonLayout">
+<head>
+	<meta charset="utf-8" />
+</head>
+<body>
+
+<!--/* 会計書類（請求書・精算書）情報 */-->
+<div th:fragment="recordDetailHeaderViewFargment(recordDetailAccgDocViewForm)" id="recordDetailHeaderViewFargment"
+	th:object="${recordDetailAccgDocViewForm}"
+	th:with="
+		isDocTypeInvoice=${T(jp.loioz.common.constant.CommonConstant$AccgDocType).INVOICE == recordDetailAccgDocViewForm.accgDocType},
+		isDocTypeStatement=${T(jp.loioz.common.constant.CommonConstant$AccgDocType).STATEMENT == recordDetailAccgDocViewForm.accgDocType},
+		isAccgAnkenSide=${T(jp.loioz.common.utility.SessionUtils).getSessionVaule(T(jp.loioz.common.constant.SessionAttrKeyEnum).ACCG_ANKEN_SCREEN_BOOL.codeKey)}">
+	
+	<!--/* 取引実績会計書類（請求書・精算書）JS */-->
+	<script type="text/javascript" th:inline="javascript">
+	$(function() {
+		
+		<!--/* 定数 */-->
+		const recordDetailListViewFragment = $("#recordDetailHeaderViewFargment");
+		
+		<!--/* 共有の要素セットアップ処理 */-->
+		commonSetUpElement("#recordDetailHeaderViewFargment");
+		
+	});
+	</script>
+	
+	<!--/* 会計書類情報 */-->
+	<div class="bg_wrapper">
+		
+		<!--/* record_sum_container */-->
+		<div class="record_sum_container">
+			
+			<!--/* ヘッダー */-->
+			<div class="record_sum_container__header">
+				<div class="record_sum_container__header__title" th:text="${isDocTypeInvoice} ? '請求状況' : '精算状況' ">請求状況</div>
+				<div class="ml-auto">
+	<!--/* 請求書 */-->
+	<th:block th:if="${isDocTypeInvoice}">
+						<a class="btn btn-sm btn-light text-info" th:href="@{/user/invoiceDetail/{invoiceSeq}/?isAccgAnkenSide={isAccgAnkenSideParam}(invoiceSeq=*{recordSummaryDto.invoiceSummary.invoiceSeq}, isAccgAnkenSideParam=${isAccgAnkenSide})}">
+							<i class="fas fa-file-invoice mr-2"></i>請求書を確認する
+						</a>
+	</th:block>
+	<!--/* 請求書 end  */-->
+	
+	<!--/* 精算書 */-->
+	<th:block th:unless="${isDocTypeInvoice}">
+						<a class="btn btn-sm btn-light text-info" th:href="@{/user/statementDetail/{statementSeq}/?isAccgAnkenSide={isAccgAnkenSideParam}(statementSeq=*{recordSummaryDto.statementSummary.statementSeq}, isAccgAnkenSideParam=${isAccgAnkenSide})}">
+							<i class="fas fa-file-invoice mr-2"></i>精算書を確認する
+						</a>
+	</th:block>
+	<!--/* 精算書 end */-->
+				</div>
+			</div>
+			<!--/* ヘッダー end */-->
+			
+			<!--/* データ */-->
+			<div class="record_sum_container__body">
+				<!--/* 請求・精算状況 */-->
+				<div class="sum_container__body__status">
+					
+	<!--/* 請求書 */-->
+	<th:block th:if="${isDocTypeInvoice}">
+					<!--/* 請求書ステータス */-->
+					<div th:class="|invoice_status_wrapper_bg invoice_nyukin_status_wrapper*{recordSummaryDto.invoiceSummary.invoicePaymentStatus?.cd}|">
+
+		<!--/* 入金状況 */-->
+		<th:block th:switch="*{recordSummaryDto.invoiceSummary.invoicePaymentStatus?.cd}">
+			
+			<!--/* 発行待ち、入金待ちはアイコンなし */-->
+			<!--/* 入金済み */-->
+			<th:block th:case="${T(jp.loioz.common.constant.CommonConstant$InvoicePaymentStatus).DEPOSITED.getCd()}">
+				<i class="fas fa-check-circle text-success"></i>
+			</th:block>
+			
+			<!--/* 一部入金 */-->
+			<th:block th:case="${T(jp.loioz.common.constant.CommonConstant$InvoicePaymentStatus).PARTIAL_DEPOSIT.getCd()}">
+				<i class="fas fa-exclamation-circle text-danger"></i>
+			</th:block>
+			
+			<!--/* 過入金 */-->
+			<th:block th:case="${T(jp.loioz.common.constant.CommonConstant$InvoicePaymentStatus).OVER_PAYMENT.getCd()}">
+				<i class="fas fa-exclamation-circle text-danger"></i>
+			</th:block>
+			
+			<!--/* 回収不能 */-->
+			<th:block th:case="${T(jp.loioz.common.constant.CommonConstant$InvoicePaymentStatus).UNCOLLECTIBLE.getCd()}">
+				<i class="fas fa-times-circle text-danger"></i>
+			</th:block>
+			
+		</th:block>
+		<!--/* 入金状況 end */-->
+					
+						<!--/* ステータス名 */-->
+						<span th:class="|invoice_nyukin_status_*{recordSummaryDto.invoiceSummary.invoicePaymentStatus?.cd}|"
+							th:text="*{recordSummaryDto.invoiceSummary.invoicePaymentStatus?.val}"></span>
+					</div>
+					<!--/* 請求書ステータス end */-->
+	</th:block>
+	<!--/* 請求書 end */-->
+		
+	<!--/* 精算書 */-->
+	<th:block th:unless="${isDocTypeInvoice}">
+					<!--/* 精算書ステータス */-->
+					<div th:class="|statement_wrapper_bg statement_status_wrapper*{recordSummaryDto.statementSummary.statementRefundStatus?.cd}|">
+	
+		<!--/* 精算状況 */-->
+		<th:block th:switch="*{recordSummaryDto.statementSummary.statementRefundStatus?.cd}">
+			<!--/* 発行待ちは表示しない */-->
+			<th:block th:case="${T(jp.loioz.common.constant.CommonConstant$StatementRefundStatus).DRAFT.getCd()}">
+			</th:block>
+			<!--/* 精算待ちは表示しない */-->
+			<th:block th:case="${T(jp.loioz.common.constant.CommonConstant$StatementRefundStatus).AWAITING_STATEMENT.getCd()}">
+			</th:block>
+			<!--/* 精算済み */-->
+			<th:block th:case="${T(jp.loioz.common.constant.CommonConstant$StatementRefundStatus).PAID.getCd()}">
+				<i class="fas fa-check-circle text-success"></i>
+			</th:block>
+		</th:block>
+						<!--/* ステータス */-->
+						<span th:class="|statement_status_*{recordSummaryDto.statementSummary.statementRefundStatus?.cd}|"
+							th:text="*{recordSummaryDto.statementSummary.statementRefundStatus?.val}"></span>
+					</div>
+					<!--/* 精算書ステータス end */-->
+	</th:block>
+	<!--/* 精算書 end */-->
+				</div>
+
+				<div class="sum_container__body__no">
+					<label class="doc_label" th:text="${isDocTypeInvoice} ? '請求番号' : '精算番号' ">請求番号</label>
+					<div class="doc_value">
+						<span th:text="${isDocTypeInvoice} ? *{recordSummaryDto.invoiceSummary.invoiceNo} : *{recordSummaryDto.statementSummary.statementNo}"></span>
+					</div>
+				</div>
+				
+				<!--/* 金額 */-->
+				<div class="sum_container__body__amount">
+					<!--/* 請求・精算額 */-->
+					<div class="sum_container__body__amount_left">
+						<label class="doc_label accg_label_min badge badge_gray" th:text="${isDocTypeInvoice} ? '請求額' : '精算額' ">請求額</label>
+						<div class="doc_value text-right">
+							<span class="fw600 fs25 fc_sum_amount"
+								th:text="${isDocTypeInvoice} ? *{recordSummaryDto.invoiceSummary.invoiceAmount} : *{recordSummaryDto.statementSummary.statementAmount}"></span>
+							<span class="fw0 fs12">円</span>
+						</div>
+						<div class="lh1 text-right" th:if="${isDocTypeInvoice}">
+							<span class="fs13 fc_sub" th:text="*{recordSummaryDto.invoiceSummary.invoiceTypeName}"></span>
+						</div>
+					</div>
+					
+					<!--/* 取引実積（入金／出金額） */-->
+					<div class="sum_container__body__amount_right">
+						<label class="doc_label accg_label_min badge badge_cyan" th:text="${isDocTypeInvoice} ? '入金額' : '出金額' ">入金額</label>
+						<div class="doc_value text-right">
+							<span class="fw600 fs25"
+								th:text="*{recordSummaryDto.totalPayAmount}"></span>
+							<span class="fw0 fs12">円</span>
+						</div>
+						<div class="lh1 text-right" th:classappend="*{T(jp.loioz.common.constant.CommonConstant).ZERO.equals(recordSummaryDto.totalBalance)} ? 'fc_disabled' : 'text-danger' ">
+							<span class="fs13">残額</span><span class="ml-2 fs15">[[*{recordSummaryDto.totalBalance}]]</span><span class="jp_yen">円</span>
+						</div>
+					</div>
+				</div>
+				
+				<!--/* 請求書・精算書情報 */-->
+				<div class="sum_container__body__info">
+					<div class="digit8">
+						<label class="doc_label">日付</label>
+						<div class="doc_value">
+							<span th:text="${isDocTypeInvoice} ? *{recordSummaryDto.invoiceSummary.invoiceDate} : *{recordSummaryDto.statementSummary.statementDate}"></span>
+						</div>
+					</div>
+					<div class="digit8">
+						<label class="doc_label" th:text="${isDocTypeInvoice} ? 'お支払期限' : '返金期限' ">お支払期限</label>
+						<div class="doc_value" th:with="accgDate=${isDocTypeInvoice} ? *{recordSummaryDto.invoiceSummary.dueDate} : *{recordSummaryDto.statementSummary.refundDate}">
+							<span th:classappend="${#strings.isEmpty(accgDate)} ? 'fc_disabled fs14' : '' "  th:text="${#strings.isEmpty(accgDate)} ? '(未設定)' : ${accgDate}"></span>
+						</div>
+					</div>
+				</div>
+				
+				<!--/* 請求対象 */-->
+				<div class="sum_container__body__target">
+					<label class="doc_label" th:text="${isDocTypeInvoice} ? '請求対象' : '精算対象' ">請求対象</label>
+						
+					<!--/* 名簿・案件 */-->
+					<div class="mt-1">
+						<!--/* 名簿 */-->
+						<div class="img_info_sm mb-4">
+							<!--/* 名簿画像 */-->
+							<div class="img_info_sm__image">
+								<!--/* 名簿属性ラベル */-->
+								<div th:class="|person_image_wrapper${recordDetailAccgDocViewForm.personAttribute.getCd().getCd()}|">
+									<!--/* 個人アイコン */-->
+									<img th:if="${T(jp.loioz.common.constant.CommonConstant$CustomerType).KOJIN.equalsByCode(recordDetailAccgDocViewForm.customerType?.cd)}" 
+										class="img-thumbnail person_image_sm" th:src="@{/img/person_kojin.svg}"
+										data-boundary="window" data-container="body" data-toggle="tooltip" data-trigger="hover" th:title="個人">
+										
+									<!--/* 企業・団体アイコン */-->
+									<img th:if="${T(jp.loioz.common.constant.CommonConstant$CustomerType).HOJIN.equalsByCode(recordDetailAccgDocViewForm.customerType?.cd)}"
+										class="img-thumbnail person_image_sm" th:src="@{/img/person_hojin.svg}"
+										data-boundary="window" data-container="body" data-toggle="tooltip" data-trigger="hover" th:title="企業・団体">
+										
+									<!--/* 弁護士アイコン */-->
+									<img th:if="${T(jp.loioz.common.constant.CommonConstant$CustomerType).LAWYER.equalsByCode(recordDetailAccgDocViewForm.customerType?.cd)}"
+										class="img-thumbnail person_image_sm" th:src="@{/img/person_bengoshi.svg}"
+										data-boundary="window" data-container="body" data-toggle="tooltip" data-trigger="hover" th:title="弁護士">
+								</div>
+							</div>
+							<!--/* 名簿画像 end */-->
+							
+							<!--/* 名前 */-->
+							<div class="img_info_sm__info">
+								<div class="fs18" th:text="*{personName}">山田　太郎 </div>
+								<a th:href="@{/user/personManagement/edit/{personId}/(personId=*{personId})}" class="app_id_link fs12 mr-3"
+									th:text=|名簿ID：*{personId}|
+									data-boundary="window" th:data-container="${fragmentId}" data-toggle="tooltip" data-trigger="hover" title="名簿情報へ"></a>
+							</div>
+							<!--/* 名前 end */-->
+						</div>
+						<!--/* 名簿 end */-->
+						
+						<!--/* 案件 */-->
+						<div class="img_info_sm">
+							<!--/* 案件画像 */-->
+							<div class="img_info_sm__image">
+								<div th:class="|case_image_wrapper*{ankenType?.cd}|">
+									<!--/* 案件区分 */-->
+									<img class="img-thumbnail case_img_sm"
+										th:src="@{/img/case_type{typeCd}.svg?{ver}(typeCd=*{ankenType?.cd}, ver=${@environment.getProperty('app.version')})}">
+								</div>
+							</div>
+							<!--/* 案件画像 end */-->
+							
+							<!--/* 案件名 */-->
+							<div class="img_info_sm__info">
+								<div class="fs18" th:text="${#strings.isEmpty(recordDetailAccgDocViewForm.ankenName)} ? '(案件名未入力)' : *{ankenName}">案件名</div>
+								<!--/* 案件ID */-->
+								<a th:href="@{/user/ankenManagement/edit/{ankenId}/(ankenId=*{ankenId})}" class="app_id_link case_link fs12 mr-3"
+									th:text="|案件ID：*{ankenId}|"
+									data-boundary="window" th:data-container="${fragmentId}" data-toggle="tooltip" data-trigger="hover" title="案件情報へ">案件ID</a>
+	<!--/* 案件区分 */-->
+	<!--/* 事務所 */-->
+	<th:block th:if="${T(jp.loioz.common.constant.CommonConstant$AnkenType).JIMUSHO.equals(recordDetailAccgDocViewForm.ankenType)}">
+									<i class="far fa-building"></i>
+	</th:block>
+	<!--/* 個人 */-->
+	<th:block th:if="${T(jp.loioz.common.constant.CommonConstant$AnkenType).KOJIN.equals(recordDetailAccgDocViewForm.ankenType)}">
+									<i class="fas fa-briefcase"></i>
+	</th:block>
+								<span class="fs13 fc_sub mr-2" th:text="*{ankenType?.val}"></span>
+								<!-- /* 契約ステータス */ -->
+								<i class="fas fa-circle fa-xs" th:if="*{ankenStatus} != null"
+									th:classappend="*{ankenStatus} ? |anken_status_*{ankenStatus?.cd}| :_"></i>
+								<span class="fs13 fc_sub" th:text="*{ankenStatus?.val}"></span>
+							</div>
+							<!--/* 案件名 end */-->
+						</div>
+						<!--/* 案件 end */-->
+						
+					</div>
+					<!--/* 名簿・案件 end */-->
+				</div>
+				<!--/* 請求対象 end */-->
+			</div>
+			<!--/* データ end */-->
+		</div>
+		<!--/* record_sum_container end */-->
+	</div>
+	<!--/* 会計書類情報 end */-->
+	
+</div>
+<!--/* 請求・精算情報 end */-->
+
+
+<!--/* 報酬、預り金／実費内訳 start */-->
+<div th:fragment="breakdownOfFeeAndDepositViewFragment(breakdownOfFeeAndDepositViewForm)" id="breakdownOfFeeAndDepositViewFragment" th:object="${breakdownOfFeeAndDepositViewForm}">
+	<!--/* 報酬と預り金／実費が混在している場合に表示する */-->
+	<th:block th:if="*{shouldDisplayBreakdown()}">
+		<section class="mb-3">
+			<div class="section_header">
+				<div class="section_header__title">入金額（内訳）</div>
+			</div>
+			<div class="section_body">
+				<div class="section_body__contents p-4">
+					<div class="d-flex cg20">
+						<!--/* 報酬 */-->
+						<div class="mnw160">
+							<div>
+								<span class="badge badge-pill accg_label badge_orange">報酬</span>
+							</div>
+							<div>
+								<div>
+									<span class="fw600 fs25">[[*{#numbers.formatInteger(recordFeeAmount, 1, 'COMMA')}]]<span class="jp_yen">円</span></span>
+								</div>
+								<div class="lh1" th:classAppend="*{feeBalance} > 0 ? 'text-danger' : 'fc_disabled' ">
+									<span class="fs13">残額</span>
+									<span class="fs16">[[*{#numbers.formatInteger(feeBalance, 1, 'COMMA')}]]</span><span class="jp_yen">円</span>
+								</div>
+							</div>
+						</div>
+						<!--/* 報酬 end */-->
+						
+						<!--/* 預り金/実費 */-->
+						<div class="mnw160">
+							<div>
+								<span class="badge badge-pill accg_label badge_blue">預り金/実費</span>
+							</div>
+							<div>
+								<div>
+									<span class="fw600 fs25">[[*{#numbers.formatInteger(recordDepositRecvAmount, 1, 'COMMA')}]]<span class="jp_yen">円</span></span>
+								</div>
+								<div class="lh1" th:classAppend="*{depositRecvBalance} > 0 ? 'text-danger' : 'fc_disabled' ">
+									<span class="fs13">残額</span>
+									<span class="fs16">[[*{#numbers.formatInteger(depositRecvBalance, 1, 'COMMA')}]]</span><span class="jp_yen">円</span>
+								</div>
+							</div>
+						</div>
+						
+		<!--/* 過入金あり */-->
+		<th:block th:if="*{overPaymentAmount} > 0">
+						<div class="mnw160">
+							<div>
+								<span class="badge badge-pill accg_label badge_red">過入金あり</span>
+							</div>
+							<div>
+								<div>
+									<span class="fw600 fs25">[[*{#numbers.formatInteger(overPaymentAmount, 1, 'COMMA')}]]<span class="jp_yen">円</span></span>
+								</div>
+							</div>
+						</div>
+		</th:block>
+					
+					</div>
+				</div>
+			</div>
+		</section>
+	</th:block>
+</div>
+<!--/* 報酬、預り金／実費内訳 end */-->
+
+
+<!--/* 取引実績一覧 */-->
+<div th:fragment="recordDetailListViewFragment(recordListViewForm)" id="recordDetailListViewFragment" th:object="${recordListViewForm}">
+	<script type="text/javascript" th:inline="javascript">
+
+	$(function() {
+		
+		<!--/* 定数 */-->
+		const recordDetailListViewFragment = $("#recordDetailListViewFragment");
+		
+		<!--/* 共有の要素セットアップ処理 */-->
+		commonSetUpElement("#recordDetailListViewFragment");
+		
+		<!--/* 回収不能にする */-->
+		recordDetailListViewFragment.find(".changeToUncollectible").on('click', function() {
+			if (ajaxRunning) {
+				return false;
+			}
+			if (!confirm("回収不能にします。よろしいですか？")) {
+				return false;
+			}
+			ajaxRunning = true;
+			Promise.resolve()
+				.then(() => {
+					return new Promise((resolve, reject) => {
+						$.ajax({
+							url : /*[[@{/user/recordDetail/{accgRecordSeq}/changeToUncollectible(accgRecordSeq=*{accgRecordSeq})}]]*/'',
+							type : "POST",
+							data : {
+								"accgDocSeq" : /*[[*{accgDocSeq}]]*/'',
+							},
+						})
+						.done(function(data, status, jqXHR) {
+							if (isAjaxProcSuccess(jqXHR)) {
+								showInfoMessageForJs(getAjaxProcResutlMessage(jqXHR));
+								return resolve();
+							} else {
+								// 処理失敗
+								const errorMsg = getAjaxProcResutlMessage(jqXHR);
+								showErrorMessageForJs(errorMsg);
+								return reject();
+							}
+						})
+						.fail(function(jqXHR, status, errorThrown) {
+							showErrorMessageForJs(/*[[#{E00091}]]*/ "error");
+							return reject();
+						})
+					});
+				})
+				.then(renderRecordDetailAccgDocViewFargment)
+				.then(renderRecordDetailListViewFragment)
+				.then(renderBreakdownOfFeeAndDepositViewFragment)
+				.catch((errorObj) => console.log(errorObj))
+				.finally(() => {
+					ajaxRunning = false;
+				});
+		});
+		
+		<!--/* 回収不能を解除する */-->
+		recordDetailListViewFragment.find(".undoFromUncollectible").on('click', function() {
+			if (ajaxRunning) {
+				return false;
+			}
+			if (!confirm("回収不能を解除します。よろしいですか？")) {
+				return false;
+			}
+			ajaxRunning = true;
+			Promise.resolve()
+				.then(() => {
+					return new Promise((resolve, reject) => {
+						$.ajax({
+							url : /*[[@{/user/recordDetail/{accgRecordSeq}/undoFromUncollectible(accgRecordSeq=*{accgRecordSeq})}]]*/'',
+							type : "POST",
+							data : {
+								"accgDocSeq" : /*[[*{accgDocSeq}]]*/'',
+							},
+						})
+						.done(function(data, status, jqXHR) {
+							if (isAjaxProcSuccess(jqXHR)) {
+								showInfoMessageForJs(getAjaxProcResutlMessage(jqXHR));
+								return resolve();
+							} else {
+								// 処理失敗
+								const errorMsg = getAjaxProcResutlMessage(jqXHR);
+								showErrorMessageForJs(errorMsg);
+								return reject();
+							}
+						})
+						.fail(function(jqXHR, status, errorThrown) {
+							showErrorMessageForJs(/*[[#{E00091}]]*/ "error");
+							return reject();
+						})
+					});
+				})
+				.then(renderRecordDetailAccgDocViewFargment)
+				.then(renderRecordDetailListViewFragment)
+				.then(renderBreakdownOfFeeAndDepositViewFragment)
+				.catch((errorObj) => console.log(errorObj))
+				.finally(() => {
+					ajaxRunning = false;
+				});
+		});
+		
+		<!--/* 追加リンクの押下 */-->
+		recordDetailListViewFragment.find(".addRecord").on('click', function() {
+			if (ajaxRunning) {
+				return false;
+			}
+			ajaxRunning = true;
+			$.ajax({
+				url : /*[[@{/user/recordDetail/{accgRecordSeq}/createRecordDetail(accgRecordSeq=*{accgRecordSeq})}]]*/'',
+				type : "GET" ,
+				data : {"accgDocSeq" : /*[[*{accgDocSeq}]]*/''},
+			})
+			.done(function(data, status, jqXHR) {
+				if (isAjaxProcSuccess(jqXHR)) {
+					// HTML表示
+					$("#recordDetailRowInputFragmentWrap").html(data);
+				} else {
+					// 処理失敗
+					const errorMsg = getAjaxProcResutlMessage(jqXHR);
+					showErrorMessageForJs(errorMsg);
+				}
+			})
+			.fail(function(jqXHR, status, errorThrown) {
+				showErrorMessageForJs(/*[[#{E00091}]]*/ "error");
+			})
+			.always(function() {
+				ajaxRunning = false;
+			});
+		});
+		
+		<!--/* 編集リンクの押下 */-->
+		recordDetailListViewFragment.find(".editRow").on('click', function() {
+			if (ajaxRunning) {
+				return false;
+			}
+			const accgRecordDetailSeq = $(this).data("seq");
+			ajaxRunning = true;
+			$.ajax({
+				url : /*[[@{/user/recordDetail/{accgRecordSeq}/editRecordDetail(accgRecordSeq=*{accgRecordSeq})}]]*/'',
+				type : "GET" ,
+				data : {
+					"accgDocSeq" : /*[[*{accgDocSeq}]]*/'',
+					"accgRecordDetailSeq": accgRecordDetailSeq
+				},
+			})
+			.done(function(data, status, jqXHR) {
+				if (isAjaxProcSuccess(jqXHR)) {
+					// HTML表示
+					$("#recordDetailRowInputFragmentWrap" + accgRecordDetailSeq).html('<td colspan="6" class="px-2">' +data+'</td>');
+				} else {
+					// 処理失敗
+					const errorMsg = getAjaxProcResutlMessage(jqXHR);
+					showErrorMessageForJs(errorMsg);
+				}
+			})
+			.fail(function(jqXHR, status, errorThrown) {
+				showErrorMessageForJs(/*[[#{E00091}]]*/ "error");
+			})
+			.always(function() {
+				ajaxRunning = false;
+			});
+		});
+		
+		<!--/* 削除リンクの押下 */-->
+		recordDetailListViewFragment.find(".deleteRow").on('click', function() {
+			if (ajaxRunning) {
+				return false;
+			}
+			if (!confirm("削除します。よろしいですか？")) {
+				return false;
+			}
+			const accgRecordDetailSeq = $(this).data("seq");
+			ajaxRunning = true;
+			Promise.resolve()
+				.then(() => {
+					return new Promise((resolve, reject) => {
+						$.ajax({
+							url : /*[[@{/user/recordDetail/{accgRecordSeq}/deleteRecordDetail(accgRecordSeq=*{accgRecordSeq})}]]*/'',
+							type : "POST",
+							data : {
+								"accgRecordDetailSeq": accgRecordDetailSeq
+							},
+						})
+						.done(function(data, status, jqXHR) {
+							if (isAjaxProcSuccess(jqXHR)) {
+								// HTML表示
+								showInfoMessageForJs(getAjaxProcResutlMessage(jqXHR));
+								return resolve();
+							} else {
+								// 処理失敗
+								const errorMsg = getAjaxProcResutlMessage(jqXHR);
+								showErrorMessageForJs(errorMsg);
+								return reject();
+							}
+						})
+						.fail(function(jqXHR, status, errorThrown) {
+							showErrorMessageForJs(/*[[#{E00091}]]*/ "error");
+							return reject();
+						})
+					});
+				})
+				.then(renderRecordDetailAccgDocViewFargment)
+				.then(renderRecordDetailListViewFragment)
+				.then(renderBreakdownOfFeeAndDepositViewFragment)
+				.catch((errorObj) => console.log(errorObj))
+				.finally(() => {
+					ajaxRunning = false;
+				});
+		});
+		
+		<!--/* 返金ボタンの押下 */-->
+		recordDetailListViewFragment.find(".refundCreate").on('click', function() {
+			if (ajaxRunning) {
+				return false;
+			}
+			ajaxRunning = true;
+			$.ajax({
+				url : /*[[@{/user/recordDetail/{accgRecordSeq}/createRecordOverPaymentRefund(accgRecordSeq=*{accgRecordSeq})}]]*/'',
+				type : "GET" ,
+				data : {"accgDocSeq" : /*[[*{accgDocSeq}]]*/''},
+			})
+			.done(function(data, status, jqXHR) {
+				if (isAjaxProcSuccess(jqXHR)) {
+					// HTML表示
+					$("#recordDetailOverPaymentRowInputFragmentWrap").html(data);
+				} else {
+					// 処理失敗
+					const errorMsg = getAjaxProcResutlMessage(jqXHR);
+					showErrorMessageForJs(errorMsg);
+				}
+			})
+			.fail(function(jqXHR, status, errorThrown) {
+				showErrorMessageForJs(/*[[#{E00091}]]*/ "error");
+			})
+			.always(function() {
+				ajaxRunning = false;
+			});
+		});
+		
+		<!--/* 返金編集の押下 */-->
+		recordDetailListViewFragment.find(".editRefund").on('click', function() {
+			if (ajaxRunning) {
+				return false;
+			}
+			const accgRecordDetailSeq = $(this).data("seq");
+			ajaxRunning = true;
+			$.ajax({
+				url : /*[[@{/user/recordDetail/{accgRecordSeq}/editRecordOverPaymentRefund(accgRecordSeq=*{accgRecordSeq})}]]*/'',
+				type : "GET" ,
+				data : {
+					"accgDocSeq" : /*[[*{accgDocSeq}]]*/'',
+					"accgRecordDetailSeq" : accgRecordDetailSeq,
+				},
+			})
+			.done(function(data, status, jqXHR) {
+				if (isAjaxProcSuccess(jqXHR)) {
+					// HTML表示
+					$("#recordDetailOverPaymentRowInputFragmentWrap"+accgRecordDetailSeq).html('<td colspan="6" class="px-2">' + data + '</td>');
+				} else {
+					// 処理失敗
+					const errorMsg = getAjaxProcResutlMessage(jqXHR);
+					showErrorMessageForJs(errorMsg);
+				}
+			})
+			.fail(function(jqXHR, status, errorThrown) {
+				showErrorMessageForJs(/*[[#{E00091}]]*/ "error");
+			})
+			.always(function() {
+				ajaxRunning = false;
+			});
+		});
+		
+		<!--/* 過入金返金の取り下げ */-->
+		recordDetailListViewFragment.find(".dropRefund").on('click', function() {
+			if (ajaxRunning) {
+				return false;
+			}
+			if (!confirm("過入金返金を取り消します。よろしいですか？")) {
+				return false;
+			}
+			ajaxRunning = true;
+			Promise.resolve()
+				.then(() => {
+					return new Promise((resolve, reject) => {
+						$.ajax({
+							url : /*[[@{/user/recordDetail/{accgRecordSeq}/dropRefund(accgRecordSeq=*{accgRecordSeq})}]]*/'',
+							type : "POST",
+							data : {
+								"accgDocSeq" : /*[[*{accgDocSeq}]]*/'',
+							},
+						})
+						.done(function(data, status, jqXHR) {
+							if (isAjaxProcSuccess(jqXHR)) {
+								// HTML表示
+								showInfoMessageForJs(getAjaxProcResutlMessage(jqXHR));
+								return resolve();
+							} else {
+								// 処理失敗
+								const errorMsg = getAjaxProcResutlMessage(jqXHR);
+								showErrorMessageForJs(errorMsg);
+								return reject();
+							}
+						})
+						.fail(function(jqXHR, status, errorThrown) {
+							showErrorMessageForJs(/*[[#{E00091}]]*/ "error");
+							return reject();
+						})
+					});
+				})
+				.then(renderRecordDetailAccgDocViewFargment)
+				.then(renderRecordDetailListViewFragment)
+				.then(renderBreakdownOfFeeAndDepositViewFragment)
+				.catch((errorObj) => console.log(errorObj))
+				.finally(() => {
+					ajaxRunning = false;
+				});
+		});
+		
+
+	});
+	</script>
+	
+	<!--/* 取引実績一覧 */-->
+	<section>
+		<div class="section_header">
+			<div class="section_header__title">取引実績</div>
+			<div class="section_header__action pr-3">
+				<!--/* 請求書の「回収不能にする」表示 */-->
+				<a th:if="*{ChangableToUncollectible}" href="javascript:void(0);" class="btn btn-sm btn-light text-info changeToUncollectible"><i class="fas fa-times-circle mr-2"></i>回収不能として処理</a>
+				<!--/* 請求書の「回収不能を解除する」表示 */-->
+				<a th:if="*{UndoableFromUncollectible}" href="javascript:void(0);" class="btn btn-sm btn-light text-info undoFromUncollectible"><i class="fas fa-unlock-alt mr-2"></i>回収不能を解除</a>
+			</div>
+		</div>
+		<div class="section_body">
+			<div class="section_body__contents p-0">
+				<div class="hover_scroll of_x_scroll">
+					<table class="table table_standard  record_list recordList">
+						<thead>
+							<tr>
+								<th class="th_record_count">回数</th>
+								<th class="th_record_type">種別</th>
+								<th class="th_record_date">決済日</th>
+								<th class="th_record_amount text-right">決済金額</th>
+								<th class="th_record_remarks">備考</th>
+								<th class="th_record_edit">編集／削除</th>
+							</tr>
+						</thead>
+						<tbody>
+	<th:block th:if="*{#lists.isEmpty(recordList)}">
+							<tr>
+								<td colspan="6" class="no_data_table_list">
+									<span>取引実績の登録がありません。</span>
+								</td>
+							</tr>
+	</th:block>
+	
+	<th:block th:each="listItem, stat : *{recordList}"
+				th:with="fragmentWrapName=${listItem.recordType == T(jp.loioz.common.constant.CommonConstant$RecordType).OVER_PAYMENT_REFUND} ? 'recordDetailOverPaymentRowInputFragmentWrap' : 'recordDetailRowInputFragmentWrap'">
+							
+							<tr th:id="|${fragmentWrapName}${listItem.accgRecordDetailSeq}|">
+								<!--/* 回数 */-->
+								<td th:text="${stat.count}"></td>
+								<!--/* 入金／出金／振替／返金 */-->
+								<td>
+									<span th:class="|badge badge-pill accg_label_min mnw45 fs13 ${listItem.recordType?.styleClass}|" th:text="${listItem.recordType?.val}"></span>
+								</td>
+								<!--/* 決済日 */-->
+								<td>
+									<span class="fs15" th:text="${listItem.recordDate}"></span>
+								</td>
+								<!--/* 決済金額 */-->
+								<td class="text-right" >
+		<!--/* 入金 */-->
+		<th:block th:if="${!#strings.isEmpty(listItem.recordAmount)}">
+										<span class="fs18 fw600" th:text="${listItem.recordAmount}"></span>
+										
+										<!--/* 過入金 */-->
+										<div th:if="${listItem.OverPayment}">
+											<span class="badge badge-pill accg_label badge_red fs13 px-2">(過入金：<span th:text="${listItem.overPaymentAmount}"></span>)</span>
+										</div>
+										
+			<!--/* 個別入力 */-->
+			<th:block th:if="${listItem.RecordSeparateInputFlg}">
+										<div>
+											<div class="text-left">
+												<label class="doc_label ml-1">個別入力</label>
+											</div>
+											<hr class="mt-1 mb-2">
+											<!--/* 報酬 */-->
+											<div class="breakdown_row" th:if="${!#strings.isEmpty(listItem.recordFeeAmount)} and !${T(jp.loioz.common.constant.CommonConstant).ZERO.equals(listItem.recordFeeAmount)}">
+												<div class="breakdown_label">
+													<span class="badge badge-pill badge_square_sm badge_orange fs12">報酬</span>
+												</div>
+												<div class="breakdown_value">
+													<span class="amount_value" th:text="${listItem.recordFeeAmount}"></span>
+												</div>
+											</div>
+											<!--/* 預り金 */-->
+											<div class="breakdown_row" th:if="${!#strings.isEmpty(listItem.recordDepositRecvAmount)} and !${T(jp.loioz.common.constant.CommonConstant).ZERO.equals(listItem.recordDepositRecvAmount)}">
+												<div class="breakdown_label">
+													<span class="badge badge-pill badge_square_sm badge_blue fs12">預り金/実費</span>
+												</div>
+												<div class="breakdown_value">
+													<span class="amount_value" th:text="${listItem.recordDepositRecvAmount}"></span>
+												</div>
+											</div>
+										</div>
+			</th:block>
+		</th:block>
+		<!--/* 入金 end */-->
+				
+		<!--/* 出金 */-->
+		<th:block th:if="${!#strings.isEmpty(listItem.recordDepositPaymentAmount)}">
+										<span class="fs18 fw600" th:text="${listItem.recordDepositPaymentAmount}"></span>
+		</th:block>
+		<!--/* 出金 end */-->
+								
+								</td>
+								<!--/* 備考 */-->
+								<td>
+									<div myth:nl2br="${listItem.remarks}"></div>
+								</td>
+								<!--/* 編集／削除 */-->
+								<td th:id="|${fragmentWrapName}${listItem.accgRecordDetailSeq}-operate|">
+		<!--/* 実積種別 */-->
+		<th:block th:switch="${listItem.recordType}">
+									
+									<!--/* CASE 入金 */-->
+									<div th:case="${T(jp.loioz.common.constant.CommonConstant$RecordType).INTO}" class="btn_list_wrapper">
+			<th:block th:if="*{existsRefundedRecord}">
+										<span class="fs12 fc_sub">※編集／削除不可</span>
+			</th:block>
+			<th:block th:if="*{!existsOverPaymentRecord}">
+										<button type="button" class="btn btn-sm btn-light btn_icon_only btn_icon_edit editRow"
+											th:data-seq="${listItem.accgRecordDetailSeq}" th:data-container="|#${fragmentWrapName}${listItem.accgRecordDetailSeq}-operate|"
+											data-toggle="tooltip" title="編集"><i class="fas fa-edit mr-2"></i>編集</button>
+										<button type="button" class="btn btn-sm btn-light btn_icon_only deleteRow"
+											th:data-seq="${listItem.accgRecordDetailSeq}" th:data-container="|#${fragmentWrapName}${listItem.accgRecordDetailSeq}-operate|"
+											data-toggle="tooltip" title="削除"><i class="far fa-trash-alt"></i></button>
+			</th:block>
+			<th:block th:if="*{existsOverPaymentRecord} AND !*{existsRefundedRecord} AND !${listItem.OverPayment}">
+										<span class="fs12 fc_sub">※編集／削除不可</span>
+			</th:block>
+			<th:block th:if="*{existsOverPaymentRecord} AND !*{existsRefundedRecord} AND ${listItem.OverPayment}">
+										<!--/* 過入金返金 */-->
+										<button type="button" class="btn btn-sm btn-light refundCreate text-danger" th:data-container="|#${fragmentWrapName}${listItem.accgRecordDetailSeq}-operate|"
+											data-toggle="tooltip" title="過入金の返金処理をする"><i class="fas fa-exchange-alt"></i>過入金返金</button>
+											
+										<button type="button" class="btn btn-sm btn-light btn_icon_only btn_icon_edit editRow"
+											th:data-seq="${listItem.accgRecordDetailSeq}" th:data-container="|#${fragmentWrapName}${listItem.accgRecordDetailSeq}-operate|"
+											data-toggle="tooltip" title="編集"><i class="fas fa-edit mr-2"></i>編集</button>
+											
+										<button type="button" class="btn btn-sm btn-light btn_icon_only deleteRow"
+											th:data-seq="${listItem.accgRecordDetailSeq}" th:data-container="|#${fragmentWrapName}${listItem.accgRecordDetailSeq}-operate|"
+											data-toggle="tooltip" title="削除"><i class="far fa-trash-alt"></i></button>
+			</th:block>
+									</div>
+									<!--/* CASE 入金 end */-->
+									
+									<!--/* CASE 振替(預り金)  */-->
+									<div th:case="${T(jp.loioz.common.constant.CommonConstant$RecordType).TRANSFER_DEPOSIT_INTO}">
+										<span class="fs12 fc_sub">※編集／削除不可</span>
+									</div>
+									<!--/* CASE 振替(預り金) end */-->
+									
+									<!--/* CASE 出金 */-->
+									<div th:case="${T(jp.loioz.common.constant.CommonConstant$RecordType).WITHDRAW}">
+										<button type="button" class="btn btn-sm btn-light btn_icon_only btn_icon_edit mr-4 editRow"
+											th:data-seq="${listItem.accgRecordDetailSeq}" th:data-container="|#${fragmentWrapName}${listItem.accgRecordDetailSeq}-operate|"
+											data-toggle="tooltip" title="編集"><i class="fas fa-edit mr-2"></i>編集</button>
+										<button type="button" class="btn btn-sm btn-light btn_icon_only deleteRow" th:data-seq="${listItem.accgRecordDetailSeq}" th:data-container="|#${fragmentWrapName}${listItem.accgRecordDetailSeq}-operate|" data-toggle="tooltip" title="削除"><i class="far fa-trash-alt"></i></button>
+									</div>
+									<!--/* CASE 出金 end */-->
+									
+									<!--/* CASE 過入金返金 */-->
+									<div th:case="${T(jp.loioz.common.constant.CommonConstant$RecordType).OVER_PAYMENT_REFUND}">
+										<button type="button" class="btn btn-sm btn-light btn_icon_only btn_icon_edit mr-4 editRefund" th:data-seq="${listItem.accgRecordDetailSeq}"
+											th:data-container="|#${fragmentWrapName}${listItem.accgRecordDetailSeq}-operate|"
+											data-toggle="tooltip" title="編集" data-trigger="hover"><i class="fas fa-edit mr-2"></i>編集</button>
+										<button type="button" class="btn btn-sm btn-light text-danger dropRefund"
+											th:data-container="|#${fragmentWrapName}${listItem.accgRecordDetailSeq}-operate|" data-toggle="tooltip"
+											title="過入金返金を取り下げる" data-trigger="hover"><i class="far fa-times-circle mr-2"></i>返金取下げ</button>
+									</div>
+									<!--/* CASE 過入金返金 end */-->
+									<div th:case="*"><!--/* レコード種別が判定できない場合は想定外。表示上は何も表示しない */--></div>
+		</th:block>
+		<!--/* 実積種別 end */-->
+								</td>
+							</tr>
+	</th:block>
+						</tbody>
+					</table>
+				</div>
+			</div>
+		</div>
+		<div class="section_footer">
+			<div id="recordDetailRowInputFragmentWrap"></div>
+			<div id="recordDetailOverPaymentRowInputFragmentWrap"></div>
+			<div class="mt-3">
+				<a th:if="*{canAdd}" href="javascript:void(0);" class="fs15 addRecord"><i class="fas fa-plus-square mr-2"></i>取引実績を追加</a>
+			</div>
+		</div>
+	</section>
+	<!--/* 取引実績一覧 end */-->
+	
+</div>
+<!--/* 取引実績 end */-->
+
+<!--/* 取引実績詳細 入力フォーム */-->
+<div th:fragment="recordDetailRowInputFragment" th:id="${fragmentId}" th:object="${recordDetailRowInputForm}" 
+	th:with="fragmentId=*{isNew()} ? 'recordDetailRowInputFragment' : |recordDetailRowInputFragment*{accgRecordDetailSeq}|">
+	
+	<script type="text/javascript" th:inline="javascript">
+	$(function() {
+		
+		<!--/* 定数 */-->
+		const fragment = $('#'+ /*[[${fragmentId}]]*/'');
+		const fragmentWrap = $(fragment).closest('[id^="recordDetailRowInputFragmentWrap"]');
+		
+		<!--/* 共有の要素セットアップ処理 */-->
+		commonSetUpElement('#' + /*[[${fragmentId}]]*/'');
+		
+		<!--/* 個別入力チェックによる表示切り替え */-->
+		fragment.find('.separateInputCheck').on('change', function() {
+			const checked = $(this).prop('checked');
+			if (checked) {
+				fragment.find('.nonParticularContents').addClass('hidden');
+				fragment.find('.nonParticularContents input').prop('disabled', true);
+				fragment.find('.particularContents').removeClass('hidden');
+				fragment.find('.particularContents input').prop('disabled', false);
+
+			} else {
+				fragment.find('.nonParticularContents').removeClass('hidden');
+				fragment.find('.nonParticularContents input').prop('disabled', false);
+				fragment.find('.particularContents').addClass('hidden');
+				fragment.find('.particularContents input').prop('disabled', true);
+			}
+		});
+		
+		<!--/* 登録処理 */-->
+		fragment.find('.regist').on('click', function() {
+			if (ajaxRunning) {
+				return false;
+			}
+			const formData = getFormSerializeArray();
+			ajaxRunning = true;
+			Promise.resolve(formData)
+				.then((param) => savePreCheckOverPayment(param, "regist"))
+				.then((param) => {
+					return new Promise((resolve, reject) => {
+						$.ajax({
+							url : /*[[@{/user/recordDetail/{accgRecordSeq}/registRecordDetail(accgRecordSeq=*{accgRecordSeq})}]]*/'',
+							type : "POST",
+							data : param
+						})
+						.done(function(data, status, jqXHR) {
+							if (isAjaxProcSuccess(jqXHR)) {
+								// 処理成功
+								showInfoMessageForJs(getAjaxProcResutlMessage(jqXHR));
+								return resolve();
+							} else {
+								// 処理失敗
+								if (data) {
+									// バリデーションを表示
+									fragmentWrap.html(data);
+								}
+								const errorMsg = getAjaxProcResutlMessage(jqXHR);
+								showErrorMessageForJs(errorMsg);
+								return reject();
+							}
+						})
+						.fail(function(jqXHR, status, errorThrown) {
+							showErrorMessageForJs(/*[[#{E00091}]]*/ "error");
+							return reject();
+						});
+					});
+				})
+				.then(renderRecordDetailAccgDocViewFargment)
+				.then(renderRecordDetailListViewFragment)
+				.then(renderBreakdownOfFeeAndDepositViewFragment)
+				.catch((errorObj) => console.log(errorObj))
+				.finally(() => {
+					ajaxRunning = false;
+				});
+		});
+		
+		<!--/* 更新処理 */-->
+		fragment.find('.update').on('click', function() {
+			if (ajaxRunning) {
+				return false;
+			}
+			const formData = getFormSerializeArray();
+			ajaxRunning = true;
+			Promise.resolve(formData)
+				.then((param) => savePreCheckOverPayment(param, "update"))
+				.then((param) => {
+					return new Promise((resolve, reject) => {
+						$.ajax({
+							url : /*[[@{/user/recordDetail/{accgRecordSeq}/updateRecordDetail(accgRecordSeq=*{accgRecordSeq})}]]*/'',
+							type : "POST",
+							data : param
+						})
+						.done(function(data, status, jqXHR) {
+							if (isAjaxProcSuccess(jqXHR)) {
+								// 処理成功
+								showInfoMessageForJs(getAjaxProcResutlMessage(jqXHR));
+								return resolve();
+							} else {
+								// 処理失敗
+								if (data) {
+									// バリデーションを表示
+									fragmentWrap.html('<td colspan="6" class="px-2">' +data+'</td>');
+								}
+								const errorMsg = getAjaxProcResutlMessage(jqXHR);
+								showErrorMessageForJs(errorMsg);
+								return reject();
+							}
+						})
+						.fail(function(jqXHR, status, errorThrown) {
+							showErrorMessageForJs(/*[[#{E00091}]]*/ "error");
+							return reject();
+						});
+					});
+				})
+				.then(renderRecordDetailAccgDocViewFargment)
+				.then(renderRecordDetailListViewFragment)
+				.then(renderBreakdownOfFeeAndDepositViewFragment)
+				.catch((errorObj) => console.log(errorObj))
+				.finally(() => {
+					ajaxRunning = false;
+				});
+		});
+		
+		<!--/* 閉じるボタンをクリック */-->
+		fragment.find('.closeAddRow').on("click",function(){
+			if (ajaxRunning) {
+				return false;
+			}
+			ajaxRunning = true;
+			Promise.resolve()
+				.then(renderRecordDetailAccgDocViewFargment)
+				.then(renderRecordDetailListViewFragment)
+				.then(renderBreakdownOfFeeAndDepositViewFragment)
+				.catch((errorObj) => console.log(errorObj))
+				.finally(() => {
+					ajaxRunning = false;
+				});
+		});
+		
+		<!--/* 入力値を取得する */-->
+		function getFormSerializeArray() {
+			
+			<!--/* 一度カンマを外す */-->
+			fragment.find('.recordDetailRowInputForm .commaFormat').each(function() {
+				$(this).unformatComma();
+			});
+			
+			<!--/* パラメータを作成 */-->
+			const formParam = fragment.find('.recordDetailRowInputForm').serializeArray();
+			
+			<!--/* カンマを付与 */-->
+			fragment.find('.recordDetailRowInputForm .commaFormat').each(function() {
+				$(this).formatComma();
+			});
+			
+			return formParam;
+		}
+		
+		<!--/* 保存処理前の過入金発生プリチェック */-->
+		function savePreCheckOverPayment(param, mode) {
+			return new Promise((resolve, reject) => {
+				$.ajax({
+					url : /*[[@{/user/recordDetail/{accgRecordSeq}/savePreCheckOverPayment(accgRecordSeq=*{accgRecordSeq})}]]*/'',
+					type : "POST",
+					data : param,
+				})
+				.done(function(data, status, jqXHR) {
+					if (getAjaxProcResutl(jqXHR) == /*[[${T(jp.loioz.app.user.recordDetail.controller.RecordDetailController).HEADER_VALUE_OF_AJAX_PROC_RESULT_ACCG_DETAIL_SAVE_OVER_PAYMENT_PRE_CHECK_RESULT}]]*/'success_over_payment_pre_check') {
+						const result = getAjaxProcResutlMessage(jqXHR);
+						if (toBoolean(result)) {
+							if (confirm("過入金が発生します。登録してもよろしいですか？")) {
+								return resolve(param);
+							} else {
+								return reject();
+							}
+						} else {
+							return resolve(param);
+						}
+					} else {
+						if (data && mode ==="regist") {
+							fragmentWrap.html(data);
+						}
+						
+						if (data && mode ==="update") {
+							fragmentWrap.html('<td colspan="6" class="px-2">' +data+'</td>');
+						}
+						
+						// 処理失敗
+						const errorMsg = getAjaxProcResutlMessage(jqXHR);
+						showErrorMessageForJs(errorMsg);
+						return reject();
+					}
+				})
+				.fail(function(jqXHR, status, errorThrown) {
+					showErrorMessageForJs(/*[[#{E00091}]]*/ "error");
+					return reject();
+				});
+			});
+		}
+		
+	});
+	</script>
+	
+	<form autocomplete="off" class="recordDetailRowInputForm" 
+		th:with="
+			isStatement=*{T(jp.loioz.common.constant.CommonConstant$AccgDocType).STATEMENT == accgDocType},
+			isInvoice=*{T(jp.loioz.common.constant.CommonConstant$AccgDocType).INVOICE == accgDocType}">
+		<input type="hidden" th:field="*{accgRecordSeq}">
+		<input type="hidden" th:field="*{accgDocSeq}">
+		<input type="hidden" th:field="*{accgRecordDetailSeq}">
+		<div class="accg_record_edit_row">
+			<div class="row">
+				<div class="form-group col-md-auto">
+					<label class="input_parts_label">種別</label>
+					<div class="mt-1" th:if="${isStatement}">
+						<span class="badge badge-pill accg_label_min fs13 badge_red">出金</span>
+					</div>
+					<div class="mt-1" th:if="${isInvoice}">
+						<span class="badge badge-pill accg_label_min fs13 badge_cyan">入金</span>
+					</div>
+				</div>
+				<div class="form-group col-md-auto">
+					<label class="input_parts_label">決済日</label>
+					<input type="text" th:id="|${fragmentId}-recordDate|" class="form-control digit8 inputDateSlash"
+						th:data-click-sync="|[data-target='#${fragmentId}-recordDate']|" th:field="*{recordDate}">
+					<button type="button" class="btn btn_popcal hidden" data-toggle="datepicker" th:data-target="|#${fragmentId}-recordDate|">カレンダー</button>
+					<div th:if="*{#fields.hasErrors('recordDate')}" th:errors="*{recordDate}" class="error_mag_point">error</div>
+				</div>
+				
+				<!--/* 請求の場合 */-->
+				<div class="form-group col-md-auto" th:if="${isInvoice}">
+					<label class="input_parts_label">入金額</label>
+		<th:block th:if="*{SeparateInputEnable}">
+					<label class="checkbox_btn pb-1 ml-4 mr-0">
+						<input type="checkbox" class="checkbox_input separateInputCheck" th:field="*{SeparateInput}">
+						<span class="checkbox_txt">個別入力</span>
+					</label>
+		</th:block>
+		
+					<!--/* 個人入力チェックOFF */-->
+					<div class="nonParticularContents" th:classappend="*{SeparateInput}? 'hidden' : ''">
+						<div class="input_record_parts mb-1">
+							<input type="text" class="form-control text-right digit8 fs15 commaFormat inputNumberOnly" th:field="*{recordAmount}" th:disabled="*{SeparateInput}" maxlength="10">
+						</div>
+						<div th:if="*{#fields.hasErrors('recordAmount')}" th:errors="*{recordAmount}" class="error_mag_point">error</div>
+					</div>
+					
+					<!--/* 個人入力チェックON */-->
+					<div class="particularContents" th:classappend="*{SeparateInput}? '' : 'hidden'">
+						<!--/* 報酬 */-->
+						<label class="input_parts_label fw0">報酬</label>
+						<input type="text" class="form-control text-right digit7 fs15 commaFormat inputNumberOnly"
+							th:field="*{recordFeeAmount}" th:disabled="!*{SeparateInput}" maxlength="9">
+						<div th:if="*{#fields.hasErrors('recordFeeAmount')}" th:errors="*{recordFeeAmount}" class="error_mag_point">error</div>
+						
+						<!--/* 預り金/実費 */-->
+						<label class="input_parts_label fw0">預り金/実費</label>
+						<input type="text" class="form-control text-right digit7 fs15 commaFormat inputNumberOnly"
+							th:field="*{recordDepositRecvAmount}" th:disabled="!*{SeparateInput}" maxlength="9">
+						<div th:if="*{#fields.hasErrors('recordDepositRecvAmount')}" th:errors="*{recordDepositRecvAmount}" class="error_mag_point">error</div>
+					</div>
+				</div>
+				
+				<!--/* 精算の場合 */-->
+				<div class="form-group col-md-auto" th:if="${isStatement}">
+					<label class="input_parts_label">返金額</label>
+					<div class="input_record_parts mb-1">
+						<span class="badge badge-pill accg_label_min badge_orange fs13"></span>
+						<input type="text" class="form-control text-right digit8 fs14 commaFormat inputNumberOnly" th:field="*{recordDepositPaymentAmount}" maxlength="10">
+					</div>
+					<div th:if="*{#fields.hasErrors('recordDepositPaymentAmount')}" th:errors="*{recordDepositPaymentAmount}" class="error_mag_point">error</div>
+				</div>
+				
+				<div class="form-group col-md-5">
+					<label class="input_parts_label">備考</label>
+					<input type="text" class="form-control" maxlength="100" th:field="*{remarks}">
+					<div th:if="*{#fields.hasErrors('remarks')}" th:errors="*{remarks}" class="error_mag_point">error</div>
+				</div>
+			</div>
+			<div class="ml-auto text-right">
+				<button th:if="*{isNew()}" type="button" class="btn btn-sm btn-info btn_icon_only mr-3 regist"><i class="fas fa-check mr-2"></i>登録</button>
+				<button th:if="!*{isNew()}" type="button" class="btn btn-sm btn-info btn_icon_only mr-3 update"><i class="fas fa-check mr-2"></i>保存</button>
+				<button type="button" class="btn btn-sm btn-light btn_icon_only closeAddRow"><i class="fas fa-times mr-2"></i>閉じる</button>
+			</div>
+		</div>
+	</form>
+	
+</div>
+
+<!--/* （過入金返金）取引実績詳細 入力フォーム */-->
+<div th:fragment="recordDetailOverPaymentRefundRowInputFragment" th:id="${fragmentId}" th:object="${recordOverpayRefundRowInputForm}" 
+	th:with="fragmentId=*{isNew()} ? 'recordDetailOverPaymentRefundRowInputFragment' : |recordDetailOverPaymentRefundRowInputFragment*{accgRecordDetailSeq}|">
+	
+	<script type="text/javascript" th:inline="javascript">
+	$(function() {
+		
+		<!--/* 定数 */-->
+		const fragment = $('#'+ /*[[${fragmentId}]]*/'');
+		const fragmentWrap = $(fragment).closest('[id^="recordDetailOverPaymentRowInputFragmentWrap"]');
+		
+		<!--/* 共有の要素セットアップ処理 */-->
+		commonSetUpElement('#' + /*[[${fragmentId}]]*/'');
+		
+		<!--/* 閉じるボタンをクリック */-->
+		fragment.find('.closeAddRow').on("click",function(){
+			if (ajaxRunning) {
+				return false;
+			}
+			ajaxRunning = true;
+			Promise.resolve()
+				.then(renderRecordDetailAccgDocViewFargment)
+				.then(renderRecordDetailListViewFragment)
+				.then(renderBreakdownOfFeeAndDepositViewFragment)
+				.catch((errorObj) => console.log(errorObj))
+				.finally(() => {
+					ajaxRunning = false;
+				});
+		});
+		
+		<!--/* 登録ボタンをクリック */-->
+		fragment.find('.regist').on("click",function(){
+			if (ajaxRunning) {
+				return false;
+			}
+			const formData = fragment.find(".recordDetailOverPaymentRefundRowInputForm").serializeArray();
+			ajaxRunning = true;
+			Promise.resolve(formData)
+				.then((params) => {
+					return new Promise((resolve, reject) => {
+						$.ajax({
+							url : /*[[@{/user/recordDetail/{accgRecordSeq}/registRecordDetailRefund(accgRecordSeq=*{accgRecordSeq})}]]*/'',
+							type : "POST",
+							data : params,
+						})
+						.done(function(data, status, jqXHR) {
+							if (isAjaxProcSuccess(jqXHR)) {
+								showInfoMessageForJs(getAjaxProcResutlMessage(jqXHR));
+								return resolve();
+							} else {
+								// 処理失敗
+								if (data) {
+									fragmentWrap.html(data);
+								}
+								const errorMsg = getAjaxProcResutlMessage(jqXHR);
+								showErrorMessageForJs(errorMsg);
+								return reject();
+							}
+						})
+						.fail(function(jqXHR, status, errorThrown) {
+							showErrorMessageForJs(/*[[#{E00091}]]*/ "error");
+							return reject();
+						});
+					});
+				})
+				.then(renderRecordDetailAccgDocViewFargment)
+				.then(renderRecordDetailListViewFragment)
+				.then(renderBreakdownOfFeeAndDepositViewFragment)
+				.catch((errorObj) => console.log(errorObj))
+				.finally(() => {
+					ajaxRunning = false;
+				});
+		});
+		
+		<!--/* 更新ボタンをクリック */-->
+		fragment.find('.update').on("click",function(){
+			if (ajaxRunning) {
+				return false;
+			}
+			const formData = fragment.find(".recordDetailOverPaymentRefundRowInputForm").serializeArray();
+			ajaxRunning = true;
+			Promise.resolve(formData)
+				.then((params) => {
+					return new Promise((resolve, reject) => {
+						$.ajax({
+							url : /*[[@{/user/recordDetail/{accgRecordSeq}/updateRecordDetailRefund(accgRecordSeq=*{accgRecordSeq})}]]*/'',
+							type : "POST",
+							data : params,
+						})
+						.done(function(data, status, jqXHR) {
+							if (isAjaxProcSuccess(jqXHR)) {
+								showInfoMessageForJs(getAjaxProcResutlMessage(jqXHR));
+								return resolve();
+							} else {
+								// 処理失敗
+								if (data) {
+									fragmentWrap.html('<td colspan="6" class="px-2">' + data + '</td>');
+								}
+								const errorMsg = getAjaxProcResutlMessage(jqXHR);
+								showErrorMessageForJs(errorMsg);
+								return reject();
+							}
+						})
+						.fail(function(jqXHR, status, errorThrown) {
+							showErrorMessageForJs(/*[[#{E00091}]]*/ "error");
+							return reject();
+						});
+					});
+				})
+				.then(renderRecordDetailAccgDocViewFargment)
+				.then(renderRecordDetailListViewFragment)
+				.then(renderBreakdownOfFeeAndDepositViewFragment)
+				.catch((errorObj) => console.log(errorObj))
+				.finally(() => {
+					ajaxRunning = false;
+				});
+		});
+		
+	});
+	</script>
+	
+	<form autocomplete="off" class="recordDetailOverPaymentRefundRowInputForm">
+		<input type="hidden" th:field="*{accgRecordSeq}">
+		<input type="hidden" th:field="*{accgDocSeq}">
+		<input type="hidden" th:field="*{accgRecordDetailSeq}">
+		<div class="accg_record_edit_row">
+			<div class="row">
+				<div class="form-group col-md-auto">
+					<label class="input_parts_label">種別</label>
+					<div class="mt-1">
+						<span class="badge badge-pill accg_label badge_red fs13 px-2"
+							th:text="${T(jp.loioz.common.constant.CommonConstant$RecordType).OVER_PAYMENT_REFUND.val}">過入金返金</span>
+					</div>
+				</div>
+				<div class="form-group col-md-auto">
+					<label class="input_parts_label">決済日</label>
+					<input type="text" th:id="|${fragmentId}-recordDate|" class="form-control digit8 inputDateSlash"
+						th:data-click-sync="|[data-target='#${fragmentId}-recordDate']|" th:field="*{recordDate}">
+					<button type="button" class="btn btn_popcal hidden" data-toggle="datepicker" th:data-target="|#${fragmentId}-recordDate|">カレンダー</button>
+					<div th:if="*{#fields.hasErrors('recordDate')}" th:errors="*{recordDate}" class="error_mag_point">error</div>
+				</div>
+				<div class="form-group col-md-auto">
+					<label class="input_parts_label">金額</label>
+					<div class="fs16 mt-1" th:text="*{overPaymentRecvAmount}"></div>
+				</div>
+				<div class="form-group col-md-5">
+					<label class="input_parts_label">備考</label>
+					<input type="text" class="form-control" maxlength="1000" th:field="*{remarks}">
+					<div th:if="*{#fields.hasErrors('remarks')}" th:errors="*{remarks}" class="error_mag_point">error</div>
+				</div>
+			</div>
+			<div class="ml-auto text-right">
+				<button th:if="*{isNew()}" type="button" class="btn btn-sm btn-info btn_icon_only mr-3 regist"><i class="fas fa-check mr-2"></i>登録</button>
+				<button th:if="!*{isNew()}" type="button" class="btn btn-sm btn-info btn_icon_only mr-3 update"><i class="fas fa-check mr-2"></i>保存</button>
+				<button type="button" class="btn btn-sm btn-light btn_icon_only closeAddRow"><i class="fas fa-times mr-2"></i>閉じる</button>
+			</div>
+		</div>
+	</form>
+
+</div>
+
+<!--/* 支払計画一覧 */-->
+<div th:fragment="paymentPlanListViewFragment(paymentPlanListViewForm)" id="paymentPlanListViewFragment" th:object="${paymentPlanListViewForm}" th:if="${paymentPlanListViewForm}">
+	<script type="text/javascript" th:inline="javascript">
+	$(function() {
+		<!--/* 定数 */-->
+		const fragment = $('#paymentPlanListViewFragment');
+		
+		<!--/* 共有の要素セットアップ処理 */-->
+		commonSetUpElement('#paymentPlanListViewFragment');
+		
+	});
+	</script>
+	
+	<section class="mt-5">
+		<div class="section_header">
+			<div class="section_header__title">分割予定表</div>
+		</div>
+		<div class="section_body">
+			<div class="section_body__contents p-0">
+				<div class="hover_scroll">
+					<table class="table table-sm table_standard">
+						<thead>
+							<tr>
+								<th class="col_15">回数</th>
+								<th class="col_15">支払期限</th>
+								<th class="col_15 text-right">請求金額</th>
+								<th class="col_auto"></th>
+							</tr>
+						</thead>
+						<tbody>
+							<tr th:each="listItem, stat : *{paymentPlanList}">
+								<td th:text="${stat.count}"></td>
+								<td th:text="${listItem.paymentScheduleDate}"></td>
+								<td class="text-right fs15 fw600" th:text="${listItem.paymentScheduleAmount}"></td>
+								<td></td>
+							</tr>
+						</tbody>
+					</table>
+				</div>
+			</div>
+		</div>
+	</section>
+</div>
+
+</body>
+</html>

@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="10" height="60" viewBox="0 0 10 60">
+  <g id="icon_side_menubtn" transform="translate(-965 -503)">
+    <circle id="ov" cx="5" cy="5" r="5" transform="translate(965 503)" fill="#fff"/>
+    <circle id="ov-2" data-name="ov" cx="5" cy="5" r="5" transform="translate(965 528)" fill="#fff"/>
+    <circle id="ov-3" data-name="ov" cx="5" cy="5" r="5" transform="translate(965 553)" fill="#fff"/>
+  </g>
+</svg>

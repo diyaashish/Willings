@@ -1,0 +1,1486 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+	xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+	xmlns:xtra="https://github.com/connect-group/thymeleaf-extras"
+	layout:decorator="commonLayout">
+<head>
+<meta charset="utf-8" th:remove="tag" />
+<meta name="_csrf" th:content="${_csrf.token}" />
+<meta name="_csrf_header" th:content="${_csrf.headerName}" />
+<title layout:fragment="title-contents">
+    [[${T(jp.loioz.common.utility.LoiozUtils).getHtmlTitle("ファイル管理", T(jp.loioz.common.utility.SessionUtils).getTenantName())}]]
+</title>
+<th:block th:with="version=${@environment.getProperty('app.version')}">
+	<link href="./css/dropzone.css" th:href="@{/css/dropzone.css?{ver}(ver=${version})}" rel="stylesheet" type="text/css" />
+	<link href="./css/fileManagement/file-management.css" th:href="@{/css/fileManagement/file.css?{ver}(ver=${version})}" rel="stylesheet" type="text/css" />
+</th:block>
+<script type="text/javascript" th:src="@{/js/dropzone-5.5.0.js}"></script>
+<script type="text/javascript" th:inline="javascript">
+/*<![CDATA[*/
+
+// Dropzoneの設定
+Dropzone.autoDiscover = false;
+
+$(function() {
+
+	<!--/* クイック検索バー アップロードボタン押下時処理 */-->
+	$('.uploadBtn').click(function(e){
+		if ($('.dropzone').length > 0) {
+			// Dropzoneエリアをクリックさせて、アップロード処理を実行
+			e.stopPropagation();
+			e.preventDefault();
+			$('#my-awesome-dropzone').trigger('click');
+		}
+	});
+
+	<!--/* ファイル管理クイック検索バーの検索処理 */-->
+	$('.fileSeach').click(function(){
+		let fileConfigurationManagementId = /*[[${fileListViewForm.currentFileConfigurationManagementId}]]*/;
+		// 単項目チェック
+		const fileNameSearchString = $('#fileNameSearchString').val();
+		$.ajaxSetup({
+			cache : false,
+		});
+		$.ajax({
+			url : "/user/fileManagement/list/fileNameSearchPreCheck",
+			type : "POST",
+			data : {"fileNameSearchString" :  fileNameSearchString,
+				"currentFileConfigurationManagementId":fileConfigurationManagementId
+				},
+			dataType : 'json',
+		}).done(function(response) {
+			if (!response.success) {
+				alert(response.message);
+				return false;
+			}
+			// 検索処理
+			let url = /*[[@{/user/fileManagement/list/search}]]*/'/user/fileManagement/list/search';
+			url = setAnkenOrCustomerIdToUrl(url);
+			url += '&rootFolderRelatedInfoManagementId=' + $('#rootFolderRelatedInfoManagementId').val();
+			if ($('#currentFileConfigurationManagementId').length > 0) {
+				url += '&currentFileConfigurationManagementId=' + $('#currentFileConfigurationManagementId').val();
+			}
+			url += '&folderPath=' + createCurrentFolderPath();
+			url += '&fileNameSearchString=' + fileNameSearchString;
+			window.location.href = url;
+
+		}).fail(function(jqXHR, textStatus, errorThrown) {
+			alert([[#{E00029}]]);
+		});
+	});
+
+	<!--/* ゴミ箱ボタン押下時処理 */-->
+	$('.trash_box_btn').click(function(){
+		let url = /*[[@{/user/fileTrashBox/list}]]*/'/user/fileTrashBox/list';
+		// 案件・顧客IDをURLに設定
+		url = setAnkenOrCustomerIdToUrl(url);
+		window.location.href = url;
+	});
+
+	<!--/**
+	* URLに案件IDもしくは顧客IDを設定する
+	*
+	* @param {string} url セット対象のURL
+	* @return {string} 案件IDもしくは顧客IDが設定されたURL
+	*/-->
+	function setAnkenOrCustomerIdToUrl(url) {
+		// 案件軸
+		if ($('.transitionAnkenId').length > 0) {
+			url += '?transitionAnkenId=' + $('.transitionAnkenId').val();
+		}
+		// 顧客軸
+		if ($('.transitionCustomerId').length > 0) {
+			url += '?transitionCustomerId=' + $('.transitionCustomerId').val();
+		}
+		return url;
+	};
+
+	<!--/* フォルダパス押下時 */-->
+	$('.moveable_path').click(function() {
+		// ルートフォルダのパス選択時
+		if ($(this).hasClass('root_folder_path')) {
+			let url = /*[[@{/user/fileManagement/list}]]*/'/user/fileManagement/list';
+			url = setAnkenOrCustomerIdToUrl(url);
+			url += '&rootFolderRelatedInfoManagementId=' + $('#rootFolderRelatedInfoManagementId').val();
+			window.location.href = url;
+
+		} else {
+			// サブフォルダのパス選択時
+			let url = /*[[@{/user/fileManagement/list/folder}]]*/'/user/fileManagement/list/folder';
+			// クリック位置
+			const clickedIndex = parseInt($(this).prev('#subFolderIndex').val(), 10);
+
+			// ルートフォルダ名を含まない、クリックしたサブフォルダまでのフォルダパスを生成する
+			let folderPath = '/';
+			$('.moveable_path:not(.root_folder_path)').each(function(i){
+				folderPath += $(this).text() + '/';
+				if (i === clickedIndex) {
+					return false;
+				}
+			});
+			// 案件・顧客IDをURLに設定
+			url = setAnkenOrCustomerIdToUrl(url);
+
+			url += '&rootFolderRelatedInfoManagementId='  + $('#rootFolderRelatedInfoManagementId').val();
+			url += '&folderPath=' + folderPath;
+
+			window.location.href = url;
+		}
+	});
+
+	<!--/* ファイル、フォルダ行クリック */-->
+	$(document).on("click", '.file_list_row', function(){
+		$('.file_list_row').removeClass("clicked");
+		$(this).addClass("clicked");
+	});
+
+	<!--/* ルートフォルダ・フォルダの行ダブルクリック時 */-->
+	$(document).on("dblclick", '.isFolderRow', function(){
+		if ($(this).hasClass("isLimit")) {
+			let contents =$(".wrapper_contents");
+			showErrorMessageForJs(/*[[#{E00077}]]*/);
+		} else {
+			let url = /*[[@{/user/fileManagement/list/folder}]]*/'/user/fileManagement/list/folder';
+			// 案件・顧客IDをURLに設定
+			url = setAnkenOrCustomerIdToUrl(url);
+
+			// 選択したフォルダのファイル構成管理IDをURLに設定
+			url += '&fileConfigurationManagementId=' + $(this).children().find('[id^="fileConfigurationManagementId"]').val();
+
+			window.location.href = url;
+		}
+	});
+
+	<!--/* ファイルアップロードモーダル関連  START */-->
+
+	<!--/**
+	* 現在階層のパスを取得する
+	* @return {string} ルートフォルダ名を含まない現在階層のパス
+	*/-->
+	function createCurrentFolderPath() {
+		let currentFolderPath = '/';
+		<!--/* 現在階層がルートフォルダの直下ではない場合は、画面上のフォルダパス名でフォルダパスを生成 */-->
+		$('.subfolderpath_name').each(function(i){
+			currentFolderPath += $(this).text() + '/';
+		});
+		return currentFolderPath;
+	}
+
+	<!--/* ajax処理にてcsrfのエラーが発生しないように、ヘッダー情報にcsrfトークン情報を設定する */-->
+	const token = $("meta[name='_csrf']").attr("content");
+	const header = $("meta[name='_csrf_header']").attr("content");
+
+	const headersOption = {}
+	headersOption[header] = token
+
+	let msgRepFlg = false;
+
+	<!--/* ドラッグ＆ドロップによるファイルアップロード処理 */-->
+	$("div#my-awesome-dropzone").dropzone({
+		<!--/* ドロップ時に自動でアップロード処理を開始するかどうか */-->
+		autoProcessQueue: true,
+		url: "/user/fileManagement/list/fileUpload",
+		method: 'post',
+		headers: headersOption,
+		timeout: 0, // ms
+		paramName: "uploadFiles",
+		maxFilesize: /*[[${T(jp.loioz.common.constant.CommonConstant).FILE_UPLOAD_MAX_STRAGE}/1024/1024]]*/"5120",
+		uploadMultiple: true,
+		<!--/* アップロードファイル数の上限 */-->
+		parallelUploads:2000,
+
+		<!--/* 削除・キャンセルリンクの表示有無 */-->
+		addRemoveLinks: false,
+		<!--/* 削除リンク文字 */-->
+		dictRemoveFile: '<i class="fas fa-times" style="font-size: 20px;"></i>',
+		<!--/* アップロードエリアの文言 */-->
+		dictDefaultMessage:
+										'<i class="far fa-images droparea_icon" style="font-size: 100px;color: lightgray;"></i>' +
+										'<div class="droparea_message" style="font-size: 1.5rem; color: #969696;">' +
+											'<b>ここにファイルをドロップ<br> またはクリックしてファイルを追加する </b>' +
+										'</div>',
+		thumbnailMethoddefault: 'contain',
+
+		init: function() {
+
+			const dropzone = this;
+			<!--/* ファイル重複チェック結果送信用 */-->
+			let fileDuplicate = false;
+			<!--/* 事前チェック結果送信用 */-->
+			let preCheckResult = false;
+			<!--/* ファイルアップロード継続判定用 */-->
+			let fileUploadContinue = false;
+			<!--/* 重複ファイルインデックスリスト */-->
+			let dupFileList = [];
+			<!--/* アップロード中ファイル名リスト */-->
+			let uploadingFileList = new Array();
+
+			this.on("processingmultiple", function(processingFiles) {
+
+				const formData = new FormData();
+				<!--/* アップロード合計サイズ */-->
+				let uploadTotalSize = 0;
+				let includeFileSizeZero = false;
+				processingFiles.forEach(file => {
+					if (file.size === 0) {
+						includeFileSizeZero = true;
+					}
+					uploadTotalSize += file.size;
+				});
+
+				<!--/* 空ファイルチェック */-->
+				if (includeFileSizeZero) {
+					alert("ファイルサイズが0のファイルが含まれています。\r\nファイルサイズが0以外のファイルのみをアップロードしてください。");
+					<!--/* アップロードリクエスト自体は止められないので、アップロードファイルリストの中身を空にしてなかったことにする */-->
+					dropzone.files.length = 0;
+					return false;
+				}
+
+				<!--/* アップロードファイルサイズ */-->
+				formData.append('uploadTotalSize', uploadTotalSize);
+
+				<!--/* アップロードファイル名 */-->
+				const uploadFileNameList = processingFiles.map(file => file.name);
+				formData.append('uploadFileNameList', uploadFileNameList);
+
+				<!--/* ファイルフルパスリスト */-->
+				const uploadFileFullPathList = processingFiles.map(file => file.fullPath);
+				formData.append('uploadFileFullPathList', uploadFileFullPathList);
+
+				<!--/* 現在階層のフォルダパス */-->
+				formData.append("currentFolderPath", createCurrentFolderPath());
+
+				<!--/* ルートフォルダ関連情報管理ID */-->
+				formData.append("rootFolderRelatedInfoManagementId", $('#rootFolderRelatedInfoManagementId').val());
+
+				<!--/* アップロード前チェック */-->
+				$.ajaxSetup({
+					cache : false,
+				});
+				$.ajax({
+					url : "/user/fileManagement/list/uploadPrecheck",
+					type : "POST",
+					processData : false,
+					data : formData,
+					dataType : 'json',
+					contentType : false,
+					async : false,
+				}).done(function(response) {
+
+					try {
+						<!--/* エラー有り */-->
+						if (!response.success) {
+							<!--/* 超過チェック用 */-->
+							const errorUploadVolumeExceeding = /*[[${T(jp.loioz.common.constant.StatusCodeEnum).ERROR_UPLOAD_VOLUME_EXCEEDING.getCodeKey()}]]*/"1001";
+							<!--/* 重複チェック用 */-->
+							const warnFileDuplicate = /*[[${T(jp.loioz.common.constant.StatusCodeEnum).WARN_FILE_DUPLICATE.getCodeKey()}]]*/"1002";
+							<!--/* 1ファイル名が256バイト以上かどうかのチェック（ファイル名が長すぎるとエラーになるため) */-->
+							const errorUploadMaxFileNameSize = /*[[${T(jp.loioz.common.constant.StatusCodeEnum).ERROR_UPLOAD_MAX_FILE_NAME_SIZE.getCodeKey()}]]*/"1014";
+
+							<!--/* エラー内容の判定 */-->
+							if (errorUploadVolumeExceeding === response.errorCode) {
+								<!--/* アップロードファイルのサイズが、許容容量を超えていた場合 */-->
+								alert(response.message);
+								<!--/* アップロードリクエスト自体は止められないので、アップロードファイルリストの中身を空にしてなかったことにする */-->
+								preCheckResult = false;
+								fileUploadContinue = false;
+								dropzone.files.length = 0;
+							} else if (warnFileDuplicate === response.errorCode) {
+								<!--/* 同階層に同名のフォルダが存在していた場合 */-->
+								fileDuplicate = true;
+								let overWriteFlg = response.canOverWrite;
+								if (!overWriteFlg) {
+									<!--/* 上書きできない場合はメッセージを表示して終了（ファイルとフォルダの同名） */-->
+									alert(response.message);
+									<!--/* アップロードリクエスト自体は止められないので、アップロードファイルリストの中身を空にしてなかったことにする */-->
+									preCheckResult = false;
+									fileUploadContinue = false;
+									dropzone.files.length = 0;
+								} else {
+									<!--/* アップロードファイルがファイルやフォルダー名と重複していた場合 */-->
+									const isUpdate = confirm(response.message);
+									if (!isUpdate) {
+										<!--/* 上書き保存しない */-->
+										if (response.fileUploadContinue){
+											preCheckResult = false;
+											fileUploadContinue = true;
+											dupFileList = response.dupFileList;
+										} else {
+											<!--/* アップロードリクエスト自体は止められないので、アップロードファイルリストの中身を空にしてなかったことにする */-->
+											preCheckResult = false;
+											fileUploadContinue = false;
+											dropzone.files.length = 0;
+										}
+									} else {
+										<!--/* 上書き保存する */-->
+										preCheckResult = true;
+									}
+								}
+							}else if(errorUploadMaxFileNameSize === response.errorCode){
+								<!--/* アップロードファイル名が、256バイト以上の場合 */-->
+								alert(response.message);
+								preCheckResult = false;
+								<!--/* アップロードリクエスト自体は止められないので、アップロードファイルリストの中身を空にしてなかったことにする */-->
+								dropzone.files.length = 0;
+							}
+						} else {
+							<!--/* エラー無し */-->
+							preCheckResult = true;
+						}
+					} catch(e) {
+						preCheckResult = false;
+					}
+				}).fail(function(jqXHR, textStatus, errorThrown) {
+					<!--/* ファイルアップロードに失敗しました */-->
+					alert([[#{E00032}]]);
+				});
+			});
+
+			this.on("sendingmultiple", function(fileList, xhr, formData){
+				$(".file_loading").removeClass("hidden");
+				$(".dz_upload_file").removeClass("hidden");
+
+				<!--/*
+					アップロード前チェックのチェック結果を反映したリストを使用するためdropzoneのプロパティからリストを取得していましたが
+					子フォルダがある場合や、連続アップロード時に上手く動かないため、sendingmultiple標準のファイルリストを使用するように変更。
+				*/-->
+				let count = 0;
+				fileList.forEach(function(val, index){
+					// ファイル作成日時(取得できないので、ファイルの最終更新日時で代用)
+					const lastModifiedDate = new Date(val.lastModified);
+					const lastModifiedDateString = formatDate(lastModifiedDate, 'YYYY-MM-DD hh:mm:ss');
+					if (val.status == "uploading"){
+						// アップロードファイル情報
+						formData.append(`uploadFileInfo[${count}].uploadFile`, val);
+						// アップロードファイルのフルパス
+						if (val.fullPath != null) {
+							formData.append(`uploadFileInfo[${count}].uploadFileFullPath`, val.fullPath);
+						}
+						// アップロードファイルのファイルサイズ
+						formData.append(`uploadFileInfo[${count}].uploadFileSize`, val.size);
+						// アップロードファイルのファイル作成日時
+						formData.append(`uploadFileInfo[${count}].uploadFileCreateDateTimeString`, lastModifiedDateString);
+						// アップロードファイルのUUID(キャンセル用情報)
+						formData.append(`uploadFileInfo[${count}].uuid`, val.upload.uuid);
+
+						count ++;
+					}
+				});
+
+				// ルートフォルダ関連情報管理ID
+				formData.append("rootFolderRelatedInfoManagementId", $('#rootFolderRelatedInfoManagementId').val());
+				// 現在階層のフォルダパス
+				formData.append("currentFolderPath", createCurrentFolderPath());
+				// アップロード時のファイル構成管理ID
+				if ($('#currentFileConfigurationManagementId').length > 0) {
+					formData.append("currentFileConfigurationManagementId", $('#currentFileConfigurationManagementId').val());
+				}
+				// アップロード時のファイル重複有無（アップロード済みのファイル、フォルダと名前が重複しているか）
+				formData.append("fileDuplicate", fileDuplicate);
+
+				<!--/* 現在アップロード中のファイル、フォルダと名前が重複しているかチェック */-->
+				fileList.forEach(file => {
+					let uploadFileName;
+					if (file.fullPath == null) {
+						uploadFileName = file.name;
+					} else {
+						uploadFileName = file.fullPath;
+					}
+					<!--/* アップロード中と同じ名前のファイルをアップロードしようとした場合は、全てエラーとする */-->
+					if (uploadingFileList.includes(uploadFileName)) {
+						preCheckResult = false;
+						fileUploadContinue = false;
+					}
+				});
+
+				// アップロード時のpreCheck結果
+				formData.append("preCheckResult", preCheckResult);
+
+				// アップロード時の処理継続有無
+				formData.append("fileUploadContinue", fileUploadContinue);
+
+				<!--/* 処理対象のファイル名、フォルダ名を処理中ファイルリストにする */-->
+				fileList.forEach(file => {
+					if (file.fullPath == null) {
+						uploadingFileList.push(file.name);
+					} else {
+						uploadingFileList.push(file.fullPath);
+					}
+				});
+			});
+
+			this.on("success", function(file) {
+				$(".file_loading").addClass("hidden");
+				// 処理結果の判定
+				const responseData = jQuery.parseJSON(file.xhr.response);
+				if (!responseData.success) {
+					// 失敗時
+					if (!responseData.failerFileUuidList.length) {
+						<!--/* 失敗レスポンスが返ってきたが、失敗したファイル情報が返って来ない場合 */-->
+						file.status = "error";
+						file.previewElement.classList.remove("dz-success");
+						file.previewElement.classList.add("dz-error");
+					} else if (responseData.failerFileUuidList.includes(file.upload.uuid)) {
+						<!--/* 失敗レスポンスが返って、失敗したファイル情報(UUID)がリクエストと一致する場合 */-->
+						file.status = "error";
+						file.previewElement.classList.remove("dz-success");
+						file.previewElement.classList.add("dz-error");
+					}
+					msgRepFlg = false;
+				} else {
+					// 成功時
+					<!--/* Dropzoneで正常ファイルとして完了しているのでなにもしない */-->
+				}
+			});
+
+			this.on("completemultiple", function(file) {
+				$(".file_loading").addClass("hidden");
+
+				let formData = [];
+				formData.push({name : "transitionAnkenId", value :$('.transitionAnkenId').val()});
+				formData.push({name : "transitionCustomerId", value :$('.transitionCustomerId').val()});
+				formData.push({name : "fileConfigurationManagementId", value :$('#currentFileConfigurationManagementId').val()});
+				
+				$.ajax({
+					type : "GET",
+					url : "/user/fileManagement/list/getFileList",
+					data : formData,
+					dataType : "html"
+				})
+				.done(function(data) {
+					const result =$(data);
+					result.find('[data-toggle="popover"]').popover();
+					$("#fileListContents").replaceWith(result);
+				})
+				.fail(function() {
+				});
+			});
+
+			this.on("error", function(file) {
+				$(".file_loading").addClass("hidden");
+				$(".dz_upload_file").removeClass("hidden");
+				// エラー時の処理
+				if (msgRepFlg) {
+					const len = file.previewElement.children.length;
+					for (let i = 0; i < len; i++) {
+						if (file.previewElement.children[i].className === "dz-error-message") {
+							file.previewElement.children[i].innerText = [[#{E00032}]];
+						}
+					}
+					msgRepFlg = false;
+				}
+			});
+
+			this.on("complete", function(file){
+				$(".file_loading").addClass("hidden");
+
+				<!--/* 処理終了時にフラグを初期化 */-->
+				fileDuplicate = false;
+
+				<!--/* アップロードが完了したら、アップロード中ファイルリストを初期化する */-->
+				uploadingFileList = new Array();
+			});
+		}
+	});
+<!--/* ファイルアップロードモーダル関連  END */-->
+
+	<!--/* 3点リーダーボタン関連 START */-->
+
+	<!--/* 共通処理 ⇒ file-management.jsに定義 */-->
+
+	<!--/* メニューからダウンロードボタン押下時 */-->
+	$(document).on('click', '.downloadByMenu', function(e) {
+		let fileConfigurationManagementId = $(this).data('fileconfigurationmanagementid');
+		let targetDownloadBtn = $('button[data-downloadseq="' + fileConfigurationManagementId + '"]');
+		$(targetDownloadBtn).find('.fa-download').addClass('hidden');
+		$(targetDownloadBtn).find('.fa-spinner').removeClass('hidden');
+		fileCheckAndDownload(fileConfigurationManagementId, targetDownloadBtn);
+	});
+
+	<!--/* アイコンからダウンロードボタン押下時 */-->
+	$(document).on('click', '.downloadBtn', function(e) {
+		$(this).find('.fa-download').addClass('hidden');
+		$(this).find('.fa-spinner').removeClass('hidden');
+		let fileConfigurationManagementId = $(this).closest('tr').find('[id^="fileConfigurationManagementId"]').val();
+		fileCheckAndDownload(fileConfigurationManagementId,$(this));
+	});
+
+	function fileCheckAndDownload(fileConfigurationManagementId,button){
+		$.ajaxSetup({
+			cache : false,
+		});
+		const downloadPreCheckReques = $.ajax({
+			url : "/user/fileManagement/list/downloadPreCheck",
+			type : "POST",
+			data : {"fileConfigurationManagementId" : fileConfigurationManagementId},
+		})
+
+		// 成功時
+		downloadPreCheckReques.done(function(result) {
+			if (result.success){
+				// 履歴の再取得処理 -> コールバック内のコールバック取得
+				const fileDownloadRequest = $.when(fileDownload(fileConfigurationManagementId,button));
+
+			}else{
+				showErrorMessageForJs(result.message);
+				$(button).find('.fa-download').removeClass('hidden');
+				$(button).find('.fa-spinner').addClass('hidden');
+			}
+		});
+
+		// 失敗時
+		downloadPreCheckReques.fail(function(jqXHR, textStatus, errorThrown) {
+			window.location.href = "/systemError";
+		});
+
+		// どちらも行う処理
+		downloadPreCheckReques.always(function() {
+			ajaxRunning = false;
+		});
+	};
+
+	<!-- /* ダウンロード処理 */ -->
+	function fileDownload(fileConfigurationManagementId,button){
+		const def= $.Deferred();
+		const  fileDownloadRequest = $.ajax({
+			url : "/user/fileManagement/list/download",
+			type : "POST",
+			data : {"fileConfigurationManagementId" : fileConfigurationManagementId},
+			xhrFields : {
+				responseType: 'blob'
+			},
+		})
+		// 成功時
+		fileDownloadRequest.done(function(response, status, xhr) {
+			if (isAjaxProcSuccess(xhr)) {
+				<!--/* 処理成功 */-->
+				def.resolve(response);
+				let filename = "";
+				let disposition = xhr.getResponseHeader('Content-Disposition');
+				if (disposition) {
+					const filenameRegex = /filename[^;=\n]*=((['"]).*?\2|[^;\n]*)/;
+					const matches = filenameRegex.exec(disposition);
+					// ファイル名をデコード
+					if (matches !== null && matches[1]) {
+						filename = decodeURI(decodeURI(matches[1].replace(/['"]/g, '')));
+					}
+				}
+				try {
+					const blob = new Blob([response], { type: 'application/octet-stream' });
+					if (typeof window.navigator.msSaveBlob !== 'undefined') {
+						window.navigator.msSaveBlob(blob, filename);
+					} else {
+						const URL = window.URL || window.webkitURL;
+						const downloadUrl = URL.createObjectURL(blob);
+						if (filename) {
+							const aElement = document.createElement("a");
+							if (typeof aElement.download === 'undefined') {
+								window.location = downloadUrl;
+							} else {
+								aElement.href = downloadUrl;
+								aElement.download = filename;
+								document.body.appendChild(aElement);
+								aElement.target = "_blank";
+								aElement.click();
+							}
+						} else {
+							window.location = downloadUrl;
+						}
+					}
+				} catch (ex) {
+					alert([[#{E00034}]]);
+				}
+			} else {
+				<!--/* 処理失敗 */-->
+				const errorMsg = getAjaxProcResutlMessage(xhr);
+				showErrorMessageForJs(errorMsg);
+			}
+		})
+
+		// 失敗時
+		fileDownloadRequest.fail(function(jqXHR, textStatus, errorThrown) {
+			alert([[#{E00034}]]);
+		});
+
+		// どちらも行う処理
+		fileDownloadRequest.always(function() {
+			$(button).find('.fa-download').removeClass('hidden');
+			$(button).find('.fa-spinner').addClass('hidden');
+		});
+
+		// 結果を返却
+		return def.promise(this);
+	}
+
+	//３点メニューボタン以外をクリックした場合。
+	$(document).on('click touchend', function(event) {
+		if (!$(event.target).closest('.file_menu_navi > dt').length) {
+			// 一度全部閉じる
+			$('.file_menu_navi > dt').each(function(index){
+				if ($(this).hasClass("selected")) {
+					$(this).removeClass('selected');
+				}
+			});
+			$('.file_menu_navi').popover('hide');
+		}
+	});
+
+	//３点メニューボタンをクリックした場合。
+	$(document).on("click", '.file_menu_navi > dt', function(event){
+		let  closeFlg = false;
+		// 一度全部閉じる
+		$('.file_menu_navi > dt').each(function(index){
+			if ($(this).hasClass("selected")) {
+				$(this).removeClass('selected');
+				$(this).parent('.file_menu_navi').popover('hide');
+				closeFlg = true;
+			}
+		});
+		if (closeFlg){
+			return false;
+		}
+
+		const target = $(this).parent('.file_menu_navi');
+		$(this).addClass("selected");
+		const fileConfigurationManagementId = $(this).closest('tr').find('[id^="fileConfigurationManagementId"]').val();
+		const mentenanceModalOpenRequest = $.ajax({
+			url : "/user/fileManagement/list/mentenance",
+			type : "POST",
+			data : {
+				"fileConfigurationManagementId" : fileConfigurationManagementId,
+			},
+		});
+		//成功時
+		mentenanceModalOpenRequest.done(function(val){
+			let popover = target.data('bs.popover');
+			target.attr('data-content',val).data('bs.popover').setContent();
+			target.popover('show');
+		});
+		//失敗時
+		mentenanceModalOpenRequest.fail(function(jqXHR, textStatus, errorThrown){
+			window.location.href = "/systemError";
+		});
+
+		//成功時も失敗時も行う
+		mentenanceModalOpenRequest.always(function() {
+		});
+	});
+
+	<!--/* 移動ボタン押下時 */-->
+	$(document).on('click', '.moveBtn', function(e) {
+		$('#mentenanceModal').modal('hide');
+		<!--/* 変更対象のファイル構成管理IDを保持する */-->
+		$('#moveTargetFileConfigurationManagementId').val('');
+		const fileConfigurationManagementId = $(this).data('fileconfigurationmanagementid');
+		$('#moveTargetFileConfigurationManagementId').val(fileConfigurationManagementId);
+
+		let url = "/user/fileManagement/list/getFolderList";
+		url = setAnkenOrCustomerIdToUrl(url);
+		url += '&rootFolderRelatedInfoManagementId=' + $('#rootFolderRelatedInfoManagementId').val();
+
+		$.ajaxSetup({
+			cache : false,
+		});
+		$.ajax({
+			url : url,
+			type : "GET",
+			dataType : 'json',
+		}).done(function (response) {
+			if (response.length == 0) {
+				alert("移動先として選択できるフォルダがありません。");
+				return false;
+			}
+			$('#moveFileModal').modal('show');
+			$('.destination_list').children('li').remove();
+			response.forEach(function(folderInfo, index){
+				<!--/* 移動対象と同じフォルダは一覧に入れない */-->
+				if (parseInt(fileConfigurationManagementId, 10) === folderInfo.fileConfigurationManagementId) {
+					return true;
+				}
+				let element = getFolderCellToInsert(folderInfo, 1);
+				$('.destination_list').append(element);
+			});
+		}).fail(function(jqXHR, textStatus, errorThrown) {
+			alert("フォルダ一覧の取得に失敗しました。");
+		});
+	});
+
+	<!--/* 削除ボタン押下時 */-->
+	$(document).on('click', '.deleteBtn', function(e) {
+		$('#mentenanceModal').modal('hide');
+		<!--/* 変更対象のファイル構成管理IDを保持する */-->
+		const fileConfigurationManagementId = $(this).data('fileconfigurationmanagementid');
+		const fileName = $(this).data('filename');
+		if (!confirm(fileName + "をゴミ箱に移動します。よろしいですか？")){
+			return false;
+		}
+		const url = "/user/fileManagement/list/moveTrashBox";
+		$.ajaxSetup({
+			cache : false,
+		});
+		$.ajax({
+			url : url,
+			type : "POST",
+			data : {
+						"fileConfigurationManagementId" : fileConfigurationManagementId,
+						"rootFolderRelatedInfoManagementId" : $('#rootFolderRelatedInfoManagementId').val()
+					},
+			dataType : 'json',
+		}).done(function (response) {
+			alert(response.message);
+			if (response.success) {
+				location.reload();
+			}
+		}).fail(function(jqXHR, textStatus, errorThrown) {
+			alert([[#{E00037('ゴミ箱へ')}]]);
+		});
+	});
+
+	<!--/* 名称変更モーダル表示時 */-->
+	$('#nameChangeModal').on('shown.bs.modal', function(e){
+		<!--/* フォルダ名にフォーカス */-->
+		$('#renameInputField').focus();
+	});
+	<!--/* 名称変更ボタン押下時 */-->
+	$(document).on('click', '.nameChangeBtn', function(e) {
+		$('#mentenanceModal').modal('hide');
+		<!--/* 変更対象のファイル構成管理IDを保持する */-->
+		const fileConfigurationManagementId = $(this).data('fileconfigurationmanagementid');
+		<!--/* 変更前ファイル名 */-->
+		const currentFileName = $(this).attr('data-filename');
+		const fileKubun = $(this).attr('data-filekubun');
+		
+		<!--/* ファイル名取得の内部関数 */-->
+		const getFileName = (kubun, name) => {
+			if (!name) {
+				return "";
+			}
+			if (fileKubun == /*[[${T(jp.loioz.common.constant.CommonConstant.FileKubun).IS_FOLDER.getCd()}]]*/"1") {
+				return name;
+			}
+			let lastDotPosition = name.lastIndexOf(".");
+			if (lastDotPosition != -1) {
+				return name.substring(0, lastDotPosition);
+			} else {
+				return name;
+			}
+		};
+		<!--/* ファイル拡張子取得の内部関数 */-->
+		const getExtension = (name) => {
+			if (!name) {
+				return "";
+			}
+			if (fileKubun == /*[[${T(jp.loioz.common.constant.CommonConstant.FileKubun).IS_FOLDER.getCd()}]]*/"1") {
+				return "";
+			}
+			if (name.indexOf('.') < 0) {
+				return "";
+			}
+			return '.' + name.split('.').pop();
+		};
+		<!--/* 変更対象のファイル構成管理ID */-->
+		<!--/* 名称変更入力欄の初期値に変更対象のファイル・フォルダ名を初期値として設定 */-->
+		$('#renameInputField').val(getFileName(fileKubun, currentFileName));
+		$('#renameFileConfigurationManagementId').val(fileConfigurationManagementId);
+		$('#fileExtension').val(getExtension(currentFileName));
+	});
+
+	<!--/* 名称変更モーダル内の名称変更ボタン押下時 */-->
+	$('.renameBtn').click(function(){
+		<!--/* 現在階層がサブフォルダかの判定用フラグ */-->
+		const isSubFolder = $('#currentFileConfigurationManagementId').length > 0;
+		let fileConfigurationManagementId = $('#renameFileConfigurationManagementId').val();
+		$.ajaxSetup({
+			cache : false,
+		});
+		$.ajax({
+			url : "/user/fileManagement/list/nameChange",
+			type : "POST",
+			data : {
+						"fileConfigurationManagementId" : fileConfigurationManagementId,
+						"renameInputText" : $('#renameInputField').val(),
+						"rootFolderRelatedInfoManagementId" : $('#rootFolderRelatedInfoManagementId').val(),
+						"currentHierarchyIsSubFolder" : isSubFolder,
+						"currentFolderPath" : createCurrentFolderPath(),
+						"fileExtension" : $('#fileExtension').val()
+					},
+			dataType : 'json',
+		}).done(function (response) {
+			alert(response.message);
+			if (response.success) {
+				location.reload();
+			}
+		}).fail(function(jqXHR, textStatus, errorThrown) {
+			alert([[#{E00010}]]);
+		});
+	});
+
+	<!--/* プレビューボタン押下時 */-->
+	<!--/* メニューからプレビューボタン押下時 */-->
+	$(document).on('click', '.previewByMenu', function(e) {
+		let fileConfigurationManagementId = $(this).data('fileconfigurationmanagementid');
+		let targetPrevBtn = $('button[data-prevseq="' + fileConfigurationManagementId + '"]');
+		filePreview(fileConfigurationManagementId,targetPrevBtn);
+	});
+
+	<!--/* アイコンからプレビューボタン押下時 */-->
+	$(document).on('click', '.previewBtn', function(e) {
+		let fileConfigurationManagementId = $(this).closest('tr').find('[id^="fileConfigurationManagementId"]').val();
+		filePreview(fileConfigurationManagementId,$(this));
+	});
+
+	function filePreview(fileConfigurationManagementId,button){
+		const url = "/user/fileManagement/list/preview";
+		$.ajaxSetup({
+			cache : false,
+		});
+		$.ajax({
+			url : url,
+			type : "POST",
+			data : { "fileConfigurationManagementId" : fileConfigurationManagementId},
+			xhrFields : { responseType: 'blob' },
+		}).done(function (response, status, xhr) {
+			<!--/* プレビュー可能なコンテンツタイプ一覧 */-->
+			const availableContentsTypes = [
+				/*[[${T(org.springframework.http.MediaType).APPLICATION_PDF_VALUE}]]*/"application/pdf"
+				,/*[[${T(org.springframework.http.MediaType).IMAGE_PNG_VALUE}]]*/"image/png"
+				,/*[[${T(org.springframework.http.MediaType).IMAGE_JPEG_VALUE}]]*/"image/jpeg"
+			];
+			const contentsTypeOfTargetFile = response.type.toString();
+			if (!availableContentsTypes.includes(contentsTypeOfTargetFile)) {
+				alert("申し訳ございません。ご指定のファイル形式はプレビュー未対応となっております。");
+				return false;
+			}
+			let filename = "";
+			let disposition = xhr.getResponseHeader('Content-Disposition');
+			if (disposition) {
+				const filenameRegex = /filename[^;=\n]*=((['"]).*?\2|[^;\n]*)/;
+				const matches = filenameRegex.exec(disposition);
+				// ファイル名をデコード
+				if (matches !== null && matches[1]) {
+					filename = decodeURI(decodeURI(matches[1].replace(/['"]/g, '')));
+				}
+			}
+			const file = new Blob([response], {type: contentsTypeOfTargetFile});
+			const fileURL = URL.createObjectURL(file);
+			window.open(fileURL);
+
+		}).fail(function(jqXHR, textStatus, errorThrown) {
+		}).always(function() {
+		});
+	};
+	<!--/* 3点リーダーボタン関連 END */-->
+
+	<!--/* フォルダ新規作成モーダル関連 START */-->
+	<!--/* モーダル表示時 */-->
+	$('#createFolderModal').on('shown.bs.modal', function(e){
+		<!--/* フォルダ名にフォーカス */-->
+		$('#createFolderName').focus();
+	});
+	<!--/* フォルダ作成ボタン押下時 */-->
+	$('.folderCreate').click(function(){
+		<!--/* 現在階層がサブフォルダかの判定用フラグ */-->
+		const isSubFolder = $('#currentFileConfigurationManagementId').length > 0;
+		// 入力したフォルダ名
+		const folderName = $('#createFolderName').val();
+		$.ajaxSetup({
+			cache : false,
+		});
+		$.ajax({
+			url : "/user/fileManagement/list/folderCreate",
+			type : "POST",
+			data : {
+						"fileConfigurationManagementId" : $('#currentFileConfigurationManagementId').val(),
+						"folderName" : folderName,
+						"rootFolderRelatedInfoManagementId" : $('#rootFolderRelatedInfoManagementId').val(),
+						"currentHierarchyIsSubFolder" : isSubFolder,
+						"currentFolderPath" : createCurrentFolderPath()
+					},
+			dataType : 'json',
+		}).done(function (response) {
+			alert(response.message);
+			if (response.success) {
+				location.reload();
+			}
+		}).fail(function(jqXHR, textStatus, errorThrown) {
+			alert([[#{E00035('フォルダ')}]]);
+		});
+	});
+	<!--/* フォルダ新規作成モーダル関連 END */-->
+
+	<!--/* 移動先選択モーダル関連 START */-->
+	<!--/* セルの追加 */-->
+	function getFolderCellToInsert($folderInfo, layer) {
+		let indentElem = "";
+		for(let i=1; i<layer; i++) {
+			indentElem += "<span class='indent'></span>";
+		}
+		if ($folderInfo.existsSubFolderFlg) {
+			return "<li class='destination_cell' data-file-conf-id='" + $folderInfo.fileConfigurationManagementId + "' data-layer='" + layer + "' >" + indentElem + "<span class='cell_open_icon'><i class='fas fa-plus'></i></span>" + $folderInfo.fileName + "</li>";
+		} else {
+			return "<li class='destination_cell' data-file-conf-id='" + $folderInfo.fileConfigurationManagementId + "' data-layer='" + layer + "' > <span class='fill_in_gaps_icon_area'></span>" + indentElem + $folderInfo.fileName + "</li>";
+		}
+	}
+
+	$('.destination_list').on('click', '.destination_cell', function(e){
+		if ($(e.target).is('li')) {
+			<!--/* セルの選択 */-->
+			selectCell($(this));
+		} else {
+			<!--/* フォルダの開閉操作 */-->
+			if ($(this).children("span").hasClass("cell_open_icon")) {
+				folderOpen($(this));
+			} else {
+				folderClose($(this));
+			}
+		}
+	});
+
+	function selectCell(selectItem) {
+		$('.selected_cell').each(function(){
+			$(this).removeClass('selected_cell');
+		});
+		selectItem.removeClass('list_cell_hover');
+		selectItem.addClass('selected_cell');
+	}
+
+	<!--/* セルに対してのホバー処理 */-->
+	$('.destination_list').on('mouseenter', '.destination_cell', function(){
+		<!--/* 選択したセルにホバーの色塗りを行わせない */-->
+		if ($(this).hasClass('selected_cell')) {
+			return false;
+		}
+		$(this).addClass('list_cell_hover');
+	});
+	$('.destination_list').on('mouseleave', '.destination_cell', function(){
+		$(this).removeClass('list_cell_hover');
+	});
+
+	<!--/* フォルダの開閉 */-->
+	function folderOpen($clickedItem) {
+		$.ajaxSetup({
+			cache : false,
+		});
+		$.ajax({
+			url : "/user/fileManagement/list/openFolder",
+			type : "GET",
+			data : { "fileConfigurationManagementId" : $clickedItem.data("fileConfId") },
+			dataType : 'json',
+		}).done(function (response) {
+			let layer = $clickedItem.data("layer");
+			response.forEach(function(folderInfo, index){
+				let element = getFolderCellToInsert(folderInfo, layer + 1);
+				$clickedItem.after(element);
+			});
+			<!--/* 開閉アイコンの変更 */-->
+			$clickedItem.children('.cell_open_icon').remove();
+			$indents = $clickedItem.find('.indent:last');
+			if ($indents.length === 0) {
+				$clickedItem.prepend("<span class='cell_close_icon'><i class='fas fa-minus'></i></span>");
+			} else {
+				$indents.after("<span class='cell_close_icon'><i class='fas fa-minus'></i></span>")
+			}
+		}).fail(function(jqXHR, textStatus, errorThrown) {
+			alert("フォルダ一覧の取得に失敗しました。");
+		});
+	}
+
+	function folderClose($clickedItem) {
+		let nextAllElements = $clickedItem.nextAll('li');
+		const $clickedLayerLevel = $clickedItem.data('layer');
+		<!--/* フォルダ配下の削除 */-->
+		for(let i=0; i<nextAllElements.length; i++) {
+			let element = nextAllElements[i];
+			<!--/* フォルダを閉じる対象まで(-ボタンを押下した要素の配下のフォルダのみ)を処理対象とする */-->
+			if ($(element).data('layer') <= $clickedLayerLevel) {
+				break;
+			}
+			element.remove();
+		}
+		<!--/* アイコンの変更 */-->
+		$clickedItem.children('.cell_close_icon').remove();
+		$indents = $clickedItem.find('.indent:last');
+		if ($indents.length === 0) {
+			$clickedItem.prepend("<span class='cell_open_icon'><i class='fas fa-plus'></i></span>");
+		} else {
+			$indents.after("<span class='cell_open_icon'><i class='fas fa-plus'></i></span>")
+		}
+	}
+
+	<!--/* 選択ボタン押下 */-->
+	$('.moveToFolderSubmit').click(function(){
+		const $selectCell = $('.selected_cell');
+		if ($selectCell.length === 0) {
+			alert("移動先が選択されていません");
+			return false;
+		}
+		if ($selectCell.data('fileConfId') === parseInt($('#moveTargetFileConfigurationManagementId').val(), 10)) {
+			alert("選択したフォルダと同じフォルダへは移動できません");
+			return false;
+		}
+
+		$.ajaxSetup({
+			cache : false,
+		});
+		$.ajax({
+			url : "/user/fileManagement/list/moveToFolder",
+			type : "POST",
+			data : {
+					"moveToFileConfigurationManagementId" : $selectCell.data("fileConfId"),
+					"targetFileConfigurationManagementId" : $('#moveTargetFileConfigurationManagementId').val()
+			},
+			dataType : 'json',
+		}).done(function (response) {
+			alert(response.message);
+			if (response.success) {
+				location.reload();
+			}
+		}).fail(function(jqXHR, textStatus, errorThrown) {
+			alert([[#{E00037('選択したフォルダへ')}]]);
+		});
+	});
+
+	<!--/* キャンセルボタン */-->
+	$('.moveToFolderCancel').click(function(){
+		<!--/* モーダルのデータを初期化 */-->
+		$('#moveTargetFileConfigurationManagementId').val('');
+		$('.destination_list').children('li').remove();
+	});
+
+	<!--/* アップロードフィアル名リスト クローズ処理 */-->
+	$('.dz_file_list_head').click(function(){
+		$(".dz-preview").html("");
+		$(".dz_upload_file").addClass("hidden");
+	});
+
+
+	// ****************************************************************
+	// 閲覧権限変更モーダル
+	// ****************************************************************
+
+	// モーダル表示
+	$(document).on('click', '.viewLimitChangeBtn', function(e) {
+		$('#mentenanceModal').modal('hide');
+
+		<!--/* 変更対象のファイル構成管理ID */-->
+		const fileConfigurationManagementId = $(this).data('fileconfigurationmanagementid');
+
+		const viewLimitModalOpenRequest = $.ajax({
+			url : "/user/fileManagement/list/viewLimitChangeEdit",
+			type : "POST",
+			data : {
+				"fileConfigurationManagementId" : fileConfigurationManagementId,
+			},
+		});
+
+		//成功時
+		viewLimitModalOpenRequest.done(function(val){
+
+			// モーダルの表示
+			$('.viewLimitChangeModalBody').html(val);
+		});
+
+		//失敗時
+		viewLimitModalOpenRequest.fail(function(jqXHR, textStatus, errorThrown){
+			window.location.href = "/systemError";
+		});
+
+		//成功時も失敗時も行う
+		viewLimitModalOpenRequest.always(function() {
+		});
+	});
+
+	<!--/*  閲覧権限変更モーダル内の保存ボタン押下時 */-->
+	$(document).on('click', '.updateViewLimitChangeBtn', function(e) {
+		<!--/* 現在階層がサブフォルダかの判定用フラグ */-->
+		const folderPermissionInfoManagementId = $('#folderPermissionInfoManagementId').val();
+		const viewLimit = $('#viewLimitSelect').val();
+		$.ajaxSetup({
+			cache : false,
+		});
+		$.ajax({
+			url : "/user/fileManagement/list/updateViewLimit",
+			type : "POST",
+			data : {
+						"folderPermissionInfoManagementId" : folderPermissionInfoManagementId,
+						"viewLimit" : viewLimit
+					},
+		}).done(function (response) {
+			alert(response.message);
+			if (response.succeeded) {
+				location.reload();
+			}
+		}).fail(function(jqXHR, textStatus, errorThrown) {
+			alert([[#{E00010}]]);
+		});
+	});
+	<!--/* 移動先選択モーダル関連 END */-->
+
+});
+/*]]>*/
+</script>
+</head>
+<body>
+	<div layout:fragment="main-contents" th:remove="tag" th:object="${fileListViewForm}">
+
+		<div class="contents_sidebar_wrapper contentsSlidebarWrapper" th:data-click-open=${customerAnkenMenuOpenClickForSessionValue} th:data-resize-open=${customerAnkenMenuOpenResizeForSessionValue}>
+
+			<!--/* 顧客・案件メニュー */-->
+			<div th:replace="common/customerAnkenMenu::menuList(
+				sideMenuAnkenId=*{transitionAnkenId},
+				sideMenuCustomerId=*{transitionCustomerId},
+				selectedTabClass = 'is_file')">
+			</div>
+
+			<!--/* メインコンテンツ */-->
+			<!--/* 案件ID・顧客ID */-->
+			<th:block th:if="*{transitionAnkenId}">
+				<input type="hidden" class="transitionAnkenId" th:value="*{transitionAnkenId}">
+			</th:block>
+			<th:block th:if="*{transitionCustomerId}">
+				<input type="hidden" class="transitionCustomerId" th:value="*{transitionCustomerId}">
+			</th:block>
+			
+			<div class="contents_wrapper">
+				<div class="container-fluid">
+					<main class="content">
+						<!--/* ぱんくず */-->
+						<th:block th:if="*{transitionAnkenId}">
+							<div th:replace="common/wrapHeader::wrapHeader(
+								returnListScreen=${T(jp.loioz.common.utility.SessionUtils).getSessionVaule(T(jp.loioz.common.constant.SessionAttrKeyEnum).RETURN_LIST_SCREEN.codeKey)},
+								sideMenuAnkenId=*{transitionAnkenId},
+								selectedTabClass = 'is_file')"></div>
+						</th:block>
+						<th:block th:if="*{transitionCustomerId}">
+							<div th:replace="common/wrapHeader::wrapHeader(
+								returnListScreen=${T(jp.loioz.common.utility.SessionUtils).getSessionVaule(T(jp.loioz.common.constant.SessionAttrKeyEnum).RETURN_LIST_SCREEN.codeKey)},
+								sideMenuPersonId=*{transitionCustomerId},
+								selectedTabClass='is_file',
+								returnPrevScreenName=${T(jp.loioz.common.utility.SessionUtils).getSessionVaule(T(jp.loioz.common.constant.SessionAttrKeyEnum).RETURN_PREV_SCREEN_NAME)},
+								returnPrevScreenUrl=${T(jp.loioz.common.utility.SessionUtils).getSessionVaule(T(jp.loioz.common.constant.SessionAttrKeyEnum).RETURN_PREV_SCREEN_URL)})"></div>
+						</th:block>
+						
+						<!--/* メッセージエリア */-->
+						<div th:replace="common/messageArea::messageArea"></div>
+						
+						<!--/* 顧客情報・案件情報 */-->
+						<div th:replace="common/customerAnkenSelected::detailInfo(
+							wrapHeaderAnkenId=*{transitionAnkenId},
+							wrapHeaderCustomerId=*{transitionCustomerId},
+							pageName='ファイル')">
+						</div>
+						
+						<!--/* コンテンツ */-->
+						<div>
+							
+							<!--/* ファイル名検索バー */-->
+							<div class="file_quick_search_bar">
+								<div class="search_box mr-2 pl-3">
+									<div class="input-group">
+										<input type="text" class="form-control fcAddTextClear" id="fileNameSearchString" placeholder="ファイル名検索"
+											th:value="*{fileNameSearchString}" maxlength="255">
+										<div class="input-group-append">
+										 	<button class="btn btn-dark pt-1 pb-0 px-3 fileSeach" type="button"><i class="fas fa-search mr-0"></i></button>
+										</div>
+									</div>
+								</div>
+								
+								<!--/* フォルダパス START */-->
+								<div class="search_bar_common_button" th:insert="${searchBarButtonContents}?: _"></div>
+								<ul class="select_tab_folderpath_list">
+									<li>
+										<!--/* ルートフォルダパス */-->
+										<div class="folderpath_list_btn">
+											<input type="hidden" id="rootFolderRelatedInfoManagementId" th:value="*{rootFolderInfo.rootFolderRelatedInfoManagementId}">
+											<div  th:if="*{rootFolderInfo.ankenId != null}" class="folderpath_name root_folder_path d-inline-flex"
+												th:classappend="*{currentLocationSubFolderName} ? 'moveable_path' : 'current_location'">
+												<i class="fas fa-folder-open anken_folder mr-2"></i>
+												<label class="bread_crumbs_text char_ellipsis cursor_pointer m-0"
+													th:text="*{#strings.defaultString(rootFolderInfo.ankenName, '&#40;案件名未入力&#41;')}"></label>
+												<span class="sub_text" th:text="|&#40;*{rootFolderInfo.ankenId}&#41;|"></span>
+											</div>
+											<div th:if="*{rootFolderInfo.customerId != null }"  class="folderpath_name root_folder_path d-inline-flex"
+												th:classappend="*{currentLocationSubFolderName} ? 'moveable_path' : 'current_location'">
+												<i class="fas fa-folder-open meibo_folder mr-2"></i>
+												<label class="bread_crumbs_text char_ellipsis cursor_pointer m-0" th:text="*{#strings.defaultString(rootFolderInfo.customerName,'')}"></label>
+												<span class="sub_text" th:text="|&#40;*{rootFolderInfo.customerId}&#41;|"></span>
+											</div>
+										</div>
+									</li>
+									<!--/* サブフォルダパス(ルートフォルダ～現在階層までの間のフォルダパス) */-->
+									<li th:each="subFolderName, stat : *{subFolderNameList}">
+										<div class="folderpath_list_btn">
+											<input type="hidden" id="subFolderIndex" th:value="${stat.index}">
+											<div class="folderpath_name moveable_path d-inline-flex">
+												<i class="fas fa-folder-open nomal_folder mr-2"></i>
+												<label class="subfolderpath_name char_ellipsis cursor_pointer m-0" th:text="${subFolderName}"></label>
+											</div>
+										</div>
+									</li>
+									<!--/* サブフォルダパス(現在階層) */-->
+									<th:block th:if="*{currentLocationSubFolderName}">
+										<input type="hidden" id="currentFileConfigurationManagementId" th:value="*{currentFileConfigurationManagementId}">
+										<li>
+											<div class="folderpath_list_btn">
+												<div class="folderpath_name current_location d-inline-flex">
+													<i class="fas fa-folder-open nomal_folder mr-2"></i>
+													<label class="subfolderpath_name char_ellipsis m-0" th:text="*{currentLocationSubFolderName}"></label>
+												</div>
+											</div>
+										</li>
+									</th:block>
+								</ul>
+							</div>
+							<!--/* フォルダパス END */-->
+							
+							<!--/* メインコンテンツ START */-->
+							<div class="row">
+								<div class="col-lg-8">
+									<div class="header_fixed_table_wrapper file_manage_List">
+										<div class="section_body">
+											<div class="section_body__contents p-0">
+											
+												<table id="fileListContents" class="table table-hover table_fixed file_list"
+													th:fragment="fileListContents" th:object="${fileListViewForm}">
+													<thead class="bg-info">
+														<tr>
+															<th colspan="2" class="" th:classappend="*{search} ? 'col_no1_search' : 'col_no1' ">ファイル名</th>
+															<th th:if="*{search}" class="col_no2">パス</th>
+															<th class="col_no3">登録者</th>
+															<th class="col_no4">登録日時</th>
+															<th class="col_no5">サイズ</th>
+															<th class="col_no6"></th><!--/* 三点リーダーボタン表示領域 */-->
+														</tr>
+													</thead>
+													<tbody>
+														<th:block th:if="*{fileDetailDtoList.size() == 0}">
+															<tr>
+																<td th:if="*{!search}" colspan="6" class="no_data_table_list">
+																	<span th:text="#{I00021}">MSG_I00021</span>
+																</td>
+																<td th:if="*{search}" colspan="7" class="no_data_table_list">
+																	<span th:text="#{I00021}">MSG_I00021</span>
+																</td>
+															</tr >
+														</th:block>
+														<tr th:each="fileInfo, stat : *{fileDetailDtoList}"  class="file_list_row file_list_row_style"
+															th:classappend="|${fileInfo.fileKubun ne T(jp.loioz.common.constant.CommonConstant.FileKubun).IS_FILE.getCd() ? 'isFolderRow' : '' } ${fileInfo.dispLimit ? 'isLimit' :''}|">
+															<td class="text-break">
+																<input th:if="${!fileInfo.dispLimit}" type="hidden" th:id="index" th:value="${stat.index}">
+																<input th:if="${!fileInfo.dispLimit}" type="hidden" th:id="'fileConfigurationManagementId' + ${stat.index}" th:value="${fileInfo.fileConfigurationManagementId}">
+																<input th:if="${!fileInfo.dispLimit}" type="hidden" th:id="'fileDetailInfoManagementId' + ${stat.index}" th:value="${fileInfo.fileDetailInfoManagementId}">
+																<div class="d-flex align-items-center">
+																	<th:block th:if="${T(jp.loioz.common.constant.CommonConstant.FileKubun).IS_ROOT_FOLDER.getCd()} eq ${fileInfo.fileKubun}">
+																		<th:block th:if="${fileInfo.ankenId != null}">
+																			<i class="fas fa-folder-open anken_folder mr-2"></i>
+																			<span class="span_anken_Name" th:text="${#strings.defaultString(fileInfo.ankenName, '&#40;案件名未入力&#41;')}"></span>
+																			<span class="sub_text" th:text="|&#40;${fileInfo.ankenId}&#41;|"></span>
+																		</th:block>
+																		<th:block th:if="${fileInfo.customerId != null}">
+																			<i class="fas fa-folder-open meibo_folder mr-2"></i>
+																			<span class="span_customer_Name" th:text="${#strings.defaultString(fileInfo.customerName,'')}"></span>
+																			<span 	class="sub_text" th:text="|&#40;${fileInfo.customerId}&#41;|"></span>
+																		</th:block>
+																	</th:block>
+																	<th:block th:if="${T(jp.loioz.common.constant.CommonConstant.FileKubun).IS_FILE.getCd()} eq ${fileInfo.fileKubun}">
+																		 <th:block th:if="${fileInfo.getFileType() != null}">
+																			 	<th:block th:switch="${fileInfo.getFileType()}">
+																					<img th:case="${T(jp.loioz.common.constant.CommonConstant.FileType).EXCEL.getCd()}" src="/img/icon_data_x.svg" width="20" height="20">
+																					<img th:case="${T(jp.loioz.common.constant.CommonConstant.FileType).WORD.getCd()}" src="/img/icon_data_w.svg" width="20" height="20">
+																					<img th:case="${T(jp.loioz.common.constant.CommonConstant.FileType).PDF.getCd()}" src="/img/icon_file_pdf.svg" width="20" height="20">
+																					<img th:case="${T(jp.loioz.common.constant.CommonConstant.FileType).JPEG.getCd()}" src="/img/icon_file_jpeg.svg" width="20" height="20">
+																					<img th:case="${T(jp.loioz.common.constant.CommonConstant.FileType).PNG.getCd()}" src="/img/icon_file_png.svg" width="20" height="20">
+																					<img th:case="${T(jp.loioz.common.constant.CommonConstant.FileType).TEXT.getCd()}" src="/img/icon_file_textFile.svg" width="20" height="20">
+																					<img th:case="*" src="/img/icon_file_textFile.svg" width="20" height="20">
+																					<span class="fileName" th:text="${fileInfo.fileName + fileInfo.fileExtension}"></span>
+																				</th:block>
+																			</th:block>
+																			<th:block th:if="${fileInfo.getFileType() == null}">
+																					<img src="/img/icon_file_textFile.svg" width="20" height="20">
+																					<span class="fileName" th:text="${fileInfo.fileName}"></span>
+																			</th:block>
+																		</th:block>
+																	</th:block>
+																	<th:block th:if="${T(jp.loioz.common.constant.CommonConstant.FileKubun).IS_FOLDER.getCd()} eq ${fileInfo.fileKubun}">
+																		<i class="fas fa-folder-open nomal_folder"></i>
+																		<span class="fileName" th:text="${fileInfo.fileName}"></span>
+																	</th:block>
+																</div>
+															</td>
+															<td class="text-right">
+																<th:block th:if="${T(jp.loioz.common.constant.CommonConstant.FileType).PDF.getCd()} eq ${fileInfo.getFileType()} or ${T(jp.loioz.common.constant.CommonConstant.FileType).JPEG.getCd()} eq ${fileInfo.getFileType()} or ${T(jp.loioz.common.constant.CommonConstant.FileType).PNG.getCd()} eq ${fileInfo.getFileType()}">
+																	<button type=button class="btn btn-light btn_icon_only previewBtn"  th:data-prevseq="${fileInfo.fileConfigurationManagementId}"
+																		data-boundary="window" data-container=".table_file_mgt" data-toggle="tooltip" data-trigger="hover" title="プレビュー">
+																		<i class="fas fa-search"></i>
+																	</button>
+																</th:block>
+																<th:block th:unless="${T(jp.loioz.common.constant.CommonConstant.FileType).PDF.getCd()} eq ${fileInfo.getFileType()} or ${T(jp.loioz.common.constant.CommonConstant.FileType).JPEG.getCd()} eq ${fileInfo.getFileType()} or ${T(jp.loioz.common.constant.CommonConstant.FileType).PNG.getCd()} eq ${fileInfo.getFileType()}">
+																	<span class="preview_space"></span>
+																</th:block>
+																<button th:if="${!fileInfo.dispLimit}" type=button class="btn btn-light btn_icon_only downloadBtn" th:data-downloadseq="${fileInfo.fileConfigurationManagementId}"
+																	data-boundary="window" data-container=".table_file_mgt" data-toggle="tooltip" data-trigger="hover" title="ダウンロード">
+																	<i class="fas fa-download text-primary"></i>
+																	<i class="fas fa-spinner text-primary faa-spin animated hidden"></i>
+																</button>
+															</td>
+															<td th:if="*{search}">
+																<th:block th:if="*{rootFolderInfo.ankenId != null}">
+																	<i class="fas fa-folder-open anken_folder mr-2"></i>
+																	<span class="span_anken_Name" th:text="*{#strings.defaultString(rootFolderInfo.ankenName, '&#40;案件名未入力&#41;')}"></span>
+																	<span class="sub_text" th:text="|&#40;*{rootFolderInfo.ankenId}&#41;|"></span>
+																</th:block>
+																<th:block th:if="*{rootFolderInfo.customerId != null}">
+																	<i class="fas fa-folder-open meibo_folder mr-2"></i>
+																	<span class="span_customer_Name" th:text="*{#strings.defaultString(rootFolderInfo.customerName,'')}"></span>
+																	<span 	class="sub_text" th:text="|&#40;*{rootFolderInfo.customerId}&#41;|"></span>
+																</th:block>
+																<span th:text="${fileInfo.folderPath}"></span>
+															</td>
+															<td class="text-break" th:text="${fileInfo.uploadUser}"></td>
+															<td th:text="${fileInfo.getUploadDatetimeForDisplay()}"></td>
+															<td>
+																<span th:text="${fileInfo.getFileSizeForDisplay()}"></span>
+																<span th:unless="${fileInfo.getFileSizeForDisplay() != ''}">-</span>
+															</td>
+															<!--/* 3点リーダーボタン */-->
+															<td class="text-center">
+																<dl class="file_menu_navi" th:if="${!fileInfo.dispLimit}" data-boundary="window" data-toggle="popover" data-placement="bottom" data-html="true" data-content="<div></div>">
+																	<dt><i class="fas fa-ellipsis-v fa-lg"></i></dt>
+																	<dd class="menu_window"></dd>
+																</dl>
+															</td>
+														</tr>
+													</tbody>
+												</table>
+											</div>
+										</div>
+									</div>
+								</div>
+								
+								<!-- 右側エリア -->
+								<div class="col-lg-4">
+									<div class="mb-5">
+										<ul class="header_button_list">
+											<li><a class="uploadBtn">アップロード</a></li>
+											<li><a class="folderCreateBtn" data-toggle="modal" data-target="#createFolderModal">フォルダ新規作成</a></li>
+											<li><a class="noborder_btn trash_box_btn">ゴミ箱</a></li>
+										</ul>
+									</div>
+									<div class="storage_status_area text-left">
+										<p class="mb-1" th:text="*{dispStrageInfo}"></p>
+										<p class="mb-0 link_wrap" th:if="${T(jp.loioz.common.utility.SessionUtils).isManager()}">
+											<a class="openPlanSetting">容量を変更</a>
+										</p>
+									</div>
+									<!--/* ファイルアップロード */-->
+									<div id="upload_modal-content">
+										<div class="modal-content-inner">
+											<div id="uploadContent" class="uploadContent mt-4 mb-5 mb-5">
+												<div class="dropzone" id="my-awesome-dropzone"></div>
+											</div>
+										</div>
+									</div>
+								</div>
+							</div>
+							<!--/* フォルダ新規作成モーダル */-->
+							<div th:replace="common/modal::modal(id='createFolderModal', title='フォルダ新規作成', bodyContents=~{::createFolderModalBodyContents}, footerContents=~{::createFolderModalFooterContents}, modalWidthCss='modal_file_manage_act')"></div>
+							<!--/* 移動先選択モーダル */-->
+							<div th:replace="common/modal::modal(id='moveFileModal', title='移動先フォルダ選択', bodyContents=~{::moveFileModalBodyContents}, footerContents=~{::moveFileModalFooterContents}, modalWidthCss='modal_file_manage_act')"></div>
+							<!--/* 名称変更モーダル */-->
+							<div th:replace="common/modal::modal(id='nameChangeModal', title='名称変更', bodyContents=~{::nameChangeModalBodyContents}, footerContents=~{::nameChangeModalFooterContents}, modalWidthCss='modal_file_manage_act')"></div>
+							<!--/* 閲覧権限変更モーダル */-->
+							<div th:replace="::viewLimitChangeTemplate(id='viewLimitChangeModal',target='viewLimitChangeModalBody')"></div>
+							<!--/* 3点リーダーモーダル */-->
+							<div th:replace="::mentenanceModalTemplate(id='mentenanceModal',target='mentenanceModalBody')"></div>
+						</div>
+					</main>
+				</div>
+			</div>
+			
+			<!--/* ファイルアップロード後のファイル名 */-->
+			<div class="dz_upload_file dropzone dropzone-previews hidden">
+				<div class="dz_file_list_head d-flex">
+					アップロードファイル<div class="file_loading"><i class="fas fa-circle-notch fa-spin"></i></div>
+					<div class="ml-auto dz_file_list_close">
+						<img src="/img/icon_btn_close.svg" width="20" height="20" >
+					</div>
+				</div>
+			</div>
+			
+		</div>
+	</div>
+
+	<!--/* フォルダ新規作成モーダルパーツ START */-->
+	<div th:fragment="createFolderModalBodyContents">
+		<div class="modal_input_area">
+			<div class="form-row">
+				<div class="form-group col-md-12">
+					<label class="input_parts_label" for="createFolderName">フォルダ名</label>
+					<input type="text" id="createFolderName" class="form-control" th:maxlength="255">
+				</div>
+			</div>
+		</div>
+	</div>
+	<div th:fragment="createFolderModalFooterContents">
+		<button type="button" class="folderCreate btn btn-info"><i class="fas fa-check"></i>登録</button>
+		<button type="button" class="btn btn-light" data-dismiss="modal"><i class="fas fa-times"></i>閉じる</button>
+	</div>
+	<!--/* フォルダ新規作成モーダルパーツ END */-->
+
+	<!--/* 移動先選択モーダルパーツ START */-->
+	<div th:fragment="moveFileModalBodyContents">
+		<div class="modal_input_area">
+			<div class="form-row">
+				<div class="form-group col-md-12">
+					<label class="input_parts_label">移動先</label>
+					<ul class="destination_list"></ul>
+				</div>
+			</div>
+		</div>
+		<input type="hidden" id="moveTargetFileConfigurationManagementId">
+	</div>
+	<div th:fragment="moveFileModalFooterContents">
+		<button type="button" name="confirm" class="btn btn-info moveToFolderSubmit"><i class="fas fa-check"></i>保存</button>
+		<button type="button" class="btn btn-light" data-dismiss="modal"><i class="fas fa-times"></i>閉じる</button>
+	</div>
+	<!--/* 移動先選択モーダルパーツ END */-->
+
+	<!--/* 名称変更モーダルパーツ START */-->
+	<div th:fragment="nameChangeModalBodyContents">
+		<div class="modal_input_area">
+			<div class="form-row">
+				<div class="form-group col-md-12">
+					<label class="input_parts_label" for="renameInputField">変更後の名称</label>
+					<input type="text" id="renameInputField" class="form-control" th:maxlength="255">
+					<input type="hidden"id="renameFileConfigurationManagementId">
+					<input type="hidden"id="fileExtension">
+				</div>
+			</div>
+		</div>
+	</div>
+	<div th:fragment="nameChangeModalFooterContents">
+		<button type="button" name="confirm" class="btn btn-info renameBtn"><i class="fas fa-check"></i>保存</button>
+		<button type="button" class="btn btn-light" data-dismiss="modal"><i class="fas fa-times"></i>閉じる</button>
+	</div>
+	<!--/* 名称変更モーダルパーツ END */-->
+
+	<!--/* 閲覧権限変更モーダルパーツ START */-->
+	<div th:fragment="viewLimitChangeTemplate(target)" th:id="${id}" class="modal fade" tabindex="-1" role="dialog" aria-hidden="true" data-backdrop="static">
+		<div class="modal-dialog modal-dialog-centered" role="document">
+			<div class="modal-content">
+				<div th:class="${target}"></div>
+			</div>
+		</div>
+	</div>
+	<!--/* 閲覧権限変更モーダルパーツ END */-->
+
+	<!--/* メンテナンスモーダルパーツ START */-->
+	<div th:fragment="mentenanceModalTemplate(target)" th:id="${id}" class="modal fade ui-draggable mentenanceModal" tabindex="-1" role="dialog" aria-hidden="true" data-backdrop="false" >
+		<div class="modal-dialog modal-dialog-centered" role="document">
+			<div th:class="${target}"></div>
+		</div>
+	</div>
+	<!--/* メンテナンス変更モーダルパーツ END */-->
+
+</body>
+</html>

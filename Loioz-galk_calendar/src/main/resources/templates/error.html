@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout">
+<head>
+<meta charset="utf-8">
+<meta content="IE=edge" http-equiv="X-UA-Compatible">
+<meta name="robots" content="noindex,nofollow">
+<meta name="viewport" content="width=device-width,initial-scale=1.0,minimum-scale=1.0">
+<title>
+	[[${T(jp.loioz.common.utility.LoiozUtils).getHtmlTitle("システムエラー", T(jp.loioz.common.utility.SessionUtils).getTenantName())}]]
+</title>
+<th:block th:with="version=${@environment.getProperty('app.version')}">
+	<link th:href="@{/css/bootstrap.min.css?{ver}(ver=${version})}" rel="stylesheet" type="text/css"/><!--/* ファイル内のmapファイルの参照処理の削除を反映させるためにversionを追加 */-->
+	<link th:href="@{/css/base.css?{ver}(ver=${version})}" rel="stylesheet" type="text/css"/>
+	<link th:href="@{/css/noLogin.css?{ver}(ver=${version})}" rel="stylesheet" type="text/css"/>
+	<script type="text/javascript" th:src="@{/webjars/jquery/3.3.1/jquery.min.js}"></script>
+	<script type="text/javascript" th:src="@{/js/bootstrap.min.js?{ver}(ver=${version})}"></script><!--/* ファイル内のmapファイルの参照処理の削除を反映させるためにversionを追加 */-->
+</th:block>
+</head>
+<body>
+
+<th:block th:if="${T(jp.loioz.common.constant.CommonConstant.SystemFlg).FLG_OFF.equalsByCode(@environment.getProperty('app.devMode'))}">
+
+	<!-- Google Tag Manager (noscript) -->
+	<noscript><iframe src="https://www.googletagmanager.com/ns.html?id=GTM-5SX264G"
+	height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
+	<!-- End Google Tag Manager (noscript) -->
+
+</th:block>
+
+	<!--/* ヘッダー */-->
+	<header>
+		<div class="tenant_no_login_header">
+			<div class="header_inner">
+				<img class="loioz_logo" th:src="@{/img/logo_1.png}" width="144" height="40">
+			</div>
+		</div>
+	</header>
+	<!--/* ヘッダー end */-->
+
+	<div id="main-contents">
+		<main class="loioz_hp_contetns">
+			<!--/* タイトル帯 */-->
+			<div class="main_title">
+				<div class="title_inner">
+					<h1>システムエラー</h1>
+				</div>
+			</div>
+			<!--/* タイトル帯 end */-->
+
+			<!--/* section */-->
+			<div class="section">
+
+				<!--/* section_inner */-->
+				<div class="section_inner">
+					<h2 class="section_title">
+						システムエラーが発生しました。<br>
+						再度、本サービスにアクセスしてご利用をお願いいたします。
+					</h2>
+				</div>
+			</div>
+		</main>
+	</div>
+
+<th:block th:if="${T(jp.loioz.common.constant.CommonConstant.SystemFlg).FLG_OFF.equalsByCode(@environment.getProperty('app.devMode'))}">
+
+		<!-- Google Tag Manager -->
+		<script>(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
+		new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
+		j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
+		'https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);
+		})(window,document,'script','dataLayer','GTM-5SX264G');</script>
+		<!-- End Google Tag Manager -->
+
+</th:block>
+
+</body>
+</html>

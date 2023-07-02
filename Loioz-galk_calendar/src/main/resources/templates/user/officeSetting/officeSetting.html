@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+	xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+	layout:decorator="commonLayout">
+<head>
+<title layout:fragment="title-contents">
+	[[${T(jp.loioz.common.utility.LoiozUtils).getHtmlTitle("事務所情報の設定", T(jp.loioz.common.utility.SessionUtils).getTenantName())}]]
+</title>
+<meta charset="utf-8" />
+<script type="text/javascript" th:inline="javascript">
+<!--/* 事務所情報フラグメントのレンダリング処理 */-->
+function renderOfficeInfoSettingFragment() {
+	return new Promise((resolve, reject) => {
+		$.ajax({
+			url : '/user/officeSetting/getOfficeInfoSettingFragment',
+			type : 'GET',
+		})
+		.done(function(data, status, jqXHR) {
+			if (isAjaxProcSuccess(jqXHR)) {
+				// HTML表示
+				$('#officeInfoSettingFragmentWrap').html(data);
+				return resolve();
+			} else {
+				// 処理失敗
+				const errorMsg = getAjaxProcResutlMessage(jqXHR);
+				showErrorMessageForJs(errorMsg);
+				return reject();
+			}
+		})
+		.fail(function(jqXHR, status, errorThrown) {
+			showErrorMessageForJs(/*[[#{E00091}]]*/ "error");
+			return reject();
+		});
+	});
+};
+
+<!--/* 事務印情報フラグメントのレンダリング処理 */-->
+function renderOfficeStampSettingFragment() {
+	return new Promise((resolve, reject) => {
+		$.ajax({
+			url : '/user/officeSetting/getOfficeStampSettingFragment',
+			type : 'GET',
+		})
+		.done(function(data, status, jqXHR) {
+			if (isAjaxProcSuccess(jqXHR)) {
+				// HTML表示
+				$('#officeStampSettingFragmentWrap').html(data);
+				return resolve();
+			} else {
+				// 処理失敗
+				const errorMsg = getAjaxProcResutlMessage(jqXHR);
+				showErrorMessageForJs(errorMsg);
+				return reject();
+			}
+		})
+		.fail(function(jqXHR, status, errorThrown) {
+			showErrorMessageForJs(/*[[#{E00091}]]*/ "error");
+			return reject();
+		});
+	});
+};
+
+</script>
+</head>
+<body>
+	<div class="contents_sidebar_wrapper_setting" layout:fragment="main-contents">
+		<!-- サイドメニュー -->
+		<div th:replace="common/systemSettingMenu::selectMenu(${T(jp.loioz.common.constant.CommonConstant$SystemSettingMenu).OFFICE_EDIT.getCd()})"></div>
+
+		<!-- コンテンツ -->
+		<div class="contents_wrapper" th:object="${viewForm}">
+			<!--/* メッセージエリア */-->
+			<div th:replace="common/messageArea::messageArea"></div>
+
+			<!--/* contents_limited_width_setting サイズ幅(maxサイズ）start */-->
+			<div class="container-fluid contents_limited_width_setting">
+
+				<!--/* パンくず*/-->
+				<div class="breadcrumb_area">
+					<ul>
+						<li><span>事務所設定</span></li>
+						<li><i class="fas fa-angle-right"></i></li>
+						<li>事務所情報の設定</li>
+					</ul>
+				</div>
+
+				<!--/* コンテンツブロック start */-->
+				<div class="contents_block system_setting_edit">
+
+					<!--/* 事務所情報設定 */-->
+					<div id="officeInfoSettingFragmentWrap" th:insert="user/officeSetting/officeSettingFragment::officeInfoSettingFragment(${officeInfoSettingInputForm})"></div>
+					
+					<!--/* 事務印情報設定 */-->
+					<th:block th:if="${T(jp.loioz.common.utility.SessionUtils).isSystemMng()}">
+						<hr>
+						<div id="officeStampSettingFragmentWrap" th:insert="user/officeSetting/officeSettingFragment::officeStampSettingFragment(${officeStampSettingInputForm})"></div>
+					</th:block>
+
+				</div>
+			</div>
+		</div>
+	</div>
+</body>
+</html>

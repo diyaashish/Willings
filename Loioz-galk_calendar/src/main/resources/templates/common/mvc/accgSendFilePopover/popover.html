@@ -1,0 +1,207 @@
+ <!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+<meta charset="utf-8" />
+</head>
+<body>
+	<th:block>
+		<style type="text/css" th:fragment="accgSendFilePopoverStyle">
+		.zindex_unset {
+			z-index: auto!important;
+		}
+		.accg_send_file_popover {
+			left: -30px!important;
+			max-width: 380px;
+		}
+		.accg_send_file_popover .accg_send_file_body {
+			width: 380px;
+			padding: 0;
+		}
+		</style>
+		<script type="text/javascript" th:fragment="accgSendFilePopoverJs" th:inline="javascript">
+			benzo.global.fragment.setUpAccgSendFilePopover = (targetObj, popoverOptions) => {
+				
+				let ajaxRunning = false;
+				
+				<!--/* デフォルトオプション */-->
+				const defPoperOption = {
+						html: true,
+						offset: "-9999, 0",
+						trigger: "manual",
+						template: '<div class="popover accg_send_file_popover" role="tooltip"><div class="popover-body accg_send_file_body"></div></div>',
+						content: () => {}, <!--/* HTMLの取得結果を格納する。*/-->
+				};
+				
+				let margedOptions = Object.assign(defPoperOption, popoverOptions);
+				$(targetObj).on("click.accgSendFilePopover", function() {
+					if (ajaxRunning) {
+						return false;
+					}
+					
+					<!--/* ポップオーバーの表示位置をスクロール位置によって可変にする */-->
+					const offsetTop = $(this).offset().top;
+					const windowTop = $(window).scrollTop();
+					if ((offsetTop - windowTop) > 600) {
+						margedOptions.placement = "top";
+					} else {
+						margedOptions.placement = "bottom";
+					}
+					
+					const accgDocActSendSeq = $(this).data("accgDocActSendSeq");
+					ajaxRunning = true;
+					Promise.resolve()
+						.then(() => _getPoperContents(accgDocActSendSeq))
+						.then((result) => {
+							margedOptions["content"] = result;
+							_build($(this), margedOptions);
+						})
+						.catch((errorObj) => console.log(errorObj))
+						.finally(() => ajaxRunning = false);
+				});
+				
+				function _getPoperContents(accgDocActSendSeq) {
+					return new Promise((resolve, reject) => {
+						$.ajax({
+							type : "GET",
+							url : /*[[@{/common/mvc/accgSendFilePopover/getAccgSendFilePopoverFragment}]]*/,
+							data : {"accgDocActSendSeq": accgDocActSendSeq},
+							dataType: 'html',
+						}).done(function(result, status, jqXHR) {
+							if (isAjaxProcSuccess(jqXHR)) {
+								<!--/* 処理成功 */-->
+								return resolve(result);
+							} else {
+								const errorMsg = getAjaxProcResutlMessage(jqXHR);
+								showErrorMessageForJs(errorMsg);
+								return reject(errorMsg);
+							}
+						})
+						.fail(function(jqXHR, status, errorThrown) {
+							showErrorMessageForJs(/*[[#{E00091}]]*/"error");
+							return reject(jqXHR, status, errorThrown)
+						});
+					});
+				};
+				
+				function _build(targetBtn, options) {
+					
+					<!--/* ポッパーが他にあれば閉じる */-->
+					$(".accgSendFileActivityPopoverFragment").closest(".popover").popover('dispose');
+
+					const _$target = $($(targetBtn).data("selector"));
+					
+					<!--/* ポッパーコンテンツの作成 */-->
+					_$target.popover(options);
+					_$target.popover("show");
+					
+					<!--/* ポップオーバーの表示が完了したときに、閉じたときの関数を追加する */-->
+					_$target.one('shown.bs.popover',function() {
+						
+						<!--/* 別コンテンツを押下したときポップオーバーを閉じる処理を追加 */-->
+						$(document).on('click.accgSendFilePoperHide touchend.accgSendFilePoperHide', function(e) {
+							if (!$(e.target).closest('.popover').length 
+									&& !$(e.target).is(".accgSendFileActivityPopoverFragment") 
+									&& !$(e.target).is("a[download]")) {
+								_$target.popover('dispose');
+							}
+						});
+						
+						<!--/* 該当コンテンツを閉じたときには、閉じるイベントをOFFにする */-->
+						_$target.one('hide.bs.popover', function() {
+							$(document).off('click.accgSendFilePoperHide touchend.accgSendFilePoperHide');
+						});
+					});
+
+				};
+			};
+		</script>
+	</th:block>
+	<th:block>
+		<!--/* 進行状況_送付ファイルポップオーバーフラグメント */-->
+		<div th:id="${fragmentId}" class="accgSendFileActivityPopoverFragment" th:fragment="accgSendFileActivityPopoverFragment" th:object="${accgSendFileActivityPopoverViewForm}"
+			th:with="fragmentId=|id-${T(java.util.UUID).randomUUID().toString()}|">
+			<script type="text/javascript" th:inline="javascript">
+			$(function() {
+				
+				const fragment = $("#" + /*[[${fragmentId}]]*/"");
+				
+				commonSetUpElement("#" + /*[[${fragmentId}]]*/"");
+				
+				<!--/* ダウンロード */-->
+				fragment.find(".downloadSendFile").on("click", function(e) {
+					
+					const accgDocFileSeq = $(this).data("accgDocFileSeq");
+					const url = "/common/mvc/accgSendFilePopover/downloadSendFile";
+					downloadFileAjax(url, $(this), {"accgDocFileSeq": accgDocFileSeq});
+				});
+				
+			});
+			</script>
+			<div class="pop_contents">
+				<div class="pop_header" th:unless="*{isChangeToSend()}">
+					<div class="basic_info_contents">
+						<div class="basic_info_contents__name">
+							<div th:text="*{sendSubject}"></div>
+						</div>
+					</div>
+				</div>
+				
+				<div class="pop_body">
+					<div th:unless="*{isChangeToSend()}">
+						<div>
+							<label class="input_parts_label">To</label>
+							<div>
+								<span class="cursor_pointer copyText" th:text="*{sendTo}"></span>
+							</div>
+						</div>
+					</div>
+					
+					<div th:unless="*{isChangeToSend()}">
+						<div>
+							<label class="input_parts_label">Cc</label>
+							<div>
+								<div th:if="*{#lists.isEmpty(sendCc)}">-</div>
+								<div th:each="address : *{sendCc}">
+									<span class="cursor_pointer copyText" th:text="${address}"></span>
+								</div>
+							</div>
+						</div>
+					</div>
+					
+					<div th:unless="*{isChangeToSend()}">
+						<div>
+							<label class="input_parts_label">Bcc</label>
+							<div>
+								<div th:if="*{#lists.isEmpty(sendBcc)}">-</div>
+								<div th:each="address : *{sendBcc}">
+									<span class="cursor_pointer copyText" th:text="${address}"></span>
+								</div>
+							</div>
+						</div>
+					</div>
+					
+					<div>
+						<div>
+							<label class="input_parts_label">添付ファイル</label><span class="fs13 fc_sub" th:if="*{isWebSend()}">（最終ダウンロード時間）</span>
+							<div>
+								<div th:each="fileItem : *{fileItemList}">
+									<a href="javascript:void(0);" class="downloadSendFile" th:data-accg-doc-file-seq="${fileItem.accgDocFileSeq}" th:text="${fileItem.fileName}">送付ファイル</a>
+									<span class="fs13 fc_sub" th:if="*{isWebSend()}" th:text="|(${#strings.isEmpty(fileItem.lastDownloadDateTime) ? '-' : fileItem.lastDownloadDateTime})|"></span>
+								</div>
+							</div>
+						</div>
+					</div>
+					
+				</div>
+				
+				<div class="pop_fotter">
+					<!--/* 現状なし */-->
+				</div>
+				
+			</div>
+		</div>
+		<!--/* 進行状況_送付ファイルポップオーバーフラグメント end */-->
+		
+	</th:block>
+</body>
+</html>

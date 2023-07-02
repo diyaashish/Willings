@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+	xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+	layout:decorator="commonLayout">
+<head>
+	<meta charset="UTF-8">
+</head>
+<body>
+
+
+<!--/* 個人口座一覧 start */-->
+<div th:fragment="myAccountKozaListFragment(viewForm)" id="myAccountKozaListFragment" th:object="${viewForm}">
+	<div class="contents_block">
+		<div class="block_title">個人口座</div>
+		<div class="block_detail d-flex">
+			<div>
+				<p>個人口座は、個人案件（案件情報の受任区分が個人）で使用する<span class="fw600 text-danger">「預り金口座」、「報酬口座」</span>などを登録します。</p>
+				<p>※登録した個人口座は<span class="fw600 text-danger">「会計管理」</span>機能の請求書作成時に<span class="fw600 text-danger">「入金口座」</span>として選択することができます。</p>
+			</div>
+			<div class="block_action">
+				<button type="button" class="btn btn-primary registGinkoKoza">
+					<i class="fas fa-plus"></i>新規登録
+				</button>
+			</div>
+		</div>
+		
+		<!--/* 一覧表示 */-->
+		<div class="list_area">
+			<table class="table table-sm table_standard table_fixed table-striped">
+				<thead>
+					<tr>
+						<th class="col_15">表示名</th>
+						<th class="col_30">金融機関名</th>
+						<th class="col_15">口座番号</th>
+						<th class="col_20">口座名義</th>
+						<th class="col_10">既定値</th>
+						<th class="col_10">操作</th>
+					</tr>
+				</thead>
+				<tbody>
+<!--/*/ 				<th:block th:if="${viewForm.kozaDtoList.size() == 0}"> /*/-->
+					<tr>
+						<td colspan="6" class="no_data_table_list">
+							<span th:text="#{I00021}">MSG_I00021</span>
+						</td>
+					</tr>
+<!--/*/ 				</th:block> /*/-->
+					<tr th:each="kozaDto : *{kozaDtoList}" th:classappend="${kozaDto.deletedFlg ? 'row_completed' : ''}">
+						<td th:text="${kozaDto.labelName}"></td>
+						<td>
+							<span th:text="${kozaDto.ginkoName}"></span>
+							<span th:text="${kozaDto.shitenName}"></span>
+							<span th:if="${!#strings.isEmpty(kozaDto.shitenNo)}" th:text="|(${kozaDto.shitenNo})|"></span>
+						</td>
+						<td>
+							<span class="koza_type" th:if="${!#strings.isEmpty(kozaDto.kozaTypeName)}" th:text="|(${kozaDto.kozaTypeName})|"></span>
+							<span th:text="${kozaDto.kozaNo}"></span>
+						</td>
+						<td th:text="${kozaDto.kozaName}"></td>
+						<td><i class="fas fa-check" th:if="${kozaDto.DefaultUse}"></i></td>
+						<td>
+							<span class="d-inline-block" data-toggle="tooltip" title="口座情報を編集" data-trigger="hover">
+								<button class="btn btn-light btn-sm editGinkoKoza" th:data-koza-seq="${kozaDto.ginkoAccountSeq}">
+									<i class="fas fa-edit mr-1"></i>
+									<span>編集</span>
+								</button>
+							</span>
+						</td>
+					</tr>
+				</tbody>
+			</table>
+		</div>
+	</div>
+</div>
+<!--/* 個人口座一覧 end */-->
+
+
+</body>
+</html>

@@ -1,0 +1,424 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+	xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+	layout:decorator="commonLayout">
+<head>
+	<meta charset="utf-8" />
+</head>
+<body>
+
+<!--/* 事務所情報設定 */-->
+<div th:fragment="officeInfoSettingFragment(officeInfoSettingInputForm)" id="officeInfoSettingFragment" th:object="${officeInfoSettingInputForm}">
+	<script type="text/javascript" th:inline="javascript">
+	$(function() {
+		
+		<!--/* 定数 */-->
+		const officeInfoSettingFragmentWrap = $('#officeInfoSettingFragmentWrap');
+		const officeInfoSettingFragment = $('#officeInfoSettingFragment');
+		
+		<!--/* 共有の要素セットアップ処理 */-->
+		commonSetUpElement("#officeSettingInputFragment");
+
+		<!--/* 事務所情報の保存処理 */-->
+		officeInfoSettingFragment.find(".save").on('click', function() {
+			const formData = officeInfoSettingFragment.find('.officeSettingInputForm').serializeArray();
+
+			if (ajaxRunning) {
+				return false;
+			}
+			ajaxRunning = true;
+			Promise.resolve(formData)
+				.then((param) => {
+					return new Promise((resolve, reject) => {
+						$.ajax({
+							url : '/user/officeSetting/saveOfficeInfo',
+							type : 'POST',
+							data : param
+						})
+						.done(function(data, status, jqXHR) {
+							if (isAjaxProcSuccess(jqXHR)) {
+								// HTML表示
+								showInfoMessageForJs(getAjaxProcResutlMessage(jqXHR));
+								return resolve();
+							} else {
+								// 処理失敗
+								if (data) {
+									officeInfoSettingFragmentWrap.html(data);
+								}
+								const errorMsg = getAjaxProcResutlMessage(jqXHR);
+								showErrorMessageForJs(errorMsg);
+								return reject();
+							}
+						})
+						.fail(function(jqXHR, status, errorThrown) {
+							showErrorMessageForJs(/*[[#{E00091}]]*/ "error");
+							return reject();
+						});
+					});
+				})
+				.then(renderOfficeInfoSettingFragment)
+				.then(headerRefresh)
+				.catch((errorObj) => console.log(errorObj))
+				.finally(() => {
+					ajaxRunning = false;
+				});
+			
+		});
+		
+	})
+	</script>
+	
+	<div class="block_title">事務所情報</div>
+	<th:block th:if="${T(jp.loioz.common.utility.SessionUtils).isSystemMng()}">
+		<div class="block_detail">
+			<p>登録された情報は、loiozで出力する帳票の一部として利用されます。</p>
+		</div>
+	</th:block>
+	
+	<form class="officeSettingInputForm">
+		<!-- 詳細情報入力エリア -->
+		<div class="detail_input_area">
+			
+			<!-- 事務所名 -->
+			<div class="form-row">
+				<div class="form-group col-md-7">
+					<label class="input_parts_label">事務所名</label>
+					<th:block th:if="${T(jp.loioz.common.utility.SessionUtils).isSystemMng()}">
+						<span class="mark_equired">必須</span>
+						<input type="text" class="form-control col-6" th:field="*{tenantName}">
+						<div th:if="*{#fields.hasErrors('tenantName')}" th:errors="*{tenantName}" class="error_mag_point">error</div>
+					</th:block>
+					
+					<!--/* ユーザー権限：管理者以外はラベル表示 */-->
+					<th:block th:unless="${T(jp.loioz.common.utility.SessionUtils).isSystemMng()}">
+						<div th:text="*{tenantName}"></div>
+					</th:block>
+					<!--/* ユーザー権限：管理者以外はラベル表示 end */-->
+					
+				</div>
+			</div>
+			
+			<!-- 法人格 -->
+			<div class="form-row">
+				<div class="form-group col-md-12 mb-0">
+					<label class="input_parts_label">法人格</label>
+					<th:block th:if="${T(jp.loioz.common.utility.SessionUtils).isSystemMng()}">
+						<span class="mark_equired">必須</span>
+					</th:block>
+				</div>
+				<div class="form-group col-md-5">
+					<th:block th:if="${T(jp.loioz.common.utility.SessionUtils).isSystemMng()}">
+						<label class="radio_btn" th:each="enum : ${T(jp.loioz.common.constant.CommonConstant$TenantType).values()}">
+							<input type="radio" class ="radio_input" th:field="*{tenantType}" th:value="${enum.cd}" th:checked="*{tenantType} == ${enum.cd}">
+							<span class="radio_txt" th:text="${enum.val}">事務所</span>
+						</label>
+						<div th:if="*{#fields.hasErrors('tenantType')}" th:errors="*{tenantType}" class="error_mag_point">error</div>
+					</th:block>
+					
+					<!--/* ユーザー権限：管理者以外はラベル表示 */-->
+					<th:block th:unless="${T(jp.loioz.common.utility.SessionUtils).isSystemMng()}">
+						<div th:text="*{T(jp.loioz.common.constant.CommonConstant$TenantType).of(tenantType).getVal()}"></div>
+					</th:block>
+					<!--/* ユーザー権限：管理者以外はラベル表示 end */-->
+					
+				</div>
+			</div>
+			
+			<div class="addressContainer">
+				<!-- 住所 -->
+				<div class="form-row">
+					<div class="form-group col-md-12 mb-0">
+						<label class="input_parts_label">住所</label>
+					</div>
+					
+					<!--/* ユーザー権限：管理者以外はラベル表示 */-->
+					<th:block th:unless="${T(jp.loioz.common.utility.SessionUtils).isSystemMng()}">
+						<div class="form-group col-md-7">
+							<div class="mb-0" th:text="*{tenantZipCd}"></div>
+							<div class="mb-0" th:text="*{tenantAddress1}"></div>
+							<div th:text="*{tenantAddress2}"></div>
+						</div>
+					</th:block>
+					<!--/* ユーザー権限：管理者以外はラベル表示 end */-->
+					
+					<div class="form-group col-md-7 form-inline mb-2" th:if="${T(jp.loioz.common.utility.SessionUtils).isSystemMng()}">
+						<input type="text" class="form-control input_num_hyphen zipCodeFormat col-3 zipCode" th:field="*{tenantZipCd}" placeholder="郵便番号" maxlength="8">
+						<input type="button" id="zipSearch" class="btn btn-sm btn-outline-primary searchAddress ml-2" name="zipSearch" value="住所検索">
+						<div th:if="*{#fields.hasErrors('tenantZipCd')}" th:errors="*{tenantZipCd}" class="error_mag_point">error</div>
+					</div>
+				</div>
+				<!--/* 都道府県・市区町村 */-->
+				<div class="form-row" th:if="${T(jp.loioz.common.utility.SessionUtils).isSystemMng()}">
+					<div class="form-group col-md-6 mb-2">
+						<input type="text" class="form-control address1" th:field="*{tenantAddress1}" placeholder="都道府県・市区町村" maxlength="256">
+						<div th:if="*{#fields.hasErrors('tenantAddress1')}" th:errors="*{tenantAddress1}" class="error_mag_point">error</div>
+					</div>
+				</div>
+				<!--/* 番地・建物名 */-->
+				<div class="form-row" th:if="${T(jp.loioz.common.utility.SessionUtils).isSystemMng()}">
+					<div class="form-group col-md-6">
+						<input type="text" class="form-control" th:field="*{tenantAddress2}"placeholder="番地・建物名" maxlength="128">
+						<div th:if="*{#fields.hasErrors('tenantAddress2')}" th:errors="*{tenantAddress2}" class="error_mag_point">error</div>
+					</div>
+				</div>
+				<!--/* 住所 end */-->
+			
+			</div>
+			
+			<!-- 連絡先 -->
+			<div class="form-row">
+				<!-- 電話番号 -->
+				<div class="form-group col-md-3 mb-0">
+					<label class="input_parts_label">電話番号</label>
+					<th:block th:if="${T(jp.loioz.common.utility.SessionUtils).isSystemMng()}">
+						<span class="mark_equired">必須</span>
+						<input type="text" class="form-control input_num_hyphen" th:field="*{tenantTelNo}" maxlength="13">
+						<div th:if="*{#fields.hasErrors('tenantTelNo')}" th:errors="*{tenantTelNo}" class="error_mag_point">error</div>
+					</th:block>
+					
+					<!--/* ユーザー権限：管理者以外はラベル表示 */-->
+					<th:block th:unless="${T(jp.loioz.common.utility.SessionUtils).isSystemMng()}">
+						<div th:text="*{tenantTelNo}"></div>
+					</th:block>
+					<!--/* ユーザー権限：管理者以外はラベル表示 end */-->
+					
+				</div>
+				<!-- FAX番号 -->
+				<div class="form-group col-md-3 mb-0">
+					<label class="input_parts_label">FAX番号</label>
+					<th:block th:if="${T(jp.loioz.common.utility.SessionUtils).isSystemMng()}">
+						<input type="text" class="form-control input_num_hyphen" th:field="*{tenantFaxNo}" maxlength="13">
+						<div th:if="*{#fields.hasErrors('tenantFaxNo')}" th:errors="*{tenantFaxNo}" class="error_mag_point">error</div>
+					</th:block>
+					
+					<!--/* ユーザー権限：管理者以外はラベル表示 */-->
+					<th:block th:unless="${T(jp.loioz.common.utility.SessionUtils).isSystemMng()}">
+						<div th:text="*{tenantFaxNo}"></div>
+					</th:block>
+					<!--/* ユーザー権限：管理者以外はラベル表示 end */-->
+					
+				</div>
+				<th:block th:if="${T(jp.loioz.common.utility.SessionUtils).isSystemMng()}">
+				<div class="form-group col-md-12 mb-0">
+					<div class="input_nav">
+						<p>ハイフンを含めて登録してください。</p>
+					</div>
+				</div>
+				</th:block>
+			</div>
+			
+			<div class="form-row">
+				<!-- 適格請求書発行事業者の登録番号 -->
+				<div class="form-group col-md-3">
+					<label class="input_parts_label">適格請求書発行事業者の登録番号</label>
+					<th:block th:if="${T(jp.loioz.common.utility.SessionUtils).isSystemMng()}">
+						<div class="d-flex align-items-center">
+							<span class="fs15 mr-2">T</span>
+							<input type="text" class="form-control inputNumberOnly digit10" th:field="*{tenantInvoiceRegistrationNo}" maxlength="13">
+						</div>
+						<div th:if="*{#fields.hasErrors('tenantInvoiceRegistrationNo')}" th:errors="*{tenantInvoiceRegistrationNo}" class="error_mag_point">error</div>
+					</th:block>
+					
+					<!--/* ユーザー権限：管理者以外はラベル表示 */-->
+					<th:block th:unless="${T(jp.loioz.common.utility.SessionUtils).isSystemMng()}">
+						<div th:text="*{tenantFaxNo}"></div>
+					</th:block>
+					<!--/* ユーザー権限：管理者以外はラベル表示 end */-->
+					
+				</div>
+	
+			</div>
+
+	<!-- /* 会計機能の利用可能時のみ表示 */ -->
+	<th:block th:if="${T(jp.loioz.common.utility.SessionUtils).canUsePlanFunc(T(jp.loioz.common.constant.plan.PlanConstant$PlanFuncRestrict).PF0002)}">
+
+			<div class="form-row">
+				<div class="form-group col-md-12">
+					<label class="input_parts_label">事務所印</label>
+					<div>
+						<label class="checkbox_btn">
+							<input type="checkbox" class="checkbox_input" th:field="*{TenantStampPrintEnabled}" th:disabled="!${T(jp.loioz.common.utility.SessionUtils).isSystemMng()}">
+							<span class="checkbox_txt">帳票に表示する</span>
+						</label>
+					</div>
+					<div class="input_nav">
+						<p>事務所印として登録している画像を事務所案件の帳票に既定で印字します。</p>
+					</div>
+				</div>
+			</div>
+
+	</th:block>
+			
+		</div>
+	
+		<!--/* 事務所情報 保存ボタン */-->
+		<th:block th:if="${T(jp.loioz.common.utility.SessionUtils).isSystemMng()}">
+			<div class="input_block_btn_area">
+				<button type="button" class="btn btn-info save"><i class="fas fa-check"></i>保存する</button>
+			</div>
+		</th:block>
+		<!--/* 事務所情報 end */-->
+	</form>
+</div>
+
+<!--/* 事務印情報設定 */-->
+<div th:fragment="officeStampSettingFragment(officeStampSettingInputForm)" id="officeStampSettingFragment" th:object="${officeStampSettingInputForm}">
+	<script type="text/javascript" th:inline="javascript">
+	$(function() {
+		
+		<!--/* 定数 */-->
+		const officeStampSettingFragmentWrap = $('#officeStampSettingFragmentWrap');
+		const officeStampSettingFragment = $('#officeStampSettingFragment');
+		
+		<!--/* 共有の要素セットアップ処理 */-->
+		commonSetUpElement("#officeStampSettingFragment");
+		
+		<!--/* ファイルアップロードボタン */-->
+		officeStampSettingFragment.find('#uploadFileButton').on('click', function() {
+			$('#uploadFile').click();
+		});
+		
+		<!--/* ファイルアップロード処理 */-->
+		officeStampSettingFragment.find('#uploadFile').on('change', function() {
+			let selectFile = $(this)[0].files[0];
+			if (selectFile === undefined) {
+				officeStampSettingFragment.find("#uploadFile").val("");
+				return false;
+			}
+			
+			if (ajaxRunning) {
+				return false;
+			}
+			
+			ajaxRunning = true;
+			Promise.resolve()
+				.then(saveAction)
+				.then(renderOfficeStampSettingFragment)
+				.catch((errors) => console.log(errors))
+				.finally(() => ajaxRunning = false);
+		});
+		
+		function saveAction() {
+			const params = new FormData(officeStampSettingFragment.find('.officeStampInputForm').get(0));
+			return new Promise((resolve, reject) => {
+				$.ajax({
+					url : '/user/officeSetting/saveOfficeStamp',
+					type : "POST",
+					processData: false,
+					contentType: false,
+					data : params,
+				}).done(function(data, status, jqXHR) {
+					<!--/* 成功 */-->
+					if (isAjaxProcSuccess(jqXHR)) {
+						showInfoMessageForJs(getAjaxProcResutlMessage(jqXHR));
+						return resolve();
+					} else {
+						// 処理失敗
+						if (data) {
+							officeStampSettingFragmentWrap.html(data);
+						}
+						const errorMsg = getAjaxProcResutlMessage(jqXHR);
+						showErrorMessageForJs(errorMsg);
+						return reject(errorMsg);
+					}
+				}).fail(function(jqXHR, textStatus, errorThrown) {
+					<!--/* 失敗 */-->
+					const errorMsg = /*[[#{E00091}]]*/"error";
+					showErrorMessageForJs(errorMsg);
+					return reject(errorMsg);
+				});
+			});
+		}
+		
+		<!--/* 事務所印情報の削除処理 */-->
+		officeStampSettingFragment.find('.delete').on('click', function() {
+			if (ajaxRunning) {
+				return false;
+			}
+			
+			<!--/* 会計機能が利用可能かどうか */-->
+			const canUsePlanFunc = /*[[${T(jp.loioz.common.utility.SessionUtils).canUsePlanFunc(T(jp.loioz.common.constant.plan.PlanConstant$PlanFuncRestrict).PF0002)}]]*/true;
+			
+			let confirmMsg = "";
+			confirmMsg += /*[[#{confirm.C00002(事務所印)}]]*/'';
+			if (canUsePlanFunc) {
+				confirmMsg += "\n";
+				confirmMsg += /*[[#{W00021}]]*/'';
+			}
+			
+			if (!confirm(confirmMsg)){
+				return false;
+			}
+			ajaxRunning = true;
+			Promise.resolve()
+				.then(() => {
+					return new Promise((resolve, reject) => {
+						$.ajax({
+							url : '/user/officeSetting/deleteOfficeStamp',
+							type : "POST",
+						}).done(function(data, status, jqXHR) {
+							<!--/* 成功 */-->
+							if (isAjaxProcSuccess(jqXHR)) {
+								showInfoMessageForJs(getAjaxProcResutlMessage(jqXHR));
+								return resolve();
+							} else {
+								// 処理失敗
+								const errorMsg = getAjaxProcResutlMessage(jqXHR);
+								showErrorMessageForJs(errorMsg);
+								return reject(errorMsg);
+							}
+						}).fail(function(jqXHR, textStatus, errorThrown) {
+							<!--/* 失敗 */-->
+							const errorMsg = /*[[#{E00091}]]*/ "error";
+							showErrorMessageForJs(errorMsg);
+							return reject(errorMsg);
+						});
+					});
+				})
+				.then(renderOfficeStampSettingFragment)
+				.catch((errors) => console.log(errors))
+				.finally(() => ajaxRunning = false);
+		});
+		
+	})
+	</script>
+	
+	<form class="officeStampInputForm" th:action="@{/user/officeSetting/saveOfficeStamp}" method="post" enctype="multipart/form-data">
+		<div class="block_title">事務所印</div>
+		<div class="block_detail">
+			<p>法人印もしくは事務所代表者の弁護士職印（png、jpg、gifいずれかの形式）を登録します。</p>
+			<p>登録した画像は、電子印鑑として請求書にスタンプすることができます。</p>
+			<p>※弁護士個々の職印を登録する場合は、個人設定から行ってください。</p>
+		</div>
+		
+		<div class="form-row">
+			<div class="form-group col-md-6">
+				<div>
+					<button type="button" class="btn btn-info" id="uploadFileButton">
+						<i class="fas fa-cloud-upload-alt mr-2"></i>画像を選択してアップロード
+					</button>
+					<input type="file" class="hidden" id="uploadFile" th:field="*{multiPartFile}">
+					<div th:if="*{#fields.hasErrors('multiPartFile')}" th:errors="*{multiPartFile}" class="error_mag_point mt-4">error</div>
+				</div>
+			</div>
+		</div>
+		<div class="form-row align-items-end">
+			<div class="form-group col-md-auto">
+				<label class="input_parts_label">アップロード画像</label>
+				<div class="preview_img">
+					<div th:if="*{#strings.isEmpty(base64ImageSrc)}" class="sub_text">※事務所印が設定されていません。</div>
+					<img th:if="*{!#strings.isEmpty(base64ImageSrc)}" class="" th:src="*{base64ImageSrc}"></img>
+				</div>
+			</div>
+			<div class="form-group col-md-auto">
+				<div class="my-auto">
+				<button th:if="*{existsImage}" type="button" class="btn btn-light delete"><i class="far fa-trash-alt"></i>画像削除</button>
+				</div>
+			</div>
+		</div>
+	</form>
+	
+</div>
+
+</body>
+</html>

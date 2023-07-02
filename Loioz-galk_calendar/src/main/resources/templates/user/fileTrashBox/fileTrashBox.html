@@ -1,0 +1,513 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+	xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+	xmlns:xtra="https://github.com/connect-group/thymeleaf-extras"
+	layout:decorator="commonLayout">
+<head>
+<meta charset="utf-8" th:remove="tag" />
+<meta name="_csrf" th:content="${_csrf.token}" />
+<meta name="_csrf_header" th:content="${_csrf.headerName}" />
+<title layout:fragment="title-contents">
+	[[${T(jp.loioz.common.utility.LoiozUtils).getHtmlTitle("ファイル管理（ゴミ箱）", T(jp.loioz.common.utility.SessionUtils).getTenantName())}]]
+</title>
+<th:block th:with="version=${@environment.getProperty('app.version')}">
+	<link href="./css/fileManagement/file-management.css" th:href="@{/css/fileManagement/file.css?{ver}(ver=${version})}" rel="stylesheet" type="text/css" />
+	<script type="text/javascript" th:src="@{/js/fontawesome-5.15.2-all.min.js}"></script>
+</th:block>
+<style type="text/css">
+.search_right_box{
+	display: flex;
+	margin-left: auto;
+}
+.search_right_box ul {
+	list-style: none;
+    padding: 0;
+    margin-top: 0px;
+    margin-left: 5rem;
+    text-align: left;
+    line-height: 30px;
+	display: inline-flex;
+}
+.search_right_box li {
+    margin: 0 0 0 10px;
+}
+.col_fileName{
+	width: 450px;
+	max-width: 450px;
+}
+.col_filepath {
+	width: 450px;
+	max-width: 450px;
+}
+.col_deletedUser{
+	width:180px;
+	max-width:180px;
+}
+.col_deletedDate{
+	width: 150px;
+	min-width: 150px;
+	max-width: 150px;
+}
+.col_fileSize {
+	width: 110px;
+	min-width: 110px;
+}
+.col_mentenance{
+	width: 65px;
+	max-width: 65px;
+	z-index: 1;
+}
+.col_no_data {
+    width: 1580px;
+    max-width: 1580px;
+}
+.headerFixedTableWrapper  {
+	height: 480px;
+	overflow-y: scroll;
+	margin-bottom: 1rem;
+}
+.headerFixedTable {
+}
+.headerFixedTable > thead tr th {
+	position: sticky;
+	top: -1px;
+}
+.headerFixedTable > tbody {
+  	max-height:300px;
+}
+.header_fixed_table_wrapper.file_manage_List {
+    max-height: 608px;
+    overflow-x: hidden;
+}
+.popover-body {
+    padding: unset;
+    color: #212529;
+}
+.file_mentenance_menu{
+    z-index: 99;
+}
+.popover-body {
+    color: #212529;
+}
+.popover .arrow {
+	top: -6px !important;
+}
+</style>
+<script type="text/javascript" th:inline="javascript">
+/*<![CDATA[*/
+$(function(){
+
+	const isRootFolderKubun = /*[[${T(jp.loioz.common.constant.CommonConstant.FileKubun).IS_ROOT_FOLDER.getCd()}]]*/;
+	const isFolderKubun = /*[[${T(jp.loioz.common.constant.CommonConstant.FileKubun).IS_FOLDER.getCd()}]]*/;
+	const isfileKubun = /*[[${T(jp.loioz.common.constant.CommonConstant.FileKubun).IS_FILE.getCd()}]]*/;
+	/**
+	* URLに案件IDもしくは顧客IDを設定する
+	*
+	* @param {string} url セット対象のURL
+	* @return {string} 案件IDもしくは顧客IDが設定されたURL
+	*/
+	function setAnkenOrCustomerIdToUrl(url) {
+		// 案件軸
+		if($('.transitionAnkenId').length > 0) {
+			url += '?transitionAnkenId=' + $('.transitionAnkenId').val();
+		}
+		// 顧客軸
+		if($('.transitionCustomerId').length > 0) {
+			url += '?transitionCustomerId=' + $('.transitionCustomerId').val();
+		}
+		return url;
+	};
+
+	<!--/* ファイル管理クイック検索バーの検索処理 */-->
+	$('.fileSeach').click(function(){
+		// 単項目チェック
+		const fileNameSearchString = $('#fileNameSearchString').val();
+		$.ajaxSetup({
+			cache : false,
+		});
+		$.ajax({
+			url : "/user/fileTrashBox/fileNameSearchPreCheck",
+			type : "POST",
+			data : {"fileNameSearchString" :  fileNameSearchString},
+			dataType : 'json',
+		}).done(function(response) {
+			if(!response.success) {
+				alert(response.message);
+				return false;
+			}
+			// 検索処理
+			let url = '/user/fileTrashBox/quickSearch';
+			url = setAnkenOrCustomerIdToUrl(url);
+			url += '&fileNameSearchString=' + $('#fileNameSearchString').val();
+			window.location.href = url;
+		}).fail(function(jqXHR, textStatus, errorThrown) {
+			alert([[#{E00029}]]);
+		});
+	});
+
+	<!--/* ファイル管理に戻るボタン押下時 */-->
+	$('.returnFileManagementBtn').click(function(){
+		let url = '/user/fileManagement/list';
+		window.location.href = setAnkenOrCustomerIdToUrl(url);
+	});
+
+	<!--/* 完全に削除ボタン押下時 */-->
+	$(document).on('click', '.deleteBtn', function(e) {
+		const fileConfigurationManagementId = $(this).data('fileconfigurationmanagementid');
+		const fileKubun = $(this).data('filekubun');
+		const fileName = $(this).data('filename');
+		let confrimMessage = "";
+		if(isFolderKubun == fileKubun){
+			confrimMessage = "フォルダ「" + fileName + "」とその配下のファイル・フォルダを削除します。よろしいですか？\r\n※削除したファイルは復元することはできません。";
+		}else if(isfileKubun == fileKubun){
+			confrimMessage = "ファイル「" + fileName + "」を削除します。よろしいですか？\r\n※削除したファイルは復元することはできません。";
+		}else{
+			return false;
+		}
+		if(!confirm(confrimMessage)) {
+			return false;
+		}
+
+		$.ajaxSetup({
+			cache : false,
+		});
+		$.ajax({
+			url : "/user/fileTrashBox/delete",
+			type : "POST",
+			data : {
+				"fileConfigurationManagementId" : fileConfigurationManagementId,
+			},
+			dataType : 'json',
+		}).done(function(response) {
+			alert(response.message);
+			if(response.success){
+				location.reload();
+			}
+		}).fail(function(jqXHR, textStatus, errorThrown) {
+			alert([[#{E00014}]]);
+		});
+	});
+
+	<!--/* 元に戻すボタン押下時 */-->
+	$(document).on('click', '.undoBtn', function(e) {
+		const fileConfigurationManagementId = $(this).data('fileconfigurationmanagementid');
+		const fileKubun = $(this).data('filekubun');
+		const fileName = $(this).data('filename');
+		let confrimMessage = "";
+		if(isFolderKubun == fileKubun){
+			confrimMessage = "フォルダ「" + fileName + "」とその配下のファイル・フォルダを元に戻します。\r\nよろしいですか？";
+		}else if(isfileKubun == fileKubun){
+			confrimMessage = "ファイル「" + fileName + "」を元に戻します。\r\nよろしいですか？";
+		}else{
+			return false;
+		}
+		if(!confirm(confrimMessage)) {
+			return false;
+		}
+
+		$.ajaxSetup({
+			cache : false,
+		});
+		$.ajax({
+			url : "/user/fileTrashBox/undo",
+			type : "POST",
+			data : {
+				"fileConfigurationManagementId" : fileConfigurationManagementId,
+			},
+			dataType : 'json',
+		}).done(function(response) {
+			alert(response.message);
+			if(response.success){
+				location.reload();
+			}
+		}).fail(function(jqXHR, textStatus, errorThrown) {
+			alert([[#{E00037('元の場所へ')}]]);
+		});
+	});
+
+	<!--/* 一括完全削除ボタン押下時 */-->
+	$('#batchDeleteBtn').click(function() {
+		const confrimMessage = "ご自身のアカウントが削除者となっている、全てのファイル／フォルダを\r\n完全に削除します。よろしいですか？\r\n\r\n※削除したファイル/フォルダは復元できません。";
+		if(!confirm(confrimMessage)) {
+			return false;
+		}
+		$.ajaxSetup({
+			cache : false,
+		});
+		$.ajax({
+			url : "/user/fileTrashBox/batchDelete",
+			type : "POST",
+		}).done(function(response) {
+			alert(response.message);
+			if(response.success){
+				location.reload();
+			}
+		}).fail(function(jqXHR, textStatus, errorThrown) {
+			alert([[#{E00014}]]);
+		});
+	});
+	<!--/* 3点リーダーボタン関連 START */-->
+	//３点メニューボタン以外をクリックした場合。
+	$(document).on('click touchend', function(event) {
+		if (!$(event.target).closest('.file_menu_navi > dt').length) {
+			// 一度全部閉じる
+			$('.file_menu_navi > dt').each(function(index){
+				if($(this).hasClass("selected")) {
+					$(this).removeClass('selected');
+				}
+			});
+			$('.file_menu_navi').popover('hide');
+		}
+	});
+
+	//３点メニューボタンをクリックした場合。
+	$('.file_menu_navi > dt').click(function(event){
+		let target = $(this).parent('.file_menu_navi');
+		let  closeFlg = false;
+		const dd = $(this).next('dd');
+		// 一度全部閉じる
+		$('.file_menu_navi > dt').each(function(index){
+			if($(this).hasClass("selected")) {
+				$(this).removeClass('selected');
+				target.popover('hide');
+				closeFlg = true;
+			}
+		});
+		if(closeFlg){
+			return false;
+		}
+		// 一度全部閉じる
+		$('.file_menu_navi').popover('hide');
+		$(this).addClass("selected");
+		const fileConfigurationManagementId = $(this).closest('tr').find('[id^="fileConfigurationManagementId"]').val();
+		const mentenanceModalOpenRequest = $.ajax({
+			url : "/user/fileTrashBox/mentenance",
+			type : "POST",
+			data : {
+				"fileConfigurationManagementId" : fileConfigurationManagementId,
+			},
+		});
+		//成功時
+		mentenanceModalOpenRequest.done(function(val){
+			let popover = target.data('bs.popover');
+			target.attr('data-content',val).data('bs.popover').setContent();
+			target.popover('show');
+		});
+		//失敗時
+		mentenanceModalOpenRequest.fail(function(jqXHR, textStatus, errorThrown){
+			window.location.href = "/systemError";
+		});
+
+		//成功時も失敗時も行う
+		mentenanceModalOpenRequest.always(function() {
+		});
+	});
+});
+
+/*]]>*/
+</script>
+</head>
+<body>
+	<div layout:fragment="main-contents" th:remove="tag" th:object="${fileTrashBoxListViewForm}">
+
+		<div class="contents_sidebar_wrapper contentsSlidebarWrapper" th:data-click-open=${customerAnkenMenuOpenClickForSessionValue} th:data-resize-open=${customerAnkenMenuOpenResizeForSessionValue}>
+
+			<!--/* 顧客・案件メニュー */-->
+			<div th:replace="common/customerAnkenMenu::menuList(
+				sideMenuAnkenId=*{transitionAnkenId},
+				sideMenuCustomerId=*{transitionCustomerId},
+				selectedTabClass = 'is_file')">
+			</div>
+			
+			<!--/* 案件ID・顧客ID */-->
+			<th:block th:if="*{transitionAnkenId}">
+				<input type="hidden" class="transitionAnkenId" th:value="*{transitionAnkenId}">
+			</th:block>
+			<th:block th:if="*{transitionCustomerId}">
+				<input type="hidden" class="transitionCustomerId" th:value="*{transitionCustomerId}">
+			</th:block>
+
+			<!--/* メインコンテンツ */-->
+			<div class="contents_wrapper">
+				<div class="container-fluid">
+					<main class="content">
+						<!--/* ぱんくず */-->
+						<th:block th:if="*{transitionAnkenId}">
+							<div th:replace="common/wrapHeader::wrapHeader(
+								returnListScreen=${T(jp.loioz.common.utility.SessionUtils).getSessionVaule(T(jp.loioz.common.constant.SessionAttrKeyEnum).RETURN_LIST_SCREEN.codeKey)},
+								sideMenuAnkenId=*{transitionAnkenId})"></div>
+						</th:block>
+						<th:block th:if="*{transitionCustomerId}">
+							<div th:replace="common/wrapHeader::wrapHeader(
+								returnListScreen=${T(jp.loioz.common.constant.CommonConstant$ReturnDestinationScreen).MEIBO_LIST.cd},
+								sideMenuPersonId=*{transitionCustomerId},
+								returnPrevScreenName=${T(jp.loioz.common.utility.SessionUtils).getSessionVaule(T(jp.loioz.common.constant.SessionAttrKeyEnum).RETURN_PREV_SCREEN_NAME)},
+								returnPrevScreenUrl=${T(jp.loioz.common.utility.SessionUtils).getSessionVaule(T(jp.loioz.common.constant.SessionAttrKeyEnum).RETURN_PREV_SCREEN_URL)})"></div>
+						</th:block>
+						
+						<!--/* メッセージエリア */-->
+						<div th:replace="common/messageArea::messageArea"></div>
+						
+						<!--/* 顧客情報・案件情報 */-->
+						<div th:replace="common/customerAnkenSelected::detailInfo(
+							wrapHeaderAnkenId=*{transitionAnkenId},
+							wrapHeaderCustomerId=*{transitionCustomerId})">
+						</div>
+						
+						<!--/* コンテンツ */-->
+						<div class="page_main">
+							
+							<!--/* ファイル名検索バー */-->
+							<div class="file_quick_search_bar">
+								<div class="search_box mr-2">
+									<div class="input-group">
+										<input type="text" class="form-control fcAddTextClear" id="fileNameSearchString" placeholder="ファイル名検索"
+											th:value="${searchString}" maxlength="255">
+										<div class="input-group-append">
+										 	<button class="btn btn-dark pt-1 pb-0 px-3 fileSeach" type="button"><i class="fas fa-search fa-lg mr-0"></i></button>
+										</div>
+									</div>
+								</div>
+								<ul class="select_tab_folderpath_list">
+									<li><div class="ml-3 h4 my-auto current_location folderpath_name"><i class="far fa-trash-alt mr-2"></i>ゴミ箱</div></li>
+								</ul>
+							</div>
+							
+							<!--/* メインコンテンツ START */-->
+							<div class="row">
+								<div class="col-lg-8">
+									<div class="header_fixed_table_wrapper file_manage_List">
+										<table class="table table-sm table_fixed table-hover file_trash_list">
+											<thead class="bg-info">
+												<tr>
+													<th class="col_no1">名前</th>
+													<th class="col_no2">削除者</th>
+													<th class="col_no3">削除日時</th>
+													<th class="col_no4">サイズ</th>
+													<th class="col_no5"></th><!--/* 三点リーダーボタン表示領域 */-->
+												</tr>
+											</thead>
+											<tbody class="file_manage_list">
+												<th:block th:if="*{trashBoxFileList.size() == 0}">
+													<tr>
+														<td colspan="5">
+															<span th:text="#{I00030}">MSG_I00030</span>
+														</td>
+													</tr >
+												</th:block>
+												<tr th:each="fileInfo, stat : *{trashBoxFileList}" class="file_list_row"
+													th:classappend="${fileInfo.fileKubun} ne ${T(jp.loioz.common.constant.CommonConstant.FileKubun).IS_FILE.getCd()} ? 'isFolderRow' : '' ">
+													<td class="file_list_cel text-break">
+														<input type="hidden" th:id="index" th:value="${stat.index}">
+														<input type="hidden" th:id="'fileConfigurationManagementId' + ${stat.index}" th:value="${fileInfo.fileConfigurationManagementId}">
+														<div>
+															<th:block th:if="${T(jp.loioz.common.constant.CommonConstant.FileKubun).IS_FILE.getCd()} eq ${fileInfo.fileKubun}">
+																 <th:block th:if="${fileInfo.fileExtension != null}">
+																 	<th:block th:switch="${fileInfo.getExtension()}">
+																		<img th:case="xlsx" src="/img/icon_data_x.svg" width="20" height="20">
+																		<img th:case="xls" src="/img/icon_data_x.svg" width="20" height="20">
+																		<img th:case="docx" src="/img/icon_data_w.svg" width="20" height="20">
+																		<img th:case="doc" src="/img/icon_data_w.svg" width="20" height="20">
+																		<img th:case="pdf" src="/img/icon_file_pdf.svg" width="20" height="20">
+																		<img th:case="txt" src="/img/icon_file_textFile.svg" width="20" height="20">
+																		<img th:case="png" src="/img/icon_file_png.svg" width="20" height="20">
+																		<img th:case="jpg" src="/img/icon_file_jpeg.svg" width="20" height="20">
+																		<img th:case="jpeg" src="/img/icon_file_jpeg.svg" width="20" height="20">
+																		<img th:case="*" src="/img/icon_file_textFile.svg" width="20" height="20">
+																		<span class="fileName" th:text="${fileInfo.fileName + fileInfo.fileExtension}"></span>
+																	</th:block>
+																</th:block>
+																<th:block th:if="${fileInfo.fileExtension == null}">
+																		<img src="/img/icon_file_textFile.svg" width="20" height="20">
+																		<span class="fileName" th:text="${fileInfo.fileName}"></span>
+																</th:block>
+															</th:block>
+															<th:block th:if="${T(jp.loioz.common.constant.CommonConstant.FileKubun).IS_ROOT_FOLDER.getCd()} eq ${fileInfo.fileKubun}">
+																<th:block th:if="${fileInfo.ankenId != null}">
+																	<i class="fas fa-folder-open anken_folder mr-2"></i>
+																	<span class="span_anken_Name" th:text="${#strings.defaultString(fileInfo.ankenName, '&#40;案件名未入力&#41;')}"></span>
+																	<span class="sub_text" th:text="|&#40;${fileInfo.ankenId}&#41;|"></span>
+																</th:block>
+																<th:block th:if="${fileInfo.customerId != null}">
+																	<i class="fas fa-folder-open meibo_folder mr-2"></i>
+																	<span class="span_customer_Name" th:text="${#strings.defaultString(fileInfo.customerName,'')}"></span>
+																	<span 	class="sub_text" th:text="|&#40;${fileInfo.customerId}&#41;|"></span>
+																</th:block>
+															</th:block>
+															<th:block th:if="${T(jp.loioz.common.constant.CommonConstant.FileKubun).IS_FOLDER.getCd()} eq ${fileInfo.fileKubun}">
+																<i class="fas fa-folder-open nomal_folder"></i>
+																<span class="fileName" th:text="${fileInfo.fileName}"></span>
+															</th:block>
+														</div>
+														<div class="text-break fs13 sub_text pl-5 mt-1">
+															<div class="char_ellipsis pl-2">
+																<th:block th:if="${fileInfo.ankenId}">
+																	<i class="fas fa-folder"></i>
+																	<span class="span_anken_Name" th:text="${#strings.defaultString(fileInfo.ankenName, '&#40;案件名未入力&#41;')}"></span>
+																	<span class="sub_text" th:text="|&#40;${fileInfo.ankenId}&#41;|"></span>
+																</th:block>
+																<th:block th:if="${fileInfo.customerId}">
+																	<i class="fas fa-folder"></i>
+																	<span class="span_customer_Name" th:text="${#strings.defaultString(fileInfo.customerName,'')}"></span>
+																	<span 	class="sub_text" th:text="|&#40;${fileInfo.customerId}&#41;|"></span>
+																</th:block>
+																<span th:text="${fileInfo.folderPath}"></span>
+															</div>
+														</div>
+													</td>
+													<td class=" text-break" th:text="${fileInfo.deletedUserName}"></td>
+													<td th:text="${fileInfo.getDeletedAtForDisplay()}"></td>
+													<td>
+														<span th:text="${fileInfo.getFileSizeForDisplay()}"></span>
+													</td>
+													<!--/* 3点リーダーボタン */-->
+													<td class="text-center">
+														<dl class="file_menu_navi" data-boundary="window" data-toggle="popover" data-animation="true" data-placement="bottom" data-html="true" data-content="<div></div>">
+															<dt><i class="fas fa-ellipsis-v fa-lg"></i></dt>
+															<dd class="menu_window">
+															</dd>
+														</dl>
+													</td>
+												</tr>
+											</tbody>
+										</table>
+									</div>
+								</div>
+								
+								<!-- 右側エリア -->
+								<div class="col-lg-4">
+									<div class="mb-4">
+										<button class="btn btn-light returnFileManagementBtn"><i class="fas fa-undo"></i>ファイル一覧へ戻る</button>
+									</div>
+									<div class="mb-5">
+										<button type="button" id="batchDeleteBtn" th:classAppend="*{trashBoxFileList.size() == 0} ? 'btn-secondary' : 'btn-danger' "
+											class="btn mr-auto" th:disabled="*{trashBoxFileList.size() == 0}">
+											<i class="far fa-trash-alt"></i>一括完全削除
+										</button>
+									</div>
+									<div class="storage_status_area text-left">
+										<p class="mb-1" th:text="*{dispStrageInfo}"></p>
+										<p class="mb-0 link_wrap" th:if="${T(jp.loioz.common.utility.SessionUtils).isManager()}">
+											<a class="openPlanSetting">容量を変更</a>
+										</p>
+									</div>
+								</div>
+								
+								<!--/* 3点リーダーモーダル */-->
+								<div th:replace="::mentenanceModalTemplate(id='mentenanceModal',target='mentenanceModalBody')"></div>
+							</div>
+						</div>
+					</main>
+				</div>
+			</div>
+		</div>
+	</div>
+
+	<!--/* メンテナンスモーダルパーツ START */-->
+	<div th:fragment="mentenanceModalTemplate(target)" th:id="${id}" class="modal fade ui-draggable mentenanceModal" tabindex="-1" role="dialog" aria-hidden="true" data-backdrop="false" >
+		<div class="modal-dialog modal-dialog-centered" role="document">
+			<div th:class="${target}"></div>
+		</div>
+	</div>
+</body>
+</html>

@@ -1,0 +1,15 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+<meta charset="utf-8" />
+<script type="text/javascript" th:inline="javascript" th:fragment="accgAnkenScreenJs">
+<!--/* 会計案件ビューか否か */-->
+function isAccgAnkenSide() {
+	const accgAnkenScreenBoolStr = /*[[${T(jp.loioz.common.utility.SessionUtils).getSessionVaule(T(jp.loioz.common.constant.SessionAttrKeyEnum).ACCG_ANKEN_SCREEN_BOOL.codeKey)}]]*/"";
+	return toBoolean(accgAnkenScreenBoolStr);
+}
+
+</script>
+
+</head>
+</html>

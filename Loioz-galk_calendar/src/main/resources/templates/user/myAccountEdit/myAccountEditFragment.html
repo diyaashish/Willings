@@ -1,0 +1,389 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+	xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+	layout:decorator="commonLayout">
+<head>
+	<meta charset="utf-8" />
+</head>
+<body>
+
+<!--/* 個人設定 */-->
+<div th:fragment="myAccountSettingInputFragment(accountSettingInputForm)" id="myAccountSettingInputFragment" th:object="${accountSettingInputForm}">
+	<script type="text/javascript" th:inline="javascript">
+	$(function() {
+		
+		<!--/* 定数 */-->
+		const myAccountSettingInputFragmentWrap = $('#myAccountSettingInputFragmentWrap');
+		const myAccountSettingInputFragment = $('#myAccountSettingInputFragment');
+		
+		<!--/* 共有の要素セットアップ処理 */-->
+		commonSetUpElement("#myAccountSettingInputFragment");
+		<!--/* 自動かな変換 */-->
+		$.fn.autoKana('#myAccountSettingInputFragment [name="accountNameSei"]', '#myAccountSettingInputFragment [name="accountNameSeiKana"]',{
+			katakana : false
+		});
+		$.fn.autoKana('#myAccountSettingInputFragment [name="accountNameMei"]', '#myAccountSettingInputFragment [name="accountNameMeiKana"]',{
+			katakana : false
+		});
+		
+		<!--/* 個人情報の保存処理 */-->
+		myAccountSettingInputFragment.find('#saveAccountSetting').on('click', function() {
+			if (ajaxRunning) {
+				return false;
+			}
+			const formData = myAccountSettingInputFragment.find('#accountDataForm').serializeArray();
+			ajaxRunning = true;
+			
+			Promise.resolve(formData)
+				.then((params) => {
+					return new Promise((resolve, reject) => {
+						$.ajax({
+							url : "/user/myAccountEdit/saveAccountSetting",
+							type : "POST",
+							data : params,
+						}).done(function(data, status, jqXHR) {
+							<!--/* 成功 */-->
+							if (isAjaxProcSuccess(jqXHR)) {
+								showInfoMessageForJs(getAjaxProcResutlMessage(jqXHR));
+								return resolve();
+							} else {
+								// 処理失敗
+								if (data) {
+									myAccountSettingInputFragmentWrap.html(data);
+								}
+								const errorMsg = getAjaxProcResutlMessage(jqXHR);
+								showErrorMessageForJs(errorMsg);
+								return reject(errorMsg);
+							}
+						}).fail(function(jqXHR, textStatus, errorThrown) {
+							<!--/* 失敗 */-->
+							const errorMsg = /*[[#{E00091}]]*/ "error";
+							showErrorMessageForJs(errorMsg);
+							return resolve(errorMsg);
+						});
+					});
+				})
+				.then(getMyAccountSettingInputFragment)
+				.then(headerRefresh)
+				.catch((errors) => console.log(errors))
+				.finally(() => ajaxRunning = false);
+		});
+	});
+	</script>
+	
+	<!-- アカウント情報 -->
+	<form id ="accountDataForm">
+		<div class="block_title">個人情報</div>
+		<!-- 詳細情報入力エリア -->
+		<div class="detail_input_area">
+			<!-- アカウントID -->
+			<div class="form-row">
+				<div class="form-group col-md-3">
+					<label class="input_parts_label">アカウントID</label>
+					<span class="mark_equired">必須</span>
+					<input type="text" class="form-control input_half" th:field="*{accountId}" maxlength="50" placeholder="半角英数4桁以上">
+					<div th:if="*{#fields.hasErrors('accountId')}" th:errors="*{accountId}" class="error_mag_point text-nowrap">error</div>
+					<div class="input_nav">
+						<p>loiozにログインするためのIDとして使用します。</p>
+						<p>4桁以上の半角英数字で指定する必要があります。</p>
+					</div>
+				</div>
+			</div>
+			<!-- 氏名 -->
+			<div class="form-row">
+				<div class="form-group col-md-12 mb-0">
+					<label class="input_parts_label">氏名</label>
+					<span class="mark_equired">必須</span>
+				</div>
+				<!-- 姓 -->
+				<div class="form-group col-md-2 mb-2">
+					<input type="text" class="form-control" th:field="*{accountNameSei}" placeholder="姓">
+					<div th:if="*{#fields.hasErrors('accountNameSei')}" th:errors="*{accountNameSei}" class="error_mag_point">error</div>
+				</div>
+				<!-- 名 -->
+				<div class="form-group col-md-2 mb-2">
+					<input type="text" class="form-control" th:field="*{accountNameMei}" placeholder="名">
+					<div th:if="*{#fields.hasErrors('accountNameMei')}" th:errors="*{accountNameMei}" class="error_mag_point">error</div>
+				</div>
+			</div>
+			<!-- 氏名（かな） -->
+			<div class="form-row">
+				<!-- せい -->
+				<div class="form-group col-md-2 mb-2">
+					<input type="text" class="form-control" th:field="*{accountNameSeiKana}" placeholder="せい">
+					<div th:if="*{#fields.hasErrors('accountNameSeiKana')}" th:errors="*{accountNameSeiKana}" class="error_mag_point">error</div>
+				</div>
+				<!-- めい -->
+				<div class="form-group col-md-2 mb-0">
+					<input type="text" class="form-control" th:field="*{accountNameMeiKana}" placeholder="めい">
+					<div th:if="*{#fields.hasErrors('accountNameMeiKana')}" th:errors="*{accountNameMeiKana}" class="error_mag_point">error</div>
+				</div>
+				<div class="form-group col-md-12">
+					<div class="input_nav mt-1">
+						<p>loioz内で利用するユーザーの表示名です。</p>
+					</div>
+				</div>
+			</div>
+			<!-- メールアドレス -->
+			<div class="form-row">
+				<div class="form-group col-md-5">
+					<label class="input_parts_label">メールアドレス</label>
+					<input type="text" class="form-control" th:field="*{accountMailAddress}" maxlength="256" autocomplete="off">
+					<div th:if="*{#fields.hasErrors('accountMailAddress')}" th:errors="*{accountMailAddress}" class="error_mag_point text-nowrap">error</div>
+					<div class="input_nav">
+						<p>メールアドレスを登録している場合、ログイン画面のパスワードリセットの認証メールを受信することや、</p>
+						<p>loioz内で送信されるメッセージを登録したメールアドレスで受信することができます。</p>
+					</div>
+				</div>
+			</div>
+			
+			<!--/* カラー */-->
+			<div class="form-row">
+				<div class="form-group col-md-2">
+					<label class="input_parts_label">カラー</label>
+					<input type="color" class="form-control p-1" th:field="*{accountColor}" list="">
+					<div th:if="*{#fields.hasErrors('accountColor')}" th:errors="*{accountColor}" class="error_mag_point">error</div>
+					<div class="input_nav">
+						<p>ご自身のアカウントのカラーを設定できます。</p>
+					</div>
+				</div>
+			</div>
+			<!--/* カラー end */-->
+		
+		<!--/* アカウントが「弁護士」の場合のみ表示 */-->
+		<th:block th:if="${T(jp.loioz.common.utility.SessionUtils).isLawyer()}">
+		
+			<!-- 適格請求書発行事業者の登録番号 -->
+			<div class="form-row">
+				<div class="form-group col-md-12">
+					<label class="input_parts_label">適格請求書発行事業者の登録番号</label>
+					<div class="d-flex align-items-center">
+						<span class="fs15 mr-2">T</span>
+						<input type="text" class="form-control inputNumberOnly digit10" maxlength="13" th:field="*{accountInvoiceRegistrationNo}">
+					</div>
+					<div th:if="*{#fields.hasErrors('accountInvoiceRegistrationNo')}" th:errors="*{accountInvoiceRegistrationNo}" class="error_mag_point">error</div>
+					<div class="input_nav">
+						<p>個人事業主として適格請求書発行事業者の通知を受けている場合に設定することができます。</p>
+					</div>
+				</div>
+			</div>
+		
+		</th:block>
+		
+			<!--/* 署名 */-->
+			<div class="form-row">
+				<div class="form-group col-md-6">
+					<label class="input_parts_label">署名</label>
+					<textarea class="form-control minh100" th:field="*{accountMailSignature}"></textarea>
+					<div class="input_nav">
+						<p>メール送信時の署名を登録します。</p>
+					</div>
+					<div th:if="*{#fields.hasErrors('accountMailSignature')}" th:errors="*{accountMailSignature}" class="error_mag_point">error</div>
+				</div>
+			</div>
+			<!--/* 署名 end */-->
+			
+		<!--/* アカウントが「弁護士」の場合のみ表示 */-->
+		<th:block th:if="${T(jp.loioz.common.utility.SessionUtils).isLawyer()}">
+		
+			<!-- /* 会計機能の利用可能時のみ表示 */ -->
+			<th:block th:if="${T(jp.loioz.common.utility.SessionUtils).canUsePlanFunc(T(jp.loioz.common.constant.plan.PlanConstant$PlanFuncRestrict).PF0002)}">
+		
+			<!--/* 弁護士印 */-->
+			<div class="form-row">
+				<div class="form-group col-md-12">
+					<label class="input_parts_label">弁護士職印</label>
+					<div>
+						<label class="checkbox_btn">
+							<input type="checkbox" class="checkbox_input" th:field="*{LawyerStampPrintEnabled}">
+							<span class="checkbox_txt">帳票に表示する</span>
+						</label>
+					</div>
+					<div class="input_nav">
+						<p>弁護士職印として登録している画像を個人案件の帳票に既定で印字します。</p>
+					</div>
+				</div>
+			</div>
+		
+			</th:block>
+		
+		</th:block>
+			
+		</div>
+		
+		<div class="input_block_btn_area">
+			<button type="button" id="saveAccountSetting" class="btn btn-info"><i class="fas fa-check"></i>保存する</button>
+		</div>
+	</form>
+
+</div>
+
+<!--/* 弁護士職印設定 */-->
+<div th:fragment="lawyerStampInputFragment(lawyerStampInputForm)" id="lawyerStampInputFragment" th:object="${lawyerStampInputForm}">
+	<script type="text/javascript" th:inline="javascript">
+	$(function() {
+		
+		<!--/* 定数 */-->
+		const lawyerStampInputFragmentWrap = $('#lawyerStampInputFragmentWrap');
+		const lawyerStampInputFragment = $('#lawyerStampInputFragment');
+		
+		<!--/* 共有の要素セットアップ処理 */-->
+		commonSetUpElement("#lawyerStampInputFragment");
+		
+		<!--/* ファイルアップロードボタン */-->
+		lawyerStampInputFragment.find('#uploadFileButton').on('click', function() {
+			$('#uploadFile').click();
+		});
+		
+		<!--/* ファイルアップロード処理 */-->
+		lawyerStampInputFragment.find('#uploadFile').on('change', function() {
+			let selectFile = $(this)[0].files[0];
+			if (selectFile === undefined) {
+				lawyerStampInputFragment.find("#uploadFile").val("");
+				return false;
+			}
+			
+			if (ajaxRunning) {
+				return false;
+			}
+			ajaxRunning = true;
+			
+			Promise.resolve()
+				.then(saveAction)
+				.then(getLawyerStampInputFragment)
+				.catch((errors) => {/* なにもしない */})
+				.finally(() => ajaxRunning = false);
+		});
+		
+		<!--/* 個人情報の保存処理 */-->
+		function saveAction() {
+			const params = new FormData(lawyerStampInputFragment.find('#lawyerStampForm').get(0));
+			const url = /*[[*{isNew() ? '/user/myAccountEdit/registLawyerStamp' : '/user/myAccountEdit/updateLawyerStamp'}]]*/
+			return new Promise((resolve, reject) => {
+				$.ajax({
+					url : url,
+					type : "POST",
+					processData: false,
+					contentType: false,
+					data : params,
+				}).done(function(data, status, jqXHR) {
+					<!--/* 成功 */-->
+					if (isAjaxProcSuccess(jqXHR)) {
+						showInfoMessageForJs(getAjaxProcResutlMessage(jqXHR));
+						return resolve();
+					} else {
+						// 処理失敗
+						if (data) {
+							lawyerStampInputFragmentWrap.html(data);
+						}
+						const errorMsg = getAjaxProcResutlMessage(jqXHR);
+						showErrorMessageForJs(errorMsg);
+						return reject(errorMsg);
+					}
+				}).fail(function(jqXHR, textStatus, errorThrown) {
+					<!--/* 失敗 */-->
+					const errorMsg = /*[[#{E00091}]]*/"error";
+					showErrorMessageForJs(errorMsg);
+					return reject(errorMsg);
+				});
+			});
+		}
+		
+		<!--/* 個人情報の削除処理 */-->
+		lawyerStampInputFragment.find('#delete').on('click', function() {
+			if (ajaxRunning) {
+				return false;
+			}
+			
+			<!--/* 会計機能が利用可能かどうか */-->
+			const canUsePlanFunc = /*[[${T(jp.loioz.common.utility.SessionUtils).canUsePlanFunc(T(jp.loioz.common.constant.plan.PlanConstant$PlanFuncRestrict).PF0002)}]]*/true;
+			
+			let confirmMsg = "";
+			confirmMsg += /*[[#{confirm.C00002(弁護士職印)}]]*/'';
+			if (canUsePlanFunc) {
+				confirmMsg += "\n";
+				confirmMsg += /*[[#{W00021}]]*/'';
+			}
+			
+			if (!confirm(confirmMsg)){
+				return false;
+			}
+			
+			const accountImgSeq = lawyerStampInputFragment.find('[name="accountImgSeq"]').val();
+
+			ajaxRunning = true;
+			Promise.resolve()
+				.then(() => {
+					return new Promise((resolve, reject) => {
+						$.ajax({
+							url : "/user/myAccountEdit/deleteLawyerStamp",
+							type : "POST",
+							data : {"accountImgSeq" : accountImgSeq},
+						}).done(function(data, status, jqXHR) {
+							<!--/* 成功 */-->
+							if (isAjaxProcSuccess(jqXHR)) {
+								showInfoMessageForJs(getAjaxProcResutlMessage(jqXHR));
+								return resolve();
+							} else {
+								// 処理失敗
+								const errorMsg = getAjaxProcResutlMessage(jqXHR);
+								showErrorMessageForJs(errorMsg);
+								return reject(errorMsg);
+							}
+						}).fail(function(jqXHR, textStatus, errorThrown) {
+							<!--/* 失敗 */-->
+							const errorMsg = /*[[#{E00091}]]*/ "error";
+							showErrorMessageForJs(errorMsg);
+							return reject(errorMsg);
+						});
+					});
+				})
+				.then(getLawyerStampInputFragment)
+				.catch((errors) => console.log(errors))
+				.finally(() => ajaxRunning = false);
+		});
+		
+	});
+	</script>
+	
+	<!--/* 弁護士職印 start */-->
+	<div>
+		<div class="block_title">弁護士職印</div>
+		<div class="block_detail">
+			<p>職印の印影画像（png、jpg、gifいずれかの形式）を登録します。</p>
+			<p>登録した画像は、電子印鑑として請求書にスタンプすることができます。</p>
+		</div>
+		<form id="lawyerStampForm" th:action="@{/user/myAccountEdit/saveLawyerStamp}" method="post" enctype="multipart/form-data">
+			<input type="hidden" th:field="*{accountImgSeq}">
+			
+			<div class="form-row">
+				<div class="form-group col-md-6">
+					<button type="button" class="btn btn-info" id="uploadFileButton">
+						<i class="fas fa-cloud-upload-alt mr-2"></i>画像を選択してアップロード
+					</button>
+					<input type="file" class="hidden" id="uploadFile" th:field="*{multiPartFile}">
+					<div th:if="*{#fields.hasErrors('multiPartFile')}" th:errors="*{multiPartFile}" class="error_mag_point mt-4">error</div>
+				</div>
+			</div>
+			<div class="form-row align-items-end">
+				<div class="form-group col-md-auto">
+					<label class="input_parts_label">アップロード画像</label>
+					<div class="preview_img">
+						<div th:if="*{#strings.isEmpty(base64ImageSrc)}" class="sub_text">※弁護士職印が設定されていません。</div>
+						<img th:if="*{!#strings.isEmpty(base64ImageSrc)}" class="" th:src="*{base64ImageSrc}"></img>
+					</div>
+				</div>
+				<div class="form-group col-md-auto">
+					<div class="my-auto">
+						<button th:if="*{!isNew()}" type="button" id="delete" class="btn btn-light"><i class="far fa-trash-alt"></i>画像削除</button>
+					</div>
+				</div>
+			</div>
+		</form>
+	</div>
+	<!--/* 弁護士職印 end */-->
+
+</div>
+
+</body>
+</html>

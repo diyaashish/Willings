@@ -1,0 +1,144 @@
+@charset "UTF-8";
+
+/************ カレンダー全体 ************/
+.calendar_container {
+	display: -webkit-box;
+	display: -webkit-flex;
+	display: flex;
+	height: calc(100vh - 45px);
+	width: 100%;
+	position: relative;
+}
+
+/************ カレンダー選択肢 ************/
+.calendar_container__options {
+	background-color: var(--light);
+	box-shadow: inset -1px 0 0 0 var(--bg-color-hover);
+	flex: 0 0 230px;
+	padding: 15px 10px 15px 10px;
+	width: 100%;
+}
+.options_wrapper {
+	display: -webkit-box;
+	display: -webkit-flex;
+	display: flex;
+	flex-direction: column;
+	height: 100%;
+}
+.options_mini_calendar {
+	height: 250px;
+	padding: 5px;
+}
+.options_title {
+	padding: 5px 10px;
+	margin: 5px 0;
+	font-size: 1.5rem;
+	color: var(--text-color-title);
+}
+.options_title.op_cl {
+	display: -webkit-box;
+	display: -webkit-flex;
+	display: flex;
+}
+.options_title.op_cl:hover {
+	background-color: var(--bg-color-hover);
+	cursor: pointer;
+}
+.options_check_list {
+	margin-left: 10px;
+}
+.options_check_box {
+	border-radius: 3px;
+	color: var(--white);
+	display: inline-flex;
+	font-size: 1.1rem;
+	height: 19px;
+	margin-right: 4px;
+	width: 18.5px;
+}
+.options_check_box svg.fa-check {
+	margin: auto;
+}
+.options_check_box.unselected {
+	background-color: var(--white)!important;
+	border: 1px solid var(--bor-color-main)!important;
+}
+.options_my_schedule {
+	margin: 5px 0;
+}
+.options_department_schedule {
+	margin: 5px 0;
+}
+
+/************ カレンダー予定表示 ************/
+.calendar_container__schedule {
+	-webkit-box-flex: 1;
+	-webkit-flex: 1 1 auto;
+	flex: 1 0 auto;
+	overflow: hidden;
+	padding: 15px;
+	position: relative;
+}
+
+/************ 共通アクション ************/
+.calendar_container__common_action {
+	border-left: 1px solid var(--bor-color-main);
+	display: -webkit-box;
+	display: -webkit-flex;
+	display: flex;
+	flex-direction: column;
+	flex: 0 1 auto;
+}
+.common_action_menu {
+	width: 60px;
+}
+
+/************ カレンダー編集モーダル内 ************/
+
+/* カレンダーモーダル-参加者リスト */
+.calendar_guest_list .list-group-item {
+	border: none;
+	border-radius: 2px;
+	padding: 3px 5px;
+}
+.calendar_guest_list .list-group-item:hover {
+	background-color: var(--bg-color-edit);
+}
+
+.calendar_related_data {
+	align-items: center;
+	-ms-flex-align: center;
+	background-color: var(--white);
+	border: 1px solid var(--bor-color-main);
+	column-gap: 10px;
+	display: -webkit-box;
+	display: -webkit-flex;
+	display: flex;
+	padding: 0 0 0 8px;
+}
+
+.guest_list_contents {
+	align-items: center;
+	-ms-flex-align: center;
+	display: -webkit-box;
+	display: -webkit-flex;
+	display: flex;
+	column-gap: 10px;
+	justify-content: space-between;
+}
+.guest_list_contents__name {
+	flex: 1 1 165px;
+}
+.guest_list_contents__type {
+	flex: 0 0 auto;
+}
+.guest_list_contents__del {
+	flex: 0 0 auto;
+}
+
+/* 色選択 */
+.btn_color {
+	border: 0.5px solid var(--bor-color-main);
+	height: 21px;
+	width: 20px;
+}

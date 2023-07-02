@@ -1,0 +1,473 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      layout:decorator="user/tenantRegist/tenantRegist">
+<head>
+<meta name="viewport" content="width=device-width,initial-scale=1.0,minimum-scale=1.0">
+<meta charset="utf-8" th:remove="tag" />
+<title>
+	[[${T(jp.loioz.common.utility.LoiozUtils).getHtmlTitle("ご利用申込み", T(jp.loioz.common.utility.SessionUtils).getTenantName())}]]
+</title>
+<script type="text/javascript" th:src="@{/js/ajaxzip3.js}"></script>
+<script type="text/javascript">
+	function initDisplay() {
+		toggleInputForm(1);
+	}
+	$(function() {
+		$("#main-contents").on("click", "#searchAddress", function() {
+		AjaxZip3.zip2addr(
+			"tenant.tenantZipCd",
+			"",
+			"tenant.tenantAddress1",
+			"tenant.tenantAddress1");
+		});
+	});
+	$(function() {
+		/* 氏名(かな)の自動入力 */
+		$.fn.autoKana('input[name ="tenant.tenantDaihyoNameSei"]', 'input[name = "tenant.tenantDaihyoNameSeiKana"]', {});
+		$.fn.autoKana('input[name ="tenant.tenantDaihyoNameMei"]', 'input[name = "tenant.tenantDaihyoNameMeiKana"]', {});
+		$("#agreeCheck").on("change", function() {
+			if($(this).prop("checked")){
+				$("#registButton").prop("disabled", false).removeClass("btn-secondary");
+			} else {
+				$("#registButton").prop("disabled", true).addClass("btn-secondary");
+			}
+		}).trigger("change");
+
+		/* ドメインの入力がない場合 disabled */
+		$("#domainFormArea").find("[name='domain.domain']").on("input",function() {
+			if($(this).val()){
+				$($(this).data("target")).text($(this).val());
+				$("#domainFormArea").find(".nextForm").removeClass("btn-secondary");
+				$("#domainFormArea").find(".nextForm").prop("disabled",false);
+			} else {
+				$($(this).data("target")).text("*****");
+				$("#domainFormArea").find(".nextForm").addClass("btn-secondary");
+				$("#domainFormArea").find(".nextForm").prop("disabled",true);
+			}
+		});
+		$("#domainFormArea").find("[name='domain.domain']").on("blur",function() {
+			$(this).trigger("input");
+		});
+	});
+	$(function() {
+		$("#main-contents").on("click",".toggle-password-display", function() {
+			let passwordForm = $(this).closest(".password-container").find("input");
+			let toggleButton = $(this);
+			if (passwordForm.attr("type") == "password") {
+				passwordForm.attr("type", "text");
+				toggleButton
+				.find(".fa-eye").addClass("hidden").end()
+				.find(".fa-eye-slash").removeClass("hidden");
+			} else {
+				passwordForm.attr("type", "password");
+				toggleButton
+				.find(".fa-eye-slash").addClass("hidden").end()
+				.find(".fa-eye").removeClass("hidden");
+		}});
+
+		$.fn.autoKana('input[name ="user.accountNameSei"]', 'input[name = "user.accountNameSeiKana"]', {});
+		$.fn.autoKana('input[name ="user.accountNameMei"]', 'input[name = "user.accountNameMeiKana"]', {});
+	});
+	
+</script>
+</head>
+<body>
+	<div class="section" id="tenantInputFragment" layout:fragment="ajax-contents" th:fragment="ajax-contents">
+		<form id="registForm" th:action="@{/user/accountDetailRegist/form}" method="post" autocomplete="off">
+
+			<!-- エラーメッセージ -->
+			<div th:replace="common/messageArea::messageArea"></div>
+
+			<div class="tenant_input_nav">
+				<ol class="stepBar step3">
+					<li class="target1 step current">STEP１．事務所情報の登録</li>
+					<li class="target2 step">STEP２．事務所IDの登録</li>
+					<li class="target3 step">STEP３．ユーザーアカウントの作成</li>
+				</ol>
+			</div>
+
+			<div class = "browser_message error_msg_browser_tenant px-4" style="display:none;">
+				<div class="d-flex mb-3">
+					<div><i class="fas fa-exclamation-triangle mr-2 text-danger"></i></div>
+					<div>
+						<div>現在ご利用のブラウザは推奨環境ではありません。</div>
+						<div>動作保証している下記ブラウザをご利用ください。</div>
+					</div>
+				</div>
+				<div>
+					<div><i class="fas fa-circle fs9 mr-2"></i>Windows10</div>
+					<div class="d-flex flex-wrap pl-4">
+						<div>推奨ブラウザ：</div>
+						<div>
+							<div>Google Chrome 最新Version</div>
+							<div>Microsoft Edge 最新Version</div>
+						</div>
+					</div>
+				</div>
+				<div>
+					<div><i class="fas fa-circle fs9 mr-2"></i>macOS</div>
+					<div class="d-flex flex-wrap pl-4">
+						<div>推奨ブラウザ：</div>
+						<div>
+							<div>Safari 最新Version</div>
+							<div>Google Chrome 最新Version</div>
+						</div>
+					</div>
+				</div>
+				<div class="mt-4 text-center">
+					Google Chromeのダウンロードは、<a href="https://www.google.com/chrome/" target="_blank">こちら</a>
+				</div>
+			</div>
+
+			<div class="section_inner">
+				<div class="row justify-content-md-center">
+					<div class="col-md-9">
+						<!--/* 1.事務所情報 */-->
+						<div id="tenantFormArea" class="input-form" data-index="1" data-action="/tenantFormValid" th:object="${form}">
+							<h2 class="section_title">事務所（お申込者）情報をご入力ください</h2>
+							<div class="section_desc">
+								<p>事務所情報は、送付書などの差出人表記に利用されます。</p>
+								<p>登録した情報は、ログイン後に設定画面から変更することができます。</p>
+							</div>
+							<div class="section_content col-md-5 mx-auto">
+								<div th:replace="common/messageArea::viewMessageArea"></div>
+								<div class="detail_input_area">
+									<!--/* 事務所名 */-->
+									<div class="form-row">
+										<div class="input_parts form-group col-md-12">
+											<label>事務所名（または、弁護士個人名）</label>
+											<span class="mark_equired">必須</span>
+											<input type="text" class="form-control" maxlength ="30" th:field="*{tenant.tenantName}" autofocus>
+											<!--/* エラーメッセージ */-->
+											<div class="error_mag_point hidden" id="itemMsg_tenant.tenantName"></div>
+										</div>
+									</div>
+									<!--/* 事務所名 end */-->
+
+									<!--/* 法人格 */-->
+									<div class="form-row">
+										<div class="input_parts form-group col-md-12">
+											<label>法人格</label>
+											<span class="mark_equired">必須</span>
+											<div class="form-inline">
+												<label class="radio_btn" th:each="enum : ${T(jp.loioz.common.constant.CommonConstant$TenantType).values()}">
+													<input type="radio" class ="radio_input" name="tenant.tenantType" th:value="${enum.cd}" th:checked="${enum.cd} == *{tenant.tenantType}">
+													<span class="radio_txt" th:text="${enum.val}">事務所</span>
+												</label>
+											</div>
+											<!--/* エラーメッセージ */-->
+											<div class="form-inline text-left">
+												<div th:if="${#fields.hasErrors('tenant.tenantType')}" th:errors="*{tenant.tenantType}" class="error_mag_point">error!</div>
+												<div class="error_mag_point hidden" id="itemMsg_tenant.tenantType"></div>
+											</div>
+										</div>
+									</div>
+									<!--/* 法人格 end */-->
+
+									<!--/* 郵便番号 */-->
+									<div class="form-row">
+										<div class="input_parts form-group col-md-12 mb-2">
+											<label>ご住所</label>
+											<div class="form-inline">
+												<input type="text" class="form-control input_num_hyphen zipCodeFormat col-4" th:field="*{tenant.tenantZipCd}"
+													placeholder="例) 123-4567" maxlength="8">
+												<button type="button" class="btn btn-outline-primary btn-sm ml-3" id="searchAddress">住所検索 </button>
+											</div>
+											<!--/* エラーメッセージ */-->
+											<div class="form-inline text-left">
+												<div th:if="${#fields.hasErrors('tenant.tenantZipCd')}" th:errors="*{tenant.tenantZipCd}" class="error_mag_point">error!</div>
+												<div class="error_mag_point hidden" id="itemMsg_tenant.tenantZipCd"></div>
+											</div>
+										</div>
+									</div>
+									<!--/* 郵便番号 end */-->
+
+									<!--/* 住所１、２ */-->
+									<div class="form-row">
+										<div class="input_parts form-group col-md-12 mb-2">
+											<input type="text" class="form-control" th:field="*{tenant.tenantAddress1}"
+												placeholder="都道府県・市区町村" maxlength="256">
+											<div th:if="${#fields.hasErrors('tenant.tenantAddress1')}" th:errors="*{tenant.tenantAddress1}" class="error_mag_point">error!</div>
+											<div class="error_mag_point hidden" id="itemMsg_tenant.tenantAddress1"></div>
+										</div>
+									</div>
+									<div class="form-row">
+										<div class="input_parts form-group col-md-12">
+											<input type="text" class="form-control" th:field="*{tenant.tenantAddress2}"
+											 	placeholder="番地・建物名" maxlength="128">
+											<div th:if="${#fields.hasErrors('tenant.tenantAddress2')}" th:errors="*{tenant.tenantAddress2}" class="error_mag_point">error!</div>
+											<div class="error_mag_point hidden" id="itemMsg_tenant.tenantAddress2"></div>
+										</div>
+									</div>
+									<!--/* 住所１、２ end */-->
+								
+									<!--/* 連絡先 */-->
+									<div class="form-row">
+										<div class="input_parts form-group col-md-6 mb-0">
+											<label>電話番号</label>
+											<span class="mark_equired">必須</span>
+											<input type="text" class="form-control input_num_hyphen col-10" th:field="*{tenant.tenantTelNo}" pattern="[\d\-]*"
+												placeholder="例）00-1234-5678" maxlength="13">
+											<div class="error_mag_point hidden" id="itemMsg_tenant.tenantTelNo"></div>
+										</div>
+										<div class="input_parts form-group col-md-6 mb-0">
+											<label>FAX番号</label>
+											<input type="text" class="form-control input_num_hyphen col-10" th:field="*{tenant.tenantFaxNo}" pattern="[\d\-]*"
+											 	placeholder="例）00-1234-5678" maxlength="13">
+											<div class="error_mag_point hidden" id="itemMsg_tenant.tenantFaxNo"></div>
+										</div>
+									</div>
+
+									<!--/* お名前 */-->
+									<div class="form-row">
+										<div class="input_parts form-group col-md-12 mb-0">
+											<label>お名前</label>
+											<span class="mark_equired">必須</span>
+										</div>
+									</div>
+									<div class="form-row">
+										<!--/* 姓 */-->
+										<div class="input_parts form-group col-md-6 mb-2">
+											<input type="text" class="form-control" th:field="*{tenant.tenantDaihyoNameSei}"
+											 	placeholder="姓" maxlength="24">
+											<div class="error_mag_point text-left hidden" id="itemMsg_tenant.tenantDaihyoNameSei"></div>
+										</div>
+										<!--/* 名 */-->
+										<div class="input_parts form-group col-md-6 mb-2">
+											<input type="text" class="form-control" th:field="*{tenant.tenantDaihyoNameMei}" placeholder="名" maxlength="24">
+											<div class="error_mag_point text-left hidden" id="itemMsg_tenant.tenantDaihyoNameMei"></div>
+										</div>
+										<!--/* 姓（せい） */-->
+										<div class="input_parts form-group col-md-6">
+											<input type="text" class="form-control" th:field="*{tenant.tenantDaihyoNameSeiKana}" placeholder="せい" maxlength="64">
+											<div class="error_mag_point text-left hidden" id="itemMsg_tenant.tenantDaihyoNameSeiKana"></div>
+										</div>
+										<!--/* 名（めい）*/-->
+										<div class="input_parts form-group col-md-6">
+											<input type="text" class="form-control" th:field="*{tenant.tenantDaihyoNameMeiKana}" placeholder="めい" maxlength="64">
+											<div class="error_mag_point text-left hidden" id="itemMsg_tenant.tenantDaihyoNameMeiKana"></div>
+										</div>
+									</div>
+
+									<!--/* メールアドレス */-->
+									<div class="form-row">
+										<div class="input_parts form-group col-md-12">
+											<label>メールアドレス</label>
+											<div th:text="${mailAddress}">sample@example.com</div>
+										</div>
+									</div>
+
+									<div class="tenant_action_block">
+										<button type="button" class="btn btn-primary float-right nextForm">次へ<i class="fas fa-chevron-right mr-0 ml-3"></i></button>
+									</div>
+
+								</div>
+							</div>
+						</div>
+						<!--/* 1.事務所情報 end */-->
+		
+						<!-- 2.URL設定 -->
+						<div id="domainFormArea" class="input-form" data-index="2" data-action="/domainFormValid" th:object="${form}">
+							<h2 class="section_title">専用環境のURLを登録してください</h2>
+							<div class="section_desc">
+								<p>loiozにアクセスするためのURLを指定します。</p>
+								<p>事務所IDは、お好きな文字列を指定することができます。</p>
+							</div>
+							<div class="section_content col-md-6 mx-auto">
+								<div th:replace="common/messageArea::viewMessageArea"></div>
+
+								<div class="detail_input_area">
+									<!--/* 事務所ID */-->
+									<div class="form-row">
+										<div class="input_parts form-group col-md-12">
+											<label>事務所ID</label>
+											<span class="mark_equired">必須</span>
+											<input type="url" class="form-control col-6 input_half" th:field="*{domain.domain}" maxlength="30" placeholder="" data-target="#subDomainTxt">
+											<!--/* エラーメッセージ */-->
+											<div class="error_mag_point hidden" id="itemMsg_domain.domain"></div>
+											<div class="input_nav mb-0">例）ロイオズ法律事務所 → loioz-law</div>
+											<div class="input_nav my-0">※半角英数小文字と半角ハイフン(-)のみ利用可能</div>
+											<div><span class="text-danger">※一度登録を行うと、変更することはできません。</span></div>
+										</div>
+									</div>
+									<!--/* 事務所ID end */-->
+
+									<!--/* 試用環境のアクセスURL */-->
+									<div class="form-row">
+										<div class="input_parts form-group col-md-12">
+											<label>お客様のURL</label>
+											<div class="tenant_url">
+												<span>https://</span>
+												<span id="subDomainTxt" class="text-primary">*****</span>
+												<span>.loioz.jp</span>
+											</div>
+										</div>
+									</div>
+									<!--/* 試用環境のアクセスURL end */-->
+
+									<div class="tenant_action_block">
+										<button type="button" class="btn btn-light float-left prevForm" onclick="toggleInputForm(1);"><i class="fas fa-chevron-left"></i>戻る</button>
+										<button type="button" class="btn btn-primary btn-secondary nextForm" disabled>次へ<i class="fas fa-chevron-right mr-0 ml-3"></i></button>
+									</div>
+								</div>
+							</div>
+						</div>
+
+						<!-- ３.ユーザ情報 -->
+						<div id="userFormArea" class="input-form" data-index="3" data-action="/userFormValid" th:object="${form}">
+							<h2 class="section_title">ユーザーアカウントを登録してください</h2>
+							<div class="section_desc">
+								<p>loiozにログインするためのユーザーアカウント（管理者）を作成します。</p>
+								<p>ユーザーアカウントの追加や削除は、ログイン後に設定画面から行うことができます。</p>
+							</div>
+							<div class="section_content col-md-5 mx-auto">
+								<div th:replace="common/messageArea::viewMessageArea"></div>
+
+								<div class="detail_input_area">
+									<input type="hidden" th:field="*{user.accountMailAddress}">
+
+									<!--/* アカウントID */-->
+									<div class="form-row">
+										<div class="input_parts form-group col-md-12">
+											<label>アカウントID</label>
+											<span class="mark_equired">必須</span>
+											<input type="text" class="form-control input_half col-6" th:field="*{user.accountId}" maxlength="30">
+											<div class="input_nav">4文字以上で半角英数字を含めて作成してください。</div>
+											<!--/* エラーメッセージ */-->
+											<div class="error_mag_point hidden" id="itemMsg_user.accountId"></div>
+										</div>
+									</div>
+									<!--/* アカウントID end */-->
+
+									<!--/* お名前 */-->
+									<div class="form-row">
+										<div class="input_parts form-group col-md-12 mb-0">
+											<label>アカウント名</label>
+											<span class="mark_equired">必須</span>
+										</div>
+									</div>
+									<div class="form-row">
+										<!--/* 姓 */-->
+										<div class="input_parts form-group col-md-6 mb-2">
+											<input type="text" class="form-control" th:field="*{user.accountNameSei}" placeholder="姓" maxlength="24">
+											<div class="error_mag_point text-left hidden" id="itemMsg_user.accountNameSei"></div>
+										</div>
+										<!--/* 名 */-->
+										<div class="input_parts form-group col-md-6 mb-2">
+											<input type="text" class="form-control" th:field="*{user.accountNameMei}" placeholder="名" maxlength="64">
+											<div class="error_mag_point text-left hidden" id="itemMsg_user.accountNameMei"></div>
+										</div>
+									</div>
+									<div class="form-row">
+										<!--/* 姓（せい） */-->
+										<div class="input_parts form-group col-md-6 mb-1">
+											<input type="text" class="form-control" th:field="*{user.accountNameSeiKana}" placeholder="せい" maxlength="64">
+											<div class="error_mag_point text-left hidden" id="itemMsg_user.accountNameSeiKana"></div>
+										</div>
+										<!--/* 名（めい） */-->
+										<div class="input_parts form-group col-md-6 mb-1">
+											<input type="text" class="form-control" th:field="*{user.accountNameMeiKana}" placeholder="めい" maxlength="64">
+											<div class="error_mag_point text-left hidden" id="itemMsg_user.accountNameMeiKana"></div>
+										</div>
+									</div>
+									<div class="input_nav">※loioz内で利用するユーザーの表示名です。</div>
+
+									<!--/* 種別 */-->
+									<div class="form-row">
+										<div class="input_parts form-group col-md-12">
+											<label>種別</label>
+											<span class="mark_equired">必須</span>
+											<div>
+												<!--/* 弁護士、事務職員、その他 */-->
+												<label class="radio_btn" th:each="enum : ${T(jp.loioz.common.constant.CommonConstant$AccountType).values()}">
+													<input type="radio" class ="radio_input" th:field="*{user.accountType}" th:value="${enum.cd}">
+													<span class="radio_txt" th:text="${enum.val}">弁護士</span>
+												</label>
+											</div>
+											<!--/* エラーメッセージ */-->
+											<div class="error_mag_point hidden" id="itemMsg_user.accountType"></div>
+										</div>
+									</div>
+									<!--/* 種別 end */-->
+
+									<!--/* パスワード */-->
+									<div class="form-row">
+										<div class="input_parts form-group col-md-12">
+											<label>パスワード</label>
+											<span class="mark_equired">必須</span>
+											<div class="form-inline password-container">
+												<input type="password" class="form-control input_half col-5" th:field="*{user.password.password}" maxlength="30">
+												<div class="input-group-append">
+													<button class="toggle-password-display btn btn-light btn-sm ml-2" type="button">
+														<i class="far fa-eye mx-1"></i>
+														<i class="far fa-eye-slash mx-1 hidden"></i>
+													</button>
+												</div>
+											</div>
+											<div class="input_nav">※半角英数字8桁以上でご入力ください。</div>
+											<div class="error_mag_point hidden" id="itemMsg_user.password.password"></div>
+											<div class="error_mag_point hidden" id="itemMsg_user.password"></div>
+										</div>
+									</div>
+									<!--/* パスワード end */-->
+
+									<!--/* パスワード確認用 */-->
+									<div class="form-row">
+										<div class="input_parts form-group col-md-12">
+											<label>パスワード確認用</label>
+											<span class="mark_equired">必須</span>
+											<div class="form-inline password-container">
+												<input type="password" class="form-control input_half col-5" th:field="*{user.password.confirm}" maxlength="30">
+												<div class="input-group-append">
+													<button class="toggle-password-display btn btn-light btn-sm ml-2" type="button">
+														<i class="far fa-eye mx-1"></i>
+														<i class="far fa-eye-slash mx-1 hidden"></i>
+													</button>
+												</div>
+											</div>
+											<div class="error_mag_point hidden" id="itemMsg_user.password.confirm"></div>
+										</div>
+									</div>
+									<!--/* パスワード確認用 end */-->
+
+									<div class="mt-3">
+										<div class="mb-4 text-center">
+											<label class="checkbox_btn pt-0">
+												<input type="checkbox" class="checkbox_input" id="agreeCheck" name="agreeCheck"  value="true">
+												<span class="checkbox_txt h4">
+													<a href="" data-toggle="modal" data-target="#termsModal" target="_blank" rel="noopener">利用規約</a>に同意する
+												</span>
+											</label>
+										</div>
+										<div class="mt-2 text-center">
+											<button type="button" class="btn btn-secondary nextForm btn-info" id="registButton">お試し開始<i class="far fa-play-circle mr-0 ml-3"></i></button>
+											<button type="button" class="hidden" id="send">お試し開始</button>
+										</div>
+										<p class="mt-4 mb-5 text-center">自動的にログイン後の画面が表示されます。</p>
+									</div>
+									<div class="tenant_action_block">
+										<button type="button" class="btn btn-light float-left prevForm" onclick="toggleInputForm(2);"><i class="fas fa-chevron-left"></i>戻る</button>
+									</div>
+								</div>
+							</div>
+						</div>
+
+						<!-- ４.テナント作成中 -->
+						<div class="input-form text-center" data-index="4">
+							<h2 class="section_title">お客様専用「loioz」の登録中...</h2>
+							<div class="section_desc">
+								<p>ただいまお客様専用の環境を登録中です。しばらくお待ち下さい。</p>
+							</div>
+						</div>
+
+						<input type="hidden" name="key" th:value="${form.key}">
+						<input type="hidden" name="regist" value="">
+
+					</div>
+				</div>
+			</div>
+		</form>
+	</div>
+</body>
+</html>

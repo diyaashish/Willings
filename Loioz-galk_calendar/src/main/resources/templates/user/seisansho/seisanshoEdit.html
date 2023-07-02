@@ -1,0 +1,1382 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+		xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+		layout:decorator="commonLayout">
+<head>
+<meta charset="utf-8" />
+<title layout:fragment="title-contents">
+	[[${T(jp.loioz.common.utility.LoiozUtils).getHtmlTitle("精算書作成", T(jp.loioz.common.utility.SessionUtils).getTenantName())}]]
+</title>
+<th:block th:with="version=${@environment.getProperty('app.version')}">
+	<link href="./css/jquery.ptTimeSelect.css" th:href="@{/css/jquery.ptTimeSelect.css?{ver}(ver=${version})}" rel="stylesheet" type="text/css" />
+	<link href="./css/kaikei/kaikei.css" th:href="@{/css/kaikei/kaikei.css?{ver}(ver=${version})}" rel="stylesheet" type="text/css" />
+	<script type="text/javascript" th:src="@{/js/jquery.ptTimeSelect.js?{ver}(ver=${version})}"></script>
+	<script type="text/javascript" th:src="@{/js/kaikei/kaikei.js?{ver}(ver=${version})}"></script>
+</th:block>
+
+<script type="text/javascript" th:inline="javascript">
+$(function() {
+	let ajaxRunning = false;
+
+	// エラー表示判定用
+	const container = $(".seisanSettingArea");
+
+	/*<![CDATA[*/
+	let transitionCustomerId = /*[[${viewForm.transitionCustomerId}]]*/null;
+	let transitionAnkenId = /*[[${viewForm.transitionAnkenId}]]*/null;
+	let seisanSeq = /*[[${viewForm.seisanSeq}]]*/null;
+	/*]]>*/
+
+	// 請求：口座情報
+	let ginkoAccountSeq = $("#seikyu-kouzaShitei-select").val();
+	let kozaTarget1 = $("#koza-seikyu-kouzaShitei1");
+	let kozaTarget2 = $("#koza-seikyu-kouzaShitei2");
+	getKozaDetail(ginkoAccountSeq,kozaTarget1,kozaTarget2);
+
+	// 返金：口座情報
+	ginkoAccountSeq = $("#henkin-henkinsha-select").val();
+	kozaTarget1 = $("#koza-henkin-henkinshai1");
+	kozaTarget2 = $("#koza-henkin-henkinshai2");
+	getKozaDetail(ginkoAccountSeq, kozaTarget1, kozaTarget2);
+
+	// 精算、請求、一括分割時の項目表示制御
+	_seisanBtnControl();
+
+	let checkFlg = false;
+	let pushRecalc = false;
+
+	<!--/** リダイレクト先URLの設定 */-->
+	let redirectUrl;
+	const kaiekiEditUrl = /*[[${T(jp.loioz.common.constant.UrlConstant).KAIKEI_EDIT_URL}]]*/"url";
+	const transitionCustomerIdAttrNameAndEqual = /*[[${T(jp.loioz.common.constant.UrlConstant).TRANSITION_CUSTOMER_ID}]]*/"transitionCustomerId=";
+	const transitionAnkenIdAttrNameAndEqual = /*[[${T(jp.loioz.common.constant.UrlConstant).TRANSITION_ANKEN_ID}]]*/"transitionAnkenId=";
+	if (transitionCustomerId) {
+		redirectUrl = kaiekiEditUrl + "?"
+				+ transitionCustomerIdAttrNameAndEqual + transitionCustomerId + "&"
+				+ transitionAnkenIdAttrNameAndEqual + "" + "&"
+				+ "isSeisanshoTab=true";
+	} else{
+		redirectUrl = kaiekiEditUrl + "?"
+			+ transitionAnkenIdAttrNameAndEqual + transitionAnkenId + "&"
+			+ transitionCustomerIdAttrNameAndEqual + "" + "&"
+			+ "isSeisanshoTab=true";
+	}
+
+	<!--/** 閉じるボタン押下時 */-->
+	$("#seisanshoCreateCancel").on('click',function(){
+		window.location.href = redirectUrl;
+	});
+
+	<!--/** 他の画面遷移チェック */-->
+	$('input, textarea, select').on('keyup change', function(){
+		$(window).on('beforeunload', function() {
+			return "入力した内容はまだ保存されていません。本当に移動しますか。";
+		});
+	});
+
+	<!--/** 精算額の再計算 */-->
+	$("#recalculation").on('click', function(){
+		// ２重押下防止
+		if (ajaxRunning) {
+			return false;
+		}
+
+		pushRecalc = true;
+
+		// １.報酬項目、２.入出金項目の選択を取得
+		let kaikeiSeqList = _getKaikeiCheckList();
+		if ($.isEmptyObject(kaikeiSeqList)) {
+			// 1つも選択していない場合
+			alert("再計算する会計記録一つ以上選択してください。");
+			return false;
+		}
+
+		// 金額の再計算処理
+		let formData = [];
+		formData.push({name: 'kaikeiSeqList', value: kaikeiSeqList});
+
+		ajaxRunning = true;
+		$.ajax({
+			url : "/user/seisansho/recalculation",
+			type : "POST",
+			data : formData,
+		}).done(function(data) {
+			if (data.succeeded) {
+				$("#kaikeiKirokuNyukinTotal").text(data.kaikeiKirokuNyukinTotal);
+				$("#kaikeiKirokuNyukinTotal").addClass("text-danger");
+				$("#kaikeiKirokuShukkinTotal").text(data.kaikeiKirokuShukkinTotal);
+				$("#kaikeiKirokuShukkinTotal").addClass("text-danger");
+				$("#kaikeiKirokuHoshuTotal").text(data.kaikeiKirokuHoshuTotal);
+				$("#kaikeiKirokuHoshuTotal").addClass("text-danger");
+				$("#kaikeiKirokuTaxTotal").text(data.kaikeiKirokuTaxTotal);
+				$("#kaikeiKirokuTaxTotal").addClass("text-danger");
+				$("#kaikeiKirokuHoshuTaxNonTotal").addClass("text-danger"); // 0円固定
+				$("#kaikeiKirokuHoshuTax8perTotal").text(data.kaikeiKirokuHoshuTax8perTotal);
+				$("#kaikeiKirokuHoshuTax8perTotal").addClass("text-danger");
+				$("#kaikeiKirokuHoshuTax10perTotal").text(data.kaikeiKirokuHoshuTax10perTotal);
+				$("#kaikeiKirokuHoshuTax10perTotal").addClass("text-danger");
+				$("#kaikeiKirokuGensenTotal").text(data.kaikeiKirokuGensenTotal);
+				$("#kaikeiKirokuGensenTotal").addClass("text-danger");
+				$("#kaikeiKirokuHoshuShoukei").text(data.kaikeiKirokuHoshuShoukei);
+				$("#kaikeiKirokuHoshuShoukei").addClass("text-danger");
+				$("#kaikeiKirokuSashiHikiTotal").text(data.kaikeiKirokuSashiHikiTotal);
+				$("#kaikeiKirokuSashiHikiTotal").addClass("text-danger");
+				$("#seisanGakuTotal > span").text(data.dispSeisangakuTotal).attr("data-seisan-total", data.seisangakuTotal).end();
+				$("#seisanGakuTotal").addClass("text-danger");
+				
+				<!---/* 再計算後はすべて赤文字にするので、マイナス表記のクラス当てない */-->
+				$("#kaikeiKirokuNyukinTotal").removeClass("minus_money_text");
+				$("#kaikeiKirokuShukkinTotal").removeClass("minus_money_text");
+				$("#kaikeiKirokuHoshuTotal").removeClass("minus_money_text");
+				$("#kaikeiKirokuTaxTotal").removeClass("minus_money_text");
+				$("#kaikeiKirokuHoshuTax8perTotal").removeClass("minus_money_text");
+				$("#kaikeiKirokuHoshuTax10perTotal").removeClass("minus_money_text");
+				$("#kaikeiKirokuGensenTotal").removeClass("minus_money_text");
+				$("#kaikeiKirokuHoshuShoukei").removeClass("minus_money_text");
+				$("#kaikeiKirokuSashiHikiTotal").removeClass("minus_money_text");
+				$("#seisanGakuTotal").removeClass("minus_money_text");
+				
+				const parseNum = (numStr) => {return Number(numStr.replace(",", ''))};
+				if (!parseNum(data.kaikeiKirokuHoshuTax8perTotal) && !parseNum(data.kaikeiKirokuHoshuTax10perTotal)) {
+					// 消費税0円を表示
+					$("#TaxNonRow").removeClass("hidden");
+					$("#Tax8perTotalRow").addClass("hidden");
+					$("#Tax10perTotalRow").addClass("hidden");
+				} else {
+					$("#TaxNonRow").addClass("hidden");
+					if(parseNum(data.kaikeiKirokuHoshuTax8perTotal)) {
+						$("#Tax8perTotalRow").removeClass("hidden");
+					} else {
+						$("#Tax8perTotalRow").addClass("hidden");
+					}
+					if(parseNum(data.kaikeiKirokuHoshuTax10perTotal)) {
+						$("#Tax10perTotalRow").removeClass("hidden");
+					} else {
+						$("#Tax10perTotalRow").addClass("hidden");
+					}
+				}
+				
+				if (data.hasGensenMsg) {
+					$(".recalculation-message").addClass("text-danger");
+					$(".recalculation-message").text(data.gensenMessage);
+				}
+				// 精算、請求、一括分割時の項目表示制御
+				_seisanBtnControl();
+			} else {
+				// エラーがある場合
+				showErrorMessage(result.message,container,result.errors);
+			}
+			// 精算額の上限値チェックエラーメッセージを非表示
+			$("#itemMsg_seisanGakuTotal").addClass("hidden");
+
+			// [再計算]ボタンを非表示
+			$("#recalculation").addClass("hidden");
+
+		}).fail(function(jqXHR, textStatus, errorThrown) {
+			//予期せぬエラーなので、システムエラー画面に飛ばす
+			window.location.href = "/systemError";
+		}).always(function() {
+			ajaxRunning = false;
+		});
+	});
+
+	<!--/*「案件を選択して精算書を作成する」押下時 */-->
+	let selectAnkenAjaxRunning = false;
+	$("#selectAnken").on('click', function(){
+		// 2重押下防止
+		if (selectAnkenAjaxRunning) {
+			return false;
+		}
+		let poolAnkenId = $('input[name="selectAnken"]:checked').val();
+		if (poolAnkenId == null) {
+			// 案件が選択されていない場合
+			alert("案件を選択してください。");
+			return false;
+		}
+
+		// １.報酬項目、２.入出金項目の選択を取得
+		let kaikeiSeqList = _getKaikeiCheckList();
+
+		// 精算区分を設定
+		let seisanGakuTotal = $("#seisanGakuTotal > span").attr("data-seisan-total");
+		_setSeisanKubunSelect(seisanGakuTotal);
+
+		// formDataに追加します。
+		let formData = $('#seisanshoForm [name^="seisanshoCreateDto."]').serializeArray();
+		let seisanSeq = /*[[${viewForm.seisanSeq}]]*/null;
+		let seisanCustomerId = /*[[${viewForm.seisanCustomerId.asLong()}]]*/null;
+		let seisanAnkenId = /*[[${viewForm.seisanAnkenId.asLong()}]]*/null;
+
+		formData.push(
+				{name: 'kaikeiSeqList', value: kaikeiSeqList},
+				{name: 'seisanCustomerId', value: seisanCustomerId},
+				{name: 'seisanAnkenId', value: seisanAnkenId},
+				{name: 'seisanGakuTotal', value: seisanGakuTotal},
+				{name: 'seisanshoCreateDto.poolAnkenId', value: poolAnkenId},
+				{name: 'seisanshoCreateDto.seisanSeq', value: seisanSeq}
+		);
+		
+		// 預り金としてプール
+		selectAnkenAjaxRunning = true;
+		$.ajax({
+			url : "/user/seisansho/seisanGakuPool",
+			type : "POST",
+			data : formData,
+		}).done(function(result) {
+			if (result.succeeded) {
+				// 処理完了後は、メッセージを出力し会計管理画面に戻します。
+				alert(result.message);
+				$(window).off('beforeunload');
+				window.location.href = redirectUrl;
+			} else {
+				// バリデーションエラーがある場合
+				showErrorMessage(result.message,container,result.errors);
+			}
+		}).fail(function(jqXHR, textStatus, errorThrown) {
+			//予期せぬエラーなので、システムエラー画面に飛ばす
+			window.location.href = "/systemError";
+		}).always(function() {
+			selectAnkenAjaxRunning = false;
+		});
+	});
+
+	<!--/* 報酬項目と入出金項目を取得 */-->
+	function _getKaikeiCheckList() {
+		let kaikeiSeqList = [];
+		// １.報酬項目の選択のチェックありを取得
+		$("#hoshu tr").each(function(){
+			if($(this).find("input[name='kaikei_check']").prop("checked")){
+				kaikeiSeqList.push($(this).find("input[name='kaikei_check']").val());
+			}
+		});
+		// ２.入出金項目の選択のチェックありを取得
+		$("#nyushukkin tr").each(function(){
+			if($(this).find("input[name='kaikei_check']").prop("checked")){
+				kaikeiSeqList.push($(this).find("input[name='kaikei_check']").val());
+			}
+		});
+		return kaikeiSeqList;
+	}
+
+	<!--/* 登録ボタン押下 */-->
+	let seisanshoRegistAjaxRunning = false;
+	$("#seisanshoRegist, #seisanshoUpdate").on('click', function(){
+		// ２重押下防止
+		if (seisanshoRegistAjaxRunning) {
+			return false;
+		}
+
+		if (checkFlg == true && pushRecalc == false) {
+			// チェックボックス変更後に再計算していない場合
+			alert("再計算してください。");
+			return false;
+		}
+		// 再計算済みの場合、登録処理
+
+		// １.報酬項目、２.入出金項目の選択を取得
+		let kaikeiSeqList = _getKaikeiCheckList();
+		if($.isEmptyObject(kaikeiSeqList)){
+			// 会計記録を1つもチェックせずに精算書を作成した場合
+			alert("精算書作成する会計記録一つ以上選択してください");
+			return false;
+		}
+
+		if ($('input[name="seisanshoCreateDto.poolFlg"]').prop("checked") == true) {
+			// 精算額をプールする場合
+
+			// 案件選択モーダルを表示します。
+			$("#ankenModal").modal('show');
+			return false;
+		}
+
+		// 精算額をプールしない場合
+		let accountType = $("#henkin-kouzaShitei option:selected").data("type");
+		let accountSeq = $("#henkin-kouzaShitei option:selected").data("seq");
+
+		// 精算額が0円かを判定
+		let seisanGakuTotal = $("#seisanGakuTotal > span").attr("data-seisan-total");
+		let isSeisanZero = _getSeisanZeroFlg(seisanGakuTotal);
+
+		// 精算区分を設定
+		_setSeisanKubunSelect(seisanGakuTotal);
+
+		let seisanCustomerId = /*[[${viewForm.seisanCustomerId.asLong()}]]*/null;
+		let seisanAnkenId = /*[[${viewForm.seisanAnkenId.asLong()}]]*/null;
+		let formData = $('#seisanshoForm [name^="seisanshoCreateDto."]').serializeArray();
+		formData.push(
+				{name: 'seisanshoCreateDto.seisanSeq', value : seisanSeq},
+				{name: 'kaikeiSeqList', value: kaikeiSeqList},
+				{name: 'seisanCustomerId', value: seisanCustomerId},
+				{name: 'seisanAnkenId', value: seisanAnkenId},
+				{name: 'kozaAccountType', value: accountType},
+				{name: 'seisanshoCreateDto.henkinSakiAcctSeq', value : accountSeq},
+				{name: 'SeisanZero', value: isSeisanZero},
+				{name: 'seisanGakuTotal', value: seisanGakuTotal});
+
+		let btnName = $(this).attr("name");
+		let postUrl = "/user/seisansho/regist";
+		if (btnName == "update") {
+			postUrl  =  "/user/seisansho/update";
+		}
+		seisanshoRegistAjaxRunning = true;
+		$.ajax({
+			url : postUrl,
+			type : "POST",
+			data : formData,
+		}).done(function(result) {
+			// 成功時
+			if (result.succeeded) {
+				alert(result.message);
+				$(window).off('beforeunload');
+				window.location.href = redirectUrl;
+			} else {
+				// バリデーションエラーがある場合
+				showErrorMessage(result.message,container, result.errors);
+			}
+		}).fail(function(jqXHR, textStatus, errorThrown) {
+			// 予期せぬエラーなので、システムエラー画面に飛ばす
+			window.location.href = "/systemError";
+		}).always(function() {
+			// 成功時も失敗時も行う処理
+			seisanshoRegistAjaxRunning = false;
+		});
+	});
+
+	<!--/* 精算額が0円かを判定する関数 */-->
+	const _getSeisanZeroFlg = (seisanTotal) => {
+		const seisanGaku = Number(unformatComma(seisanTotal));
+		if (seisanGaku === 0) {
+			return true
+		} else {
+			//想定外のケース
+			return false;
+		}
+	}
+
+	<!--/* 精算区分を設定する関数 */-->
+	const _setSeisanKubunSelect = (seisanTotal) => {
+		const seisanGaku = Number(unformatComma(seisanTotal));
+		let seisanKubun;
+		if (seisanGaku === 0) {
+			// 精算額が0の場合は「精算」、ゼロ精算
+			seisanKubun = /*[[${T(jp.loioz.common.constant.CommonConstant$SeisanKirokuKubun).SEISAN}]]*/null;
+		} else if(seisanGaku > 0) {
+			// 精算額がプラスの場合は「精算」
+			seisanKubun = /*[[${T(jp.loioz.common.constant.CommonConstant$SeisanKirokuKubun).SEISAN}]]*/null;
+		} else if(seisanGaku < 0) {
+			// 精算額がマイナスの場合は「請求」
+			seisanKubun = /*[[${T(jp.loioz.common.constant.CommonConstant$SeisanKirokuKubun).SEIKYU}]]*/null;
+		} else {
+			//想定外のケース
+			return false;
+		}
+		// hiddenの項目に値をセット
+		$("#seisanKubun").val(seisanKubun);
+	}
+
+	<!--/* 精算、請求、一括分割時の項目表示制御 */-->
+	function _seisanBtnControl(){
+		// 精算額
+		let seisanGakuTotal = $("#seisanGakuTotal > span").attr("data-seisan-total");
+		let seisanGaku = Number(unformatComma(seisanGakuTotal));
+		if (seisanGaku === 0) {
+			// 0円精算
+
+			// 請求行：非表示
+			$(".seikyuRow").addClass("hidden");
+			// 精算行：非表示
+			$(".seisanRow").addClass("hidden");
+
+		} else if (seisanGaku < 0) {
+			// 「請求」
+
+			// 請求行：表示
+			$(".seikyuRow").removeClass("hidden");
+			// 精算行：非表示
+			$(".seisanRow").addClass("hidden");
+
+			// 請求先が未選択の場合は、顧客を選択状態とする
+			let shiharaishaType = $('input[name="seisanshoCreateDto.shiharaishaType"]:checked').val();
+			if (shiharaishaType == undefined || shiharaishaType == /*[[${T(jp.loioz.common.constant.CommonConstant$TargetType).CUSTOMER.getCd()}]]*/null) {
+				$('input[name="seisanshoCreateDto.shiharaishaType"]:first').prop("checked", true);
+				$('.select_shiharaisha').addClass("hidden");
+			} else if (shiharaishaType == /*[[${T(jp.loioz.common.constant.CommonConstant$TargetType).KANYOSHA.getCd()}]]*/null) {
+				$('.select_shiharaisha').removeClass("hidden");
+			}
+
+			// マイナスの場合は表示しない
+			$("#poolFlg").addClass("hidden");
+
+			// 請求方法の切替
+			_changeSeikyuhoho();
+
+		} else if (seisanGaku > 0) {
+			// 「精算」
+
+			// 請求行：非表示
+			$(".seikyuRow").addClass("hidden");
+			// 精算行：表示
+			$(".seisanRow").removeClass("hidden");
+
+			// 精算先が未選択の場合は、顧客を選択状態とする
+			let seisanKanyoshaSeq = "";
+			let seisanCustomerId = /*[[${viewForm.seisanCustomerId.asLong()}]]*/null;
+
+			$("input[name='seisanshoCreateDto.seikyuType']:first").prop("checked", true);
+
+			let henkinSakiType = $('input[name="seisanshoCreateDto.henkinSakiType"]:checked').val();
+			if (henkinSakiType == undefined) {
+				$('input[name="seisanshoCreateDto.henkinSakiType"]:first').prop("checked", true);
+			}
+			if (henkinSakiType == undefined || henkinSakiType == /*[[${T(jp.loioz.common.constant.CommonConstant$TargetType).CUSTOMER.getCd()}]]*/null) {
+				$('input[name="seisanshoCreateDto.henkinSakiType"]:first').prop("checked", true);
+				$('.select_henkinsaki').addClass("hidden");
+			} else if (henkinSakiType == /*[[${T(jp.loioz.common.constant.CommonConstant$TargetType).KANYOSHA.getCd()}]]*/null) {
+				// 関与者が選択されている場合
+				$('.select_henkinsaki').removeClass("hidden");
+				seisanKanyoshaSeq = $('#henkinSakiKanyoshaSelect').val();
+				seisanCustomerId = "";
+			}
+
+			// 口座情報を取得
+			getCustomerKozaDetail(henkinSakiType, seisanCustomerId, seisanKanyoshaSeq, $('#koza-henkin-kouzaShitei1'), $('#koza-henkin-kouzaShitei2'), $('#alertMsg_shiharaiSaki'));
+
+			// マイナスの場合は表示しない
+			$("#poolFlg").removeClass("hidden");
+
+		} else {
+			//想定外のケース
+			return false;
+		}
+	}
+
+	<!--/* 請求方法を変更処理 */-->
+	$("#seikyuType").on('change', function(){
+		_changeSeikyuhoho();
+	});
+
+	<!--/* 請求方法の表示切替 */-->
+	function _changeSeikyuhoho() {
+		let seikyuType = $('input[name="seisanshoCreateDto.seikyuType"]:checked').val();
+		if (seikyuType == undefined) {
+			$('input[name="seisanshoCreateDto.seikyuType"]:first').prop("checked", true);
+			seikyuType = /*[[${T(jp.loioz.common.constant.CommonConstant$SeikyuType).IKKATSU.getCd()}]]*/1;
+		}
+		if (seikyuType ==/*[[${T(jp.loioz.common.constant.CommonConstant$SeikyuType).IKKATSU.getCd()}]]*/1){
+			// 一括の場合
+			$(".seikyuBunkatsu").addClass("hidden");
+			$(".seikyuIkkatsu").removeClass("hidden");
+
+		} else {
+			// 分割の場合
+			$(".seikyuBunkatsu").removeClass("hidden");
+			$(".seikyuIkkatsu").addClass("hidden");
+
+			let hasu = $('input[name="seisanshoCreateDto.hasu"]:checked').val();
+			if (hasu == undefined) {
+				$('input[name="seisanshoCreateDto.hasu"]:first').prop("checked", true);
+			}
+		}
+	}
+
+	<!--/* 会計記録情報をチェック */-->
+	$('input[name="kaikei_check"]').on('click', function(){
+		checkFlg = true;
+		pushRecalc = false;
+
+		// [再計算]ボタンを表示
+		$("#recalculation").removeClass("hidden");
+	});
+
+	<!--/* 別案件への振替チェック */-->
+	$('input[name="seisanshoCreateDto.poolFlg"]').on('click', function(){
+		_checkPool();
+	});
+
+	<!--/* 入力エリアの表示・非表示 */-->
+	function _checkPool() {
+		if ($('input[name="seisanshoCreateDto.poolFlg"]').prop("checked") == true) {
+			// プールする場合
+
+			// 入力エリア非表示
+			$(".poolFlgCheckHidden").addClass("hidden");
+
+		} else {
+			// プールしない場合
+
+			// 入力エリア表示
+			$(".poolFlgCheckHidden").removeClass("hidden");
+		}
+	}
+
+	<!--/* 精算時（精算額がマイナス）の口座指定セレクトボックス変更時 */-->
+	$(document).on('change' , "#seikyu-kouzaShitei-select" ,function(){
+		let ginkoAccountSeq = $("#seikyu-kouzaShitei-select").val();
+		kozaTarget1 = $("#koza-seikyu-kouzaShitei1");
+		kozaTarget2 = $("#koza-seikyu-kouzaShitei2");
+		getKozaDetail(ginkoAccountSeq,kozaTarget1,kozaTarget2);
+	});
+
+	<!--/* 返金時（精算額がプラス）の返金者のセレクトボックス変更時 */-->
+	$(document).on('change' , "#henkin-henkinsha-select" ,function(){
+		let ginkoAccountSeq = $("#henkin-henkinsha-select").val();
+		kozaTarget1 = $("#koza-henkin-henkinshai1");
+		kozaTarget2 = $("#koza-henkin-henkinshai2");
+		getKozaDetail(ginkoAccountSeq,kozaTarget1,kozaTarget2);
+	});
+
+	<!--/* 返金先：関与者の切り替え */-->
+	$('select#henkinSakiKanyoshaSelect').on('change', function(){
+
+		$('#koza-henkin-kouzaShitei1').text("");
+		$('#koza-henkin-kouzaShitei2').text("");
+		$('#alertMsg_shiharaiSaki').addClass('hidden');
+		$('#alertMsg_shiharaiSaki').text("");
+
+		let kanyoshaSeq = $(this).val();
+		let henkinSakiType = $('input[name="seisanshoCreateDto.henkinSakiType"]:checked').val();
+		let kozaTarget1 = $('#koza-henkin-kouzaShitei1');
+		let kozaTarget2 = $('#koza-henkin-kouzaShitei2');
+		let errorMsgTarget = $('#alertMsg_shiharaiSaki');
+
+		// 口座情報を取得する。
+		getCustomerKozaDetail(henkinSakiType, "", kanyoshaSeq, kozaTarget1, kozaTarget2,errorMsgTarget);
+	});
+
+	<!--/* 支払者種別の切り替え */-->
+	$(document).on('click', '[name="seisanshoCreateDto.shiharaishaType"]', function() {
+		if ($(this).val() == /*[[${T(jp.loioz.common.constant.CommonConstant$TargetType).CUSTOMER.getCd()}]]*/) {
+			$('.select_shiharaisha').addClass("hidden");
+		} else {
+			$('.select_shiharaisha').removeClass("hidden");
+		}
+	});
+
+	<!--/* 返金先種別の切り替え */-->
+	$(document).on('change', '[name="seisanshoCreateDto.henkinSakiType"]', function() {
+		$('.select_henkinsaki').addClass("hidden");
+		$('.select_henkinsaki[data-val="' + $(this).val() + '"]').removeClass("hidden");
+		$('#koza-henkin-kouzaShitei1').text("");
+		$('#koza-henkin-kouzaShitei2').text("");
+		$('#henkinSakiKanyoshaSelect').val("");
+		$('#alertMsg_shiharaiSaki').addClass('hidden');
+		$('#alertMsg_shiharaiSaki').text("");
+
+		targetType = /*[[${T(jp.loioz.common.constant.CommonConstant$TargetType).CUSTOMER.getCd()}]]*/"0";
+		if ($(this).val() === targetType) {
+			// 顧客を選択
+
+			$('#koza-henkin-kouzaShitei1').text("");
+			$('#koza-henkin-kouzaShitei2').text("");
+
+			let henkinSakiType = $('input[name="seisanshoCreateDto.henkinSakiType"]:checked').val();
+			let seisanCustomerId = /*[[${viewForm.seisanCustomerId.asLong()}]]*/null;
+			let kozaTarget1 = $('#koza-henkin-kouzaShitei1');
+			let kozaTarget2 = $('#koza-henkin-kouzaShitei2');
+			let errorMsgTarget = $('#alertMsg_shiharaiSaki');
+
+			// 口座情報を取得する。
+			getCustomerKozaDetail(henkinSakiType, seisanCustomerId, "", kozaTarget1, kozaTarget2, errorMsgTarget);
+		} else {
+			$("#henkinSakiKanyoshaSelect").removeClass("hidden");
+		}
+	});
+
+	<!--/** 削除ボタン押下時の処理 */-->
+	let deleteAjaxRunning = false;
+	$("#deletelBtn").on('click', function(){
+		if(!confirm("削除してもよろしいですか？")){
+			return false;
+		}
+		// 二重押下防止
+		if (deleteAjaxRunning) {
+			return false;
+		}
+		let formData = [];
+		formData.push({name: 'seisanSeq', value: seisanSeq});
+		deleteAjaxRunning = true;
+		$.ajax({
+			url : "/user/seisansho/delete",
+			type : "POST",
+			data : formData,
+		}).done(function(result) {
+			// 成功時
+			if(result.succeeded){
+				alert(result.message);
+				$(window).off('beforeunload');
+				window.location.href = redirectUrl;
+			} else {
+				showErrorMessage(result.message, container, result.errors);
+			}
+		}).fail(function(jqXHR, textStatus, errorThrown) {
+			//予期せぬエラーなので、システムエラー画面に飛ばす
+			window.location.href = "/systemError";
+		}).always(function() {
+			//成功時も失敗時も
+			deleteAjaxRunning = false;
+		});
+	});
+
+});
+</script>
+<script type="text/javascript" th:inline="javascript">
+$(function(){
+	// 報酬の精算済データの表示・非表示
+	$(document).on('change', "[name=HoushuHiddenFlg]" ,function(){
+		if($(".hoshu-hidden-checkbox").prop('checked')){
+			$(".hoshu_seisansumi").removeClass('hidden');
+		} else {
+			$(".hoshu_seisansumi").addClass('hidden');
+		}
+	});
+
+	// 報酬の精算済データの表示・非表示
+	$(document).on('change', "[name=NyushukkinHiddenFlg]" ,function(){
+		if($(".nyushukkin-hidden-checkbox").prop('checked')){
+			$(".nyushukkin_seisansumi").removeClass('hidden');
+		}else{
+			$(".nyushukkin_seisansumi").addClass('hidden');
+		}
+	});
+});
+</script>
+</head>
+<body>
+	<div layout:fragment="main-contents" th:remove="tag">
+
+		<div class="contents_sidebar_wrapper contentsSlidebarWrapper"
+			th:data-click-open=${customerAnkenMenuOpenClickForSessionValue} th:data-resize-open=${customerAnkenMenuOpenResizeForSessionValue}>
+
+			<!--/* 顧客・案件メニュー */-->
+			<div th:replace="common/customerAnkenMenu::menuList(
+				sideMenuAnkenId=${viewForm.transitionAnkenId},
+				sideMenuCustomerId=${viewForm.transitionCustomerId},
+				selectedTabClass = 'is_seisansho')">
+			</div>
+
+			<!--/* メインコンテンツ */-->
+			<div class="contents_wrapper">
+
+				<div class="container-fluid">
+
+					<!--/* メッセージエリア */-->
+					<div th:replace="common/messageArea::messageArea"></div>
+
+					<!--/* ④名簿・案件一覧へリンク */-->
+					<th:block th:if="${viewForm.transitionAnkenId}">
+						<div th:replace="common/wrapHeader::wrapHeader(
+							returnListScreen=${T(jp.loioz.common.utility.SessionUtils).getSessionVaule(T(jp.loioz.common.constant.SessionAttrKeyEnum).RETURN_LIST_SCREEN.codeKey)},
+							sideMenuAnkenId=${viewForm.transitionAnkenId},
+							selectedTabClass = 'is_seisansho')"></div>
+					</th:block>
+					<th:block th:if="${viewForm.transitionCustomerId}">
+						<div th:replace="common/wrapHeader::wrapHeader(
+							returnListScreen=${T(jp.loioz.common.utility.SessionUtils).getSessionVaule(T(jp.loioz.common.constant.SessionAttrKeyEnum).RETURN_LIST_SCREEN.codeKey)},
+							sideMenuCustomerId=${viewForm.transitionCustomerId},
+							selectedTabClass = 'is_seisansho',
+							returnPrevScreenName=${T(jp.loioz.common.utility.SessionUtils).getSessionVaule(T(jp.loioz.common.constant.SessionAttrKeyEnum).RETURN_PREV_SCREEN_NAME)},
+							returnPrevScreenUrl=${T(jp.loioz.common.utility.SessionUtils).getSessionVaule(T(jp.loioz.common.constant.SessionAttrKeyEnum).RETURN_PREV_SCREEN_URL)})"></div>
+					</th:block>
+
+					<!--/* 顧客情報・案件情報 */-->
+					<div th:replace="common/customerAnkenSelected::detailInfo(
+						wrapHeaderAnkenId=${viewForm.transitionAnkenId},
+						wrapHeaderCustomerId=${viewForm.transitionCustomerId})">
+					</div>
+
+					<!--/* メインコンテンツ */-->
+					<div class="contents_main">
+
+						<div class="row">
+							<div class="col-lg-12">
+								<div class="section_block_header">
+									<div class="section_block_title pl-2">精算書／請求書作成</div>
+								</div>
+								
+								<!--/* 編集不可の場合のメッセージ */-->
+								<div class="messageArea" th:if="${(!viewForm.AbledEdit or viewForm.SeisanComplete) and viewForm.seisanSeq != null }">
+									<div class="errorMessageArea w-100 text-left">
+										<div class="error_msg_edit mx-0 mb-4 msgText" role="alert" th:text="${viewForm.infoMsg}"></div>
+									</div>
+								</div>
+							</div>
+						</div>
+
+						<!--/* 分割コンテンツ */-->
+						<div class="row">
+
+							<!--/* 左側のコンテンツ start */-->
+							<div class="col-lg-8">
+								<!--/* 明細情報エリア */-->
+								<section class="section_seisan">
+									<div class="section_block_body section_shadow">
+										<div class="seisan_title_block" th:if="${viewForm.transitionCustomerId}">
+											<div class="seisan_title line_anken">
+												<span class="anken_name" th:text="${#strings.isEmpty(viewForm.ankenName)} ? '(案件名未入力)' : ${viewForm.ankenName}"></span>
+												<span class="anken_id" th:text="|(${viewForm.seisanAnkenId})|"></span>
+											</div>
+											<div class="seisan_title_sub">
+												<div>
+													<div>精算処理を開始します。</div>
+													<div>項目の選択操作にて、精算内容を確定し精算データを作成してください。</div>
+												</div>
+												<div class="ml-auto mt-auto">
+													<button type="button" id="recalculation" class="btn btn-danger hidden"><i class="fas fa-calculator"></i>精算内容を再計算する</button>
+												</div>
+											</div>
+										</div>
+										<div class="seisan_title_block" th:if="${viewForm.transitionAnkenId}">
+											<div class="seisan_title line_customer">
+												<span class="customer_name" th:text="${viewForm.customerName}"></span>
+												<span class="customer_id" th:text="|(${viewForm.seisanCustomerId})|"></span>
+											</div>
+											<div class="seisan_title_sub">
+												<div>
+													<div>精算処理を開始します。</div>
+													<div>項目の選択操作にて、精算内容を確定し精算データを作成してください。</div>
+												</div>
+												<div class="ml-auto mt-auto">
+													<button type="button" id="recalculation" class="btn btn-danger hidden"><i class="fas fa-calculator"></i>精算内容を再計算する</button>
+												</div>
+											 </div>
+										</div>
+										
+										<div class="error_mag_point ml-4 mt-4 hidden" id="itemMsg_kaikeiSeqList"></div>
+										
+										<!--/* 報酬選択・入出金選択 */-->
+										<div class="list_select_block">
+										
+											<!--/* １.報酬項目選択エリア */-->
+											<div class="block_title">
+												<div class="line_title">１.報酬項目の選択</div>
+												<div class="line_check">
+													<label class="checkbox_btn" th:if="${viewForm.seisanSeq != null}">
+														<input type="checkbox" class="checkbox_input hoshu-hidden-checkbox" name="HoushuHiddenFlg">
+														<span class="checkbox_txt">精算済データ表示</span>
+													</label>
+												</div>
+											</div>
+													
+											<!--/* １.報酬項目一覧 */-->
+											<div class="header_fixed_table_wrapper table_kaikei">
+												<table id="hoshu" class="table_seisan">
+													<thead>
+														<tr>
+															<th class="col_date">発生日</th>
+															<th class="col_kingaku">報酬額</th>
+															<th class="col_kingaku">消費税</th>
+															<th class="col_kingaku_gensen">源泉徴収</th>
+															<th class="col_komoku">項目</th>
+															<th class="col_tekiyo">摘要</th>
+															<th class="col_seisan_id">精算ID</th>
+															<th class="col_check">選択</th>
+														</tr>
+													</thead>
+													<tbody>
+<!--/*/ 											<th:block th:if="${viewForm.seisanHoshuList.size() == 0 }"> /*/-->
+														<tr>
+															<td colspan="8" class="no_data_list">
+																<span th:text="#{I00021}">MSG_I00021</span>
+																<i class="fas fa-exclamation-circle"></i>
+															</td>
+														</tr >
+<!--/*/ 											</th:block> /*/-->
+														<tr th:each="item : ${viewForm.seisanHoshuList}" th:data-seq="${item.kaikeiKirokuSeq}"
+															data-click-sync-for-descendants=".kaikei_check"
+															th:classappend="${item.seisanSeq != viewForm.seisanSeq and item.seisanSeq != null} ? 'hidden hoshu_seisansumi' : '' ">
+															<td class="col_date" th:text="${item.hasseiDate}">発生日</td>
+															<td class="col_kingaku" th:classappend="${T( jp.loioz.common.utility.StringUtils).isMinusDicimalStr(item.displayShukkinGaku)}? 'minus_money_text':_" th:text="${item.displayShukkinGaku}">報酬</td>
+															<td class="col_kingaku" th:classappend="${T( jp.loioz.common.utility.StringUtils).isMinusDicimalStr(item.displayTax)}? 'minus_money_text':_" th:text="${item.displayTax}">消費税</td>
+															<td class="col_kingaku_gensen" th:classappend="${T( jp.loioz.common.utility.StringUtils).isMinusDicimalStr(item.dispGensenchoshuGaku)}? 'minus_money_text':_" th:text="${item.dispGensenchoshuGaku}">源泉徴収</td>
+															<td class="col_komoku" th:text="${item.item}">項目</td>
+															<td class="col_tekiyo">
+																<div th:unless="${#strings.isEmpty(item.tekiyo)}"
+																	th:with="
+																		tekiyoShowCnt=29,
+																		isOverCharCount=(${tekiyoShowCnt} < ${#strings.length(item.tekiyo)})">
+																	
+																	<!-- 文字数が多い場合の表示 -->
+																	<th:block th:if="${isOverCharCount}">
+																		<!-- 適要 -->
+																		<span th:text="|${#strings.substring(item.tekiyo,0, tekiyoShowCnt)}...|"></span>
+																	</th:block>
+																	
+																	<!-- 文字数が多くない場合の表示 -->
+																	<th:block th:unless="${isOverCharCount}">
+																		<!-- 適要 -->
+																		<span th:text="${item.tekiyo}"></span>
+																	</th:block>
+																</div>
+															</td>
+															<td class="col_seisan_id" th:text="${item.displaySeisanId}">精算ID</td>
+															<td class="col_check">
+																<label class="checkbox_btn no_text">
+																	<input type="checkbox" name="kaikei_check" class="checkbox_input kaikei_check"
+																		th:unless="${item.seisanSeq != viewForm.seisanSeq and item.seisanSeq != null}"
+																		th:checked="${item.DefaultSeisanCheck}"
+																		th:disabled="${item.DisabledSeisanCheck}"
+																		th:value="${item.kaikeiKirokuSeq}">
+																	<span class="checkbox_txt"
+																		th:classappend="${item.DisabledSeisanCheck} ? 'check_disabled' : '' "></span>
+																</label>
+															</td>
+														</tr>
+													</tbody>
+													<tfoot th:if="${viewForm.seisanHoshuList.size() > 0 }">
+														<tr>
+															<th>合計</th>
+															<td class="text-right border-left-0" th:classappend="${T( jp.loioz.common.utility.StringUtils).isMinusDicimalStr(viewForm.kaikeiKirokuHoshuTotal)}? 'minus_money_text':_" th:text="${viewForm.kaikeiKirokuHoshuTotal}"></td>
+															<td class="text-right" th:classappend="${T( jp.loioz.common.utility.StringUtils).isMinusDicimalStr(viewForm.kaikeiKirokuHoshuTaxTotal)}? 'minus_money_text':_" th:text="${viewForm.kaikeiKirokuHoshuTaxTotal}"></td>
+															<td class="text-right" th:classappend="${T( jp.loioz.common.utility.StringUtils).isMinusDicimalStr(viewForm.kaikeiKirokuGensenTotal)}? 'minus_money_text':_" th:text="${viewForm.kaikeiKirokuGensenTotal}"></td>
+															<td colspan="4"></td>
+														</tr>
+													</tfoot>
+												</table>
+											</div>
+										</div>
+										<!--/* １.報酬項目一覧 end */-->
+										
+										<!--/* ２.入出金項目の選択エリア */-->
+										<div class="list_select_block">
+											<div class="block_title">
+												<div class="line_title">２.入出金項目の選択</div>
+												<div class="line_check">
+													<label class="checkbox_btn" th:if="${viewForm.seisanSeq != null}">
+														<input type="checkbox" class="checkbox_input nyushukkin-hidden-checkbox" name="NyushukkinHiddenFlg">
+														<span class="checkbox_txt">精算済データ表示</span>
+													</label>
+												</div>
+											</div>
+											
+											<!--/* ２.入出金一覧 */-->
+											<div class="header_fixed_table_wrapper table_kaikei">
+												<table id="nyushukkin" class="table_seisan">
+													<thead>
+														<tr>
+															<th class="col_date">発生日</th>
+															<th class="col_kingaku">入金</th>
+															<th class="col_kingaku">出金</th>
+															<th class="col_komoku">項目</th>
+															<th class="col_tekiyo_l">摘要</th>
+															<th class="col_seisan_id">精算ID</th>
+															<th class="col_check">選択</th>
+														</tr>
+													</thead>
+													<tbody>
+<!--/*/ 											<th:block th:if="${viewForm.seisanNyushukkinList.size() == 0}"> /*/-->
+														<tr>
+															<td colspan="8" class="no_data_list">
+																<span th:text="#{I00021}">MSG_I00021</span>
+																<i class="fas fa-exclamation-circle"></i>
+															</td>
+														</tr >
+<!--/*/ 											</th:block> /*/-->
+														<tr th:each="item : ${viewForm.seisanNyushukkinList}" th:data-seq="${item.kaikeiKirokuSeq}"
+																data-click-sync-for-descendants=".kaikei_check"
+																th:classappend="${item.seisanSeq != viewForm.seisanSeq and item.seisanSeq != null} ? 'hidden nyushukkin_seisansumi' : '' ">
+															<td class="col_date" th:text="${item.hasseiDate}">発生日</td>
+															<td class="col_kingaku" th:classappend="${T( jp.loioz.common.utility.StringUtils).isMinusDicimalStr(item.displayNyukinGaku)}? 'minus_money_text':_" th:text="${item.displayNyukinGaku}">入金</td>
+															<td class="col_kingaku" th:classappend="${T( jp.loioz.common.utility.StringUtils).isMinusDicimalStr(item.displayShukkinGaku)}? 'minus_money_text':_" th:text="${item.displayShukkinGaku}">出金</td>
+															<td class="col_komoku text-break" th:text="${item.item}">項目</td>
+															<td class="col_tekiyo_l text-break">
+																<div th:unless="${#strings.isEmpty(item.tekiyo)}"
+																	th:with="
+																		tekiyoShowCnt=29,
+																		isOverCharCount=(${tekiyoShowCnt} < ${#strings.length(item.tekiyo)})">
+																	
+																	<!-- 文字数が多い場合の表示 -->
+																	<th:block th:if="${isOverCharCount}">
+																		<!-- 適要 -->
+																		<span th:text="|${#strings.substring(item.tekiyo,0, tekiyoShowCnt)}...|"></span>
+																	</th:block>
+																	
+																	<!-- 文字数が多くない場合の表示 -->
+																	<th:block th:unless="${isOverCharCount}">
+																		<!-- 適要 -->
+																		<span th:text="${item.tekiyo}"></span>
+																	</th:block>
+																</div>
+															</td>
+															<td  class="col_seisan_id" th:text="${item.displaySeisanId}">精算ID</td>
+															<td class="col_check">
+																<label class="checkbox_btn no_text">
+																	<input type="checkbox" name="kaikei_check" class="checkbox_input kaikei_check"
+																		th:unless="${item.seisanSeq != viewForm.seisanSeq and item.seisanSeq != null}"
+																		th:checked="${item.DefaultSeisanCheck}"
+																		th:disabled="${item.DisabledSeisanCheck}"
+																		th:value="${item.kaikeiKirokuSeq}">
+																	<span class="checkbox_txt"
+																		th:classappend="${item.DisabledSeisanCheck} ? 'check_disabled' : '' "></span>
+																</label>
+															</td>
+														</tr>
+													</tbody>
+													<tfoot th:if="${viewForm.seisanNyushukkinList.size() > 0 }">
+														<tr>
+															<th>合計</th>
+															<td class="text-right border-left-0" th:classappend="${T( jp.loioz.common.utility.StringUtils).isMinusDicimalStr(viewForm.kaikeiKirokuNyukinTotal)}? 'minus_money_text':_" th:text="${viewForm.kaikeiKirokuNyukinTotal}"></td>
+															<td class="text-right" th:classappend="${T( jp.loioz.common.utility.StringUtils).isMinusDicimalStr(viewForm.kaikeiKirokuShukkinTotal)}? 'minus_money_text':_" th:text="${viewForm.kaikeiKirokuShukkinTotal}"></td>
+															<td colspan="5"></td>
+														</tr>
+													</tfoot>
+												</table>
+											</div>
+											<!--/* ２.入出金一覧 end */-->
+										</div>
+									</div>
+								</section>
+							</div>
+							
+							<!--/* 右側のコンテンツ start */-->
+							<div class="col-lg-4 seisanSettingArea">
+								<!--/* 明細情報エリア */-->
+								<section class="section_shadow">
+									<div class="section_block_body">
+										<div class="seisan_title_block">
+											<div class="seisan_title w-50" th:classAppend="${viewForm.transitionCustomerId} ? 'line_anken' : 'line_customer' ">
+												<span th:classAppend="${viewForm.transitionCustomerId} ? 'anken_name' : 'customer_name' ">
+													精算内容
+												</span>
+											</div>
+										</div>
+										
+										<!--/* エラーメッセージ */-->
+										<div th:replace="common/messageArea::jsMessageArea"></div>
+										
+										<div class="seisan_edit" id="seisanshoForm">
+											
+											<!--/* 報酬サマリー */-->
+											<div class="seisan_summary">
+												
+												<div class="summary_row nyukin_sum">
+													<div class="summary_title">入金合計</div>
+													<div class="summary_komoku"></div>
+													<div class="summary_total" id="kaikeiKirokuNyukinTotal"
+														th:classappend="${T( jp.loioz.common.utility.StringUtils).isMinusDicimalStr(viewForm.kaikeiKirokuNyukinTotal)}? 'minus_money_text':_" 
+														th:text="${viewForm.kaikeiKirokuNyukinTotal}">
+													</div>
+												</div>
+												<div class="hoshu_out_money_block">
+													<div class="summary_row bengoshi_hoshu">
+														<div class="summary_title">弁護士報酬</div>
+														<div class="summary_komoku">報酬額</div>
+														<div class="summary_kingaku" id="kaikeiKirokuHoshuTotal"
+															th:classappend="${T( jp.loioz.common.utility.StringUtils).isMinusDicimalStr(viewForm.kaikeiKirokuHoshuTotal)}? 'minus_money_text':_"
+															th:text="${viewForm.kaikeiKirokuHoshuTotal}"></div>
+													</div>
+													<div class="summary_row bengoshi_hoshu" id="TaxNonRow" th:classappend="${viewForm.kaikeiKirokuHoshuTax8perTotal.equals('0') && viewForm.kaikeiKirokuHoshuTax10perTotal.equals('0')}?_:'hidden'">
+														<div class="summary_title"></div>
+														<div class="summary_komoku">消費税</div>
+														<div class="summary_kingaku" id="kaikeiKirokuHoshuTaxNonTotal">0</div>
+													</div>
+													<div class="summary_row bengoshi_hoshu" id="Tax8perTotalRow" th:classappend="${!viewForm.kaikeiKirokuHoshuTax8perTotal.equals('0')}?_:'hidden'">
+														<div class="summary_title"></div>
+														<div class="summary_komoku">消費税(8%)</div>
+														<div class="summary_kingaku" id="kaikeiKirokuHoshuTax8perTotal" 
+															th:classappend="${T( jp.loioz.common.utility.StringUtils).isMinusDicimalStr(viewForm.kaikeiKirokuHoshuTax8perTotal)}? 'minus_money_text':_" 
+															th:text="${viewForm.kaikeiKirokuHoshuTax8perTotal}"></div>
+													</div>
+													<div class="summary_row bengoshi_hoshu" id="Tax10perTotalRow" th:classappend="${!viewForm.kaikeiKirokuHoshuTax10perTotal.equals('0')}?_:'hidden'">
+														<div class="summary_title"></div>
+														<div class="summary_komoku">消費税(10%)</div>
+														<div class="summary_kingaku" id="kaikeiKirokuHoshuTax10perTotal"
+															th:classappend="${T( jp.loioz.common.utility.StringUtils).isMinusDicimalStr(viewForm.kaikeiKirokuHoshuTax10perTotal)}? 'minus_money_text':_"
+															th:text="${viewForm.kaikeiKirokuHoshuTax10perTotal}"></div>
+													</div>
+													<div class="summary_row bengoshi_hoshu">
+														<div class="summary_title"></div>
+														<div class="summary_komoku">源泉徴収税</div>
+														<div class="summary_kingaku"id="kaikeiKirokuGensenTotal"
+															th:classappend="${T( jp.loioz.common.utility.StringUtils).isMinusDicimalStr(viewForm.kaikeiKirokuGensenTotal)}? 'minus_money_text':_" 
+															th:text="${viewForm.kaikeiKirokuGensenTotal}"></div>
+													</div>
+													<div class="summary_row bengoshi_hoshu">
+														<div class="summary_title"></div>
+														<div class="summary_komoku  komoku_sum">小計</div>
+														<div class="summary_total"id="kaikeiKirokuHoshuShoukei" 
+															th:classappend="${T( jp.loioz.common.utility.StringUtils).isMinusDicimalStr(viewForm.kaikeiKirokuHoshuShoukei)}? 'minus_money_text':_" 
+															th:text="${viewForm.kaikeiKirokuHoshuShoukei}"></div>
+													</div>
+												</div>
+												<div class="hoshu_out_money_block">
+													<div class="summary_row out_money">
+														<div class="summary_title">出金合計</div>
+														<div class="summary_komoku"></div>
+														<div class="summary_total" id="kaikeiKirokuShukkinTotal"
+															th:classappend="${T( jp.loioz.common.utility.StringUtils).isMinusDicimalStr(viewForm.kaikeiKirokuShukkinTotal)}? 'minus_money_text':_"
+															th:text="${viewForm.kaikeiKirokuShukkinTotal}"></div>
+													</div>
+												</div>
+												<div class="summary_row fix_seisan_money">
+													<div class="summary_title">精算額</div>
+													<div class="summary_komoku"></div>
+													<div class="summary_total" id="seisanGakuTotal" th:classappend="${T( jp.loioz.common.utility.StringUtils).isMinusDicimalStr(viewForm.dispSeisangakuTotal)}? 'minus_money_text':_">
+														<span th:text="${viewForm.dispSeisangakuTotal}" th:data-seisan-total="${viewForm.seisangakuTotal}"></span>
+													</div>
+												</div>
+											</div>
+											
+											<!--/* エラーメッセージ */-->
+											<div class="error_mag_point d-flex hidden mt-3 ml-3" id="itemMsg_seisanGakuTotal"></div>
+										
+											<!--/* 入力エリア */-->
+											<div class="detail_input_area px-3" th:if="${(viewForm.seisanHoshuList.size() > 0) or (viewForm.seisanNyushukkinList.size() > 0)}">
+												<!-- 別案件への振替 -->
+												<div class="text-right" id="poolFlg" th:if="!${#lists.isEmpty(viewForm.canPoolAnkenList)}">
+													<label class="checkbox_btn">
+														<input type="checkbox" th:field=${viewForm.seisanshoCreateDto.poolFlg} class="checkbox_input" th:disabled="${viewForm.seisanshoCreateDto.poolFlg}">
+														<span class="checkbox_txt">別案件への振替</span>
+													</label>
+													<div class="error_mag_point d-flex hidden" id="itemMsg_seisanshoCreateDto.poolFlg"></div>
+												</div>
+												<!-- 別案件への振替 end -->
+	
+												<!-- 入力エリア -->
+												<div class="poolFlgCheckHidden" th:unless="${viewForm.seisanshoCreateDto.poolFlg}">
+													<div class="form-row">
+														<!-- 仮精算・精算 -->
+														<div class="input_parts form-group col-md-12 mb-0">
+															<label>精算</label>
+															<div>
+																<label id="seisanType" class="radio_btn" th:each="enum : ${T(jp.loioz.common.constant.CommonConstant$SeisanStatus).values()}">
+																	<input type="radio" class="radio_input c_orng" name="seisanshoCreateDto.seisanStatus" th:value="${enum.cd}"
+																		th:checked="${enum.cd.equals(viewForm.seisanshoCreateDto.seisanStatus) or (viewForm.seisanSeq == null and enum.cd == T(jp.loioz.common.constant.CommonConstant$SeisanStatus).KARI_SEISAN.getCd())}">
+																	<span class="radio_txt" th:text="${enum.val}"></span>
+																</label>
+															</div>
+															<div class="error_mag_point d-flex hidden" id="itemMsg_seisanshoCreateDto.seisanStatus"></div>
+														</div>
+														<!-- 仮精算・精算 end -->
+													</div>
+													
+													<!-- 精算先 口座 -->
+													<div class="form-row seisanRow" id="henkin-kouzaShitei">
+														<!-- 仮精算・精算 -->
+														<div class="input_parts form-group col-md-12 mb-0">
+															<label>精算先</label>
+															<div class="pt-2">
+																<label class="radio_btn">
+																	<input type="radio" name="seisanshoCreateDto.henkinSakiType" class="radio_input c_orng"
+																		th:value="${T(jp.loioz.common.constant.CommonConstant$TargetType).CUSTOMER.getCd()}"
+																		th:checked="${T(jp.loioz.common.constant.CommonConstant$TargetType).CUSTOMER.getCd().equals(viewForm.seisanshoCreateDto.henkinSakiType) || viewForm.seisanSeq == null}">
+																	<span class="radio_txt">顧客</span>
+																</label>
+																<label class="radio_btn" th:if="!${#lists.isEmpty(viewForm.kanyoshaList)}">
+																	<input type="radio" name="seisanshoCreateDto.henkinSakiType" class="radio_input c_orng"
+																		th:value="${T(jp.loioz.common.constant.CommonConstant$TargetType).KANYOSHA.getCd()}"
+																		th:checked="${T(jp.loioz.common.constant.CommonConstant$TargetType).KANYOSHA.getCd().equals(viewForm.seisanshoCreateDto.henkinSakiType)}">
+																	<span class="radio_txt">関与者から選択</span>
+																</label>
+															</div>
+															<div>
+																<!--/* 関与者プルダウン */-->
+																<select id="henkinSakiKanyoshaSelect" class="form-control select_henkinsaki"th:if="!${#lists.isEmpty(viewForm.kanyoshaList)}"
+																	th:data-val="${T(jp.loioz.common.constant.CommonConstant$TargetType).KANYOSHA.getCd()}"
+																	th:field="${seisanshoViewForm.seisanshoCreateDto.henkinKanyoshaSeq}"
+																	th:classappend="${T(jp.loioz.common.constant.CommonConstant$TargetType).CUSTOMER.getCd().equals(viewForm.seisanshoCreateDto.henkinSakiType) || viewForm.seisanSeq == null ? 'hidden' : ''}">
+																	<option value="">-</option>
+																	<option th:each="kanyosha : ${viewForm.kanyoshaList}" th:value="${kanyosha.id}" th:text="${kanyosha.name}"></option>
+																</select>
+															</div>
+															<div class="error_mag_point  d-flex hidden" id="itemMsg_seisanshoCreateDto.henkinSakiType"></div>
+															<div class="error_mag_point  d-flex hidden" id="itemMsg_seisanshoCreateDto.henkinCustomerId"></div>
+															<div class="error_mag_point  d-flex hidden" id="itemMsg_seisanshoCreateDto.henkinKanyoshaSeq"></div>
+														</div>
+													</div>
+													<!-- 精算先 口座 end -->
+														
+													<!-- 請求先 口座 -->
+													<div class="form-row seikyuRow" id="shiharaiSha">
+														<div class="input_parts form-group col-md-12 mb-0">
+															<label>請求先</label>
+															<div class="pt-2">
+																<label class="radio_btn">
+																	<input type="radio" name="seisanshoCreateDto.shiharaishaType" class="radio_input c_orng"
+																		th:value="${T(jp.loioz.common.constant.CommonConstant$TargetType).CUSTOMER.getCd()}"
+																		th:checked="${T(jp.loioz.common.constant.CommonConstant$TargetType).CUSTOMER.getCd().equals(viewForm.seisanshoCreateDto.shiharaishaType) || viewForm.seisanSeq == null}">
+																	<span class="radio_txt">顧客</span>
+																</label>
+																<label class="radio_btn" th:if="!${#lists.isEmpty(viewForm.kanyoshaList)}">
+																	<input type="radio" name="seisanshoCreateDto.shiharaishaType" class="radio_input c_orng"
+																		th:value="${T(jp.loioz.common.constant.CommonConstant$TargetType).KANYOSHA.getCd()}"
+																		th:checked="${T(jp.loioz.common.constant.CommonConstant$TargetType).KANYOSHA.getCd().equals(viewForm.seisanshoCreateDto.shiharaishaType)}">
+																	<span class="radio_txt">関与者から選択</span>
+																</label>
+															</div>
+															<div>
+																<!--/* 関与者プルダウン */-->
+																<select class="form-control select_shiharaisha" th:if="!${#lists.isEmpty(viewForm.kanyoshaList)}"
+																	th:data-val="${T(jp.loioz.common.constant.CommonConstant$TargetType).KANYOSHA.getCd()}"
+																	th:field="${viewForm.seisanshoCreateDto.shiharaiKanyoshaSeq}"
+																	th:classappend="${T(jp.loioz.common.constant.CommonConstant$TargetType).CUSTOMER.getCd().equals(viewForm.seisanshoCreateDto.shiharaishaType) || viewForm.seisanSeq == null ? 'hidden' : ''}">
+																	<option value="">-</option>
+																	<option th:each="kanyosha : ${viewForm.kanyoshaList}" th:value="${kanyosha.id}" th:text="${kanyosha.name}"></option>
+																</select>
+															</div>
+															<div class="error_mag_point d-flex hidden" id="itemMsg_seisanshoCreateDto.shiharaishaType"></div>
+															<div class="error_mag_point d-flex hidden" id="itemMsg_seisanshoCreateDto.shiharaiCustomerId"></div>
+															<div class="error_mag_point d-flex hidden" id="itemMsg_seisanshoCreateDto.shiharaiKanyoshaSeq"></div>
+														</div>
+													</div>
+													<!-- 請求先 口座 end -->
+	
+													<!-- 請求方法 -->
+													<div class="form-row seikyuRow" id="seikyuType">
+														<div class="input_parts form-group col-md-12 mb-0">
+															<label>請求方法</label>
+															<div class="pt-2">
+																<label id="seisanType" class="radio_btn mr-0" th:each="enum : ${T(jp.loioz.common.constant.CommonConstant$SeikyuType).values()}">
+																	<input type="radio" class="radio_input c_orng" name="seisanshoCreateDto.seikyuType" th:value="${enum.cd}"
+																		th:checked="${enum.cd.equals(viewForm.seisanshoCreateDto.seikyuType) or (viewForm.seisanSeq == null and enum.cd == T(jp.loioz.common.constant.CommonConstant$SeikyuType).IKKATSU.getCd())}">
+																	<span class="radio_txt" th:text="${enum.val}"></span>
+																</label>
+															</div>
+															<div class="error_mag_point d-flex hidden" id="itemMsg_seisanshoCreateDto.seikyuType"></div>
+														</div>
+														<!-- 月々の支払額 -->
+														<div class="input_parts form-group col-md-6 seikyuRow seikyuBunkatsu"  id="monthlyPay">
+															<label>毎月請求額</label>
+															<div class="d-flex align-items-center">
+																<input type="text" class="form-control digit7 input_money commaFormat input_number_only"
+																	th:field="${viewForm.seisanshoCreateDto.monthlyPay}"
+																	th:maxlength="${T(jp.loioz.common.constant.CommonConstant).MAX_KINGAKU_INPUT_DIGIT}">
+																<div class="ml-2"> 円</div>
+															</div>
+															<div class="error_mag_point d-flex hidden" id="itemMsg_seisanshoCreateDto.monthlyPay"></div>
+														</div>
+														<!-- 月々の支払額 end -->
+													</div>
+													<!-- 請求方法 end -->
+													
+													<!-- 端数 -->
+													<div class="form-row seikyuRow seikyuBunkatsu" id="hasu">
+														<div class="input_parts form-group col-md-6">
+															<label>端数</label>
+															<div class="pt-2">
+																<label id="seisanType" class="radio_btn mr-0" th:each="enum : ${T(jp.loioz.common.constant.CommonConstant$Hasu).values()}">
+																	<input type="radio" class="radio_input c_orng" name="seisanshoCreateDto.hasu" th:value="${enum.cd}"
+																		th:checked="${(enum.cd.equals(viewForm.seisanshoCreateDto.Hasu)) or (viewForm.seisanSeq == null and enum.cd == T(jp.loioz.common.constant.CommonConstant$Hasu).FIRST.getCd())}">
+																	<span class="radio_txt" th:text="${enum.val}"></span>
+																</label>
+															</div>
+														</div>
+														<!-- 請求開始年月 -->
+														<div class="input_parts form-group col-md-6 seikyuRow seikyuBunkatsu" id="paymentFirstDay">
+															<label>請求開始年月</label>
+															<div class="d-flex align-items-center">
+																<select id="shiharaiStartYear" class="form-control digit5" th:field="${viewForm.seisanshoCreateDto.shiharaiStartYear}">
+																	<option th:each="shiharaiStartYear : ${viewForm.shiharaiStartYearList}"
+																				th:value="${shiharaiStartYear.cd}" th:text="${shiharaiStartYear.val}"></option>
+																</select>
+																<div class="mx-2">年</div>
+																<select id="shiharaiStartMonth" class="form-control digit3" th:field="${viewForm.seisanshoCreateDto.shiharaiStartMonth}">
+																	<option th:each="enum : ${T(jp.loioz.common.constant.CommonConstant$Month).values()}"
+																				th:value="${enum.cd}" th:text="${enum.val}"></option>
+																</select>
+																<div class="ml-2">月</div>
+															</div>
+															<div class="error_mag_point d-flex hidden" id="itemMsg_seisanshoCreateDto.shiharaiStartYear"></div>
+															<div class="error_mag_point d-flex hidden" id="itemMsg_seisanshoCreateDto.shiharaiStartMonth"></div>
+														</div>
+														<!-- 請求開始年月 end -->
+													</div>
+													<!-- 端数 end -->
+													
+													<!-- 毎月の入金予定日 -->
+													<div class="form-row seikyuRow seikyuBunkatsu" id="paymentDate">
+														<div class="input_parts form-group col-md-12 mb-0">
+															<label>入金予定日</label>
+															<div class="d-flex align-items-center">
+																<div class="pt-2">
+																	<label class="radio_btn mt-2"
+																		th:classappend="${T(jp.loioz.common.constant.CommonConstant$SeisanShiharaiMonthDay).DESIGNATEDDAY.getCd().equals(enum.cd)} ? 'mr-0' "
+																		th:each="enum : ${T(jp.loioz.common.constant.CommonConstant$SeisanShiharaiMonthDay).values()}">
+																		<input type="radio" class="radio_input c_orng" name="seisanshoCreateDto.lastDay" th:value="${enum.cd}"
+																			th:checked="${(enum.cd.equals(viewForm.seisanshoCreateDto.lastDay)) or (viewForm.seisanshoCreateDto.lastDay == null and enum.cd.equals(T(jp.loioz.common.constant.CommonConstant$SeisanShiharaiMonthDay).LASTDAY.getCd()))}">
+																		<span class="radio_txt" th:text="${enum.val}"
+																			th:classappend="${T(jp.loioz.common.constant.CommonConstant$SeisanShiharaiMonthDay).DESIGNATEDDAY.getCd().equals(enum.cd)} ? 'days_payment' "></span>
+																	</label>
+																</div>
+																<select id="monthShiharaiDate" class="form-control digit5" th:field="${viewForm.seisanshoCreateDto.paymentDate}">
+																	<option th:each="monthShiharaiDate : ${viewForm.monthShiharaiDateList}"
+																		th:value="${monthShiharaiDate.cd}" th:text="${monthShiharaiDate.val}"></option>
+																</select>
+																<div class="ml-2">日払い</div>
+																<div class="error_mag_point d-flex hidden" id="itemMsg_seisanshoCreateDto.paymentDate"></div>
+																<div class="error_mag_point d-flex hidden" id="itemMsg_seisanshoCreateDto.lastDay"></div>
+															</div>
+														</div>
+													</div>
+													<!-- 毎月の入金予定日 end -->
+													
+													<!-- 支払先 -->
+													<div class="form-row seisanRow" id="shiharaiSaki">
+														<div class="input_parts form-group col-md-12 mb-0">
+															<label>支払先</label>
+															<!-- 口座情報 -->
+															<div class="koza_area mt-0">
+																<div id="koza-henkin-kouzaShitei1" th:text=" ${viewForm.kozaInfo1}"></div>
+																<div id="koza-henkin-kouzaShitei2" th:text=" ${viewForm.kozaInfo2}"></div>
+																<div class="error_mag_point d-flex hidden" id="alertMsg_shiharaiSaki"></div>
+															</div>
+															<!-- 口座情報 end -->
+														</div>
+													</div>
+													<!-- 精算額について end -->
+													
+													<!-- 支払期日 -->
+													<div class="form-row seisanRow" id="paymentLimitDt">
+														<div class="input_parts form-group col-md-4 mb-0">
+															<label>支払期日</label>
+															<input type="text" th:field="${viewForm.seisanshoCreateDto.paymentLimitDt}" class="form-control  modal_date digit7 inputDateSlash"
+																data-click-sync="#paymentLimitDtCal">
+															<button id="paymentLimitDtCal" type="button" class="btn btn_popcal hidden" data-toggle="datepicker" data-target="[name='seisanshoCreateDto.paymentLimitDt']">カレンダー</button>
+															<div class="error_mag_point d-flex hidden" id="itemMsg_seisanshoCreateDto.paymentLimitDt"></div>
+														</div>
+														<!--出金口座 -->
+														<div class="input_parts form-group col-md-8 mb-0 pl-4" id="henkin-henkinsha">
+															<label>出金口座</label>
+															<select id="henkin-henkinsha-select" class="form-control" th:field="${viewForm.seisanshoCreateDto.henkinKozaSeq}">
+																<option th:each="tenantAccountGinkoKozaList : ${viewForm.tenantAccountGinkoKozaList}" th:title="${tenantAccountGinkoKozaList.getDisplayGinkoKozaInfo()}"
+																			th:value="${tenantAccountGinkoKozaList.ginkoAccountSeq}" th:text="${tenantAccountGinkoKozaList.getListDisplayName()}">
+																</option>
+															</select>
+															<div class="koza_area">
+																<div id="koza-henkin-henkinshai1"></div>
+																<div id="koza-henkin-henkinshai2"></div>
+															</div>
+															<div class="error_mag_point d-flex hidden" id="itemMsg_seisanshoCreateDto.henkinKozaSeq"></div>
+														</div>
+														<!-- 出金口座 end -->
+													</div>
+													<!-- 支払期日 end -->
+													
+													<!-- 入金予定日 -->
+													<div class="form-row seikyuRow seikyuIkkatsu" id="paymentYoteiDate">
+														<div class="input_parts form-group col-md-4 mb-0">
+															<label>入金予定日</label>
+															<input type="text" th:field="${viewForm.seisanshoCreateDto.paymentYoteiDate}" class="form-control  modal_date digit7 inputDateSlash"
+																data-click-sync="#paymentYoteiDateCal">
+															<button id="paymentYoteiDateCal" type="button" class="btn btn_popcal hidden" data-toggle="datepicker" data-target="[name='seisanshoCreateDto.paymentYoteiDate']">カレンダー</button>
+															<div class="error_mag_point d-flex hidden" id="itemMsg_seisanshoCreateDto.paymentYoteiDate"></div>
+														</div>
+														<!-- 入金口座 -->
+														<div class="input_parts form-group col-md-8 mb-0 pl-4" id="seikyu-kouzaShitei">
+															<label>入金口座</label>
+															<select id="seikyu-kouzaShitei-select" class="form-control" th:field="${viewForm.seisanshoCreateDto.seikyuKozaSeq}">
+																<option th:each="tenantAccountGinkoKozaList : ${viewForm.tenantAccountGinkoKozaList}" th:title="${tenantAccountGinkoKozaList.getDisplayGinkoKozaInfo()}"
+																			th:value="${tenantAccountGinkoKozaList.ginkoAccountSeq}" th:text="${tenantAccountGinkoKozaList.getListDisplayName()}">
+																</option>
+															</select>
+															<div class="koza_area">
+																<div id="koza-seikyu-kouzaShitei1"></div>
+																<div id="koza-seikyu-kouzaShitei2"></div>
+															</div>
+															<div class="error_mag_point d-flex hidden" id="itemMsg_seisanshoCreateDto.seikyuKozaSeq"></div>
+														</div>
+														<!-- 入金口座 end -->
+													</div>
+													<!-- 入金予定日 end -->
+													
+												</div>
+												<!-- 入力エリア end -->
+												
+												<!-- プール情報 start -->
+												<div class="form-row" id="pool" th:if="${viewForm.seisanshoCreateDto.poolFlg}">
+													<div class="input_parts form-group col-md-12 mb-0">
+														<label>振替先案件</label>
+														<div class="hosokuInfo">
+															<span class="pool_ankenName" th:text="${viewForm.seisanshoCreateDto.poolAnkenInfo}">案件１</span>
+															<span class="pool_ankenName sub_text" th:text="|(${viewForm.seisanshoCreateDto.displayPoolAnkenId})|"></span>
+														</div>
+													</div>
+												</div>
+												<!-- プール情報 end -->
+											</div>
+											
+											<!-- hidden start-->
+											<div class="hidden">
+												<input type="hidden" id="seisanKubun" name="seisanshoCreateDto.seisanKubun" value="">
+											</div>
+											<!-- hidden end-->
+										</div>
+									</div>
+									<div class="section_block_footer mb-4">
+										<div class="d-flex px-4">
+											<button type="button" class="btn btn-light mr-auto" id="seisanshoCreateCancel"><i class="fas fa-times"></i>閉じる</button>
+											<button th:if="${!viewForm.SeisanComplete and viewForm.seisanSeq != null and seisanshoViewForm.AbledEdit}" type="button" class="btn btn-light px-3 mr-4" id="deletelBtn"
+												th:disabled="${!viewForm.AbledEdit}"><i class="far fa-trash-alt mr-3"></i>削除</button>
+											<button th:if="${!viewForm.SeisanComplete and viewForm.seisanSeq != null and seisanshoViewForm.AbledEdit}"  type="button" class="btn btn-info" name="update" id="seisanshoUpdate" th:disabled="${!viewForm.AbledEdit}">
+												<i class="fas fa-check"></i>保存
+											</button>
+											<button th:if="${viewForm.seisanSeq == null}" type="button" id="seisanshoRegist" class="btn btn-info" name="regist"><i class="fas fa-check"></i>登録</button>
+										</div>
+									</div>
+								</section>
+							</div>
+							<!-- 精算設定 end -->
+						</div>
+					</div>
+				</div>
+			</div>
+			<!-- メインコンテンツ end -->
+		</div>
+
+		<!-- プール時の案件選択モーダル -->
+		<div id="selectAnkenModal" class="selectAnkenModal">
+			<div th:replace="common/modal::modalAnkenPool(
+				id='ankenModal',
+				bodyContents=~{::ankenModalBodyContents},
+				footerContents=~{::ankenModalFooterContents},
+				title='プールする案件選択')">
+			</div>
+		</div>
+		<!-- プール時の案件選択モーダル end -->
+	</div>
+
+	<!--/* プール時の案件選択モーダル */-->
+	<div th:fragment="ankenModalBodyContents">
+		<div class="table_anken">
+			<table class="table_select table-hover" th:fragment="ankenList">
+				<thead>
+					<tr>
+						<th scope="col" class="col_select">選択</th>
+						<th scope="col" class="col_id">案件ID</th>
+						<th scope="col" class="col_kubun">区分</th>
+						<th scope="col" class="col_bunya">分野</th>
+						<th scope="col" class="col_anken_name">案件名</th>
+					</tr>
+				</thead>
+				<tbody>
+					<tr th:each="anken : ${viewForm.canPoolAnkenList}" data-click-sync-for-descendants=".selectedAnkenModal">
+						<td class="ankenSelectRadio col_select">
+							<label class="radio_btn no_text">
+								<input type="radio" class="radio_input c_orng selectedAnkenModal" name="selectAnken" th:value ="${anken.ankenId}">
+								<span class="radio_txt"></span>
+							</label>
+						</td>
+						<td class="col_id">
+							<span th:text="${anken.displayAnkenId.asLong()}"></span>
+						</td>
+						<td class="col_kubun" th:text="${anken.ankenType}">区分</td>
+						<td class="col_bunya" th:text="${anken.bunya}">分野</td>
+						<td class="col_anken_name char_ellipsis" th:text="${anken.ankenName}">案件名</td>
+					</tr>
+				</tbody>
+			</table>
+		</div>
+	</div>
+	<div th:fragment="ankenModalFooterContents">
+		<ul class="navi_list modal_navi new_regist_btn">
+			<li>
+				<button type="button" class="btn btn-info" id="selectAnken" data-dismiss="modal"><i class="fas fa-check"></i>選択した案件で精算書を作成</button>
+			</li>
+			<li>
+				<button type="button" class="btn btn-light" data-dismiss="modal"><i class="fas fa-times"></i>閉じる</button>
+			</li>
+		</ul>
+	</div>
+	<!--/* プール時の案件選択モーダル end */-->
+
+</body>
+</html>

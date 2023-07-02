@@ -1,0 +1,1139 @@
+@charset "UTF-8";
+
+/********************************************************
+ * テーブル
+********************************************************/
+
+
+/* 2行のth td の高さ */
+.table.row_two thead th  {
+	padding: 0.65rem 1.05rem .5rem;
+}
+.table.row_two tbody td  {
+	padding: 0.6rem 1.05rem;
+}
+.table.row_two thead th:first-child, .table.row_two tbody td:first-child {
+	padding-left: 2rem;
+}
+/* 2行のtd のみ高さ */
+.table.row_two_td tbody td  {
+	padding: 0.6rem 1.05rem;
+}
+.table.row_two_td thead th:first-child, .table.row_two_td tbody td:first-child {
+	padding-left: 2rem;
+}
+
+
+/* テーブル列サイズ汎用 */
+table thead th.col_5, table tbody td.col_5 {width: 5%;}
+table thead th.col_7, table tbody td.col_7 {width: 7%;}
+table thead th.col_10, table tbody td.col_10 {width: 10%;}
+table thead th.col_15, table tbody td.col_15 {width: 15%;}
+table thead th.col_20, table tbody td.col_20 {width: 20%;}
+table thead th.col_25, table tbody td.col_25 {width: 25%;}
+table thead th.col_30, table tbody td.col_30 {width: 30%;}
+table thead th.col_35, table tbody td.col_35 {width: 35%;}
+table thead th.col_40, table tbody td.col_40 {width: 40%;}
+table thead th.col_45, table tbody td.col_45 {width: 45%;}
+table thead th.col_50, table tbody td.col_50 {width: 50%;}
+table thead th.col_55, table tbody td.col_55 {width: 55%;}
+table thead th.col_60, table tbody td.col_60 {width: 60%;}
+table thead th.col_65, table tbody td.col_65 {width: 65%;}
+table thead th.col_70, table tbody td.col_70 {width: 70%;}
+table thead th.col_75, table tbody td.col_75 {width: 75%;}
+table thead th.col_80, table tbody td.col_80 {width: 80%;}
+table thead th.col_85, table tbody td.col_85 {width: 85%;}
+table thead th.col_90, table tbody td.col_90 {width: 90%;}
+table thead th.col_95, table tbody td.col_95 {width: 95%;}
+table thead th.col_100, table tbody td.col_100 {width: 100%;}
+table thead th.col_auto, table tbody td.col_auto {width: auto;}
+
+/* セル固定 */
+.cell_fixed_25 {min-width: 2.5rem; max-width: 2.5rem;}
+.cell_fixed_50 {min-width: 5rem; max-width: 5rem;}
+.cell_fixed_75 {min-width: 7.5rem; max-width: 7.5rem;}
+.cell_fixed_100 {min-width: 10rem; max-width: 10rem;}
+.cell_fixed_125 {min-width: 12.5rem; max-width: 12.5rem;}
+.cell_fixed_150 {min-width: 15rem; max-width: 15rem;}
+.cell_fixed_175 {min-width: 17.5rem; max-width: 17.5rem;}
+.cell_fixed_200 {min-width: 20rem; max-width: 20rem;}
+.cell_fixed_225 {min-width: 22.5rem; max-width: 22.5rem;}
+.cell_fixed_250 {min-width: 25rem; max-width: 25rem;}
+.cell_fixed_300 {min-width: 30rem; max-width: 30rem;}
+.cell_fixed_350 {min-width: 35rem; max-width: 35rem;}
+.cell_fixed_400 {min-width: 40rem; max-width: 40rem;}
+.cell_fixed_450 {min-width: 45rem; max-width: 45rem;}
+.cell_fixed_500 {min-width: 50rem; max-width: 50rem;}
+.cell_fixed_550 {min-width: 55rem; max-width: 55rem;}
+.cell_fixed_600 {min-width: 60rem; max-width: 60rem;}
+.cell_fixed_650 {min-width: 65rem; max-width: 65rem;}
+.cell_fixed_700 {min-width: 70rem; max-width: 70rem;}
+.cell_fixed_750 {min-width: 75rem; max-width: 75rem;}
+.cell_fixed_800 {min-width: 80rem; max-width: 80rem;}
+
+/* td 内のボタン郡 */
+.row_btn {
+	display: flex;
+	flex-wrap: nowrap;
+	gap: 5px 10px;
+}
+
+/* テーブル列が多い場合スクロール */
+.table_wrapper_scroll {
+	overflow-x: auto;
+}
+/* 標準テーブル */
+.table_standard thead th {
+	background-color: #f2f2f2;
+	font-weight: 700;
+}
+
+/* fixedテーブル */
+.table.table_fixed {
+	table-layout: fixed;
+}
+.table.table_fixed tbody td {
+	word-break: break-word;
+}
+
+/* td内 折返ししないテーブル */
+.table.table_nowrap thead th, .table.table_nowrap tbody td {
+	white-space: nowrap;
+}
+
+/* table ソート列 */
+.sort_column {
+	cursor: pointer;
+}
+/* table ソート列hover */
+.table_standard th.sort_column:hover {
+	background-color: #ddd;
+}
+/* table ソート列 選択状態 */
+.sort_column.selected {
+	font-weight: 600;
+}
+
+/* 並べ替えテーブル */
+.table.table_sort thead th:first-child {
+	padding-left: 1.5rem;
+}
+.table.table_sort tbody td:first-child {
+	padding-left: 0.9rem;
+}
+.table.table_sort tbody td.no_data_table_list:first-child {
+	padding-left: 2rem;
+}
+.table_sort .icon_drag_indicator {
+	background-size: 19px;
+}
+
+/************** ヘッダ背景色なし テーブル **************/
+tr.row_active td {
+	background-color: var(--bg-color-row-hover-selected)!important;
+}
+
+/************** 線なしテーブル **************/
+
+
+/** 郵便番号と住所セット2行表示 */
+.data_zip_address {
+	display: inline-block;
+	text-align: left;
+}
+.data_zip_address_block {
+	display: block;
+	text-align: left;
+}
+
+.col_id {width: 7em;}
+.col_date {width: 130px;}
+.col_tel {width: 9em;}
+
+/* 改行ありの場合の行間調整 */
+.with_line_breaks {
+	line-height: 1.5;
+}
+
+/* 追加・削除ボタンの表示切替 */
+[data-toggle="collapse"].collapsed .showIfTargetShown {
+	display: none;
+}
+[data-toggle="collapse"]:not(.collapsed) .showIfTargetHidden {
+	display: none;
+}
+
+/****************** ヘッダ固定テーブル ******************/
+div.header_fixed_table_wrapper {
+	overflow-y: auto;
+}
+div.header_fixed_table_wrapper.table_common_list {
+	overflow: inherit;
+}
+div.header_fixed_table_wrapper.table_common_list table thead th, div.header_fixed_table_wrapper.table_common_list table tbody td {
+	white-space: nowrap;
+}
+div.header_fixed_table_wrapper > table > thead tr th {
+	position: -webkit-sticky;
+	position: sticky;
+	top: 0px;
+}
+div.header_fixed_table_wrapper > table > tfoot tr th,
+div.header_fixed_table_wrapper > table > tfoot tr td {
+	position: -webkit-sticky;
+	position: sticky;
+	bottom: 0px;
+}
+
+/* 出金／入金予定一覧テーブル */
+div.header_fixed_table_wrapper.table_shukkin_nyukin {
+	max-height: 473px;
+}
+/* 裁判管理（刑事弁護含む）裁判一覧テーブル */
+div.header_fixed_table_wrapper.table_saiban {
+	max-height: 180px;
+}
+/* 関与者 顧客一覧テーブル */
+div.header_fixed_table_wrapper.table_kanyosha_customer {
+	max-height: 441px;
+}
+/* ファイル管理一覧テーブル */
+div.header_fixed_table_wrapper.table_file_mgt {
+	max-height: 487px;
+}
+
+/* 案件検索ダイアログ */
+div.header_fixed_table_wrapper.custeomerAnkenDialog {
+	max-height: 300px;
+}
+/* 反訴・併合裁判 選択ダイアログ */
+div.header_fixed_table_wrapper.table_higoHanso {
+	max-height: 235px;
+}
+/* 接見履歴ダイアログ */
+div.header_fixed_table_wrapper.table_sekken_rireki {
+	max-height: 300px;
+}
+/* 請求履歴 */
+div.header_fixed_table_wrapper.table_seikyu_rireki {
+	max-height: 350px;
+}
+/* 案件タスク追加一覧 */
+div.header_fixed_table_wrapper.table_task_anken_add {
+	max-height: 320px;
+}
+/* 預り金選択一覧 */
+div.header_fixed_table_wrapper.table_deposit_recv_add {
+	max-height: 300px;
+}
+/* 未精算報酬選択一覧 */
+div.header_fixed_table_wrapper.table_un_paid_fee_add {
+	max-height: 370px;
+}
+
+
+.row_completed td, .row_invalid td {
+	background-color: var(--lz-gray-200);
+}
+
+/* 一覧検索で0件の場合使用する */
+.no_data {
+	background-color: #ffffff !important;
+	text-align: left!important;
+	height: 30px;
+	cursor: default;
+}
+.no_data:hover {
+	cursor: default!important;
+	background-color: #ffffff !important;
+}
+/* table_list で0件の場合使用する */
+.no_data_table_list {
+	cursor: default !important;
+	text-align: left !important;
+}
+.no_data_table_list:hover {
+	background-color:#fff!important;
+}
+
+.table tbody tr.seleted_meibo_row {
+	background-color: var(--bg-color-row-hover-selected);
+	color: var(--text-color-link);
+}
+
+/****************** 【テーブル個別指定】******************/
+
+/* 当事者・関与者一覧 */
+.kanyosha_list .th_td_order {
+	width: 40px;
+}
+.kanyosha_list .th_td_person_id {
+	width: 70px;
+}
+.kanyosha_list .th_td_attribute {
+	width: 70px;
+}
+.kanyosha_list .th_td_name {
+	width: 150px;
+}
+.kanyosha_list .th_td_address {
+	width: 200px;
+}
+.kanyosha_list .th_td_contact {
+	width: 150px;
+}
+.kanyosha_list .th_td_bank {
+	width: 40px;
+}
+.kanyosha_list .th_td_relation {
+	width: 150px;
+}
+.kanyosha_list .th_td_remarks {
+	width: 150px;
+}
+
+/* 業務履歴（案件） */
+.gyomu_histroy_list thead th.col_no1 {
+	width: 120px;
+}
+.gyomu_histroy_list thead th.col_no2 {
+	width: 150px;
+}
+.gyomu_histroy_list thead th.col_no3 {
+	width: 300px;
+}
+.gyomu_histroy_list thead th.col_no4 {
+	width: 130px;
+}
+.gyomu_histroy_list thead th.col_no5 {
+	width: 95px;
+}
+.gyomu_histroy_list thead th.col_no6 {
+	width: 150px;
+}
+
+/* 預り品 */
+.custody_items_list thead th.col_no1 {
+	width: 50px;
+}
+.custody_items_list thead th.col_no2 {
+	width: 70px;
+}
+.custody_items_list thead th.col_no3 {
+	width: 150px;
+}
+.custody_items_list thead th.col_no4 {
+	width: 60px;
+}
+.custody_items_list thead th.col_no5 {
+	width: 80px;
+}
+.custody_items_list thead th.col_no6 {
+	width: 130px;
+}
+.custody_items_list thead th.col_no7 {
+	width: 90px;
+}
+.custody_items_list thead th.col_no8 {
+	width: 130px;
+}
+.custody_items_list thead th.col_no9 {
+	width: 130px;
+}
+
+/* ファイル */
+.file_list thead th.col_no1 {
+	width: 250px;
+}
+.file_list thead th.col_no1_search {
+	width: 150px;
+}
+.file_list thead th.col_no2 {
+	width: 130px;
+}
+.file_list thead th.col_no3 {
+	width: 45px;
+}
+.file_list thead th.col_no4 {
+	width: 75px;
+}
+.file_list thead th.col_no5 {
+	width: 50px;
+}
+.file_list thead th.col_no6 {
+	width: 30px;
+}
+
+/* ファイルゴミ箱 */
+.file_trash_list thead th.col_no1 {
+	width: 300px;
+}
+.file_trash_list thead th.col_no2 {
+	width: 60px;
+}
+.file_trash_list thead th.col_no3 {
+	width: 85px;
+}
+.file_trash_list thead th.col_no4 {
+	width: 50px;
+}
+.file_trash_list thead th.col_no5 {
+	width: 30px;
+}
+
+/******************* 報酬一覧 ********************/
+/* 名簿ID */
+.fee_list thead th.th_person_id {
+	min-width: 85px;
+	max-width: 85px;
+	width: 85px;
+}
+/* 名前 */
+.fee_list thead th.th_person_name {
+	min-width: 150px;
+	max-width: 200px;
+	width: 200px;
+}
+/* 案件ID */
+.fee_list thead th.th_case_id {
+	min-width: 75px;
+	max-width: 85px;
+	width: 85px;
+}
+/* 分野 */
+.fee_list thead th.th_bunya {
+	min-width: 100px;
+	width: 150px;
+}
+/* 案件名 */
+.fee_list thead th.th_case_name {
+	min-width: 200px;
+	width: 200px;
+}
+/* ステータス */
+.fee_list thead th.th_case_status {
+	min-width: 100px;
+	width: 100px;
+}
+/* 売上（税込） */
+.fee_list thead th.th_sales_total {
+	min-width: 100px;
+	width: 100px;
+}
+/* 入金待ち */
+.fee_list thead th.th_sales_waiting_payment {
+	min-width: 100px;
+	width: 100px;
+}
+/* 未請求 */
+.fee_list thead th.th_fee_untreated {
+	min-width: 100px;
+	width: 100px;
+}
+/* 担当弁護士 */
+.fee_list thead th.th_tanto_laywer {
+	min-width: 100px;
+	width: 100px;
+}
+/* 担当事務 */
+.fee_list thead th.th_tanto_jimu {
+	min-width: 110px;
+	width: 110px;
+}
+/* 最終更新日時 */
+.fee_list thead th.th_last_edit_at {
+	max-width: 145px;
+	min-width: 145px;
+	width: 145px;
+}
+
+/******************* 報酬明細一覧 ********************/
+/* 報酬テーブル */
+.fee_detail_list thead th {
+	background-color: #fff3e0;
+	color: #977003;
+	padding-top: 1rem;
+	padding-bottom: 1rem;
+}
+.fee_detail_list.table_standard th.sort_column:hover {
+	background-color: #fbe6c6;
+}
+.fee_detail_list tbody td {
+	padding-top: .6rem;
+	padding-bottom: .6rem;
+}
+/* チェック */
+.fee_detail_list thead th.th_fee_item_check {
+	min-width: 45px;
+	max-width: 45px;
+	width: 45px;
+	padding: inherit!important;
+}
+/* 項目 */
+.fee_detail_list thead th.th_fee_item_name {
+	min-width: 120px;
+	max-width: 180px;
+	width: 120px;
+}
+/* 発生日 */
+.fee_detail_list thead th.th_fee_date {
+	min-width: 105px;
+	max-width: 105px;
+	width: 105px;
+}
+/* ステータス */
+.fee_detail_list thead th.th_fee_payment_status {
+	min-width: 110px;
+	max-width: 110px;
+	width: 110px;
+}
+/* 報酬額 */
+.fee_detail_list thead th.th_fee {
+	min-width: 110px;
+	max-width: 110px;
+	width: 110px;
+}
+/* 摘要 */
+.fee_detail_list thead th.th_sum_text {
+	min-width: 140px;
+	max-width: 140px;
+	width: 140px;
+}
+/* メモ */
+.fee_detail_list thead th.th_fee_memo {
+	min-width: 95px;
+	max-width: 95px;
+	width: 95px;
+}
+/* 請求書・精算書 */
+.fee_detail_list thead th.th_doc {
+	min-width: 120px;
+	max-width: 120px;
+	width: 120px;
+}
+/* 編集／削除 */
+.fee_detail_list thead th.th_operation {
+	min-width: 130px;
+	max-width: 130px;
+	width: 130px;
+	position: sticky;
+	right: -1px;
+	z-index: 98;
+}
+.fee_detail_list tbody td.td_operation {
+	background-color: var(--white);
+	min-width: 130px;
+	max-width: 130px;
+	width: 130px;
+	position: sticky;
+	right: -1px;
+	z-index: 99;
+}
+	
+/******************* 預り金一覧（サマリ） ********************/
+
+/* 名簿ID */
+.deposit_recv_list thead th.th_person_id {
+	min-width: 85px;
+	max-width: 85px;
+	width: 85px;
+}
+/* 名前 */
+.deposit_recv_list thead th.th_person_name {
+	min-width: 150px;
+	max-width: 200px;
+	width: 200px;
+}
+/* 案件ID */
+.deposit_recv_list thead th.th_case_id {
+	min-width: 75px;
+	max-width: 85px;
+	width: 85px;
+}
+/* 分野 */
+.deposit_recv_list thead th.th_bunya {
+	min-width: 100px;
+	width: 150px;
+}
+/* 案件名 */
+.deposit_recv_list thead th.th_case_name {
+	min-width: 200px;
+	width: 200px;
+}
+/* ステータス */
+.deposit_recv_list thead th.th_case_status {
+	min-width: 100px;
+	width: 100px;
+}
+/* 入金額 */
+.deposit_recv_list thead th.th_deposit {
+	min-width: 100px;
+	width: 100px;
+}
+/* 出金額 */
+.deposit_recv_list thead th.th_withdrawal {
+	min-width: 100px;
+	width: 100px;
+}
+/* 預り金残高 */
+.deposit_recv_list thead th.th_balance {
+	min-width: 100px;
+	width: 100px;
+}
+/* 担当弁護士 */
+.deposit_recv_list thead th.th_tanto_laywer {
+	min-width: 100px;
+	width: 100px;
+}
+/* 担当事務 */
+.deposit_recv_list thead th.th_tanto_jimu {
+	min-width: 110px;
+	width: 110px;
+}
+/* 最終更新日時 */
+.deposit_recv_list thead th.th_last_edit_at {
+	max-width: 145px;
+	min-width: 145px;
+	width: 145px;
+}
+
+/******************* 預り金明細一覧 ********************/
+/* 預り金テーブル */
+.deposit_recv_detail_list thead th {
+	background-color: #e3f2fd;
+	color: #004085;
+	padding-top: 1rem;
+	padding-bottom: 1rem;
+}
+.deposit_recv_detail_list tbody td {
+	padding-top: .6rem;
+	padding-bottom: .6rem;
+}
+.deposit_recv_detail_list.table_standard th.sort_column:hover {
+	background-color: #badbf3;
+}
+/* チェック */
+.deposit_recv_detail_list thead th.th_deposit_item_check {
+	min-width: 45px;
+	max-width: 45px;
+	width: 45px;
+	padding: inherit!important;
+}
+/* 種別 */
+.deposit_recv_detail_list thead th.th_deposit_type {
+	min-width: 65px;
+	max-width: 65px;
+	width: 65px;
+}
+/* 項目 */
+.deposit_recv_detail_list thead th.th_deposit_item_name {
+	min-width: 110px;
+	max-width: 120px;
+	width: 110px;
+}
+/* 発生日 */
+.deposit_recv_detail_list thead th.th_deposit_date {
+	min-width: 110px;
+	max-width: 110px;
+	width: 110px;
+}
+/* 入金額 */
+.deposit_recv_detail_list thead th.th_deposit {
+	min-width: 105px;
+	max-width: 105px;
+	width: 105px;
+}
+/* 出金額 */
+.deposit_recv_detail_list thead th.th_withdrawal {
+	min-width: 105px;
+	max-width: 105px;
+	width: 105px;
+}
+/* 摘要 */
+.deposit_recv_detail_list thead th.th_sum_text {
+	min-width: 150px;
+	max-width: 150px;
+	width: 150px;
+}
+/* メモ */
+.deposit_recv_detail_list thead th.th_deposit_memo {
+	min-width: 95px;
+	max-width: 95px;
+	width: 95px;
+}
+/* 請求書・精算書 */
+.deposit_recv_detail_list thead th.th_doc {
+	min-width: 120px;
+	max-width: 120px;
+	width: 120px;
+}
+/* 編集／削除 */
+.deposit_recv_detail_list thead th.th_operation {
+	min-width: 130px;
+	max-width: 130px;
+	width: 130px;
+	position: sticky;
+	right: -1px;
+	z-index: 98;
+}
+.deposit_recv_detail_list tbody td.td_operation {
+	background-color: var(--white);
+	min-width: 130px;
+	max-width: 130px;
+	width: 130px;
+	position: sticky;
+	right: -1px;
+	z-index: 99;
+}
+
+/************** 請求書一覧 *************/
+/* 名簿ID */
+.invoice_list thead th.th_person_id {
+	min-width: 85px;
+	max-width: 85px;
+	width: 85px;
+}
+/* 名前 */
+.invoice_list thead th.th_person_name {
+	min-width: 150px;
+	max-width: 200px;
+	width: 200px;
+}
+/* 案件ID */
+.invoice_list thead th.th_case_id {
+	min-width: 75px;
+	max-width: 85px;
+	width: 85px;
+}
+/* 案件名・分野 */
+.invoice_list thead th.th_case_name {
+	min-width: 130px;
+	max-width: 200px;
+	width: 200px;
+}
+/* 請求方法 */
+.invoice_list thead th.th_case_invoice_type {
+	min-width: 80px;
+	width: 80px;
+}
+/* 発行ステータス */
+.invoice_list thead th.th_issue_status {
+	min-width: 120px;
+	width: 120px;
+}
+/* 入金状況 */
+.invoice_list thead th.th_payment_status {
+	min-width: 120px;
+	width: 120px;
+}
+/* 請求日 */
+.invoice_list thead th.th_invoice_date {
+	min-width: 100px;
+	max-width: 100px;
+	width: 100px;
+}
+/* 支払期日 */
+.invoice_list thead th.th_due_date {
+	min-width: 100px;
+	max-width: 100px;
+	width: 100px;
+}
+/* 請求額 */
+.invoice_list thead th.invoice_amount {
+	min-width: 110px;
+	max-width: 110px;
+	width: 110px;
+}
+/* 請求番号 */
+.invoice_list thead th.invoice_no {
+	min-width: 130px;
+	max-width: 130px;
+	width: 130px;
+}
+/* 担当弁護士 */
+.invoice_list thead th.th_tanto_laywer {
+	min-width: 100px;
+	width: 100px;
+}
+/* メモ */
+.invoice_list thead th.th_memo {
+	max-width: 200px;
+	min-width: 200px;
+	width: 200px;
+}
+
+/************** 精算一覧 *************/
+/* 名簿ID */
+.statement_list thead th.th_person_id {
+	min-width: 85px;
+	max-width: 85px;
+	width: 85px;
+}
+/* 名前 */
+.statement_list thead th.th_person_name {
+	min-width: 150px;
+	max-width: 200px;
+	width: 200px;
+}
+/* 案件ID */
+.statement_list thead th.th_case_id {
+	min-width: 75px;
+	max-width: 85px;
+	width: 85px;
+}
+/* 案件名 */
+.statement_list thead th.th_case_name {
+	min-width: 130px;
+	max-width: 200px;
+	width: 200px;
+}
+/* 発行ステータス */
+.statement_list thead th.th_issue_status {
+	min-width: 120px;
+	width: 120px;
+}
+/* 精算状況 */
+.statement_list thead th.th_refund_status {
+	min-width: 120px;
+	width: 120px;
+}
+/* 精算日 */
+.statement_list thead th.th_statement_date {
+	min-width: 100px;
+	max-width: 100px;
+	width: 100px;
+}
+/* 期日 */
+.statement_list thead th.th_refund_date {
+	min-width: 100px;
+	max-width: 100px;
+	width: 100px;
+}
+/* 精算額 */
+.statement_list thead th.statement_amount {
+	min-width: 110px;
+	max-width: 110px;
+	width: 110px;
+}
+/* 精算番号 */
+.statement_list thead th.statement_no {
+	min-width: 130px;
+	max-width: 130px;
+	width: 130px;
+}
+/* 担当弁護士 */
+.statement_list thead th.th_tanto_laywer {
+	min-width: 100px;
+	width: 100px;
+}
+/* メモ */
+.statement_list thead th.th_memo {
+	max-width: 200px;
+	min-width: 200px;
+	width: 200px;
+}
+
+/* 会計管理-顧客会計サマリの請求／精算書一覧 */
+.accg_doc_list.table thead th {
+	padding: 0.45rem 1.05rem 0.35rem;
+}
+.accg_doc_list thead th.th_doc_type {
+	max-width: 70px;
+	min-width: 70px;
+	width: 70px;
+}
+.accg_doc_list_badge.badge_square {
+	font-size: 1.2rem;
+	min-width: 50px;
+	height: 20px;
+	padding: 4px 0 0;
+}
+.accg_doc_list thead th.th_doc_issue_status {
+	max-width: 85px;
+	min-width: 85px;
+	width: 85px;
+}
+.accg_doc_list thead th.th_doc_status {
+	max-width: 110px;
+	min-width: 110px;
+	width: 110px;
+}
+.accg_doc_list thead th.th_doc_date {
+	max-width: 95px;
+	min-width: 95px;
+	width: 95px;
+}
+.accg_doc_list thead th.th_doc_due_date {
+	max-width: 110px;
+	min-width: 110px;
+	width: 110px;
+}
+.accg_doc_list thead th.th_doc_amount {
+	max-width: 110px;
+	min-width: 110px;
+	width: 110px;
+}
+.accg_doc_list thead th.th_doc_no {
+	max-width: 130px;
+	min-width: 130px;
+	width: 130px;
+}
+
+/* 会計管理-顧客会計サマリの請求／精算書一覧 */
+.invoice_statement_list_wraper {
+	overflow-y: auto;
+	max-height: 115px;
+}
+.invoice_statement_list.table thead th {
+	font-size: 1.2rem;
+	padding: 0.45rem 0.65rem 0.35rem;
+}
+.invoice_statement_list.table tbody td {
+	font-size: 1.25rem;
+	padding: 0.45rem 0.65rem 0.35rem;
+}
+.invoice_statement_list thead th.th_doc_type {
+	max-width: 45px;
+	min-width: 45px;
+	width: 45px;
+}
+.invoice_statement_list thead th.th_doc_issue_status {
+	max-width: 75px;
+	min-width: 75px;
+	width: 75px;
+}
+.invoice_statement_list thead th.th_doc_status {
+	max-width: 90px;
+	min-width: 90px;
+	width: 90px;
+}
+.invoice_statement_list thead th.th_doc_date {
+	max-width: 85px;
+	min-width: 85px;
+	width: 85px;
+}
+.invoice_statement_list thead th.th_doc_amount {
+	max-width: 80px;
+	min-width: 80px;
+	width: 80px;
+}
+.invoice_statement_list thead th.th_doc_no {
+	min-width: 110px;
+	width: 110px;
+}
+
+/************** 請求書／精算書一覧 *************/
+.case_accg_doc_list thead th {
+	padding-top: 1rem;
+	padding-bottom: 1rem;
+}
+.case_accg_doc_list tbody td {
+	padding-top: .6rem;
+	padding-bottom: .6rem;
+}
+
+.case_accg_doc_list thead th.th_doc_type {
+	max-width: 100px;
+	min-width: 100px;
+	width: 100px;
+}
+.case_accg_doc_list thead th.th_doc_no {
+	max-width: 100px;
+	min-width: 100px;
+	width: 100px;
+}
+.case_accg_doc_list thead th.th_doc_issue_status {
+	max-width: 85px;
+	min-width: 85px;
+	width: 85px;
+}
+.case_accg_doc_list thead th.th_doc_status {
+	max-width: 75px;
+	min-width: 75px;
+	width: 75px;
+}
+.case_accg_doc_list thead th.th_doc_amount {
+	max-width: 100px;
+	min-width: 100px;
+	width: 100px;
+}
+.case_accg_doc_list thead th.th_doc_date {
+	max-width: 85px;
+	min-width: 85px;
+	width: 85px;
+}
+.case_accg_doc_list thead th.th_doc_due_date {
+	max-width: 110px;
+	min-width: 110px;
+	width: 110px;
+}
+.case_accg_doc_list thead th.th_doc_memo {
+	max-width: 200px;
+	min-width: 150px;
+	width: 200px;
+}
+
+
+/************** 取引実績一覧 *************/
+.record_list thead th.th_record_count {
+	min-width: 60px;
+	width: auto;
+}
+.record_list thead th.th_record_type {
+	min-width: 90px;
+	width: auto;
+}
+.record_list thead th.th_record_date {
+	min-width: 100px;
+	width: auto;
+}
+.record_list thead th.th_record_amount {
+	min-width: 120px;
+	width: auto;
+}
+.record_list thead th.th_record_remarks {
+	min-width: 200px;
+	width: auto;
+}
+.record_list thead th.th_record_edit {
+	min-width: 130px;
+	width: auto;
+}
+
+/****************** 預り金、報酬テーブル *******************/
+.table.table-sm.doc_invoice_table thead th:last-child, .table.table-sm.doc_invoice_table tbody td:last-child, .table.table-sm.doc_invoice_table tfoot th:last-child, .table.table-sm.doc_invoice_table tfoot td:last-child {
+	padding-right: 1.5rem;
+}
+.table.table-sm.doc_invoice_table tfoot tr:first-child th, .table.table-sm.doc_invoice_table tfoot tr:first-child td {
+	padding-top: 0.5rem;
+}
+.table.table-sm.doc_invoice_table tfoot th {
+	color: var(--text-color-sub);
+	text-align: right;
+	padding: 0.1rem 0.75rem;
+}
+.table.table-sm.doc_invoice_table tfoot td {
+	text-align: right;
+	line-height: 1.25;
+	padding: 0.1rem 0.75rem;
+}
+
+
+/* 標準レイアウト */
+.doc_invoice_table.doc_type1 thead th {
+	background-color: var(--case-color);
+	color: var(--white);
+	font-weight: normal;
+}
+.table-sm.doc_invoice_table.doc_type1 thead th:first-child, .table-sm.doc_invoice_table.doc_type1 tbody td:first-child {
+	padding-left: 1.5rem;
+}
+.doc_view_wrapper.invoice_item_view {
+	padding: 0;
+}
+.table.doc_invoice_table tbody tr {
+	background-color: transparent;
+}
+.table.table-striped.doc_invoice_table:hover tbody tr:nth-of-type(odd) {
+	background-color: transparent;
+}
+/* 0件の場合 */
+.doc_invoice_table tbody tr:first-child td.no_seleted {
+	height: 45px;
+	background-color: var(--white);
+}
+.doc_view_wrapper.invoice_item_view:hover .table.doc_invoice_table tbody, .doc_view_wrapper.invoice_item_view:hover .table.doc_invoice_table tfoot, .doc_invoice_table:hover tbody tr:first-child td.no_seleted {
+	cursor: pointer;
+	background-color: var(--bg-color-edit);
+}
+
+
+/* 支払い計画のテーブル */
+.table_kaikei > table, .table_shiharai_plan > table {
+	background: var(--white);
+	border-collapse: collapse;
+	border-spacing: 0px;
+	font-size: 1.3rem;
+	border: none;
+	width: 100%;
+}
+.table_kaikei > table th, .table_shiharai_plan > table th {
+	padding: 1px 2px 3px 5px;
+	vertical-align: bottom;
+	z-index: 1;
+	border-bottom: 1px solid #A3A3A3;
+	font-weight: 600;
+	height: 20px;
+	text-align: left;
+	color: var(--text-color-sub);
+	background-color: var(--white);
+}
+.table_kaikei > table td, .table_shiharai_plan > table td {
+	padding: 4px 5px;
+	text-align: left;
+	border-right: 1px dashed #A3A3A3;
+	border-bottom: 1px solid #A3A3A3;
+}
+.table_kaikei > table td:last-child, .table_shiharai_plan > table td:last-child {
+	border-right: 0;
+}
+.table_shiharai_plan > table tr:last-child td {
+	border-bottom: 0;
+}
+.table_kaikei > table tbody tr:hover td, .table_shiharai_plan > table tr:hover td {
+	background-color: var(--bg-color-row-hover);
+}
+div.header_fixed_table_wrapper.table_shiharai_plan {
+	max-height: 300px;
+}
+.shiharaiPlanModalBody .table_seisan_summary {
+    background-color: #E7EFF2;
+    color: #63595c;
+    margin-bottom: 0;
+}
+.shiharaiPlanModalBody .table_seisan_summary tr:last-child {
+	background: #fff;
+}
+.shiharaiPlanModalBody .table_seisan_summary input {
+	background-color: transparent;
+}
+.shiharaiPlanModalBody .table_seisan_summary tr.line_wh td {
+    background: #fff;
+    height: 5px;
+}
+.shiharaiPlanModalBody .table_seisan_summary td {
+    padding: 5px .75rem 2px;
+    vertical-align: middle;
+}
+
+/* 回数 */
+.table_shiharai_plan .col_shiharai_idx {
+	width: 60px;
+	max-width: 60px;
+	min-width: 60px;
+}
+/* 金額 */
+.table_shiharai_plan .col_shiharai_money {
+	width: 115px;
+	max-width: 115px;
+}
+/* 日付 */
+.table_shiharai_plan .col_shiharai_date {
+	width: 100px;
+	max-width: 100px;
+	min-width: 100px;
+}
+/* 摘要 */
+.table_shiharai_plan .col_shiharai_tekiyo {
+	width: 250px;
+	max-width: 250px;
+	min-width: 250px;
+}
+/* 削除 */
+.table_shiharai_plan .col_del {
+	width: 40px;
+	max-width: 40px;
+	min-width: 40px;
+	text-align: center;
+}
+

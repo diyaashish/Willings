@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+	xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+	layout:decorator="commonLayout">
+<head>
+	<meta charset="utf-8" />
+</head>
+<body>
+
+<!--/* 詳細データ */-->
+<div th:fragment="mailTemlpateListViewFragment(mailTemlpateListViewForm)" id="mailTemlpateListViewFragment" th:object="${mailTemlpateListViewForm}">
+	<script type="text/javascript" th:inline="javascript">
+	$(function() {
+		<!--/* 共有の要素セットアップ処理 */-->
+		commonSetUpElement("#mailTemlpateListViewFragment");
+		
+	});
+	</script>
+	
+	<!-- コンテンツブロック start -->
+	<div class="contents_block">
+		<div class="block_title">メールテンプレート</div>
+		<div class="block_detail d-flex">
+			<div>
+				<p>種別毎に事務所共有のメール定型文を作成することができます。</p>
+			</div>
+			<div class="block_action">
+				<a th:href="@{/user/mailTemplateEdit/}" class="btn btn-primary"><i class="fas fa-plus"></i>新規登録</a>
+			</div>
+		</div>
+		<!--/* 一覧表示 */-->
+		<div class="list_area">
+			<table class="table table_standard table-sm table_fixed table-striped">
+				<thead>
+					<tr>
+						<th class="col_20">種別</th>
+						<th class="col_40">タイトル</th>
+						<th class="col_20">既定値</th>
+						<th class="col_20">操作</th>
+					</tr>
+				</thead>
+				<tbody>
+<!--/*/ 		<th:block th:if="*{#lists.isEmpty(templateList)}"> /*/-->
+						<tr>
+							<td colspan="4" class="no_data_table_list">
+								<span th:text="#{I00021}">MSG_I00021</span>
+							</td>
+						</tr>
+<!--/*/ 		</th:block> /*/-->
+
+					<tr th:each="listItem : *{templateList}">
+						<td class="col_20" th:text="${listItem.mailTemplateType?.val}">請求書</td>
+						<td class="col_40" th:text="${listItem.mailTemplateTitle}">着手金請求用</td>
+						<td class="col_20"><i th:if="${listItem.DefaultUse}" class="fas fa-check"></i></td>
+						<td class="col_20">
+							<a th:href="@{/user/mailTemplateEdit/{mailTemplateSeq}/(mailTemplateSeq=${listItem.mailTemplateSeq})}" class="d-inline-block btn btn-light btn-sm" data-toggle="tooltip" title="編集" data-trigger="hover">
+								<i class="fas fa-edit mr-1"></i>
+								<span>編集</span>
+							</a>
+						</td>
+					</tr>
+					
+				</tbody>
+			</table>
+		</div>
+	</div>
+</div>
+<!--/* 詳細エリア end */-->
+	
+</body>
+</html>

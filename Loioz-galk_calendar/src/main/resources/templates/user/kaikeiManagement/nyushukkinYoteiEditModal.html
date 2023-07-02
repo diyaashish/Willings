@@ -1,0 +1,398 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+		xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+		layout:decorator="commonLayout">
+<head>
+<meta charset="utf-8" />
+</head>
+<body>
+	<!-- 入出金予定登録モーダル -->
+	<div th:fragment="nyuShukkinYoteiEdit" th:object="${nyuShukkinYoteiEditForm}">
+		<div class="modal-header">
+			<h2 class="modalheader_title">予定登録</h2>
+		</div>
+		<div class="modal-body">
+			<!--/* メッセージ表示領域 */-->
+			<div th:replace="common/messageArea::jsMessageArea"></div>
+			
+			<!--/* メッセージ表示領域 */-->
+			<div th:if="*{ShowSeisanCompletedMsg} or *{ShowAnkenCompletedMsg} or *{ShowYoteiCompletedMsg}">
+				<div class="error_msg_js">
+					<th:block th:if="*{ShowAnkenCompletedMsg}">
+						<!--/* 案件ステータスが完了状態である旨のメッセージ */-->
+						<i class="fas fa-exclamation-triangle mr-2"></i>[[#{I00047}]]
+					</th:block>
+					<th:block th:if="!*{ShowAnkenCompletedMsg} and *{ShowSeisanCompletedMsg}">
+						<!--/* 精算完了日が設定されている旨のメッセージ */-->
+						<i class="fas fa-exclamation-triangle mr-2"></i>[[#{I00048}]]
+					</th:block>
+					<th:block th:if="!*{ShowAnkenCompletedMsg} and !*{ShowSeisanCompletedMsg} and *{ShowYoteiCompletedMsg}">
+						<!--/* 予定が処理済みである旨のメッセージ */-->
+						<i class="fas fa-exclamation-triangle mr-2"></i>[[#{I00051}]]
+					</th:block>
+				</div>
+			</div>
+			
+			<!--/* form */-->
+			<form id="nyuShukkinYoteiFrom" autocomplete="off">
+				<input type="hidden" th:field="*{nyushukkinYoteiEditDto.nyushukkinYoteiSeq}">
+				<!--  /** 精算に紐づくデータはdisabledのため、値が送られないので、hidden値を送る */ -->
+				<th:block th:if="*{seisanFlg}">
+					<input type="hidden" th:if="*{transitionCustomerId}" th:field="*{nyushukkinYoteiEditDto.ankenId}">
+					<input type="hidden" th:if="*{transitionAnkenId}" th:field="*{nyushukkinYoteiEditDto.customerId}">
+					<input type="hidden" th:field="*{nyushukkinYoteiEditDto.nyushukkinType}">
+					<input type="hidden" th:field="*{nyushukkinYoteiEditDto.shukkinKomokuId}">
+					<input type="hidden" th:field="*{nyushukkinYoteiEditDto.shukkinShiharaiSakiType}">
+					<input type="hidden" th:field="*{nyushukkinYoteiEditDto.shukkinShiharaishaKozaSeq}">
+					<input type="hidden" th:field="*{nyushukkinYoteiEditDto.shukkinShiharaiSakiKanyoshaSeq}">
+					<input type="hidden" th:field="*{nyushukkinYoteiEditDto.nyushukkinYoteiDate}">
+				</th:block>
+				
+				<!--/* 入力エリア */-->
+				<div class="modal_input_area">
+				
+					<!-- 案件 -->
+					<th:block th:if="*{transitionCustomerId}">
+					<div class="form-row">
+						<div class="form-group col-md-12">
+							<label class="input_parts_label" for="nyushukkinYoteiEditDto.ankenId">案件</label>
+							<span class="mark_equired">必須</span>
+							<select class="form-control w-100 char_ellipsis" th:with="initShowMaxCharCountMainText=37" th:field="*{nyushukkinYoteiEditDto.ankenId}" th:disabled="*{disabledFlg || seisanFlg}">
+								<option value="">-</option>
+								<option th:each="ankenList : *{kaikeiManagementList}"
+										th:value="${ankenList.ankenId.asLong()}"
+										th:text="${#strings.isEmpty(ankenList.ankenName)} ? '(案件名未入力)' : (${initShowMaxCharCountMainText} >= ${#strings.length(ankenList.ankenName)} ? ${ankenList.ankenName} : ${#strings.substring(ankenList.ankenName, 0, initShowMaxCharCountMainText)} + '…')">
+								</option>
+							</select>
+							<input type="hidden" th:field="*{nyushukkinYoteiEditDto.customerId}" />
+							<div class="error_mag_point hidden" id="itemMsg_nyushukkinYoteiEditDto.ankenId"></div>
+						</div>
+					</div>
+					</th:block>
+					<!-- 案件 end -->
+					
+					<!-- 顧客 -->
+					<th:block th:if="*{transitionAnkenId}">
+					<div class="form-row">
+						<div class="form-group col-md-12">
+							<label class="input_parts_label" for="nyukinYoteiDto.customerId">顧客</label>
+							<span class="mark_equired">必須</span>
+							<select id="nyukinYoteiCustomerSelect" class="form-control w-100" th:field="*{nyushukkinYoteiEditDto.customerId}" th:disabled="*{disabledFlg || seisanFlg}">
+								<option value="">-</option>
+								<option th:each="customerList : *{kaikeiManagementList}"
+										th:value="${customerList.customerId.asLong()}" th:text="${customerList.customerName}" th:disabled="${!customerList.CanKaikeiCreate}" th:classappend="${!customerList.CanKaikeiCreate} ? 'meisai_completed' : '' ">
+								</option>
+							</select>
+							<input type="hidden" th:field="*{nyushukkinYoteiEditDto.ankenId}" />
+							<div class="error_mag_point hidden" id="itemMsg_nyushukkinYoteiEditDto.customerId"></div>
+						</div>
+					</div>
+					</th:block>
+					<!-- 顧客 end -->
+					
+					<!-- 入出金種別 -->
+					<div class="form-row">
+						<div class="form-group col-md-4 mb-1">
+							<label class="input_parts_label" for="nyushukkinYoteiEditDto.nyushukkinType">入出金選択</label>
+							<div class="pt-2">
+								<label class="radio_btn shiharaisha_type_radio" th:each="enum : ${T(jp.loioz.common.constant.CommonConstant$NyushukkinType).values()}">
+									<input type="radio" class="radio_input c_orng" th:disabled="*{disabledFlg || seisanFlg}"
+										th:field="*{nyushukkinYoteiEditDto.nyushukkinType}" th:value="${enum.cd}">
+									<span class="radio_txt" th:text="${enum.val}"></span>
+								</label>
+							</div>
+						</div>
+						
+						<!-- 入金項目 -->
+						<div class="form-group col-md-8 mb-1 pl-2 nyukinItem">
+							<label class="input_parts_label" for="nyushukkinYoteiEditDto.nyukinKomokuId">入金項目</label>
+							<span class="mark_equired">必須</span>
+							<select id="nyukinKomokuSelect" class="form-control" th:field="*{nyushukkinYoteiEditDto.nyukinKomokuId}" th:disabled="*{disabledFlg}">
+								<option th:if="*{nyukinKomokuList.size() != 1}" value="">-</option>
+								<option th:each="nyukinKomoku : *{nyukinKomokuList}"
+										th:value="${nyukinKomoku.getValue()}" th:label="${nyukinKomoku.getLabel()}">
+								</option>
+							</select>
+							<div class="error_mag_point hidden" id="itemMsg_nyushukkinYoteiEditDto.nyukinKomokuId"></div>
+						</div>
+						<!-- 入金項目 end -->
+						
+						<!-- 出金項目 -->
+						<div class="form-group col-md-8 mb-1 pl-2 shukkinItem">
+							<label class="input_parts_label" for="nyushukkinYoteiEditDto.shukkinKomokuId">出金項目</label>
+							<span class="mark_equired">必須</span>
+							<select id="shukkinKomokuSelect" class="form-control" th:field="*{nyushukkinYoteiEditDto.shukkinKomokuId}" th:disabled="*{disabledFlg || seisanFlg}">
+								<option value="">-</option>
+								<option th:each="shukkinKomoku : *{shukkinKomokuList}"
+										th:value="${shukkinKomoku.getValue()}" th:label="${shukkinKomoku.getLabel()}">
+								</option>
+							</select>
+							<div class="error_mag_point hidden" id="itemMsg_nyushukkinYoteiEditDto.shukkinKomokuId"></div>
+						</div>
+						<!-- 出金項目 end -->
+						
+					</div>
+					<!-- 入出金種別 end -->
+
+					<!-- 入金支払者 -->
+					<div id="nyukinShiharaiSha" class="form-row nyukinItem">
+						<div class="form-group col-md-12 mb-1">
+							<label class="input_parts_label" for="nyushukkinYoteiEditDto.shiharaiSha">支払者</label>
+							<div class="pt-2">
+								<!-- 支払者 ラジオボタン -->
+								<label class="radio_btn">
+									<input type="radio" class="radio_input c_orng targetType" data-target="#nyukinShiharaiKanyoshaSelect"
+										th:disabled="*{disabledFlg}"
+										th:field="*{nyushukkinYoteiEditDto.nyukinShiharaishaType}"
+										th:value="${T(jp.loioz.common.constant.CommonConstant$TargetType).CUSTOMER.getCd()}">
+									<span class="radio_txt">顧客から選択</span>
+								</label>
+								<label class="radio_btn kanyoshaRadioBtn" th:classappend="*{#lists.isEmpty(kanyoshaList)} ? 'hidden'">
+									<input type="radio" class="radio_input c_orng targetType" data-target="#nyukinShiharaiKanyoshaSelect"
+										th:disabled="*{disabledFlg}"
+										th:field="*{nyushukkinYoteiEditDto.nyukinShiharaishaType}"
+										th:value="${T(jp.loioz.common.constant.CommonConstant$TargetType).KANYOSHA.getCd()}">
+									<span class="radio_txt">関与者から選択</span>
+								</label>
+								<!-- 支払者 ラジオボタン end -->
+							</div>
+
+							<div id="nyukinShiharaiKanyoshaSelect">
+								<!-- 支払者 ドロップダウン / テキストボックス -->
+								<select class="form-control kanyoshaList w-100" th:field="*{nyushukkinYoteiEditDto.nyukinShiharaishaKanyoshaSeq}"
+									th:disabled="*{disabledFlg}" th:with="kanyoshaList=*{kanyoshaList}">
+									<option value="">-</option>
+									<option th:fragment="kanyoshaList" th:each="kanyosha : ${kanyoshaList}"
+										th:value="${kanyosha.id}" th:text="${kanyosha.name}"></option>
+								</select>
+								<div id="shiharaisha1" class="mt-2"></div>
+								<div id="shiharaisha2"></div>
+							</div>
+							<div class="error_mag_point hidden" id="itemMsg_nyushukkinYoteiEditDto.nyukinShiharaishaType"></div>
+							<div class="error_mag_point hidden" id="itemMsg_nyushukkinYoteiEditDto.nyukinShiharaishaCustomerId"></div>
+							<div class="error_mag_point hidden" id="itemMsg_nyushukkinYoteiEditDto.nyukinShiharaishaKanyoshaSeq"></div>
+						</div>
+					</div>
+					<!-- 入金支払者 end -->
+
+					<!-- 入金支払先 -->
+					<div class="form-row nyukinItem">
+						<div class="form-group col-md-12">
+							<label class="input_parts_label" for="nyushukkinYoteiEditDto.shiharaiSakiKoza">入金口座</label>
+							<span class="mark_equired">必須</span>
+							<div id="nyukinShiharaiSaki">
+								<select id="nyukinShiharaiSakiSelect" class="form-control selectpicker w-100 tenantAccountKozaList" th:field="*{nyushukkinYoteiEditDto.nyukinSakiKozaSeq}"
+									th:disabled="*{disabledFlg}" th:with="tenantAccountGinkoKozaList=*{tenantAccountGinkoKozaList}">
+									<option value="">-</option>
+									<option th:fragment="tenantAccountGinkoKozaList" th:each="tenantAccountGinkoKozaList : ${tenantAccountGinkoKozaList}"
+										th:value="${tenantAccountGinkoKozaList.ginkoAccountSeq}" th:text="${tenantAccountGinkoKozaList.getListDisplayName()}"
+										th:title="${tenantAccountGinkoKozaList.getDisplayGinkoKozaInfo()}">
+									</option>
+								</select>
+								<div class="kozaAreaAccount koza_area hidden">
+									<div id="kozaInfo1"></div>
+									<div id="kozaInfo2"></div>
+								</div>
+								<div class="error_mag_point hidden" id="itemMsg_nyushukkinYoteiEditDto.nyukinSakiKozaSeq"></div>
+							</div>
+						</div>
+					</div>
+					<!-- 入金支払先 end -->
+
+					<!-- 出金支払者 -->
+					<div class="form-row shukkinItem">
+						<div class="form-group col-md-12">
+							<label class="input_parts_label" for="nyushukkinYoteiEditDto.shukkinShiharaishaKozaSeq">支払口座</label>
+							<span class="mark_equired">必須</span>
+							<div id="shukkinShiharaiSha">
+								<select id="shukkinShiharaiShaSelect" class="form-control w-100 tenantAccountKozaList" th:field="*{nyushukkinYoteiEditDto.shukkinShiharaishaKozaSeq}"
+										th:disabled="*{disabledFlg || seisanFlg}" th:with="tenantAccountGinkoKozaList=*{tenantAccountGinkoKozaList}">
+									<option value="">-</option>
+									<option th:replace="::tenantAccountGinkoKozaList"></option>
+								</select>
+								<div class="kozaAreaAccount koza_area hidden">
+									<div id="kozaShiharaisha1" class="kozaInfo"></div>
+									<div id="kozaShiharaisha2" class="kozaInfo"></div>
+								</div>
+								<div class="error_mag_point hidden" id="itemMsg_nyushukkinYoteiEditDto.shukkinShiharaishaKozaSeq"></div>
+							</div>
+						</div>
+					</div>
+					<!-- 出金支払者 end -->
+
+					<!-- 出金支払先 -->
+					<div class="form-row shukkinItem">
+						<div class="form-group col-md-12">
+							<label class="input_parts_label" for="shukkinYoteiDto.shiharaiSakiKoza">支払先</label>
+							<div id="shukkinShiharaiSaki">
+								<!-- 支払先 ラジオボタン -->
+								<label class="radio_btn">
+									<input type="radio" class="radio_input c_orng targetType"
+										data-target="#shukkinShiharaiKanyoshaSelect"
+										th:field="*{nyushukkinYoteiEditDto.shukkinShiharaiSakiType}"
+										th:value="${T(jp.loioz.common.constant.CommonConstant$TargetType).CUSTOMER.getCd()}" th:disabled="*{disabledFlg || seisanFlg}">
+									<span class="radio_txt">顧客から選択</span>
+								</label>
+								<label class="radio_btn kanyoshaRadioBtn" th:classappend="*{#lists.isEmpty(kanyoshaList)} ? 'hidden'">
+									<input type="radio" class="radio_input c_orng targetType"
+										data-target="#shukkinShiharaiKanyoshaSelect"
+										th:field="*{nyushukkinYoteiEditDto.shukkinShiharaiSakiType}"
+										th:value="${T(jp.loioz.common.constant.CommonConstant$TargetType).KANYOSHA.getCd()}" th:disabled="*{disabledFlg || seisanFlg}">
+									<span class="radio_txt">関与者から選択</span>
+								</label>
+								<!-- 支払先 ラジオボタン end -->
+								<div id="shukkinShiharaiKanyoshaSelect">
+									<!-- 支払先 ドロップダウン / テキストボックス -->
+									<select class="form-control w-100 select_shiharaisaki kanyoshaList" th:field="*{nyushukkinYoteiEditDto.shukkinShiharaiSakiKanyoshaSeq}"
+										th:disabled="*{disabledFlg || seisanFlg}" th:with="kanyoshaList=*{kanyoshaList}">
+										<option value="">-</option>
+										<option th:replace="::kanyoshaList"></option>
+									</select>
+									<!-- 口座情報 -->
+									<div class="kozaAreaCustomerKanyosha koza_area hidden">
+										<div id="kozaShiharaisaki1" class="kozaInfo"></div>
+										<div id="kozaShiharaisaki2" class="kozaInfo"></div>
+									</div>
+								</div>
+								<!-- 口座情報 end -->
+								<div class="error_mag_point hidden" id="itemMsg_nyushukkinYoteiEditDto.shukkinShiharaiSakiCustomerId"></div>
+								<div class="error_mag_point hidden" id="itemMsg_nyushukkinYoteiEditDto.shukkinShiharaiSakiKanyoshaSeq"></div>
+								<div class="error_mag_point hidden" id="itemMsg_nyushukkinYoteiEditDto.shukkinShiharaiSakiType"></div>
+							</div>
+						</div>
+					</div>
+					<!-- 出金支払先 end -->
+
+					<div class="form-row">
+						<!-- 入出金予定日 -->
+						<div class="form-group col-md-4">
+							<label id="nyukinYoteiDt" for="nyukinYoteiDate" class="nyukinItem input_parts_label">入金予定日</label>
+							<label id="shukkinYoteiDt" for="nyukinYoteiDate" class="shukkinItem input_parts_label">出金予定日</label>
+							<span class="mark_equired">必須</span>
+							<div>
+								<input type="text" id="nyukinYoteiDate" class="form-control digit7 inputDateSlash yotei-date" data-click-sync="#nyukinYoteiCal"
+									th:field="*{nyushukkinYoteiEditDto.nyushukkinYoteiDate}" th:disabled="*{disabledFlg || seisanFlg}">
+								<button type="button" id="nyukinYoteiCal" class="btn btn_popcal hidden" data-target="#nyukinYoteiDate" data-toggle="datepicker"
+									th:disabled="*{disabledFlg || seisanFlg}">カレンダー</button>
+								<div class="error_mag_point hidden" id="itemMsg_nyushukkinYoteiEditDto.nyushukkinYoteiDate"></div>
+							</div>
+						</div>
+						<!-- 入出金予定日 end -->
+						
+						<!-- 入出金予定額 -->
+						<div class="form-group col-md-8 pl-2">
+							<label id="nyukinYoteiGaku" for="nyukinYoteiDto.displayNyushukkinYoteiGaku" class="nyukinItem input_parts_label">入金予定額</label>
+							<label id="shukkinYoteiGaku" for="nyukinYoteiDto.displayNyushukkinYoteiGaku" class="shukkinItem input_parts_label">出金予定額</label>
+							<span class="mark_equired">必須</span>
+							<div class="d-flex align-items-center">
+								<input type="text" class="form-control input_money col-6 commaFormat input_number_only dispDicimalInput"
+									th:value="*{nyushukkinYoteiEditDto.dispNyushukkinYoteiGaku}" th:disabled="*{disabledFlg || seisanFlg}"
+									th:maxlength="${T(jp.loioz.common.constant.CommonConstant).MAX_KINGAKU_INPUT_DIGIT}"
+									data-target="[name='nyushukkinYoteiEditDto.nyushukkinYoteiGaku']">
+								<div class="ml-2">円</div>
+								<input type="hidden" th:field="*{nyushukkinYoteiEditDto.nyushukkinYoteiGaku}">
+							</div>
+							<div class="error_mag_point hidden" id="itemMsg_nyushukkinYoteiEditDto.nyushukkinYoteiGaku"></div>
+						</div>
+						<!-- 入出金予定額 end -->
+						
+					</div>
+
+					<div class="form-row">
+						<!-- 入出金日 -->
+						<div class="form-group col-md-4">
+							<label id="nyukinDt" for="nyushukkinYoteiEditDto.displayNyushukkinDate" class="nyukinItem input_parts_label">入金日</label>
+							<label id="shukkinDt" for="nyushukkinYoteiEditDto.displayNyushukkinDate" class="shukkinItem input_parts_label">出金日</label>
+							<div>
+								<input type="text" id="nyushukkinDate" class="form-control digit7 inputDateSlash nyushukkin-date" data-click-sync="#nyushukkinCal"
+									th:field="*{nyushukkinYoteiEditDto.nyushukkinDate}" th:disabled="*{disabledFlg}">
+								<button type="button" id="nyushukkinCal" class="btn btn_popcal hidden" data-target="#nyushukkinDate" data-toggle="datepicker">カレンダー</button>
+								<div class="error_mag_point hidden" id="itemMsg_nyushukkinYoteiEditDto.nyushukkinDate"></div>
+							</div>
+						</div>
+						<!-- 入出金日 end -->
+						<!-- 入出金額 -->
+						<div class="form-group col-md-8 pl-2">
+							<label id="nyukinGaku" for="nyushukkinYoteiEditDto.nyushukkinGaku" class="nyukinItem input_parts_label">入金額</label>
+							<label id="shukkinGaku" for="nyushukkinYoteiEditDto.nyushukkinGaku" class="shukkinItem input_parts_label">出金額</label>
+							<div class="d-flex align-items-center">
+								<input type="text" class="form-control input_money col-6 commaFormat input_number_only dispDicimalInput"
+									th:value="*{nyushukkinYoteiEditDto.dispNyushukkinGaku}" th:disabled="*{disabledFlg}"
+									th:maxlength="${T(jp.loioz.common.constant.CommonConstant).MAX_KINGAKU_INPUT_DIGIT}"
+									data-target="[name='nyushukkinYoteiEditDto.nyushukkinGaku']">
+								<div class="ml-2">円</div>
+								<input type="hidden" th:field="*{nyushukkinYoteiEditDto.nyushukkinGaku}">
+							</div>
+							<div class="error_mag_point hidden" id="itemMsg_nyushukkinYoteiEditDto.nyushukkinGaku"></div>
+						</div>
+						<!-- 入出金額 end -->
+					</div>
+
+					<!-- 摘要 -->
+					<div class="form-row">
+						<div class="form-group col-md-12">
+							<label class="input_parts_label" for="nyushukkinYoteiEditDto.tekiyo">摘要</label>
+							<textarea class="form-control w-100" rows="3" cols="40" th:field="*{nyushukkinYoteiEditDto.tekiyo}" th:disabled="*{disabledFlg}" maxlength="10000"></textarea>
+							<div class="error_mag_point hidden" id="itemMsg_nyushukkinYoteiEditDto.tekiyo"></div>
+						</div>
+					</div>
+					<!-- 摘要 end -->
+
+					<div class="form-row only_update" th:if="*{nyushukkinYoteiEditDto.dispCreatedBy}">
+						<!-- 登録者 -->
+						<div class="form-group col-md-6 mb-0">
+							<label class="input_parts_label">登録者</label>
+							<div id="nyukinYoteiCreatedBy" th:text="*{nyushukkinYoteiEditDto.dispCreatedBy}"></div>
+						</div>
+						<!-- 登録者 end -->
+						<!-- 更新者 -->
+						<div class="form-group col-md-6 mb-0" th:if="*{nyushukkinYoteiEditDto.dispLastEditBy}">
+							<label class="input_parts_label">更新者</label>
+							<div id="dispLastEditBy" th:text="*{nyushukkinYoteiEditDto.dispLastEditBy}"></div>
+						</div>
+						<!-- 更新者 end -->
+					</div>
+				</div>
+			</form>
+		</div>
+
+		<!-- コマンド 入金-->
+		<div class="modal-footer nyukinItem">
+			<th:block th:unless="*{disabledFlg}">
+				<!-- 編集 -->
+				<button type="button" th:if="*{updateFlg}" class="btn btn-light mr-auto" name="delete"
+					th:data-action="@{/user/kaikeiManagement/nyukinYotei/delete}"><i class="far fa-trash-alt"></i>削除</button>
+				<button type="button" th:if="*{updateFlg}" class="btn btn-info" name="update"
+					th:data-action="@{/user/kaikeiManagement/nyukinYotei/update}"><i class="fas fa-check"></i>保存</button>
+				<!-- 新規登録 -->
+				<button type="button" th:if="*{!updateFlg}" class="btn btn-info mr-4" name="multiRegist"
+					th:data-action="@{/user/kaikeiManagement/nyukinYotei/regist}"><i class="fas fa-plus-circle mr-2"></i>連続登録</button>
+				<button type="button" th:if="*{!updateFlg}" class="btn btn-info" name="regist"
+					th:data-action="@{/user/kaikeiManagement/nyukinYotei/regist}"><i class="fas fa-check"></i>登録</button>
+			</th:block>
+
+			<button type="button" class="btn btn-light" data-dismiss="modal"><i class="fas fa-times"></i>閉じる</button>
+		</div>
+		<!-- コマンド end -->
+	
+		<!-- コマンド 出金-->
+		<div class="modal-footer shukkinItem">
+			<th:block th:unless="*{disabledFlg}">
+				<!-- 編集 -->
+				<button type="button" th:if="*{updateFlg && !seisanFlg}" class="btn btn-light mr-auto" name="delete"
+					th:data-action="@{/user/kaikeiManagement/shukkinYotei/delete}"><i class="far fa-trash-alt"></i>削除</button>
+				<button type="button" th:if="*{updateFlg}" class="btn btn-info" name="update"
+					th:data-action="@{/user/kaikeiManagement/shukkinYotei/update}"><i class="fas fa-check"></i>保存</button>
+				<!-- 新規登録 -->
+				<button type="button" th:if="*{!updateFlg}" class="btn btn-info mr-4" name="multiRegist"
+					th:data-action="@{/user/kaikeiManagement/shukkinYotei/regist}"><i class="fas fa-plus-circle mr-2"></i>連続登録</button>
+				<button type="button" th:if="*{!updateFlg}" class="btn btn-info" name="regist" th:data-action="@{/user/kaikeiManagement/shukkinYotei/regist}"><i class="fas fa-check"></i>登録</button>
+			</th:block>
+			<button type="button" class="btn btn-light" data-dismiss="modal"><i class="fas fa-times"></i>閉じる</button>
+		</div>
+		<!-- コマンド end -->
+	</div>
+	<!-- 入出金予定登録モーダル end -->
+
+</body>
+</html>

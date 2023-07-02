@@ -1,0 +1,202 @@
+@charset "UTF-8";
+
+/********************************************************
+ * 共通
+*********************************************************/
+/* 裁判ステータス */
+.saiban_status {
+	font-size: 1.8rem;
+	line-height: 1.2;
+	padding-right: 10px;
+	font-weight: 600;
+	word-break: break-all;
+	display: inline-block;
+}
+
+.jiken_edit_row {
+	display: -ms-flexbox;
+	display: flex;
+	gap: 10px;
+}
+.shokikan_add_row {
+	display: -ms-flexbox;
+	display: flex;
+	gap: 5px;
+	align-items: baseline;
+}
+.shokikan_add_row label.input_parts_label {
+	flex: none;
+}
+.person_contact_wrapper {
+	padding-top: 3px;
+}
+/********************************************************
+ * 期日一覧
+*********************************************************/
+/* 裁判期日用 */
+.section_kijitsu {
+	margin: 5px 0 25px 0;
+}
+/* データ表示ブロック(裁判期日用） */
+.section_kijitsu .item_content_block .data_block {
+	padding: 0 10px;
+}
+/* section_list タイプ 期日一覧（共通） */
+.section_kijitsu .item_title .info_name {
+	font-size: 1.8rem;
+	font-weight: 600;
+}
+.section_kijitsu ul.section_list li {
+	padding: 2px 4px 10px 1px;
+}
+.kijitsu_time {
+	background-color: rgb(237 202 200 / 30%);
+	border-radius: 2px;
+	color: var(--loioz-danger);
+	margin: 0 15px;
+	padding: 2px 5px 1px;
+}
+.kijitsu_time.kijitsu_close {
+	background-color: var(--lz-gray-200);
+	font-weight: normal;
+	color: var(--lz-gray-600);
+}
+.kijitsu_result {
+	max-width: 90%;
+}
+
+
+/********************************************************
+ * 顧客一覧、相手方一覧（共通）
+********************************************************/
+/* 顧客・相手方ブロック */
+.customer_aitegata_block {
+	margin: 20px 0;
+}
+/* 筆頭ボタンエリア */
+.hittou_select_area {
+	display: flex;
+	flex-wrap: wrap;
+	min-height: 25px;
+	padding: 3px 10px 0;
+	margin-bottom: 5px;
+}
+/* 筆頭ボタン */
+.hittou_btn {
+	font-size: 1.3rem;
+	border: 1px solid #ced4da;
+	color: var(--text-color-gray);
+	padding: 2px 5px 1px;
+	border-radius: 3px;
+}
+/* 筆頭ボタン:hover */
+.hittou_btn:hover {
+	border: 1px solid var(--loioz-danger);
+	color: var(--loioz-danger);
+}
+/* 筆頭ボタン（選択時） */
+.hittou_btn.selected {
+	border: 1px solid var(--loioz-danger);
+	color: var(--loioz-danger);
+}
+/* 筆頭ボタン（選択時:hover） */
+.hittou_btn.selected:hover {
+	opacity: 1;
+	cursor: default;
+}
+/* 表記セレクトボックス */
+.hyoki_select {
+	padding: 2px 6px;
+	height: 26px;
+	font-size: 1.3rem;
+	width: fit-content;
+	margin-left: 10px;
+}
+/* 名前 */
+.main_info.saiban_row .name_area {
+	width: auto;
+}
+/* ボタンエリア */
+.main_info.saiban_row .btn_area {
+	width: 90px;
+	max-width: 90px;
+	margin-left: auto;
+}
+/* 当事者・共犯者・公判担当者ブロック */
+.customer_kyohan_block {
+	margin: 25px 0;
+}
+
+/********************************************************
+ * 裁判タブ
+*********************************************************/
+.nav-tabs .nav-link {
+	cursor: pointer;
+	border: 1px solid var(--bor-color-main);
+	border-top-left-radius: .25rem;
+	border-top-right-radius: .25rem;
+	font-size: 1.2rem;
+	margin-right: 8px;
+	color: #a3a3a3;
+	transition: all 0.1s;
+	text-align: left;
+	padding-top: 5px;
+}
+.nav-tabs .nav-link:hover {
+	background-color: #fff;
+	color: var(--text-color-main);
+	transition: all 0.1s;
+	box-shadow: inset 0 -3px 0 0px var(--loioz-blue);
+}
+.nav-tabs .nav-link.selected {
+	background-color: #fff;
+	color: var(--text-color-main);
+}
+ul.select_tab.nav-tabs li.nav-link.selected {
+	color: var(--text-color-sub);
+	box-shadow: inset 0 -3px 0 0px var(--loioz-blue);
+	border-top: 1px solid var(--bor-color-main);
+	border-left: 1px solid var(--bor-color-main);
+	border-right: 1px solid var(--bor-color-main);
+	border-bottom-right-radius: 0px;
+	border-bottom-left-radius: 0px;
+}
+.tab_jiken_no {
+	font-size: 1.1rem;
+	font-weight: normal;
+}
+.nav-tabs .label_tag {
+	margin: 0 5px;
+}
+/* 併合反訴タブ */
+.nav_tab_main_jiken {
+	display: flex;
+	margin-top: 7px;
+}
+/* タブ内の基本事件、本訴事件  */
+.nav-tabs .label_tag.kihon_jiken,
+.nav-tabs .label_tag.honso_jiken {
+	color: inherit;
+	border: none;
+	margin: 0 5px;
+	padding: 3px 0 0 0;
+}
+/* タブ内の被併合、反訴  */
+.nav-tabs .label_tag.hi_heigo_jiken,
+.nav-tabs .label_tag.hanso_jiken {
+	margin: 0 8px 0 0;
+	padding: 6px 0;
+}
+
+/* 追起訴 色 */
+.label_tag.tsuikiso {
+	background-color: #b4ffaf;
+}
+
+/********************************************************
+ * 検察官
+*********************************************************/
+.flx_1_50per {
+	flex: 1 1 50%
+} 
+

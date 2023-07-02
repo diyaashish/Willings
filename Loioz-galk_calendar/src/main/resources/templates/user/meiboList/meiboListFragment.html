@@ -1,0 +1,2703 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+	xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+	layout:decorator="commonLayout">
+<head>
+	<meta charset="utf-8" />
+</head>
+<body>
+	
+	<!--/* 【検索条件】すべて */-->
+	<div th:fragment="allMeiboSearchFragment(meiboSearchViewForm)" id="allMeiboSearchFragment" th:object="${meiboListSearchForm.allMeiboListSearchForm}">
+		<script type="text/javascript" th:inline="javascript">
+		$(function() {
+			
+			<!--/* 共有の要素セットアップ処理 */-->
+			commonSetUpElement("#allMeiboSearchFragment");
+			
+			const allMeiboSearchFragment = $('#allMeiboSearchFragment');
+			
+			<!--/* 顧客の追加を押下 */-->
+			allMeiboSearchFragment.find('.customerAddBtn').on('click', function() {
+				const url = /*[[@{/user/personManagement/new/}]]*/'';
+				window.location.href = url;
+			});
+			
+			<!--/* フィルタの選択 */-->
+			allMeiboSearchFragment.find('.filterBtn').on('click', function() {
+				
+				let showConditions = /*[[${meiboListSearchForm.showConditions}]]*/'';
+				let optionParams = [
+					{name:'showConditions', value:!showConditions},
+				];
+				
+				if (ajaxRunning) {
+					return false;
+				}
+				ajaxRunning = true;
+				
+				Promise.resolve()
+					.then(() => renderMeiboSearchFragment(optionParams))
+					.catch((errorObj) => console.log(errorObj))
+					.finally(() => ajaxRunning = false);
+			});
+			
+			<!--/* テキスト検索 */-->
+			let searchText;
+			let inputText;
+			<!--/* テキストボックス内のクリア処理 */-->
+			allMeiboSearchFragment.find('.add-clear-span > a').on('click', function() {
+				inputText = '';
+				
+				if ($(this).parent().find('.inputDate').length > 0) {
+					<!--/* 日付の入力項目（DatePickerの項目）の場合は、blurでの再検索は行わず、このケースではchangeイベントが発火せず再検索が行われないので、イベントを発火させる */-->
+					$(this).parent().find('.inputDate').change();
+				}
+			});
+			<!--/* 入力項目削除で検索 */-->
+			allMeiboSearchFragment.find('.filtersContainer input[type="text"], .filtersContainer input[type="tel"]').on('blur', function(event) {
+				if ($(this).hasClass('inputDate')) {
+					<!--/* 日付の入力項目（DatePickerの項目）の場合は、blurでの再検索は行わない（changeイベント側で実行されるため） */-->
+					return;
+				}
+				
+				if (searchText !== inputText) {
+					searchFn();
+				}
+			});
+			<!--/* 入力項目のEnterで検索 */-->
+			allMeiboSearchFragment.find('.filtersContainer input[type="text"], .filtersContainer input[type="tel"]').on('keydown', function(e) {
+				if (e.keyCode == 13) {
+					searchText = $(this).val();
+					searchFn();
+				};
+				inputText = $(this).val();
+			});
+			
+			<!--/* セレクトボックスの変更で検索 */-->
+			allMeiboSearchFragment.find('.filtersContainer select').on('change', function(e) {
+				searchFn();
+			});
+			<!--/* ラジオボタンで検索 */-->
+			allMeiboSearchFragment.find('.filtersContainer input:radio').on('change', function(e) {
+				searchFn();
+			});
+			<!--/* 登録日Fromの変更で検索 */-->
+			allMeiboSearchFragment.find('.filtersContainer input[id="allMeiboListSearchForm.customerCreateDateFrom"]').on('change', function(e) {
+				searchFn();
+			});
+			<!--/* 登録日Toの変更で検索 */-->
+			allMeiboSearchFragment.find('.filtersContainer input[id="allMeiboListSearchForm.customerCreateDateTo"]').on('change', function(e) {
+				searchFn();
+			});
+			
+			<!--/* 入力項目の初期化 */-->
+			allMeiboSearchFragment.find('.cliearBtn').on('click', function(e) {
+				allMeiboSearchFragment.find('.filtersContainer input').val("");
+				allMeiboSearchFragment.find('.filtersContainer select').val("");
+				searchFn();
+			});
+			
+			<!--/* 名簿一覧CSV出力処理 */-->
+			allMeiboSearchFragment.on('click', '.csvOutput', function() {
+				const url = /*[[@{/user/meiboList/doc/outputAllMeiboListCsv}]]*/'';
+				const buttonObj = $(this);
+				const formData = {};
+				downloadCsvFileAjax(url, buttonObj, formData);
+			});
+			
+			<!--/* 名簿一覧EXCEL出力処理 */-->
+			allMeiboSearchFragment.on('click', '.excelOutput', function() {
+				const url = /*[[@{/user/meiboList/doc/outputAllMeiboListExcel}]]*/'';
+				const buttonObj = $(this);
+				const formData = {};
+				downloadFileAjax(url, buttonObj, formData);
+			});
+			
+			<!--/* 名簿一覧筆まめ出力処理 */-->
+			allMeiboSearchFragment.on('click', '.fudemameOutput', function() {
+				const url = /*[[@{/user/meiboList/doc/outputAllMeiboListFudemame}]]*/'';
+				const buttonObj = $(this);
+				const formData = {};
+				downloadCsvFileAjax(url, buttonObj, formData);
+			});
+			
+			<!--/* 検索処理 */-->
+			function searchFn() {
+				const optionParam = allMeiboSearchFragment.find('#allMeiboListSearchForm').serializeArray();
+				if (ajaxRunning) {
+					return false;
+				}
+				ajaxRunning = true;
+				Promise.resolve()
+					.then(() => searchMeiboList(optionParam, allMeibo))
+					.then(() => renderMeiboSearchFragment(optionParam))
+					.catch((errorObj) => console.log(errorObj))
+					.finally(() => ajaxRunning = false);
+			};
+			
+		});
+		</script>
+		<!--/* 選択したメニュータイトル */-->
+		<div class="page_list_title_block">
+			<h1 class="page_list__name">すべて</h1>
+			<div class="page_list__btn" th:with="searchConditionCount=*{getSearchConditionCount()}">
+				<button type="button" class="btn btn-primary customerAddBtn"><i class="fas fa-plus"></i>名簿を追加</button>
+				<button type="button" class="btn btn-light filterBtn" th:classAppend="${searchConditionCount} > 0 ?  'filter_active' ">
+					<i class="fas fa-filter"></i>フィルタ
+					<span class="btn_inner_badge" th:classAppend="${searchConditionCount} > 0 ?  'badge_warning' "
+						th:text="${searchConditionCount}">1</span>
+				</button>
+				<div id="outPutContainer" class="d-inline-block stop-events outPutContainerClose"
+					data-offset="-80,0" data-boundary="window" data-container="#allMeiboSearchFragment" data-toggle="popover" data-placement="bottom" data-html="true" th:data-content=
+					'|<ul class="output_nav_list">
+							<li class="title_block">名簿情報出力</li>
+							<li><button class="btn btn-light excelOutput" data-target="#outPutContainer"><i class="fas fa-download text-primary mr-3"></i><i class="fas fa-spinner mr-3 text-primary faa-spin animated hidden"></i>Excel形式で出力する</button></li>
+							<li><button class="btn btn-light csvOutput" data-target="#outPutContainer"><i class="fas fa-download text-primary mr-3"></i><i class="fas fa-spinner mr-3 text-primary faa-spin animated hidden"></i>CSV形式で出力する</button></li>
+							<li><button class="btn btn-light fudemameOutput" data-target="#outPutContainer"><i class="fas fa-download text-primary mr-3"></i><i class="fas fa-spinner mr-3 text-primary faa-spin animated hidden"></i>筆まめ形式で出力する</button></li>
+					</ul>|'>
+					<button type="button" class="btn btn-light config"><i class="fas fa-ellipsis-h mr-0"></i></button>
+				</div>
+			</div>
+		</div>
+		
+		<!--/* 検索条件 */-->
+		<form id="allMeiboListSearchForm" autocomplete="off" th:if="${meiboListSearchForm.showConditions}">
+			<!--/* 検索条件 */-->
+			<div class="list_filters_container filtersContainer">
+				<fieldset>
+					<div class="list_filters_header">
+						<div class="filters_title">検索条件</div>
+						<div class="filters_action">
+							<a href="javascript:void(0);" class="filters_action__clear cliearBtn">検索条件をクリア</a>
+							<a href="javascript:void(0);" class="filters_action__close filterBtn"><i class="fas fa-times"></i></a>
+						</div>
+					</div>
+					<div class="form-row">
+						<!--/* キーワード */-->
+						<div class="form-group col-md-auto">
+							<label class="input_parts_label">キーワード</label>
+							<input type="text" class="form-control digit20 fcAddTextClear" th:field="*{searchWord}" placeholder="ID、名前、住所、電話番号、特記事項..." maxlength="300">
+						</div>
+						<!--/* 名簿ID */-->
+						<div class="form-group col-md-auto">
+							<label class="input_parts_label">名簿ID</label>
+							<input type="text" class="form-control digit6 inputNumberOnly fcAddTextClear" th:field="*{personId}" maxlength="10">
+						</div>
+						<!--/* 名前 */-->
+						<div class="form-group col-md-auto">
+							<label class="input_parts_label">名前</label>
+							<input type="text" class="form-control digit19 fcAddTextClear" th:field="*{keywords}" placeholder="名前、企業・団体名（代表／担当）..." maxlength="300">
+						</div>
+						
+						<!--/* 区分 */-->
+						<div class="form-group col-md-auto">
+							<label class="input_parts_label">区分</label>
+							<select class="form-control digit7" th:field="*{kubun}">
+								<option value="">-</option>
+								<option
+									th:value="${T(jp.loioz.common.constant.CommonConstant$CustomerType).KOJIN.getCd()}"
+									th:text="${T(jp.loioz.common.constant.CommonConstant$CustomerType).KOJIN.getVal()}"></option>
+								<option
+									th:value="${T(jp.loioz.common.constant.CommonConstant$CustomerType).HOJIN.getCd()}"
+									th:text="${T(jp.loioz.common.constant.CommonConstant$CustomerType).HOJIN.getVal()}"></option>
+							</select>
+						</div>
+						
+						<!--/* 住所 */-->
+						<div class="form-group col-md-auto">
+							<label class="input_parts_label">住所</label>
+							<input type="text" class="form-control digit12 fcAddTextClear" th:field="*{address}" maxlength="300">
+						</div>
+						
+						<!--/* 電話番号 */-->
+						<div class="form-group col-md-auto">
+							<label class="input_parts_label">電話番号</label>
+							<input type="tel" class="form-control digit10 inputNumHyphen fcAddTextClear" th:field="*{telNo}" maxlength="13">
+						</div>
+						
+						<!--/* メールアドレス */-->
+						<div class="form-group col-md-auto">
+							<label class="input_parts_label">メールアドレス</label>
+							<input type="text" class="form-control digit11 inputHalf fcAddTextClear" th:field="*{mailAddress}" maxlength="300">
+						</div>
+						
+						<!--/* 登録日 */-->
+						<div class="form-group col-md-auto">
+							<label class="input_parts_label">登録日</label>
+							<div class="d-flex align-items-start">
+								<div>
+									<div class="d-flex customerCreateDateFrom">
+										<input type="text" class="form-control digit8 inputDateSlash inputDate fcAddTextClear" th:field="*{customerCreateDateFrom}" maxlength="10"
+											data-click-sync="[data-target-name='allMeiboListSearchForm.customerCreateDateFrom']">
+										<button type="button" class="btn btn_popcal hidden" data-toggle="datepicker" data-target-name="allMeiboListSearchForm.customerCreateDateFrom">カレンダー</button>
+										<div class="fs15 mt-2 mx-2">〜</div>
+									</div>
+								</div>
+								<div>
+									<div class="customerCreateDateTo">
+										<input type="text" class="form-control digit8 inputDateSlash inputDate fcAddTextClear" th:field="*{customerCreateDateTo}" maxlength="10"
+											data-click-sync="[data-target-name='allMeiboListSearchForm.customerCreateDateTo']">
+										<button type="button" class="btn btn_popcal hidden" data-toggle="datepicker" data-target-name="allMeiboListSearchForm.customerCreateDateTo">カレンダー</button>
+									</div>
+								</div>
+							</div>
+						</div>
+						
+					</div>
+					<div class="form-row">
+						<!--/* 属性 */-->
+						<div class="form-group col-md-auto">
+							<label class="input_parts_label">属性</label>
+							<div class="pt-1">
+								<label class="radio_btn_select">
+									<input type="radio" class="radio_btn_input" value="" th:field="*{personAttributeCd}">
+									<span class="radio_btn_txt">すべて</span>
+								</label>
+								<label class="radio_btn_select">
+									<input type="radio" class="radio_btn_input" th:value="${T(jp.loioz.common.constant.CommonConstant$PersonAttributeCd).CUSTOMER.getCd()}"
+										th:field="*{personAttributeCd}">
+									<span class="radio_btn_txt">顧客</span>
+								</label>
+								<label class="radio_btn_select">
+									<input type="radio" class="radio_btn_input" th:value="${T(jp.loioz.common.constant.CommonConstant$PersonAttributeCd).LAWYER.getCd()}"
+										th:field="*{personAttributeCd}">
+									<span class="radio_btn_txt">弁護士</span>
+								</label>
+								<label class="radio_btn_select">
+									<input type="radio" class="radio_btn_input" th:value="${T(jp.loioz.common.constant.CommonConstant$PersonAttributeCd).OTHER.getCd()}"
+										th:field="*{personAttributeCd}">
+									<span class="radio_btn_txt">その他</span>
+								</label>
+							</div>
+						</div>
+					</div>
+					
+					
+				</fieldset>
+			</div>
+			<!--/* 検索条件 end */-->
+		</form>
+		
+	</div>
+	<!--/* 【検索条件】すべて end */-->
+
+	<!--/* 【一覧】すべて */-->
+	<div th:fragment="allMeiboListFragment(allMeiboListViewForm)" id="allMeiboListFragment">
+		<script type="text/javascript" th:inline="javascript">
+		$(function() {
+			
+			<!--/* 共有の要素セットアップ処理 */-->
+			commonSetUpElement("#allMeiboListFragment");
+			
+			<!-- /* 一覧の表示初期処理（親HTMLの関数） */ -->
+			const sessionQuickSearchWord = /*[[${T(jp.loioz.common.utility.SessionUtils).getSessionVaule(T(jp.loioz.common.constant.SessionAttrKeyEnum).QUICK_SEARCH_WORD)}]]*/ '';
+			showInitMiboList(sessionQuickSearchWord)
+			
+			const allMeiboListFragment = $('#allMeiboListFragment');
+			
+			<!--/* 名簿ポップオーバー */-->
+			benzo.global.fragment.ankenInfoFragment.setUpAnkenPopover(allMeiboListFragment.find(".customerIdLabel"));
+			
+			<!--/* ソート処理 */-->
+			allMeiboListFragment.find('.allMeiboColumn').on('click', function() {
+				const asc = /*[[${T(jp.loioz.common.constant.SortConstant$SortOrder).ASC.getCd()}]]*/'';
+				const desc = /*[[${T(jp.loioz.common.constant.SortConstant$SortOrder).DESC.getCd()}]]*/'';
+
+				const currentSortItem = /*[[${meiboListSearchForm.allMeiboListSearchForm.sortItem}]]*/'';
+				const currentSortOrder = /*[[${meiboListSearchForm.allMeiboListSearchForm.sortOrder}]]*/'';
+				
+				let optionParam = [];
+				
+				const sortKey = $(this).data('sortKey');
+				if (sortKey != currentSortItem) {
+					optionParam = [
+						{name:"allMeiboListSearchForm.sortItem", value:sortKey},
+						{name:"allMeiboListSearchForm.sortOrder", value:desc},
+					];
+				} else {
+					if (currentSortOrder === asc) {
+						optionParam = [
+							{name:"allMeiboListSearchForm.sortOrder", value:desc},
+						];
+					} 
+					
+					if (currentSortOrder === desc) {
+						optionParam = [
+							{name:"allMeiboListSearchForm.sortOrder", value:asc},
+						]
+					} 
+				}
+				
+				if (ajaxRunning) {
+					return false;
+				}
+				ajaxRunning = true;
+				Promise.resolve()
+					.then(() => sortMeiboList(optionParam, allMeibo))
+					.catch((errorObj) => console.log(errorObj))
+					.finally(() => ajaxRunning = false);
+			});
+			
+			<!--/* 「案件を見る」リンクをクリック */-->
+			allMeiboListFragment.on("click", ".customerIdLabel", function(e){
+				<!--/* 共有の要素セットアップ処理 */-->
+				commonSetUpElement();
+				
+				<!--/* 選択状態を解除する */-->
+				$('.seleted_meibo_row').removeClass('seleted_meibo_row');
+				$('.seleted_anken_link').removeClass('seleted_anken_link');
+				
+				<!--/* 選択状態にする */-->
+				$(this).closest('tr').addClass('seleted_meibo_row');
+				$(this).addClass('seleted_anken_link');
+			});
+			
+			<!--/* 名簿一覧クリック */-->
+			allMeiboListFragment.on("click", ".transitionCustomer", function(){
+				<!--/* 案件ポップオーバーの表示確認 */-->
+				if ($('.ankenInfoFragment').length) {
+					<!--/* 案件ポップオーバーを表示しているときは画面遷移しない */-->
+				} else {
+					const personId = $(this).data('personId');
+					const url = /*[[@{/user/personManagement/edit/}]]*/'';
+					window.location.href = url + personId + '/';
+				}
+			});
+			
+			<!--/* 「案件を見る」リンク、案件ポップオーバーからカーソルが出た場合、案件ポップオーバーを閉じる */-->
+			allMeiboListFragment.on("mouseleave", "#ankenPopover", function(){
+				<!--/* 案件ポッパーがあれば閉じる */-->
+ 				$(".ankenInfoFragment").closest(".popover").popover("hide");
+			});
+			
+			<!--/* 名簿一覧でスクロールしたときに、案件ポップオーバーを閉じる */-->
+			<!--/* 案件ポップオーバーのページ移動後、ページに案件が1件しがない場合にwindowが狭くなりカーソルがポップオーバーから出てしまいスクロールが可能となりポップオーバーの予期しない場所へ移動するのを防ぐため */-->
+			$('div').scroll(function() {
+				<!--/* 案件ポッパーがあれば閉じる */-->
+				$(".ankenInfoFragment").closest(".popover").popover("hide");
+			});
+		});
+		
+		</script>
+		
+		<!--/* 一覧エリア */-->
+		<div id="allList">
+			<div class="header_fixed_table_wrapper table_common_list">
+				<table class="table table_standard table_nowrap table-hover">
+					<thead>
+						<tr>
+							<th class="cell_fixed_75 sort_column allMeiboColumn"
+								th:with="sortItem=${T(jp.loioz.common.constant.meiboList.MeiboListConstant$AllMeiboListSortItem).PERSON_ID}"
+								th:data-sort-key="${sortItem.getCd()}">名簿ID
+								<th:block th:if="${sortItem == meiboListSearchForm.allMeiboListSearchForm.sortItem}" th:fragment="allMeiboColumn">
+									<th:block th:if="${meiboListSearchForm.allMeiboListSearchForm.sortOrder == T(jp.loioz.common.constant.SortConstant$SortOrder).ASC}">
+										<i class="fas fa-chevron-up"></i>
+									</th:block>
+									<th:block th:if="${meiboListSearchForm.allMeiboListSearchForm.sortOrder == T(jp.loioz.common.constant.SortConstant$SortOrder).DESC}">
+										<i class="fas fa-chevron-down"></i>
+									</th:block>
+								</th:block>
+							</th>
+							<th class="cell_fixed_75">属性</th>
+							<th class="cell_fixed_175 sort_column allMeiboColumn"
+								th:with="sortItem=${T(jp.loioz.common.constant.meiboList.MeiboListConstant$AllMeiboListSortItem).NAME}"
+								th:data-sort-key="${sortItem.getCd()}">
+								名前
+								<th:block th:replace="::allMeiboColumn"></th:block>
+							</th>
+							<th class="cell_fixed_300">
+								<div class="d-flex">
+									<div>住所</div>
+									<div class="ml-1 d-inline-block stop-events outPutContainerClose" 
+										data-offset="-80,0" data-toggle="popover" data-html="true" th:data-content='|
+											<div class="popover_meibo_list_msg">
+												<div class="pt-2 pb-2 px-3">
+													名簿情報で登録した居住地、所在地です。
+												</div>
+											</div>
+										|'>
+										<i class="far fa-question-circle cursor_pointer" data-outside='close'></i>
+									</div>
+								</div>
+							</th>
+							<th class="cell_fixed_125">
+								<div class="d-flex">
+									<div>電話番号</div>
+									<div class="ml-1 d-inline-block stop-events outPutContainerClose" 
+										data-offset="-80,0" data-toggle="popover" data-html="true" th:data-content='|
+											<div class="popover_meibo_list_msg">
+												<div class="pt-2 pb-2 px-3">
+													連絡先情報の優先設定をした電話番号です。
+													<div>（優先未設定の場合は、1番目に登録した電話番号です。）</div>
+												</div>
+											</div>
+										|'>
+										<i class="far fa-question-circle cursor_pointer" data-outside='close'></i>
+									</div>
+								</div>
+							</th>
+							<th class="cell_fixed_175">
+								<div class="d-flex">
+									<div>メールアドレス</div>
+									<div class="ml-1 d-inline-block stop-events outPutContainerClose" 
+										data-offset="-80,0" data-toggle="popover" data-html="true" th:data-content='|
+											<div class="popover_meibo_list_msg">
+												<div class="pt-2 pb-2 px-3">
+													連絡先情報の優先設定をしたメールアドレスです。
+													<div>（優先未設定の場合は、1番目に登録したメールアドレスです。）</div>
+												</div>
+											</div>
+										|'>
+										<i class="far fa-question-circle cursor_pointer" data-outside='close'></i>
+									</div>
+								</div>
+							</th>
+							<th class="cell_fixed_100">案件</th>
+							<th class="cell_fixed_100 sort_column allMeiboColumn"
+								th:with="sortItem=${T(jp.loioz.common.constant.meiboList.MeiboListConstant$AllMeiboListSortItem).CUSTOMER_CREATE_DATE}"
+								th:data-sort-key="${sortItem.getCd()}">
+								登録日
+								<th:block th:replace="::allMeiboColumn"></th:block>
+							</th>
+						</tr>
+					</thead>
+					<tbody>
+						<th:block th:if="${allMeiboListViewForm.allMeiboList.size() == 0}">
+							<tr>
+								<td colspan="8" class="no_data"><span th:text="#{I00044('名簿情報')}">該当する名簿情報は見つかりませんでした。</span></td>
+							</tr>
+						</th:block>
+						<tr th:each="meiboData : ${allMeiboListViewForm.allMeiboList}">
+							<td class="cell_fixed_75 transitionCustomer" th:data-person-id="${meiboData.personId}">
+								<span class="main_id" th:text="${meiboData.personId}"></span>
+							</td>
+							<td class="cell_fixed_75 transitionCustomer" th:data-person-id="${meiboData.personId}">
+								<th:block  th:switch="${meiboData.personAttribute.getCd()}">
+									<span th:case="${T(jp.loioz.common.constant.CommonConstant$PersonAttributeCd).CUSTOMER}"
+										class="badge badge-pill list_attr badge_blue" th:text="${meiboData.personAttribute.getName()}">顧客</span>
+									<span th:case="${T(jp.loioz.common.constant.CommonConstant$PersonAttributeCd).ADVISOR}"
+										class="badge badge-pill list_attr badge_wine_red" th:text="${meiboData.personAttribute.getName()}">顧問先</span>
+									<span th:case="${T(jp.loioz.common.constant.CommonConstant$PersonAttributeCd).LAWYER}"
+										class="badge badge-pill list_attr badge_purple" th:text="${meiboData.personAttribute.getName()}">弁護士</span>
+									<span th:case="${T(jp.loioz.common.constant.CommonConstant$PersonAttributeCd).OTHER}"
+										class="badge badge-pill list_attr badge_green" th:text="${meiboData.personAttribute.getName()}">その他</span>
+									<span th:case="*"></span>
+								</th:block>
+							</td>
+							<td class="cell_fixed_175 char_ellipsis transitionCustomer" th:text="${meiboData.name}" th:data-person-id="${meiboData.personId}">
+							<td class="cell_fixed_300 char_ellipsis transitionCustomer" th:data-person-id="${meiboData.personId}">
+								<th:block th:if="${!meiboData.existsAddress() && #strings.isEmpty(meiboData.zipCode)}">
+									<span>-</span>
+								</th:block>
+								<th:block th:if="${meiboData.existsAddress() || !#strings.isEmpty(meiboData.zipCode)}">
+									<div class="row_sub_data lh1" th:text="${#strings.isEmpty(meiboData.zipCode)? '' : '〒' + meiboData.zipCode}"></div>
+									<span th:text="${meiboData.address1}"></span>
+									<span th:text="${meiboData.address2}"></span>
+								</th:block>
+							</td>
+							<td class="cell_fixed_125 char_ellipsis transitionCustomer" th:text="${#strings.isEmpty(meiboData.telNo)? '-' : meiboData.telNo}" th:data-person-id="${meiboData.personId}">
+							<td class="cell_fixed_175 char_ellipsis transitionCustomer" th:text="${#strings.isEmpty(meiboData.mailAddress)? '-' : meiboData.mailAddress}" th:data-person-id="${meiboData.personId}">
+							<td id="ankenPopover" class="cell_fixed_100" th:if="${#bools.isTrue(meiboData.existsAnkenCustomer) or #bools.isTrue(meiboData.existsKanyosha)}">
+								<span th:id="|ankenPopover_${meiboData.personId}|"></span>
+								<span>
+									<a class="customerIdLabel"
+										data-boundary="window" th:data-container="|#ankenPopover_${meiboData.personId}|" th:data-person-id="${meiboData.personId}"
+										href="javascript:void(0);">
+										<i class="far fa-arrow-alt-circle-left mr-2"></i>案件を見る
+									</a>
+								</span>
+							</td>
+							<td class="cell_fixed_100 transitionCustomer" th:if="!${#bools.isTrue(meiboData.existsAnkenCustomer) or #bools.isTrue(meiboData.existsKanyosha)}" th:data-person-id="${meiboData.personId}">
+								<span th:if="${#bools.isFalse(meiboData.existsAnkenCustomer) and #bools.isFalse(meiboData.existsKanyosha)}">
+									-
+								</span>
+							</td>
+							<td class="cell_fixed_100 transitionCustomer" th:text="${#strings.isEmpty(meiboData.customerCreatedDate)? '-' : meiboData.customerCreatedDate}" th:data-person-id="${meiboData.personId}">
+						</tr>
+					</tbody>
+				</table>
+			</div>
+		</div>
+				
+	</div>
+	<!--/* 【一覧】すべて end */-->
+
+	<!--/* 【検索条件】顧客名簿 */-->
+	<div th:fragment="customerAllMeiboSearchFragment(meiboSearchViewForm)" id="customerAllMeiboSearchFragment" th:object="${meiboListSearchForm.customerAllMeiboListSearchForm}">
+		<script type="text/javascript" th:inline="javascript">
+		$(function() {
+			
+			<!--/* 共有の要素セットアップ処理 */-->
+			commonSetUpElement("#customerAllMeiboSearchFragment");
+			
+			const customerAllMeiboSearchFragment = $('#customerAllMeiboSearchFragment');
+			
+			<!--/* 顧客の追加を押下 */-->
+			customerAllMeiboSearchFragment.find('.customerAddBtn').on('click', function() {
+				const url = /*[[@{/user/personManagement/new/}]]*/'';
+				window.location.href = url;
+			});
+			
+			<!--/* フィルタの選択 */-->
+			customerAllMeiboSearchFragment.find('.filterBtn').on('click', function() {
+				
+				let showConditions = /*[[${meiboListSearchForm.showConditions}]]*/'';
+				let optionParams = [
+					{name:'showConditions', value:!showConditions},
+				];
+				
+				if (ajaxRunning) {
+					return false;
+				}
+				ajaxRunning = true;
+				Promise.resolve()
+					.then(() => renderMeiboSearchFragment(optionParams))
+					.catch((errorObj) => console.log(errorObj))
+					.finally(() => ajaxRunning = false);
+			});
+			
+			<!--/* テキスト検索 */-->
+			let searchText;
+			let inputText;
+			<!--/* テキストボックス内のクリア処理 */-->
+			customerAllMeiboSearchFragment.find('.add-clear-span > a').on('click', function() {
+				inputText = '';
+				
+				if ($(this).parent().find('.inputDate').length > 0) {
+					<!--/* 日付の入力項目（DatePickerの項目）の場合は、blurでの再検索は行わず、このケースではchangeイベントが発火せず再検索が行われないので、イベントを発火させる */-->
+					$(this).parent().find('.inputDate').change();
+				}
+			});
+			<!--/* 入力項目削除で検索 */-->
+			customerAllMeiboSearchFragment.find('.filtersContainer input[type="text"], .filtersContainer input[type="tel"]').on('blur', function(e) {
+				if ($(this).hasClass('inputDate')) {
+					<!--/* 日付の入力項目（DatePickerの項目）の場合は、blurでの再検索は行わない（changeイベント側で実行されるため） */-->
+					return;
+				}
+				
+				if (searchText !== inputText) {
+					searchFn();
+				}
+			});
+			<!--/* 入力項目のEnterで検索 */-->
+			customerAllMeiboSearchFragment.find('.filtersContainer input[type="text"], .filtersContainer input[type="tel"]').on('keydown', function(e) {
+				if (e.keyCode == 13) {
+					searchText = $(this).val();
+					searchFn();
+				};
+				inputText = $(this).val();
+			});
+			
+			<!--/* セレクトボックスの変更で検索 */-->
+			customerAllMeiboSearchFragment.find('.filtersContainer select').on('change', function(e) {
+				searchFn();
+			});
+			
+			<!--/* 登録日Fromの変更で検索 */-->
+			customerAllMeiboSearchFragment.find('.filtersContainer input[id="customerAllMeiboListSearchForm.customerCreateDateFrom"]').on('change', function(e) {
+				searchFn();
+			});
+			<!--/* 登録日Toの変更で検索 */-->
+			customerAllMeiboSearchFragment.find('.filtersContainer input[id="customerAllMeiboListSearchForm.customerCreateDateTo"]').on('change', function(e) {
+				searchFn();
+			});
+			
+			<!--/* 入力項目の初期化 */-->
+			customerAllMeiboSearchFragment.find('.cliearBtn').on('click', function(e) {
+				customerAllMeiboSearchFragment.find('.filtersContainer input').val("");
+				searchFn();
+			});
+			
+			<!--/* 名簿一覧CSV出力処理 */-->
+			customerAllMeiboSearchFragment.on('click', '.csvOutput', function() {
+				const url = /*[[@{/user/meiboList/doc/outputCustomerAllMeiboListCsv}]]*/'';
+				const buttonObj = $(this);
+				const formData = {};
+				downloadCsvFileAjax(url, buttonObj, formData);
+			});
+			
+			<!--/* 名簿一覧EXCEL出力処理 */-->
+			customerAllMeiboSearchFragment.on('click', '.excelOutput', function() {
+				const url = /*[[@{/user/meiboList/doc/outputCustomerAllMeiboListExcel}]]*/'';
+				const buttonObj = $(this);
+				const formData = {};
+				downloadFileAjax(url, buttonObj, formData);
+			});
+			
+			<!--/* 名簿一覧CSV出力処理 */-->
+			customerAllMeiboSearchFragment.on('click', '.fudemameOutput', function() {
+				const url = /*[[@{/user/meiboList/doc/outputCustomerAllMeiboListFudemame}]]*/'';
+				const buttonObj = $(this);
+				const formData = {};
+				downloadCsvFileAjax(url, buttonObj, formData);
+			});
+			
+			<!--/* 検索処理 */-->
+			function searchFn() {
+				const optionParam = customerAllMeiboSearchFragment.find('#customerAllMeiboListSearchForm').serializeArray();
+				if (ajaxRunning) {
+					return false;
+				}
+				ajaxRunning = true;
+				Promise.resolve()
+					.then(() => searchMeiboList(optionParam, allCustomerMeibo))
+					.then(() => renderMeiboSearchFragment(optionParam))
+					.catch((errorObj) => console.log(errorObj))
+					.finally(() => ajaxRunning = false);
+			};
+			
+		});
+		</script>
+		
+		<!--/* 選択したメニュータイトル */-->
+		<div class="page_list_title_block">
+			<h1 class="page_list__name">顧客名簿</h1>
+			<div class="page_list__btn" th:with="searchConditionCount=*{getSearchConditionCount()}">
+				<button type="button" class="btn btn-primary customerAddBtn"><i class="fas fa-plus"></i>名簿を追加</button>
+				<button type="button" class="btn btn-light filterBtn" th:classAppend="${searchConditionCount} > 0 ?  'filter_active' ">
+					<i class="fas fa-filter"></i>フィルタ
+					<span class="btn_inner_badge" th:classAppend="${searchConditionCount} > 0 ?  'badge_warning' "
+						th:text="${searchConditionCount}">1</span>
+				</button>
+				<div id="outPutContainer" class="d-inline-block stop-events outPutContainerClose"
+					data-offset="-80,0" data-boundary="window" data-container="#customerAllMeiboSearchFragment" data-toggle="popover" data-placement="bottom" data-html="true" th:data-content=
+					'|<ul class="output_nav_list">
+							<li class="title_block">名簿情報出力</li>
+							<li><button class="btn btn-light excelOutput" data-target="#outPutContainer"><i class="fas fa-download text-primary mr-3"></i><i class="fas fa-spinner mr-3 text-primary faa-spin animated hidden"></i>Excel形式で出力する</button></li>
+							<li><button class="btn btn-light csvOutput" data-target="#outPutContainer"><i class="fas fa-download text-primary mr-3"></i><i class="fas fa-spinner mr-3 text-primary faa-spin animated hidden"></i>CSV形式で出力する</button></li>
+							<li><button class="btn btn-light fudemameOutput" data-target="#outPutContainer"><i class="fas fa-download text-primary mr-3"></i><i class="fas fa-spinner mr-3 text-primary faa-spin animated hidden"></i>筆まめ形式で出力する</button></li>
+					</ul>|'>
+					<button type="button" class="btn btn-light config"><i class="fas fa-ellipsis-h mr-0"></i></button>
+				</div>
+			</div>
+		</div>
+		
+		<!--/* 検索条件 */-->
+		<form id="customerAllMeiboListSearchForm" autocomplete="off" th:if="${meiboListSearchForm.showConditions}">
+			<div class="list_filters_container filtersContainer" >
+				<fieldset>
+					<div class="list_filters_header">
+						<div class="filters_title">検索条件</div>
+						<div class="filters_action">
+							<a href="javascript:void(0);" class="filters_action__clear cliearBtn">検索条件をクリア</a>
+							<a href="javascript:void(0);" class="filters_action__close filterBtn"><i class="fas fa-times"></i></a>
+						</div>
+					</div>
+					<div class="form-row">
+						<!--/* キーワード */-->
+						<div class="form-group col-md-auto">
+							<label class="input_parts_label">キーワード</label>
+							<input type="text" class="form-control digit20 fcAddTextClear" th:field="*{searchWord}" placeholder="ID、名前、住所、電話番号、特記事項..." maxlength="300">
+						</div>
+						<!--/* 名簿ID */-->
+						<div class="form-group col-md-auto">
+							<label class="input_parts_label">名簿ID</label>
+							<input type="text" class="form-control digit6 inputNumberOnly fcAddTextClear" th:field="*{personId}" maxlength="10">
+						</div>
+						<!--/* 名前 */-->
+						<div class="form-group col-md-auto">
+							<label class="input_parts_label">名前</label>
+							<input type="text" class="form-control digit19 fcAddTextClear" th:field="*{keywords}" placeholder="名前、企業・団体名（代表／担当）..." maxlength="300">
+						</div>
+						<!--/* 住所 */-->
+						<div class="form-group col-md-auto">
+							<label class="input_parts_label">住所</label>
+							<input type="text" class="form-control digit12 fcAddTextClear" th:field="*{address}" maxlength="300">
+						</div>
+						<!--/* 電話番号 */-->
+						<div class="form-group col-md-auto">
+							<label class="input_parts_label">電話番号</label>
+							<input type="tel" class="form-control digit10 fcAddTextClear" th:field="*{telNo}" maxlength="13">
+						</div>
+						<!--/* メールアドレス */-->
+						<div class="form-group col-md-auto">
+							<label class="input_parts_label">メールアドレス</label>
+							<input type="text" class="form-control digit11 inputHalf fcAddTextClear" th:field="*{mailAddress}" maxlength="300">
+						</div>
+						<!--/* 登録日 */-->
+						<div class="form-group col-md-auto">
+							<label class="input_parts_label">登録日</label>
+							<div class="d-flex align-items-start">
+								<div>
+									<div class="d-flex customerCreateDateFrom">
+										<input type="text" class="form-control digit8 inputDateSlash inputDate fcAddTextClear" th:field="*{customerCreateDateFrom}" maxlength="10"
+											data-click-sync="[data-target-name='customerAllMeiboListSearchForm.customerCreateDateFrom']">
+										<button type="button" class="btn btn_popcal hidden" data-toggle="datepicker" data-target-name="customerAllMeiboListSearchForm.customerCreateDateFrom">カレンダー</button>
+										<div class="fs15 mt-2 mx-2">〜</div>
+									</div>
+								</div>
+								<div>
+									<div class="customerCreateDateTo">
+										<input type="text" class="form-control digit8 inputDateSlash inputDate fcAddTextClear" th:field="*{customerCreateDateTo}" maxlength="10"
+											data-click-sync="[data-target-name='customerAllMeiboListSearchForm.customerCreateDateTo']">
+										<button type="button" class="btn btn_popcal hidden" data-toggle="datepicker" data-target-name="customerAllMeiboListSearchForm.customerCreateDateTo">カレンダー</button>
+									</div>
+								</div>
+							</div>
+						</div>
+						<!--/* 特記事項 */-->
+						<div class="form-group col-md-auto">
+							<label class="input_parts_label">特記事項</label>
+							<input type="text" class="form-control digit13 fcAddTextClear" th:field="*{remarks}" maxlength="300">
+						</div>
+					</div>
+				</fieldset>
+			</div>
+			<!--/* 検索条件 end */-->
+		</form>
+		
+	</div>
+	<!--/* 【検索条件】顧客名簿 end */-->
+	
+	<!--/* 【一覧】顧客名簿 */-->
+	<div th:fragment="customerAllMeiboListFragment(customerAllMeiboListViewForm)" id="customerAllMeiboListFragment">
+		<script type="text/javascript" th:inline="javascript">
+		$(function(){
+			<!--/* 共有の要素セットアップ処理 */-->
+			commonSetUpElement("#customerAllMeiboListFragment");
+			
+			<!-- /* 一覧の表示初期処理（親HTMLの関数） */ -->
+			const sessionQuickSearchWord = /*[[${T(jp.loioz.common.utility.SessionUtils).getSessionVaule(T(jp.loioz.common.constant.SessionAttrKeyEnum).QUICK_SEARCH_WORD)}]]*/ '';
+			showInitMiboList(sessionQuickSearchWord)
+			
+			<!--/* ソート処理 */-->
+			$('#customerAllMeiboListFragment').find('.customerAllMeiboColumn').on('click', function() {
+				const asc = /*[[${T(jp.loioz.common.constant.SortConstant$SortOrder).ASC.getCd()}]]*/'';
+				const desc = /*[[${T(jp.loioz.common.constant.SortConstant$SortOrder).DESC.getCd()}]]*/'';
+				
+				const currentSortItem = /*[[${meiboListSearchForm.customerAllMeiboListSearchForm.sortItem}]]*/'';
+				const currentSortOrder = /*[[${meiboListSearchForm.customerAllMeiboListSearchForm.sortOrder}]]*/'';
+				
+				let optionParam = [];
+				
+				const sortKey = $(this).data('sortKey');
+				if (sortKey != currentSortItem) {
+					optionParam = [
+						{name:"customerAllMeiboListSearchForm.sortItem", value:sortKey},
+						{name:"customerAllMeiboListSearchForm.sortOrder", value:desc},
+					];
+				} else {
+					if (currentSortOrder === asc) {
+						optionParam = [
+							{name:"customerAllMeiboListSearchForm.sortOrder", value:desc},
+						];
+					} 
+					
+					if (currentSortOrder === desc) {
+						optionParam = [
+							{name:"customerAllMeiboListSearchForm.sortOrder", value:asc},
+						]
+					} 
+				}
+				
+				if (ajaxRunning) {
+					return false;
+				}
+				ajaxRunning = true;
+				Promise.resolve()
+					.then(() => sortMeiboList(optionParam, allCustomerMeibo))
+					.catch((errorObj) => console.log(errorObj))
+					.finally(() => ajaxRunning = false);
+			});
+		});
+		
+		<!--/* 行をクリック */-->
+		$('#customerAllMeiboListFragment').on("click", ".transitionCustomer", function(e){
+			e.stopPropagation();
+			const personId = $(this).data("personId");
+			<!--/* 画面遷移 */-->
+			window.location.href = "/user/personManagement/edit/" + personId + "/";
+		});
+		</script>
+
+		<!--/* 一覧エリア */-->
+		<div id="customerAllMeiboList">
+			<div class="header_fixed_table_wrapper table_common_list">
+				<table class="table table_standard table_nowrap table-hover">
+					<thead>
+						<tr>
+							<!--/* 名簿ID */-->
+							<th class="cell_fixed_75 sort_column customerAllMeiboColumn"
+								th:with="sortItem=${T(jp.loioz.common.constant.meiboList.MeiboListConstant$CustomerAllMeiboListSortItem).PERSON_ID}"
+								th:data-sort-key="${sortItem.getCd()}">名簿ID
+								<th:block th:if="${sortItem == meiboListSearchForm.customerAllMeiboListSearchForm.sortItem}" th:fragment="customerAllMeiboColumn">
+									<th:block th:if="${meiboListSearchForm.customerAllMeiboListSearchForm.sortOrder == T(jp.loioz.common.constant.SortConstant$SortOrder).ASC}">
+										<i class="fas fa-chevron-up"></i>
+									</th:block>
+									<th:block th:if="${meiboListSearchForm.customerAllMeiboListSearchForm.sortOrder == T(jp.loioz.common.constant.SortConstant$SortOrder).DESC}">
+										<i class="fas fa-chevron-down"></i>
+									</th:block>
+								</th:block>
+							</th>
+							<!--/* 名前 */-->
+							<th class="cell_fixed_175 sort_column customerAllMeiboColumn" 
+								th:with="sortItem=${T(jp.loioz.common.constant.meiboList.MeiboListConstant$CustomerAllMeiboListSortItem).NAME}"
+								th:data-sort-key="${sortItem.getCd()}">名前
+								<th:block th:replace="::customerAllMeiboColumn"></th:block>
+							</th>
+							<!--/* 住所 */-->
+							<th class="cell_fixed_175">
+								<div class="d-flex">
+									<div>住所</div>
+									<div class="ml-1 d-inline-block stop-events outPutContainerClose" 
+										data-offset="-80,0" data-toggle="popover" data-html="true" th:data-content='|
+											<div class="popover_meibo_list_msg">
+												<div class="pt-2 pb-2 px-3">
+													名簿情報で登録した居住地、所在地です。
+												</div>
+											</div>
+										|'>
+										<i class="far fa-question-circle cursor_pointer" data-outside='close'></i>
+									</div>
+								</div>
+							</th>
+							<!--/* 電話番号 */-->
+							<th class="cell_fixed_100">
+								<div class="d-flex">
+									<div>電話番号</div>
+									<div class="ml-1 d-inline-block stop-events outPutContainerClose" 
+										data-offset="-80,0" data-toggle="popover" data-html="true" th:data-content='|
+											<div class="popover_meibo_list_msg">
+												<div class="pt-2 pb-2 px-3">
+													連絡先情報の優先設定をした電話番号です。
+													<div>（優先未設定の場合は、1番目に登録した電話番号です。）</div>
+												</div>
+											</div>
+										|'>
+										<i class="far fa-question-circle cursor_pointer" data-outside='close'></i>
+									</div>
+								</div>
+							</th>
+							<!--/* メールアドレス */-->
+							<th class="cell_fixed_175">
+								<div class="d-flex">
+									<div>メールアドレス</div>
+									<div class="ml-1 d-inline-block stop-events outPutContainerClose" 
+										data-offset="-80,0" data-toggle="popover" data-html="true" th:data-content='|
+											<div class="popover_meibo_list_msg">
+												<div class="pt-2 pb-2 px-3">
+													連絡先情報の優先設定をしたメールアドレスです。
+													<div>（優先未設定の場合は、1番目に登録したメールアドレスです。）</div>
+												</div>
+											</div>
+										|'>
+										<i class="far fa-question-circle cursor_pointer" data-outside='close'></i>
+									</div>
+								</div>
+							</th>
+							<!--/* 案件 */-->
+							<th class="cell_fixed_175">案件</th>
+							<!--/* 登録日 */-->
+							<th class="cell_fixed_100 sort_column customerAllMeiboColumn" 
+								th:with="sortItem=${T(jp.loioz.common.constant.meiboList.MeiboListConstant$CustomerAllMeiboListSortItem).CUSTOMER_CREATE_DATE}"
+								th:data-sort-key="${sortItem.getCd()}">登録日
+								<th:block th:replace="::customerAllMeiboColumn"></th:block>
+							</th>
+							<!--/* 特記事項 */-->
+							<th class="cell_fixed_175">特記事項</th>
+						</tr>
+					</thead>
+					<tbody>
+						<th:block th:if="${customerAllMeiboListViewForm.customerAllMeiboListDto.size() == 0}">
+							<tr>
+								<td colspan="9" class="no_data"><span th:text="#{I00044('顧客情報')}">該当する顧客情報は見つかりませんでした。</span></td>
+							</tr>
+						</th:block>
+						<tr th:each="customerAllMeiboData : ${customerAllMeiboListViewForm.customerAllMeiboListDto}" data-click-sync-for-descendants='.transitionCustomer'>
+							<!--/* 名簿ID */-->
+							<td class="cell_fixed_75">
+								<span class="main_id" th:text="${customerAllMeiboData.personId}"></span>
+								<a href="javascript:void(0);" class="transitionCustomer hidden" th:data-person-id="${customerAllMeiboData.personId}"></a>
+							</td>
+							<!--/* 名前 */-->
+							<td class="cell_fixed_175 char_ellipsis" th:text="${customerAllMeiboData.customerName}"/>
+							<!--/* 住所 */-->
+							<td class="cell_fixed_175 char_ellipsis">
+								<th:block th:if="${!customerAllMeiboData.existsAddress() && #strings.isEmpty(customerAllMeiboData.zipCode)}">
+									<span>-</span>
+								</th:block>
+								<th:block th:if="${customerAllMeiboData.existsAddress() || !#strings.isEmpty(customerAllMeiboData.zipCode)}">
+									<div class="row_sub_data lh1" th:text="${#strings.isEmpty(customerAllMeiboData.zipCode)? '' : '〒' + customerAllMeiboData.zipCode}"></div>
+									<span th:text="${customerAllMeiboData.address1}"></span>
+									<span th:text="${customerAllMeiboData.address2}"></span>
+								</th:block>
+							</td>
+							<!--/* 電話番号 */-->
+							<td class="cell_fixed_100 char_ellipsis" th:text="${#strings.isEmpty(customerAllMeiboData.telNo)}? '-' : ${customerAllMeiboData.telNo}"></td>
+							<!--/* メールアドレス */-->
+							<td class="cell_fixed_175 char_ellipsis" th:text="${#strings.isEmpty(customerAllMeiboData.mailAddress)}? '-' : ${customerAllMeiboData.mailAddress}"></td>
+							<!--/* 案件 */-->
+							<td class="cell_fixed_175">
+								<span class="badge badge-pill anken_cnt" th:classappend="${customerAllMeiboData.ankenTotalCnt == 0} ? 'badge_gray' : 'badge_blue'">登録数：<span th:text="${customerAllMeiboData.ankenTotalCnt}">3</span></span>
+								<span class="badge badge-pill anken_cnt" th:classappend="${customerAllMeiboData.ankenProgressCnt == 0} ? 'badge_gray' : 'badge_orange'">進行中：<span th:text="${customerAllMeiboData.ankenProgressCnt}">3</span></span>
+							</td>
+							<!--/* 登録日 */-->
+							<td class="cell_fixed_100"
+								th:text="${#strings.isEmpty(customerAllMeiboData.customerCreatedDate)}? '-' : ${customerAllMeiboData.customerCreatedDate}"></td>
+							<!--/* 特記事項 */-->
+							<td class="cell_fixed_175 char_ellipsis">
+								<span th:text="${#strings.isEmpty(customerAllMeiboData.remarks)}? '-' : ${customerAllMeiboData.remarks}"></span>
+							</td>
+						</tr>
+					</tbody>
+				</table>
+			</div>
+		</div>
+		
+	</div>
+	<!--/* 【一覧】顧客名簿 end */-->
+	
+	<!--/* 【検索条件】顧客名簿-個人 */-->
+	<div th:fragment="customerKojinMeiboSearchFragment(meiboSearchViewForm)" id="customerKojinMeiboSearchFragment" th:object="${meiboListSearchForm.customerKojinMeiboListSearchForm}">
+		<script type="text/javascript" th:inline="javascript">
+		$(function() {
+			
+			<!--/* 共有の要素セットアップ処理 */-->
+			commonSetUpElement("#customerKojinMeiboSearchFragment");
+			
+			const customerKojinMeiboSearchFragment = $('#customerKojinMeiboSearchFragment');
+			
+			<!--/* 顧客の追加を押下 */-->
+			customerKojinMeiboSearchFragment.find('.customerAddBtn').on('click', function() {
+				const url = /*[[@{/user/personManagement/new/addKojin}]]*/'';
+				window.location.href = url;
+			});
+			
+			<!--/* フィルタの選択 */-->
+			customerKojinMeiboSearchFragment.find('.filterBtn').on('click', function() {
+				
+				let showConditions = /*[[${meiboListSearchForm.showConditions}]]*/'';
+				let optionParams = [
+					{name:'showConditions', value:!showConditions},
+				];
+				
+				if (ajaxRunning) {
+					return false;
+				}
+				ajaxRunning = true;
+				
+				Promise.resolve()
+					.then(() => renderMeiboSearchFragment(optionParams))
+					.catch((errorObj) => console.log(errorObj))
+					.finally(() => ajaxRunning = false);
+			});
+			
+			<!--/* テキスト検索 */-->
+			let searchText;
+			let inputText;
+			<!--/* テキストボックス内のクリア処理 */-->
+			customerKojinMeiboSearchFragment.find('.add-clear-span > a').on('click', function() {
+				inputText = '';
+				
+				if ($(this).parent().find('.inputDate').length > 0) {
+					<!--/* 日付の入力項目（DatePickerの項目）の場合は、blurでの再検索は行わず、このケースではchangeイベントが発火せず再検索が行われないので、イベントを発火させる */-->
+					$(this).parent().find('.inputDate').change();
+				}
+			});
+			<!--/* 入力項目削除で検索 */-->
+			customerKojinMeiboSearchFragment.find('.filtersContainer input[type="text"], .filtersContainer input[type="tel"]').on('blur', function(e) {
+				if ($(this).hasClass('inputDate')) {
+					<!--/* 日付の入力項目（DatePickerの項目）の場合は、blurでの再検索は行わない（changeイベント側で実行されるため） */-->
+					return;
+				}
+				
+				if (searchText !== inputText) {
+					searchFn();
+				}
+			});
+			<!--/* 入力項目のEnterで検索 */-->
+			customerKojinMeiboSearchFragment.find('.filtersContainer input[type="text"], .filtersContainer input[type="tel"]').on('keydown', function(e) {
+				if (e.keyCode == 13) {
+					searchText = $(this).val();
+					searchFn();
+				};
+				inputText = $(this).val();
+			});
+			
+			<!--/* セレクトボックスの変更で検索 */-->
+			customerKojinMeiboSearchFragment.find('.filtersContainer select').on('change', function(e) {
+				searchFn();
+			});
+			<!--/* 登録日Fromの変更で検索 */-->
+			customerKojinMeiboSearchFragment.find('.filtersContainer input[id="customerKojinMeiboListSearchForm.customerCreateDateFrom"]').on('change', function(e) {
+				searchFn();
+			});
+			<!--/* 登録日Toの変更で検索 */-->
+			customerKojinMeiboSearchFragment.find('.filtersContainer input[id="customerKojinMeiboListSearchForm.customerCreateDateTo"]').on('change', function(e) {
+				searchFn();
+			});
+			
+			<!--/* 入力項目の初期化 */-->
+			customerKojinMeiboSearchFragment.find('.cliearBtn').on('click', function(e) {
+				customerKojinMeiboSearchFragment.find('.filtersContainer input').val("");
+				customerKojinMeiboSearchFragment.find('.filtersContainer select').val("");
+				customerKojinMeiboSearchFragment.find('.filtersContainer #birthEra').val("0");
+				changeEraTypeFn();
+				searchFn();
+			});
+			
+			<!--/* 名簿一覧CSV出力処理 */-->
+			customerKojinMeiboSearchFragment.on('click', '.csvOutput', function() {
+				const url = /*[[@{/user/meiboList/doc/outputCustomerKojinMeiboListCsv}]]*/'';
+				const buttonObj = $(this);
+				const formData = {};
+				downloadCsvFileAjax(url, buttonObj, formData);
+			});
+			
+			<!--/* 名簿一覧EXCEL出力処理 */-->
+			customerKojinMeiboSearchFragment.on('click', '.excelOutput', function() {
+				const url = /*[[@{/user/meiboList/doc/outputCustomerKojinMeiboListExcel}]]*/'';
+				const buttonObj = $(this);
+				const formData = {};
+				downloadFileAjax(url, buttonObj, formData);
+			});
+			
+			<!--/* 名簿一覧筆まめCSV出力処理 */-->
+			customerKojinMeiboSearchFragment.on('click', '.fudemameOutput', function() {
+				const url = /*[[@{/user/meiboList/doc/outputCustomerKojinMeiboListFudemame}]]*/'';
+				const buttonObj = $(this);
+				const formData = {};
+				downloadCsvFileAjax(url, buttonObj, formData);
+			});
+			
+			<!--/* 検索処理 */-->
+			function searchFn() {
+				const optionParam = customerKojinMeiboSearchFragment.find('#customerKojinMeiboListSearchForm').serializeArray();
+				if (ajaxRunning) {
+					return false;
+				}
+				ajaxRunning = true;
+				Promise.resolve()
+					.then(() => searchMeiboList(optionParam, customerKojin))
+					.then(() => renderMeiboSearchFragment(optionParam))
+					.catch((errorObj) => console.log(errorObj))
+					.finally(() => ajaxRunning = false);
+			};
+			
+		});
+		</script>
+		
+		<!--/* 選択したメニュータイトル */-->
+		<div class="page_list_title_block">
+			<h1 class="page_list__name">顧客名簿【個人】</h1>
+			<div class="page_list__btn" th:with="searchConditionCount=*{getSearchConditionCount()}">
+				<button type="button" class="btn btn-primary customerAddBtn"><i class="fas fa-plus"></i>個人を追加</button>
+				<button type="button" class="btn btn-light filterBtn" th:classAppend="${searchConditionCount} > 0 ?  'filter_active' ">
+					<i class="fas fa-filter"></i>フィルタ
+					<span class="btn_inner_badge" th:classAppend="${searchConditionCount} > 0 ?  'badge_warning' "
+						th:text="${searchConditionCount}">1</span>
+				</button>
+				<div id="outPutContainer" class="d-inline-block stop-events outPutContainerClose"
+					data-offset="-80,0" data-boundary="window" data-container="#customerKojinMeiboSearchFragment" data-toggle="popover" data-placement="bottom" data-html="true" th:data-content=
+					'|<ul class="output_nav_list">
+							<li class="title_block">名簿情報出力</li>
+							<li><button class="btn btn-light excelOutput" data-target="#outPutContainer"><i class="fas fa-download text-primary mr-3"></i><i class="fas fa-spinner mr-3 text-primary faa-spin animated hidden"></i>Excel形式で出力する</button></li>
+							<li><button class="btn btn-light csvOutput" data-target="#outPutContainer"><i class="fas fa-download text-primary mr-3"></i><i class="fas fa-spinner mr-3 text-primary faa-spin animated hidden"></i>CSV形式で出力する</button></li>
+							<li><button class="btn btn-light fudemameOutput" data-target="#outPutContainer"><i class="fas fa-download text-primary mr-3"></i><i class="fas fa-spinner mr-3 text-primary faa-spin animated hidden"></i>筆まめ形式で出力する</button></li>
+					</ul>|'>
+					<button type="button" class="btn btn-light config"><i class="fas fa-ellipsis-h mr-0"></i></button>
+				</div>
+			</div>
+		</div>
+		
+		<!--/* 検索条件 */-->
+		<form id="customerKojinMeiboListSearchForm" autocomplete="off" th:if="${meiboListSearchForm.showConditions}">
+			<!--/* 検索条件 */-->
+			<div class="list_filters_container filtersContainer" >
+				<fieldset>
+					<div class="list_filters_header">
+						<div class="filters_title">検索条件</div>
+						<div class="filters_action">
+							<a href="javascript:void(0);" class="filters_action__clear cliearBtn">検索条件をクリア</a>
+							<a href="javascript:void(0);" class="filters_action__close filterBtn"><i class="fas fa-times"></i></a>
+						</div>
+					</div>
+					<div class="form-row">
+						<!--/* キーワード */-->
+						<div class="form-group col-md-auto">
+							<label class="input_parts_label">キーワード</label>
+							<input type="text" class="form-control digit20 fcAddTextClear" th:field="*{searchWord}" placeholder="ID、名前、住所、電話番号、特記事項..." maxlength="300">
+						</div>
+						<!--/* 名簿ID */-->
+						<div class="form-group col-md-auto">
+							<label class="input_parts_label">名簿ID</label>
+							<input type="text" class="form-control digit6 inputNumberOnly fcAddTextClear" th:field="*{personId}" maxlength="10">
+						</div>
+						<!--/* 名前 */-->
+						<div class="form-group col-md-auto">
+							<label class="input_parts_label">名前</label>
+							<input type="text" class="form-control digit10 fcAddTextClear" th:field="*{keywords}" maxlength="300">
+						</div>
+						<!--/* 住所 */-->
+						<div class="form-group col-md-auto">
+							<label class="input_parts_label">住所</label>
+							<input type="text" class="form-control digit12 fcAddTextClear" th:field="*{address}" maxlength="300">
+						</div>
+						<!--/* 電話番号 */-->
+						<div class="form-group col-md-auto">
+							<label class="input_parts_label">電話番号</label>
+							<input type="tel" class="form-control digit10 inputNumHyphen fcAddTextClear" th:field="*{telNo}" maxlength="13">
+						</div>
+						<!--/* メールアドレス */-->
+						<div class="form-group col-md-auto">
+							<label class="input_parts_label">メールアドレス</label>
+							<input type="text" class="form-control digit11 inputHalf fcAddTextClear" th:field="*{mailAddress}" maxlength="300">
+						</div>
+						<!--/* 登録日 */-->
+						<div class="form-group col-md-auto">
+							<label class="input_parts_label">登録日</label>
+							<div class="d-flex align-items-start">
+								<div>
+									<div class="d-flex customerCreateDateFrom">
+										<input type="text" class="form-control digit8 inputDateSlash inputDate fcAddTextClear" th:field="*{customerCreateDateFrom}" maxlength="10"
+											data-click-sync="[data-target-name='customerKojinMeiboListSearchForm.customerCreateDateFrom']">
+										<button type="button" class="btn btn_popcal hidden" data-toggle="datepicker" data-target-name="customerKojinMeiboListSearchForm.customerCreateDateFrom">カレンダー</button>
+										<div class="fs15 mt-2 mx-2">〜</div>
+									</div>
+								</div>
+								<div>
+									<div class="customerCreateDateTo">
+										<input type="text" class="form-control digit8 inputDateSlash inputDate fcAddTextClear" th:field="*{customerCreateDateTo}" maxlength="10"
+											data-click-sync="[data-target-name='customerKojinMeiboListSearchForm.customerCreateDateTo']">
+										<button type="button" class="btn btn_popcal hidden" data-toggle="datepicker" data-target-name="customerKojinMeiboListSearchForm.customerCreateDateTo">カレンダー</button>
+									</div>
+								</div>
+							</div>
+						</div>
+						<!--/* 特記事項 */-->
+						<div class="form-group col-md-auto">
+							<label class="input_parts_label">特記事項</label>
+							<input type="text" class="form-control digit13 fcAddTextClear" th:field="*{remarks}" maxlength="300">
+						</div>
+					</div>
+				</fieldset>
+			</div>
+			<!--/* 検索条件 end */-->
+		</form>
+		
+	</div>
+	<!--/* 【検索条件】顧客名簿-個人 end */-->
+	
+	<!--/* 【一覧】顧客名簿-個人 */-->
+	<div th:fragment="customerKojinMeiboListFragment(customerKojinMeiboListViewForm)" id="customerKojinMeiboListFragment">
+		<script type="text/javascript" th:inline="javascript">
+		$(function() {
+			
+			<!--/* 共有の要素セットアップ処理 */-->
+			commonSetUpElement("#customerKojinMeiboListFragment");
+			
+			<!-- /* 一覧の表示初期処理（親HTMLの関数） */ -->
+			const sessionQuickSearchWord = /*[[${T(jp.loioz.common.utility.SessionUtils).getSessionVaule(T(jp.loioz.common.constant.SessionAttrKeyEnum).QUICK_SEARCH_WORD)}]]*/ '';
+			showInitMiboList(sessionQuickSearchWord)
+			
+			const customerKojinMeiboListFragment = $('#customerKojinMeiboListFragment');
+			
+			<!--/* ソート処理 */-->
+			customerKojinMeiboListFragment.find('.customerKojinMeiboColumn').on('click', function() {
+				const asc = /*[[${T(jp.loioz.common.constant.SortConstant$SortOrder).ASC.getCd()}]]*/'';
+				const desc = /*[[${T(jp.loioz.common.constant.SortConstant$SortOrder).DESC.getCd()}]]*/'';
+
+				const currentSortItem = /*[[${meiboListSearchForm.customerKojinMeiboListSearchForm.sortItem}]]*/'';
+				const currentSortOrder = /*[[${meiboListSearchForm.customerKojinMeiboListSearchForm.sortOrder}]]*/'';
+				
+				let optionParam = [];
+				
+				const sortKey = $(this).data('sortKey');
+				if (sortKey != currentSortItem) {
+					optionParam = [
+						{name:"customerKojinMeiboListSearchForm.sortItem", value:sortKey},
+						{name:"customerKojinMeiboListSearchForm.sortOrder", value:desc},
+					];
+				} else {
+					if (currentSortOrder === asc) {
+						optionParam = [
+							{name:"customerKojinMeiboListSearchForm.sortOrder", value:desc},
+						];
+					} 
+					
+					if (currentSortOrder === desc) {
+						optionParam = [
+							{name:"customerKojinMeiboListSearchForm.sortOrder", value:asc},
+						]
+					} 
+				}
+				
+				if (ajaxRunning) {
+					return false;
+				}
+				ajaxRunning = true;
+				Promise.resolve()
+					.then(() => sortMeiboList(optionParam, customerKojin))
+					.catch((errorObj) => console.log(errorObj))
+					.finally(() => ajaxRunning = false);
+			});
+			
+			
+		});
+		
+		</script>
+		
+		<!--/* 一覧エリア */-->
+		<div id="customerKojinMeiboList">
+			<div class="header_fixed_table_wrapper table_common_list">
+				<table class="table table_standard table_nowrap table-hover">
+					<thead>
+						<tr>
+							<th class="cell_fixed_75 sort_column customerKojinMeiboColumn" 
+								th:with="sortItem=${T(jp.loioz.common.constant.meiboList.MeiboListConstant$CustomerKojinMeiboListSortItem).PERSON_ID}"
+								th:data-sort-key="${sortItem.getCd()}">名簿ID
+								<th:block th:if="${sortItem == meiboListSearchForm.customerKojinMeiboListSearchForm.sortItem}" th:fragment="customerKojinMeiboColumn">
+									<th:block th:if="${meiboListSearchForm.customerKojinMeiboListSearchForm.sortOrder == T(jp.loioz.common.constant.SortConstant$SortOrder).ASC}">
+										<i class="fas fa-chevron-up"></i>
+									</th:block>
+									<th:block th:if="${meiboListSearchForm.customerKojinMeiboListSearchForm.sortOrder == T(jp.loioz.common.constant.SortConstant$SortOrder).DESC}">
+										<i class="fas fa-chevron-down"></i>
+									</th:block>
+								</th:block>
+							</th>
+							<th class="cell_fixed_150 sort_column customerKojinMeiboColumn" 
+								th:with="sortItem=${T(jp.loioz.common.constant.meiboList.MeiboListConstant$CustomerKojinMeiboListSortItem).CUSTOMER_NAME}"
+								th:data-sort-key="${sortItem.getCd()}">
+								名前
+								<th:block th:replace="::customerKojinMeiboColumn"></th:block>
+							</th>
+							<th class="cell_fixed_200">
+								<div class="d-flex">
+									<div>住所</div>
+									<div class="ml-1 d-inline-block stop-events outPutContainerClose" 
+										data-offset="-80,0" data-toggle="popover" data-html="true" th:data-content='|
+											<div class="popover_meibo_list_msg">
+												<div class="pt-2 pb-2 px-3">
+													名簿情報で登録した居住地、所在地です。
+												</div>
+											</div>
+										|'>
+										<i class="far fa-question-circle cursor_pointer" data-outside='close'></i>
+									</div>
+								</div>
+							</th>
+							<th class="cell_fixed_125">
+								<div class="d-flex">
+									<div>電話番号</div>
+									<div class="ml-1 d-inline-block stop-events outPutContainerClose" 
+										data-offset="-80,0" data-toggle="popover" data-html="true" th:data-content='|
+											<div class="popover_meibo_list_msg">
+												<div class="pt-2 pb-2 px-3">
+													連絡先情報の優先設定をした電話番号です。
+													<div>（優先未設定の場合は、1番目に登録した電話番号です。）</div>
+												</div>
+											</div>
+										|'>
+										<i class="far fa-question-circle cursor_pointer" data-outside='close'></i>
+									</div>
+								</div>
+							</th>
+							<th class="cell_fixed_150">
+								<div class="d-flex">
+									<div>メールアドレス</div>
+									<div class="ml-1 d-inline-block stop-events outPutContainerClose" 
+										data-offset="-80,0" data-toggle="popover" data-html="true" th:data-content='|
+											<div class="popover_meibo_list_msg">
+												<div class="pt-2 pb-2 px-3">
+													連絡先情報の優先設定をしたメールアドレスです。
+													<div>（優先未設定の場合は、1番目に登録したメールアドレスです。）</div>
+												</div>
+											</div>
+										|'>
+										<i class="far fa-question-circle cursor_pointer" data-outside='close'></i>
+									</div>
+								</div>
+							</th>
+							<th class="cell_fixed_175">案件</th>
+							<th class="cell_fixed_100 sort_column customerKojinMeiboColumn" 
+								th:with="sortItem=${T(jp.loioz.common.constant.meiboList.MeiboListConstant$CustomerKojinMeiboListSortItem).CUSTOMER_CREATE_DATE}"
+								th:data-sort-key="${sortItem.getCd()}">
+								登録日
+								<th:block th:replace="::customerKojinMeiboColumn"></th:block>
+							</th>
+							<th class="cell_fixed_175">特記事項</th>
+						</tr>
+					</thead>
+					<tbody>
+						<th:block th:if="${customerKojinMeiboListViewForm.customerKojinMeiboListDto.size() == 0}">
+							<tr>
+								<td colspan="8" class="no_data"><span th:text="#{I00044('顧客&#40;個人&#41;')}">該当する顧客情報は見つかりませんでした。</span></td>
+							</tr>
+						</th:block>
+						<tr th:each="customerKojiMeiboData : ${customerKojinMeiboListViewForm.customerKojinMeiboListDto}" data-click-sync-for-descendants='.transitionCustomer'>
+							<td class="cell_fixed_75">
+								<span class="main_id" th:text="${customerKojiMeiboData.personId}"></span>
+								<a th:href="@{/user/personManagement/edit/{personId}/(personId=${customerKojiMeiboData.personId})}" class="hidden transitionCustomer"></a>
+							</td>
+							<td class="cell_fixed_150 char_ellipsis" th:text="${customerKojiMeiboData.customerName}"></td>
+							<td class="cell_fixed_200 char_ellipsis">
+								<th:block th:if="${!customerKojiMeiboData.existsAddress() && #strings.isEmpty(customerKojiMeiboData.zipCode)}">
+									<span>-</span>
+								</th:block>
+								<th:block th:if="${customerKojiMeiboData.existsAddress() || !#strings.isEmpty(customerKojiMeiboData.zipCode)}">
+									<div class="row_sub_data lh1" th:text="${#strings.isEmpty(customerKojiMeiboData.zipCode)? '' : '〒' + customerKojiMeiboData.zipCode}"></div>
+									<span th:text="${customerKojiMeiboData.address1}"></span>
+									<span th:text="${customerKojiMeiboData.address2}"></span>
+								</th:block>
+							</td>
+							<td class="cell_fixed_125 char_ellipsis"
+								th:text="${#strings.isEmpty(customerKojiMeiboData.telNo)}? '-' : ${customerKojiMeiboData.telNo}"></td>
+							<td class="cell_fixed_150 char_ellipsis"
+								th:text="${#strings.isEmpty(customerKojiMeiboData.mailAddress)}? '-' : ${customerKojiMeiboData.mailAddress}"></td>
+							<td class="cell_fixed_175">
+								<span class="badge badge-pill anken_cnt" th:classappend="${customerKojiMeiboData.ankenTotalCnt == 0} ? 'badge_gray' : 'badge_blue'">登録数：<span th:text="${customerKojiMeiboData.ankenTotalCnt}">3</span></span>
+								<span class="badge badge-pill anken_cnt" th:classappend="${customerKojiMeiboData.ankenProgressCnt == 0} ? 'badge_gray' : 'badge_orange'">進行中：<span th:text="${customerKojiMeiboData.ankenProgressCnt}">3</span></span>
+							</td>
+							<td class="cell_fixed_100"
+								th:text="${#strings.isEmpty(customerKojiMeiboData.customerCreatedDate)}? '-' : ${customerKojiMeiboData.customerCreatedDate}"></td>
+							<td class="cell_fixed_175 char_ellipsis">
+								<span th:text="${#strings.isEmpty(customerKojiMeiboData.remarks)}? '-' : ${customerKojiMeiboData.remarks}"></span>
+							</td>
+						</tr>
+					</tbody>
+				</table>
+			</div>
+		</div>
+	</div>
+	<!--/* 【一覧】顧客名簿-個人 end */-->
+	
+	<!--/* 【検索条件】顧客名簿-企業・団体 */-->
+	<div th:fragment="customerHojinMeiboSearchFragment(meiboSearchViewForm)" id="customerHojinMeiboSearchFragment" th:object="${meiboListSearchForm.customerHojinMeiboListSearchForm}">
+		<script type="text/javascript" th:inline="javascript">
+		$(function() {
+			
+			<!--/* 共有の要素セットアップ処理 */-->
+			commonSetUpElement("#customerHojinMeiboSearchFragment");
+			
+			const customerHojinMeiboSearchFragment = $('#customerHojinMeiboSearchFragment');
+			
+			<!--/* 顧客の追加を押下 */-->
+			customerHojinMeiboSearchFragment.find('.customerAddBtn').on('click', function() {
+				const url = /*[[@{/user/personManagement/new/addHojin}]]*/'';
+				window.location.href = url;
+			});
+			
+			<!--/* フィルタの選択 */-->
+			customerHojinMeiboSearchFragment.find('.filterBtn').on('click', function() {
+				
+				let showConditions = /*[[${meiboListSearchForm.showConditions}]]*/'';
+				let optionParams = [
+					{name:'showConditions', value:!showConditions},
+				];
+				
+				if (ajaxRunning) {
+					return false;
+				}
+				ajaxRunning = true;
+				
+				Promise.resolve()
+					.then(() => renderMeiboSearchFragment(optionParams))
+					.catch((errorObj) => console.log(errorObj))
+					.finally(() => ajaxRunning = false);
+			});
+			
+			<!--/* テキスト検索 */-->
+			let searchText;
+			let inputText;
+			<!--/* テキストボックス内のクリア処理 */-->
+			customerHojinMeiboSearchFragment.find('.add-clear-span > a').on('click', function() {
+				inputText = '';
+				
+				if ($(this).parent().find('.inputDate').length > 0) {
+					<!--/* 日付の入力項目（DatePickerの項目）の場合は、blurでの再検索は行わず、このケースではchangeイベントが発火せず再検索が行われないので、イベントを発火させる */-->
+					$(this).parent().find('.inputDate').change();
+				}
+			});
+			<!--/* 入力項目削除で検索 */-->
+			customerHojinMeiboSearchFragment.find('.filtersContainer input[type="text"], .filtersContainer input[type="tel"]').on('blur', function(e) {
+				if ($(this).hasClass('inputDate')) {
+					<!--/* 日付の入力項目（DatePickerの項目）の場合は、blurでの再検索は行わない（changeイベント側で実行されるため） */-->
+					return;
+				}
+				
+				if (searchText !== inputText) {
+					searchFn();
+				}
+			});
+			<!--/* 入力項目のEnterで検索 */-->
+			customerHojinMeiboSearchFragment.find('.filtersContainer input[type="text"], .filtersContainer input[type="tel"]').on('keydown', function(e) {
+				if (e.keyCode == 13) {
+					searchText = $(this).val();
+					searchFn();
+				};
+				inputText = $(this).val();
+			});
+			
+			<!--/* 登録日Fromの変更で検索 */-->
+			customerHojinMeiboSearchFragment.find('.filtersContainer input[id="customerHojinMeiboListSearchForm.customerCreateDateFrom"]').on('change', function(e) {
+				searchFn();
+			});
+			<!--/* 登録日Toの変更で検索 */-->
+			customerHojinMeiboSearchFragment.find('.filtersContainer input[id="customerHojinMeiboListSearchForm.customerCreateDateTo"]').on('change', function(e) {
+				searchFn();
+			});
+			
+			<!--/* 入力項目の初期化 */-->
+			customerHojinMeiboSearchFragment.find('.cliearBtn').on('click', function(e) {
+				customerHojinMeiboSearchFragment.find('.filtersContainer input').val("");
+				searchFn();
+			});
+			
+			<!--/* 名簿一覧CSV出力処理 */-->
+			customerHojinMeiboSearchFragment.on('click', '.csvOutput', function() {
+				const url = /*[[@{/user/meiboList/doc/outputCustomerHojinMeiboListCsv}]]*/'';
+				const buttonObj = $(this);
+				const formData = {};
+				downloadCsvFileAjax(url, buttonObj, formData);
+			});
+			
+			<!--/* 名簿一覧EXCEL出力処理 */-->
+			customerHojinMeiboSearchFragment.on('click', '.excelOutput', function() {
+				const url = /*[[@{/user/meiboList/doc/outputCustomerHojinMeiboListExcel}]]*/'';
+				const buttonObj = $(this);
+				const formData = {};
+				downloadFileAjax(url, buttonObj, formData);
+			});
+			
+			<!--/* 名簿一覧CSV出力処理 */-->
+			customerHojinMeiboSearchFragment.on('click', '.fudemameOutput', function() {
+				const url = /*[[@{/user/meiboList/doc/outputCustomerHojinMeiboListFudemame}]]*/'';
+				const buttonObj = $(this);
+				const formData = {};
+				downloadCsvFileAjax(url, buttonObj, formData);
+			});
+			
+			<!--/* 検索処理 */-->
+			function searchFn() {
+				const optionParam = customerHojinMeiboSearchFragment.find('#customerHojinMeiboListSearchForm').serializeArray();
+				if (ajaxRunning) {
+					return false;
+				}
+				ajaxRunning = true;
+				Promise.resolve()
+					.then(() => searchMeiboList(optionParam, customerHojin))
+					.then(() => renderMeiboSearchFragment(optionParam))
+					.catch((errorObj) => console.log(errorObj))
+					.finally(() => ajaxRunning = false);
+			};
+			
+		});
+		</script>
+		
+		<!--/* 選択したメニュータイトル */-->
+		<div class="page_list_title_block">
+			<h1 class="page_list__name">顧客名簿【企業・団体】</h1>
+			<div class="page_list__btn" th:with="searchConditionCount=*{getSearchConditionCount()}">
+				<button type="button" class="btn btn-primary customerAddBtn"><i class="fas fa-plus"></i>企業・団体を追加</button>
+				<button type="button" class="btn btn-light filterBtn" th:classAppend="${searchConditionCount} > 0 ?  'filter_active' ">
+					<i class="fas fa-filter"></i>フィルタ
+					<span class="btn_inner_badge" th:classAppend="${searchConditionCount} > 0 ?  'badge_warning' "
+						th:text="${searchConditionCount}">1</span>
+				</button>
+				<div id="outPutContainer" class="d-inline-block stop-events outPutContainerClose"
+					data-offset="-80,0" data-boundary="window" data-container="#customerHojinMeiboSearchFragment" data-toggle="popover" data-placement="bottom" data-html="true" th:data-content=
+					'|<ul class="output_nav_list">
+							<li class="title_block">名簿情報出力</li>
+							<li><button class="btn btn-light excelOutput" data-target="#outPutContainer"><i class="fas fa-download text-primary mr-3"></i><i class="fas fa-spinner mr-3 text-primary faa-spin animated hidden"></i>Excel形式で出力する</button></li>
+							<li><button class="btn btn-light csvOutput" data-target="#outPutContainer"><i class="fas fa-download text-primary mr-3"></i><i class="fas fa-spinner mr-3 text-primary faa-spin animated hidden"></i>CSV形式で出力する</button></li>
+							<li><button class="btn btn-light fudemameOutput" data-target="#outPutContainer"><i class="fas fa-download text-primary mr-3"></i><i class="fas fa-spinner mr-3 text-primary faa-spin animated hidden"></i>筆まめ形式で出力する</button></li>
+					</ul>|'>
+					<button type="button" class="btn btn-light config"><i class="fas fa-ellipsis-h mr-0"></i></button>
+				</div>
+			</div>
+		</div>
+		
+		<!--/* 検索条件 */-->
+		<form id="customerHojinMeiboListSearchForm" autocomplete="off" th:if="${meiboListSearchForm.showConditions}">
+			<!--/* 検索条件 */-->
+			<div class="list_filters_container filtersContainer" >
+				<fieldset>
+					<div class="list_filters_header">
+						<div class="filters_title">検索条件</div>
+						<div class="filters_action">
+							<a href="javascript:void(0);" class="filters_action__clear cliearBtn">検索条件をクリア</a>
+							<a href="javascript:void(0);" class="filters_action__close filterBtn"><i class="fas fa-times"></i></a>
+						</div>
+					</div>
+					<div class="form-row">
+						<!--/* キーワード */-->
+						<div class="form-group col-md-auto">
+							<label class="input_parts_label">キーワード</label>
+							<input type="text" class="form-control digit20 fcAddTextClear" th:field="*{searchWord}" placeholder="ID、名前、住所、電話番号、特記事項..." maxlength="300">
+						</div>
+						<!--/* 名簿ID */-->
+						<div class="form-group col-md-auto">
+							<label class="input_parts_label">名簿ID</label>
+							<input type="text" class="form-control digit6 inputNumberOnly fcAddTextClear" th:field="*{personId}" maxlength="10">
+						</div>
+						<!--/* 名前 */-->
+						<div class="form-group col-md-auto">
+							<label class="input_parts_label">名前</label>
+							<input type="text" class="form-control digit16 fcAddTextClear" th:field="*{keywords}" placeholder="企業・団体名（代表／担当）..." maxlength="300">
+						</div>
+						<!--/* 住所 */-->
+						<div class="form-group col-md-auto">
+							<label class="input_parts_label">住所</label>
+							<input type="text" class="form-control digit13 fcAddTextClear" th:field="*{address}" maxlength="300">
+						</div>
+						<!--/* 電話番号 */-->
+						<div class="form-group col-md-auto">
+							<label class="input_parts_label">電話番号</label>
+							<input type="tel" class="form-control digit10 inputNumHyphen fcAddTextClear" th:field="*{telNo}" maxlength="13">
+						</div>
+						<!--/* メールアドレス */-->
+						<div class="form-group col-md-auto">
+							<label class="input_parts_label">メールアドレス</label>
+							<input type="text" class="form-control digit12 inputHalf fcAddTextClear" th:field="*{mailAddress}" maxlength="300">
+						</div>
+						<!--/* 登録日 */-->
+						<div class="form-group col-md-auto">
+							<label class="input_parts_label">登録日</label>
+							<div class="d-flex align-items-start">
+								<div>
+									<div class="d-flex customerCreateDateFrom">
+										<input type="text" class="form-control digit8 inputDateSlash inputDate fcAddTextClear" th:field="*{customerCreateDateFrom}" maxlength="10"
+											data-click-sync="[data-target-name='customerHojinMeiboListSearchForm.customerCreateDateFrom']">
+										<button type="button" class="btn btn_popcal hidden" data-toggle="datepicker" data-target-name="customerHojinMeiboListSearchForm.customerCreateDateFrom">カレンダー</button>
+										<div class="fs15 mt-2 mx-2">〜</div>
+									</div>
+								</div>
+								<div>
+									<div class="customerCreateDateTo">
+										<input type="text" class="form-control digit8 inputDateSlash inputDate fcAddTextClear" th:field="*{customerCreateDateTo}" maxlength="10"
+											data-click-sync="[data-target-name='customerHojinMeiboListSearchForm.customerCreateDateTo']">
+										<button type="button" class="btn btn_popcal hidden" data-toggle="datepicker" data-target-name="customerHojinMeiboListSearchForm.customerCreateDateTo">カレンダー</button>
+									</div>
+								</div>
+							</div>
+						</div>
+						<!--/* 特記事項 */-->
+						<div class="form-group col-md-auto">
+							<label class="input_parts_label">特記事項</label>
+							<input type="text" class="form-control digit13 fcAddTextClear" th:field="*{remarks}" maxlength="300">
+						</div>
+					</div>
+				</fieldset>
+			</div>
+			<!--/* 検索条件 end */-->
+		</form>
+		
+	</div>
+	<!--/* 【検索条件】顧客名簿-企業・団体 end */-->
+	
+	<!--/* 【一覧】顧客名簿-企業・団体 */-->
+	<div th:fragment="customerHojinMeiboListFragment(customerHojinMeiboListViewForm)" id="customerHojinMeiboListFragment">
+		<script type="text/javascript" th:inline="javascript">
+		$(function(){
+
+			<!--/* 共有の要素セットアップ処理 */-->
+			commonSetUpElement("#customerHojinMeiboListFragment");
+			
+			<!-- /* 一覧の表示初期処理（親HTMLの関数） */ -->
+			const sessionQuickSearchWord = /*[[${T(jp.loioz.common.utility.SessionUtils).getSessionVaule(T(jp.loioz.common.constant.SessionAttrKeyEnum).QUICK_SEARCH_WORD)}]]*/ '';
+			showInitMiboList(sessionQuickSearchWord)
+			
+			const customerHojinMeiboListFragment = $('#customerHojinMeiboListFragment');
+			
+			<!--/* ソート処理 */-->
+			customerHojinMeiboListFragment.find('.customerHojinMeiboColumn').on('click', function() {
+				const asc = /*[[${T(jp.loioz.common.constant.SortConstant$SortOrder).ASC.getCd()}]]*/'';
+				const desc = /*[[${T(jp.loioz.common.constant.SortConstant$SortOrder).DESC.getCd()}]]*/'';
+	
+				const currentSortItem = /*[[${meiboListSearchForm.customerHojinMeiboListSearchForm.sortItem}]]*/'';
+				const currentSortOrder = /*[[${meiboListSearchForm.customerHojinMeiboListSearchForm.sortOrder}]]*/'';
+				
+				let optionParam = [];
+				
+				const sortKey = $(this).data('sortKey');
+				if (sortKey != currentSortItem) {
+					optionParam = [
+						{name:"customerHojinMeiboListSearchForm.sortItem", value:sortKey},
+						{name:"customerHojinMeiboListSearchForm.sortOrder", value:desc},
+					];
+				} else {
+					if (currentSortOrder === asc) {
+						optionParam = [
+							{name:"customerHojinMeiboListSearchForm.sortOrder", value:desc},
+						];
+					} 
+					
+					if (currentSortOrder === desc) {
+						optionParam = [
+							{name:"customerHojinMeiboListSearchForm.sortOrder", value:asc},
+						]
+					} 
+				}
+				
+				if (ajaxRunning) {
+					return false;
+				}
+				ajaxRunning = true;
+				Promise.resolve()
+					.then(() => sortMeiboList(optionParam, customerHojin))
+					.catch((errorObj) => console.log(errorObj))
+					.finally(() => ajaxRunning = false);
+			});
+		});
+		</script>
+		
+		<!--/* 一覧エリア */-->
+		<div id="customerHojinMeiboList">
+			<div class="header_fixed_table_wrapper table_common_list">
+				<table class="table table_standard table_nowrap table-hover">
+					<thead>
+						<tr>
+							<th class="cell_fixed_75 sort_column customerHojinMeiboColumn" 
+								th:with="sortItem=${T(jp.loioz.common.constant.meiboList.MeiboListConstant$CustomerHojinMeiboListSortItem).PERSON_ID}"
+								th:data-sort-key="${sortItem.getCd()}">
+								名簿ID
+								<th:block th:if="${sortItem == meiboListSearchForm.customerHojinMeiboListSearchForm.sortItem}" th:fragment="customerHojinMeiboColumn">
+									<th:block th:if="${meiboListSearchForm.customerHojinMeiboListSearchForm.sortOrder == T(jp.loioz.common.constant.SortConstant$SortOrder).ASC}">
+										<i class="fas fa-chevron-up"></i>
+									</th:block>
+									<th:block th:if="${meiboListSearchForm.customerHojinMeiboListSearchForm.sortOrder == T(jp.loioz.common.constant.SortConstant$SortOrder).DESC}">
+										<i class="fas fa-chevron-down"></i>
+									</th:block>
+								</th:block>
+							</th>
+							<th class="cell_fixed_175 sort_column customerHojinMeiboColumn" 
+								th:with="sortItem=${T(jp.loioz.common.constant.meiboList.MeiboListConstant$CustomerHojinMeiboListSortItem).CUSTOMER_HOJIN_NAME}"
+								th:data-sort-key="${sortItem.getCd()}">
+								名前
+								<th:block th:replace="::customerHojinMeiboColumn"></th:block>
+							</th>
+							<th class="cell_fixed_200">
+								<div class="d-flex">
+									<div>住所</div>
+									<div class="ml-1 d-inline-block stop-events outPutContainerClose" 
+										data-offset="-80,0" data-toggle="popover" data-html="true" th:data-content='|
+											<div class="popover_meibo_list_msg">
+												<div class="pt-2 pb-2 px-3">
+													名簿情報で登録した居住地、所在地です。
+												</div>
+											</div>
+										|'>
+										<i class="far fa-question-circle cursor_pointer" data-outside='close'></i>
+									</div>
+								</div>
+							</th>
+							<th class="cell_fixed_100 sort_column customerHojinMeiboColumn" 
+								th:with="sortItem=${T(jp.loioz.common.constant.meiboList.MeiboListConstant$CustomerHojinMeiboListSortItem).CUSTOMER_DAIHYO_NAME}"
+								th:data-sort-key="${sortItem.getCd()}">
+								代表者
+								<th:block th:replace="::customerHojinMeiboColumn"></th:block>
+							</th>
+							<th class="cell_fixed_100 sort_column customerHojinMeiboColumn"
+								th:with="sortItem=${T(jp.loioz.common.constant.meiboList.MeiboListConstant$CustomerHojinMeiboListSortItem).CUSTOMER_TANTO_NAME}"
+								th:data-sort-key="${sortItem.getCd()}">
+								担当者
+								<th:block th:replace="::customerHojinMeiboColumn"></th:block>
+							</th>
+							<th class="cell_fixed_125">
+								<div class="d-flex">
+									<div>電話番号</div>
+									<div class="ml-1 d-inline-block stop-events outPutContainerClose" 
+										data-offset="-80,0" data-toggle="popover" data-html="true" th:data-content='|
+											<div class="popover_meibo_list_msg">
+												<div class="pt-2 pb-2 px-3">
+													連絡先情報の優先設定をした電話番号です。
+													<div>（優先未設定の場合は、1番目に登録した電話番号です。）</div>
+												</div>
+											</div>
+										|'>
+										<i class="far fa-question-circle cursor_pointer" data-outside='close'></i>
+									</div>
+								</div>
+							</th>
+							<th class="cell_fixed_150">
+								<div class="d-flex">
+									<div>メールアドレス</div>
+									<div class="ml-1 d-inline-block stop-events outPutContainerClose" 
+										data-offset="-80,0" data-toggle="popover" data-html="true" th:data-content='|
+											<div class="popover_meibo_list_msg">
+												<div class="pt-2 pb-2 px-3">
+													連絡先情報の優先設定をしたメールアドレスです。
+													<div>（優先未設定の場合は、1番目に登録したメールアドレスです。）</div>
+												</div>
+											</div>
+										|'>
+										<i class="far fa-question-circle cursor_pointer" data-outside='close'></i>
+									</div>
+								</div>
+							</th>
+							<th class="cell_fixed_175">案件</th>
+							<th class="cell_fixed_100 sort_column customerHojinMeiboColumn" 
+								th:with="sortItem=${T(jp.loioz.common.constant.meiboList.MeiboListConstant$CustomerHojinMeiboListSortItem).CUSTOMER_CREATE_DATE}"
+								th:data-sort-key="${sortItem.getCd()}">
+								登録日
+								<th:block th:replace="::customerHojinMeiboColumn"></th:block>
+							</th>
+							<th class="cell_fixed_175">特記事項</th>
+						</tr>
+					</thead>
+					<tbody>
+						<th:block th:if="${customerHojinMeiboListViewForm.customerHojinMeiboListDto.size() == 0}">
+							<tr>
+								<td colspan="12" class="no_data"><span th:text="#{I00044('顧客&#40;企業・団体&#41;')}">該当する顧客情報は見つかりませんでした。</span></td>
+							</tr>
+						</th:block>
+						<tr th:each="customerHojiMeiboData : ${customerHojinMeiboListViewForm.customerHojinMeiboListDto}" data-click-sync-for-descendants='.transitionCustomer'>
+							<td class="cell_fixed_75">
+								<span class="main_id" th:text="${customerHojiMeiboData.personId}"></span>
+								<a th:href="@{/user/personManagement/edit/{personId}/(personId=${customerHojiMeiboData.personId})}" class="hidden transitionCustomer"></a>
+							</td>
+							<td class="cell_fixed_175 char_ellipsis"
+								th:text="${#strings.isEmpty(customerHojiMeiboData.customerName)}? '-' : ${customerHojiMeiboData.customerName}"></td>
+							<td class="cell_fixed_200 char_ellipsis">
+								<th:block th:if="${!customerHojiMeiboData.existsAddress() && #strings.isEmpty(customerHojiMeiboData.zipCode)}">
+									<span>-</span>
+								</th:block>
+								<th:block th:if="${customerHojiMeiboData.existsAddress() || !#strings.isEmpty(customerHojiMeiboData.zipCode)}">
+									<div class="row_sub_data lh1" th:text="${#strings.isEmpty(customerHojiMeiboData.zipCode)? '' : '〒' + customerHojiMeiboData.zipCode}"></div>
+									<span th:text="${customerHojiMeiboData.address1}"></span>
+									<span th:text="${customerHojiMeiboData.address2}"></span>
+								</th:block>
+							</td>
+							<td class="cell_fixed_100 char_ellipsis">
+								<div class="row_sub_data lh1" th:text="${#strings.isEmpty(customerHojiMeiboData.daihyoPositionName)}? '' : ${customerHojiMeiboData.daihyoPositionName}"></div>
+								<div th:text="${#strings.isEmpty(customerHojiMeiboData.daihyoName)}? '-' : ${customerHojiMeiboData.daihyoName}"></div>
+							</td>
+							<td class="cell_fixed_100 char_ellipsis" th:text="${#strings.isEmpty(customerHojiMeiboData.tantoName)}? '-' : ${customerHojiMeiboData.tantoName}"></td>
+							<td class="cell_fixed_125 char_ellipsis" th:text="${#strings.isEmpty(customerHojiMeiboData.telNo)}? '-' : ${customerHojiMeiboData.telNo}"></td>
+							<td class="cell_fixed_150 char_ellipsis" th:text="${#strings.isEmpty(customerHojiMeiboData.mailAddress)}? '-' : ${customerHojiMeiboData.mailAddress}"></td>
+							<td class="cell_fixed_175">
+								<span class="badge badge-pill anken_cnt" th:classappend="${customerHojiMeiboData.ankenTotalCnt == 0} ? 'badge_gray' : 'badge_blue'">登録数：<span th:text="${customerHojiMeiboData.ankenTotalCnt}">3</span></span>
+								<span class="badge badge-pill anken_cnt" th:classappend="${customerHojiMeiboData.ankenProgressCnt == 0} ? 'badge_gray' : 'badge_orange'">進行中：<span th:text="${customerHojiMeiboData.ankenProgressCnt}">3</span></span>
+							</td>
+							<td class="cell_fixed_100" th:text="${#strings.isEmpty(customerHojiMeiboData.customerCreatedDate)}? '-' : ${customerHojiMeiboData.customerCreatedDate}"></td>
+							<td class="cell_fixed_175 char_ellipsis">
+								<span th:text="${#strings.isEmpty(customerHojiMeiboData.remarks)}? '-' : ${customerHojiMeiboData.remarks}"></span>
+							</td>
+						</tr>
+					</tbody>
+				</table>
+			</div>
+		</div>
+	</div>
+	<!--/* 【一覧】顧客名簿-企業・団体 end */-->
+	
+		<!--/* 【検索条件】顧問取引先 */-->
+	<div th:fragment="advisorMeiboSearchFragment(meiboSearchViewForm)" id="advisorMeiboSearchFragment" th:object="${meiboListSearchForm.advisorMeiboListSearchForm}">
+		<script type="text/javascript" th:inline="javascript">
+		$(function() {
+			
+			<!--/* 共有の要素セットアップ処理 */-->
+			commonSetUpElement("#advisorMeiboSearchFragment");
+			
+			const advisorMeiboSearchFragment = $('#advisorMeiboSearchFragment');
+			
+			<!--/* 顧客の追加を押下 */-->
+			advisorMeiboSearchFragment.find('.customerAddBtn').on('click', function() {
+				const url = /*[[@{/user/personManagement/new/}]]*/'';
+				window.location.href = url;
+			});
+			
+			<!--/* フィルタの選択 */-->
+			advisorMeiboSearchFragment.find('.filterBtn').on('click', function() {
+				
+				let showConditions = /*[[${meiboListSearchForm.showConditions}]]*/'';
+				let optionParams = [
+					{name:'showConditions', value:!showConditions},
+				];
+				
+				if (ajaxRunning) {
+					return false;
+				}
+				ajaxRunning = true;
+				
+				Promise.resolve()
+					.then(() => renderMeiboSearchFragment(optionParams))
+					.catch((errorObj) => console.log(errorObj))
+					.finally(() => ajaxRunning = false);
+			});
+			
+			<!--/* テキスト検索 */-->
+			let searchText;
+			let inputText;
+			<!--/* テキストボックス内のクリア処理 */-->
+			advisorMeiboSearchFragment.find('.add-clear-span > a').on('click', function() {
+				inputText = '';
+				
+				if ($(this).parent().find('.inputDate').length > 0) {
+					<!--/* 日付の入力項目（DatePickerの項目）の場合は、blurでの再検索は行わず、このケースではchangeイベントが発火せず再検索が行われないので、イベントを発火させる */-->
+					$(this).parent().find('.inputDate').change();
+				}
+			});
+			<!--/* 入力項目削除で検索 */-->
+			advisorMeiboSearchFragment.find('.filtersContainer input[type="text"], .filtersContainer input[type="tel"]').on('blur', function(e) {
+				if ($(this).hasClass('inputDate')) {
+					<!--/* 日付の入力項目（DatePickerの項目）の場合は、blurでの再検索は行わない（changeイベント側で実行されるため） */-->
+					return;
+				}
+				
+				if (searchText !== inputText) {
+					searchFn();
+				}
+			});
+			<!--/* 入力項目のEnterで検索 */-->
+			advisorMeiboSearchFragment.find('.filtersContainer input[type="text"], .filtersContainer input[type="tel"]').on('keydown', function(e) {
+				if (e.keyCode == 13) {
+					searchText = $(this).val();
+					searchFn();
+				};
+				inputText = $(this).val();
+			});
+			<!--/* セレクトボックスの変更で検索 */-->
+			advisorMeiboSearchFragment.find('.filtersContainer select').on('change', function(e) {
+				searchFn();
+			});
+			<!--/* 登録日Fromの変更で検索 */-->
+			advisorMeiboSearchFragment.find('.filtersContainer input[id="advisorMeiboListSearchForm.customerCreateDateFrom"]').on('change', function(e) {
+				searchFn();
+			});
+			<!--/* 登録日Toの変更で検索 */-->
+			advisorMeiboSearchFragment.find('.filtersContainer input[id="advisorMeiboListSearchForm.customerCreateDateTo"]').on('change', function(e) {
+				searchFn();
+			});
+			
+			<!--/* 入力項目の初期化 */-->
+			advisorMeiboSearchFragment.find('.cliearBtn').on('click', function(e) {
+				advisorMeiboSearchFragment.find('.filtersContainer input').val("");
+				searchFn();
+			});
+			
+			<!--/* 名簿一覧CSV出力処理 */-->
+			advisorMeiboSearchFragment.on('click', '.csvOutput', function() {
+				const url = /*[[@{/user/meiboList/doc/outputAdvisorMeiboListCsv}]]*/'';
+				const buttonObj = $(this);
+				const formData = {};
+				downloadCsvFileAjax(url, buttonObj, formData);
+			});
+			
+			<!--/* 名簿一覧EXCEL出力処理 */-->
+			advisorMeiboSearchFragment.on('click', '.excelOutput', function() {
+				const url = /*[[@{/user/meiboList/doc/outputAdvisorMeiboListExcel}]]*/'';
+				const buttonObj = $(this);
+				const formData = {};
+				downloadFileAjax(url, buttonObj, formData);
+			});
+			
+			<!--/* 名簿一覧筆まめ出力処理 */-->
+			advisorMeiboSearchFragment.on('click', '.fudemameOutput', function() {
+				const url = /*[[@{/user/meiboList/doc/outputAdvisorMeiboListFudemame}]]*/'';
+				const buttonObj = $(this);
+				const formData = {};
+				downloadCsvFileAjax(url, buttonObj, formData);
+			});
+			
+			<!--/* 検索処理 */-->
+			function searchFn() {
+				const optionParam = advisorMeiboSearchFragment.find('#advisorMeiboListSearchForm').serializeArray();
+				if (ajaxRunning) {
+					return false;
+				}
+				ajaxRunning = true;
+				Promise.resolve()
+					.then(() => searchMeiboList(optionParam, advisor))
+					.then(() => renderMeiboSearchFragment(optionParam))
+					.catch((errorObj) => console.log(errorObj))
+					.finally(() => ajaxRunning = false);
+			};
+			
+		});
+		</script>
+		
+		<!--/* 選択したメニュータイトル */-->
+		<div class="page_list_title_block">
+			<h1 class="page_list__name">顧客名簿【顧問取引先】</h1>
+			<div class="page_list__btn" th:with="searchConditionCount=*{getSearchConditionCount()}">
+				<button type="button" class="btn btn-primary customerAddBtn"><i class="fas fa-plus"></i>名簿を追加</button>
+				<button type="button" class="btn btn-light filterBtn" th:classAppend="${searchConditionCount} > 0 ?  'filter_active' ">
+					<i class="fas fa-filter"></i>フィルタ
+					<span class="btn_inner_badge" th:classAppend="${searchConditionCount} > 0 ?  'badge_warning' "
+						th:text="${searchConditionCount}">1</span>
+				</button>
+				<div id="outPutContainer" class="d-inline-block stop-events outPutContainerClose"
+					data-offset="-80,0" data-boundary="window" data-container="#advisorMeiboSearchFragment" data-toggle="popover" data-placement="bottom" data-html="true" th:data-content=
+					'|<ul class="output_nav_list">
+							<li class="title_block">名簿情報出力</li>
+							<li><button class="btn btn-light excelOutput" data-target="#outPutContainer"><i class="fas fa-download text-primary mr-3"></i><i class="fas fa-spinner mr-3 text-primary faa-spin animated hidden"></i>Excel形式で出力する</button></li>
+							<li><button class="btn btn-light csvOutput" data-target="#outPutContainer"><i class="fas fa-download text-primary mr-3"></i><i class="fas fa-spinner mr-3 text-primary faa-spin animated hidden"></i>CSV形式で出力する</button></li>
+							<li><button class="btn btn-light fudemameOutput" data-target="#outPutContainer"><i class="fas fa-download text-primary mr-3"></i><i class="fas fa-spinner mr-3 text-primary faa-spin animated hidden"></i>筆まめ形式で出力する</button></li>
+					</ul>|'>
+					<button type="button" class="btn btn-light config"><i class="fas fa-ellipsis-h mr-0"></i></button>
+				</div>
+			</div>
+		</div>
+		
+		<!--/* 検索条件 */-->
+		<form id="advisorMeiboListSearchForm" autocomplete="off" th:if="${meiboListSearchForm.showConditions}">
+			<!--/* 検索条件 */-->
+			<div class="list_filters_container filtersContainer" >
+				<fieldset>
+					<div class="list_filters_header">
+						<div class="filters_title">検索条件</div>
+						<div class="filters_action">
+							<a href="javascript:void(0);" class="filters_action__clear cliearBtn">検索条件をクリア</a>
+							<a href="javascript:void(0);" class="filters_action__close filterBtn"><i class="fas fa-times"></i></a>
+						</div>
+					</div>
+					<div class="form-row">
+						<!--/* キーワード */-->
+						<div class="form-group col-md-auto">
+							<label class="input_parts_label">キーワード</label>
+							<input type="text" class="form-control digit20 fcAddTextClear" th:field="*{searchWord}" placeholder="ID、名前、住所、電話番号、特記事項..." maxlength="300">
+						</div>
+						<!--/* 名簿ID */-->
+						<div class="form-group col-md-auto">
+							<label class="input_parts_label">名簿ID</label>
+							<input type="text" class="form-control digit6 inputNumberOnly fcAddTextClear" th:field="*{personId}" maxlength="10">
+						</div>
+						<!--/* 名前 */-->
+						<div class="form-group col-md-auto">
+							<label class="input_parts_label">名前</label>
+							<input type="text" class="form-control digit10 fcAddTextClear" th:field="*{keywords}" maxlength="300">
+						</div>
+						<!--/* 住所 */-->
+						<div class="form-group col-md-auto">
+							<label class="input_parts_label">住所</label>
+							<input type="text" class="form-control digit12 fcAddTextClear" th:field="*{address}" maxlength="300">
+						</div>
+						<!--/* 電話番号 */-->
+						<div class="form-group col-md-auto">
+							<label class="input_parts_label">電話番号</label>
+							<input type="tel" class="form-control digit10 inputNumHyphen fcAddTextClear" th:field="*{telNo}" maxlength="13">
+						</div>
+						<!--/* メールアドレス */-->
+						<div class="form-group col-md-auto">
+							<label class="input_parts_label">メールアドレス</label>
+							<input type="text" class="form-control digit11 inputHalf fcAddTextClear" th:field="*{mailAddress}" maxlength="300">
+						</div>
+						<!--/* 登録日 */-->
+						<div class="form-group col-md-auto">
+							<label class="input_parts_label">登録日</label>
+							<div class="d-flex align-items-start">
+								<div>
+									<div class="d-flex customerCreateDateFrom">
+										<input type="text" class="form-control digit8 inputDateSlash inputDate fcAddTextClear" th:field="*{customerCreateDateFrom}" maxlength="10"
+											data-click-sync="[data-target-name='advisorMeiboListSearchForm.customerCreateDateFrom']">
+										<button type="button" class="btn btn_popcal hidden" data-toggle="datepicker" data-target-name="advisorMeiboListSearchForm.customerCreateDateFrom">カレンダー</button>
+										<div class="fs15 mt-2 mx-2">〜</div>
+									</div>
+								</div>
+								<div>
+									<div class="customerCreateDateTo">
+										<input type="text" class="form-control digit8 inputDateSlash inputDate fcAddTextClear" th:field="*{customerCreateDateTo}" maxlength="10"
+											data-click-sync="[data-target-name='advisorMeiboListSearchForm.customerCreateDateTo']">
+										<button type="button" class="btn btn_popcal hidden" data-toggle="datepicker" data-target-name="advisorMeiboListSearchForm.customerCreateDateTo">カレンダー</button>
+									</div>
+								</div>
+							</div>
+						</div>
+						<!--/* 特記事項 */-->
+						<div class="form-group col-md-auto">
+							<label class="input_parts_label">特記事項</label>
+							<input type="text" class="form-control digit13 fcAddTextClear" th:field="*{remarks}" maxlength="300">
+						</div>
+					</div>
+				</fieldset>
+			</div>
+			<!--/* 検索条件 end */-->
+		</form>
+		
+	</div>
+	<!--/* 【検索条件】顧問取引先 end */-->
+	
+	<!--/* 【一覧】顧問取引先*/-->
+	<div th:fragment="advisorMeiboListFragment(advisorMeiboListViewForm)" id="advisorMeiboListFragment">
+		<script type="text/javascript" th:inline="javascript">
+		$(function(){
+
+			<!--/* 共有の要素セットアップ処理 */-->
+			commonSetUpElement("#advisorMeiboListFragment");
+			
+			<!-- /* 一覧の表示初期処理（親HTMLの関数） */ -->
+			const sessionQuickSearchWord = /*[[${T(jp.loioz.common.utility.SessionUtils).getSessionVaule(T(jp.loioz.common.constant.SessionAttrKeyEnum).QUICK_SEARCH_WORD)}]]*/ '';
+			showInitMiboList(sessionQuickSearchWord)
+			
+			const advisorMeiboListFragment = $('#advisorMeiboListFragment');
+			
+			<!--/* ソート処理 */-->
+			advisorMeiboListFragment.find('.advisorMeiboColumn').on('click', function() {
+				const asc = /*[[${T(jp.loioz.common.constant.SortConstant$SortOrder).ASC.getCd()}]]*/'';
+				const desc = /*[[${T(jp.loioz.common.constant.SortConstant$SortOrder).DESC.getCd()}]]*/'';
+	
+				const currentSortItem = /*[[${meiboListSearchForm.advisorMeiboListSearchForm.sortItem}]]*/'';
+				const currentSortOrder = /*[[${meiboListSearchForm.advisorMeiboListSearchForm.sortOrder}]]*/'';
+				
+				let optionParam = [];
+				
+				const sortKey = $(this).data('sortKey');
+				if (sortKey != currentSortItem) {
+					optionParam = [
+						{name:"advisorMeiboListSearchForm.sortItem", value:sortKey},
+						{name:"advisorMeiboListSearchForm.sortOrder", value:desc},
+					];
+				} else {
+					if (currentSortOrder === asc) {
+						optionParam = [
+							{name:"advisorMeiboListSearchForm.sortOrder", value:desc},
+						];
+					} 
+					
+					if (currentSortOrder === desc) {
+						optionParam = [
+							{name:"advisorMeiboListSearchForm.sortOrder", value:asc},
+						]
+					} 
+				}
+				
+				if (ajaxRunning) {
+					return false;
+				}
+				ajaxRunning = true;
+				Promise.resolve()
+					.then(() => sortMeiboList(optionParam, advisor))
+					.catch((errorObj) => console.log(errorObj))
+					.finally(() => ajaxRunning = false);
+			});
+			
+			<!--/* 行をクリック */-->
+			advisorMeiboListFragment.on("click", ".transitionCustomer", function(e){
+				e.stopPropagation();
+				const personId = $(this).data("personId");
+				<!--/* 画面遷移 */-->
+				window.location.href = "/user/personManagement/edit/" + personId + "/";
+			});
+			
+		});
+		</script>
+		
+		<!--/* 一覧エリア */-->
+		<div id="advisorMeiboList">
+			<div class="header_fixed_table_wrapper table_common_list">
+				<table class="table table_standard table_nowrap table-hover">
+					<thead>
+						<tr>
+							<th class="cell_fixed_75 sort_column advisorMeiboColumn"
+								th:with="sortItem=${T(jp.loioz.common.constant.meiboList.MeiboListConstant$AdvisorMeiboListSortItem).PERSON_ID}"
+								th:data-sort-key="${sortItem.getCd()}">
+								名簿ID
+								<th:block th:if="${sortItem == meiboListSearchForm.advisorMeiboListSearchForm.sortItem}" th:fragment="advisorMeiboColumn">
+									<th:block th:if="${meiboListSearchForm.advisorMeiboListSearchForm.sortOrder == T(jp.loioz.common.constant.SortConstant$SortOrder).ASC}">
+										<i class="fas fa-chevron-up"></i>
+									</th:block>
+									<th:block th:if="${meiboListSearchForm.advisorMeiboListSearchForm.sortOrder == T(jp.loioz.common.constant.SortConstant$SortOrder).DESC}">
+										<i class="fas fa-chevron-down"></i>
+									</th:block>
+								</th:block>
+							</th>
+							<th class="cell_fixed_150 sort_column advisorMeiboColumn" 
+								th:with="sortItem=${T(jp.loioz.common.constant.meiboList.MeiboListConstant$AdvisorMeiboListSortItem).NAME}"
+								th:data-sort-key="${sortItem.getCd()}">
+								名前
+								<th:block th:replace="::advisorMeiboColumn"></th:block>
+							</th>
+							<th class="cell_fixed_200">
+								<div class="d-flex">
+									<div>住所</div>
+									<div class="ml-1 d-inline-block stop-events outPutContainerClose" 
+										data-offset="-80,0" data-toggle="popover" data-html="true" th:data-content='|
+											<div class="popover_meibo_list_msg">
+												<div class="pt-2 pb-2 px-3">
+													名簿情報で登録した居住地、所在地です。
+												</div>
+											</div>
+										|'>
+										<i class="far fa-question-circle cursor_pointer" data-outside='close'></i>
+									</div>
+								</div>
+							</th>
+							<th class="cell_fixed_100">
+								<div class="d-flex">
+									<div>電話番号</div>
+									<div class="ml-1 d-inline-block stop-events outPutContainerClose" 
+										data-offset="-80,0" data-toggle="popover" data-html="true" th:data-content='|
+											<div class="popover_meibo_list_msg">
+												<div class="pt-2 pb-2 px-3">
+													連絡先情報の優先設定をした電話番号です。
+													<div>（優先未設定の場合は、1番目に登録した電話番号です。）</div>
+												</div>
+											</div>
+										|'>
+										<i class="far fa-question-circle cursor_pointer" data-outside='close'></i>
+									</div>
+								</div>
+							</th>
+							<th class="cell_fixed_175">
+								<div class="d-flex">
+									<div>メールアドレス</div>
+									<div class="ml-1 d-inline-block stop-events outPutContainerClose" 
+										data-offset="-80,0" data-toggle="popover" data-html="true" th:data-content='|
+											<div class="popover_meibo_list_msg">
+												<div class="pt-2 pb-2 px-3">
+													連絡先情報の優先設定をしたメールアドレスです。
+													<div>（優先未設定の場合は、1番目に登録したメールアドレスです。）</div>
+												</div>
+											</div>
+										|'>
+										<i class="far fa-question-circle cursor_pointer" data-outside='close'></i>
+									</div>
+								</div>
+							</th>
+							<th class="cell_fixed_100 sort_column advisorMeiboColumn" 
+								th:with="sortItem=${T(jp.loioz.common.constant.meiboList.MeiboListConstant$AdvisorMeiboListSortItem).CUSTOMER_CREATE_DATE}"
+								th:data-sort-key="${sortItem.getCd()}">
+								登録日
+								<th:block th:replace="::advisorMeiboColumn"></th:block>
+							</th>
+							<th class="cell_fixed_200">特記事項</th>
+						</tr>
+					</thead>
+					<tbody>
+						<th:block th:if="${advisorMeiboListViewForm.advisorMeiboListDto.size() == 0}">
+							<tr>
+								<td colspan="7" class="no_data"><span th:text="#{I00044('顧問取引先')}">該当する顧問取引先は見つかりませんでした。</span></td>
+							</tr>
+						</th:block>
+						<tr th:each="advisorMeiboData : ${advisorMeiboListViewForm.advisorMeiboListDto}" data-click-sync-for-descendants='.transitionCustomer'>
+							<td class="cell_fixed_75">
+								<span class="main_id" th:text="${advisorMeiboData.personId}"></span>
+								<a href="javascript:void(0);" class="transitionCustomer hidden" th:data-person-id="${advisorMeiboData.personId}"></a>
+							</td>
+							<td class="cell_fixed_150 char_ellipsis">
+								<span th:text="${advisorMeiboData.customerName}"></span>
+							</td>
+							<td class="cell_fixed_200 char_ellipsis">
+								<th:block th:if="${!advisorMeiboData.existsAddress() && #strings.isEmpty(advisorMeiboData.zipCode)}">
+									<span>-</span>
+								</th:block>
+								<th:block th:if="${advisorMeiboData.existsAddress() || !#strings.isEmpty(advisorMeiboData.zipCode)}">
+									<div class="row_sub_data lh1" th:text="${#strings.isEmpty(advisorMeiboData.zipCode)? '' : '〒' + advisorMeiboData.zipCode}"></div>
+									<span th:text="${advisorMeiboData.address1}"></span>
+									<span th:text="${advisorMeiboData.address2}"></span>
+								</th:block>
+							</td>
+							<td class="cell_fixed_100 char_ellipsis" th:text="${#strings.isEmpty(advisorMeiboData.telNo)}? '-' : ${advisorMeiboData.telNo}"></td>
+							<td class="cell_fixed_175 char_ellipsis" th:text="${#strings.isEmpty(advisorMeiboData.mailAddress)}? '-' : ${advisorMeiboData.mailAddress}"></td>
+							<td class="cell_fixed_100" th:text="${#strings.isEmpty(advisorMeiboData.customerCreatedDate)}? '-' : ${advisorMeiboData.customerCreatedDate}"></td>
+							<td class="cell_fixed_200 char_ellipsis">
+								<span th:text="${#strings.isEmpty(advisorMeiboData.remarks)}? '-' : ${advisorMeiboData.remarks}"></span>
+							</td>
+						</tr>
+					</tbody>
+				</table>
+			</div>
+		</div>
+	</div>
+	<!--/* 【一覧】顧問取引先 end */-->
+	
+	<!--/* 【検索条件】弁護士名簿 */-->
+	<div th:fragment="bengoshiMeiboSearchFragment(meiboSearchViewForm)" id="bengoshiMeiboSearchFragment" th:object="${meiboListSearchForm.bengoshiMeiboListSearchForm}">
+		<script type="text/javascript" th:inline="javascript">
+		$(function() {
+			
+			<!--/* 共有の要素セットアップ処理 */-->
+			commonSetUpElement("#bengoshiMeiboSearchFragment");
+			
+			const bengoshiMeiboSearchFragment = $('#bengoshiMeiboSearchFragment');
+			
+			<!--/* 弁護士の追加を押下 */-->
+			bengoshiMeiboSearchFragment.find('.bengoshiAddBtn').on('click', function() {
+				const url = /*[[@{/user/personManagement/new/addLawyer}]]*/'';
+				window.location.href = url;
+			});
+			
+			<!--/* フィルタの選択 */-->
+			bengoshiMeiboSearchFragment.find('.filterBtn').on('click', function() {
+				
+				let showConditions = /*[[${meiboListSearchForm.showConditions}]]*/'';
+				let optionParams = [
+					{name:'showConditions', value:!showConditions},
+				];
+				
+				if (ajaxRunning) {
+					return false;
+				}
+				ajaxRunning = true;
+				
+				Promise.resolve()
+					.then(() => renderMeiboSearchFragment(optionParams))
+					.catch((errorObj) => console.log(errorObj))
+					.finally(() => ajaxRunning = false);
+			});
+			
+			<!--/* テキスト検索 */-->
+			let searchText;
+			let inputText;
+			<!--/* テキストボックス内のクリア処理 */-->
+			bengoshiMeiboSearchFragment.find('.add-clear-span > a').on('click', function() {
+				inputText = '';
+				
+				if ($(this).parent().find('.inputDate').length > 0) {
+					<!--/* 日付の入力項目（DatePickerの項目）の場合は、blurでの再検索は行わず、このケースではchangeイベントが発火せず再検索が行われないので、イベントを発火させる */-->
+					$(this).parent().find('.inputDate').change();
+				}
+			});
+			<!--/* 入力項目削除で検索 */-->
+			bengoshiMeiboSearchFragment.find('.filtersContainer input[type="text"], .filtersContainer input[type="tel"]').on('blur', function(e) {
+				if ($(this).hasClass('inputDate')) {
+					<!--/* 日付の入力項目（DatePickerの項目）の場合は、blurでの再検索は行わない（changeイベント側で実行されるため） */-->
+					return;
+				}
+				
+				if (searchText !== inputText) {
+					searchBengoshiList();
+				}
+			});
+			<!--/* 入力項目のEnterで検索 */-->
+			bengoshiMeiboSearchFragment.find('.filtersContainer input[type="text"], .filtersContainer input[type="tel"]').on('keydown', function(e) {
+				if (e.keyCode == 13) {
+					searchText = $(this).val();
+					searchBengoshiList();
+				};
+				inputText = $(this).val();
+			});
+			
+			<!--/* セレクトボックスの変更で検索 */-->
+			bengoshiMeiboSearchFragment.find('.filtersContainer select').on('change', function(e) {
+				searchBengoshiList();
+			});
+			<!--/* 登録日Fromの変更で検索 */-->
+			bengoshiMeiboSearchFragment.find('.filtersContainer input[id="bengoshiMeiboListSearchForm.createDateFrom"]').on('change', function(e) {
+				searchBengoshiList();
+			});
+			<!--/* 登録日Toの変更で検索 */-->
+			bengoshiMeiboSearchFragment.find('.filtersContainer input[id="bengoshiMeiboListSearchForm.createDateTo"]').on('change', function(e) {
+				searchBengoshiList();
+			});
+			
+			<!--/* 入力項目の初期化 */-->
+			bengoshiMeiboSearchFragment.find('.cliearBtn').on('click', function(e) {
+				bengoshiMeiboSearchFragment.find('.filtersContainer input').val("");
+				bengoshiMeiboSearchFragment.find('.filtersContainer select').val("");
+				bengoshiMeiboSearchFragment.find('.filtersContainer #birthEra').val("0");
+				searchBengoshiList();
+			});
+			
+			<!--/* 弁護士一覧CSV出力処理 */-->
+			bengoshiMeiboSearchFragment.on('click', '.csvOutput', function() {
+				const url = /*[[@{/user/meiboList/doc/outputBengoshiMeiboListCsv}]]*/'';
+				const buttonObj = $(this);
+				const formData = {};
+				downloadCsvFileAjax(url, buttonObj, formData);
+			});
+			
+			<!--/* 弁護士一覧EXCEL出力処理 */-->
+			bengoshiMeiboSearchFragment.on('click', '.excelOutput', function() {
+				const url = /*[[@{/user/meiboList/doc/outputBengoshiMeiboListExcel}]]*/'';
+				const buttonObj = $(this);
+				const formData = {};
+				downloadFileAjax(url, buttonObj, formData);
+			});
+			
+			<!--/* 弁護士一覧筆まめ出力処理 */-->
+			bengoshiMeiboSearchFragment.on('click', '.fudemameOutput', function() {
+				const url = /*[[@{/user/meiboList/doc/outputBengoshiMeiboListFudemame}]]*/'';
+				const buttonObj = $(this);
+				const formData = {};
+				downloadCsvFileAjax(url, buttonObj, formData);
+			});
+			
+			<!--/* 検索処理 */-->
+			function searchBengoshiList() {
+				const optionParam = bengoshiMeiboSearchFragment.find('#bengoshiMeiboListSearchForm').serializeArray();
+				if (ajaxRunning) {
+					return false;
+				}
+				ajaxRunning = true;
+				Promise.resolve()
+					.then(() => searchMeiboList(optionParam, bengoshi))
+					.then(() => renderMeiboSearchFragment(optionParam))
+					.catch((errorObj) => console.log(errorObj))
+					.finally(() => ajaxRunning = false);
+			};
+			
+		});
+		</script>
+		
+		<!--/* 選択したメニュータイトル */-->
+		<div class="page_list_title_block">
+			<h1 class="page_list__name">弁護士名簿</h1>
+			<div class="page_list__btn" th:with="searchConditionCount=*{getSearchConditionCount()}">
+				<button type="button" class="btn btn-primary bengoshiAddBtn"><i class="fas fa-plus"></i>弁護士を追加</button>
+				<button type="button" class="btn btn-light filterBtn" th:classAppend="${searchConditionCount} > 0 ?  'filter_active' ">
+					<i class="fas fa-filter"></i>フィルタ
+					<span class="btn_inner_badge" th:classAppend="${searchConditionCount} > 0 ?  'badge_warning' "
+						th:text="${searchConditionCount}">1</span>
+				</button>
+				<div id="outPutContainer" class="d-inline-block stop-events outPutContainerClose"
+					data-offset="-80,0" data-boundary="window" data-container="#bengoshiMeiboSearchFragment" data-toggle="popover" data-placement="bottom" data-html="true" th:data-content=
+					'|<ul class="output_nav_list">
+							<li class="title_block">名簿情報出力</li>
+							<li><button class="btn btn-light excelOutput" data-target="#outPutContainer"><i class="fas fa-download text-primary mr-3"></i><i class="fas fa-spinner mr-3 text-primary faa-spin animated hidden"></i>Excel形式で出力する</button></li>
+							<li><button class="btn btn-light csvOutput" data-target="#outPutContainer"><i class="fas fa-download text-primary mr-3"></i><i class="fas fa-spinner mr-3 text-primary faa-spin animated hidden"></i>CSV形式で出力する</button></li>
+							<li><button class="btn btn-light fudemameOutput" data-target="#outPutContainer"><i class="fas fa-download text-primary mr-3"></i><i class="fas fa-spinner mr-3 text-primary faa-spin animated hidden"></i>筆まめ形式で出力する</button></li>
+					</ul>|'>
+					<button type="button" class="btn btn-light config"><i class="fas fa-ellipsis-h mr-0"></i></button>
+				</div>
+			</div>
+		</div>
+		
+		<!--/* 検索条件 */-->
+		<form id="bengoshiMeiboListSearchForm" autocomplete="off" th:if="${meiboListSearchForm.showConditions}">
+			<div class="list_filters_container filtersContainer" >
+				<fieldset>
+					<div class="list_filters_header">
+						<div class="filters_title">検索条件</div>
+						<div class="filters_action">
+							<a href="javascript:void(0);" class="filters_action__clear cliearBtn">検索条件をクリア</a>
+							<a href="javascript:void(0);" class="filters_action__close filterBtn"><i class="fas fa-times"></i></a>
+						</div>
+					</div>
+					<div class="form-row">
+						<!--/* キーワード */-->
+						<div class="form-group col-md-auto">
+							<label class="input_parts_label">キーワード</label>
+							<input type="text" class="form-control digit20 fcAddTextClear" th:field="*{searchWord}" placeholder="ID、名前、住所、電話番号、特記事項..." maxlength="300">
+						</div>
+						<!--/* 名簿ID */-->
+						<div class="form-group col-md-auto">
+							<label class="input_parts_label">名簿ID</label>
+							<input type="text" class="form-control digit6 inputNumberOnly fcAddTextClear" th:field="*{personId}" maxlength="10">
+						</div>
+						<!--/* 名前 */-->
+						<div class="form-group col-md-auto">
+							<label class="input_parts_label">名前</label>
+							<input type="text" class="form-control digit8 fcAddTextClear" th:field="*{keywords}" maxlength="300">
+						</div>
+						<!--/* 事務所名 */-->
+						<div class="form-group col-md-auto">
+							<label class="input_parts_label">事務所名</label>
+							<input type="text" class="form-control digit10 fcAddTextClear" th:field="*{jimushoName}" maxlength="300">
+						</div>
+						<!--/* 住所 */-->
+						<div class="form-group col-md-auto">
+							<label class="input_parts_label">住所</label>
+							<input type="text" class="form-control digit12 fcAddTextClear" th:field="*{address}" maxlength="300">
+						</div>
+						<!--/* 電話番号 */-->
+						<div class="form-group col-md-auto">
+							<label class="input_parts_label">電話番号</label>
+							<input type="tel" class="form-control digit10 inputNumHyphen fcAddTextClear" th:field="*{telNo}" maxlength="13">
+						</div>
+						<!--/* メールアドレス */-->
+						<div class="form-group col-md-auto">
+							<label class="input_parts_label">メールアドレス</label>
+							<input type="text" class="form-control digit11 inputHalf fcAddTextClear" th:field="*{mailAddress}" maxlength="300">
+						</div>
+						<!--/* 登録日 */-->
+						<div class="form-group col-md-auto">
+							<label class="input_parts_label">登録日</label>
+							<div class="d-flex align-items-start">
+								<div>
+									<div class="d-flex createDateFrom">
+										<input type="text" class="form-control digit8 inputDateSlash inputDate fcAddTextClear" th:field="*{createDateFrom}" maxlength="10"
+											data-click-sync="[data-target-name='bengoshiMeiboListSearchForm.createDateFrom']">
+										<button type="button" class="btn btn_popcal hidden" data-toggle="datepicker" data-target-name="bengoshiMeiboListSearchForm.createDateFrom">カレンダー</button>
+										<div class="fs15 mt-2 mx-2">〜</div>
+									</div>
+								</div>
+								<div>
+									<div class="createDateTo">
+										<input type="text" class="form-control digit8 inputDateSlash inputDate fcAddTextClear" th:field="*{createDateTo}" maxlength="10"
+											data-click-sync="[data-target-name='bengoshiMeiboListSearchForm.createDateTo']">
+										<button type="button" class="btn btn_popcal hidden" data-toggle="datepicker" data-target-name="bengoshiMeiboListSearchForm.createDateTo">カレンダー</button>
+									</div>
+								</div>
+							</div>
+						</div>
+						<!--/* 特記事項 */-->
+						<div class="form-group col-md-auto">
+							<label class="input_parts_label">特記事項</label>
+							<input type="text" class="form-control digit13 fcAddTextClear" th:field="*{remarks}" maxlength="300">
+						</div>
+					</div>
+				</fieldset>
+			</div>
+			<!--/* 検索条件 end */-->
+		</form>
+		
+	</div>
+	<!--/* 【検索条件】弁護士名簿 end */-->
+	
+	<!--/* 【一覧】弁護士名簿 */-->
+	<div th:fragment="bengoshiMeiboListFragment(bengoshiMeiboListViewForm)" id="bengoshiMeiboListFragment">
+		<script type="text/javascript" th:inline="javascript">
+		$(function() {
+			
+			<!--/* 共有の要素セットアップ処理 */-->
+			commonSetUpElement("#bengoshiMeiboListFragment");
+			
+			<!-- /* 一覧の表示初期処理（親HTMLの関数） */ -->
+			const sessionQuickSearchWord = /*[[${T(jp.loioz.common.utility.SessionUtils).getSessionVaule(T(jp.loioz.common.constant.SessionAttrKeyEnum).QUICK_SEARCH_WORD)}]]*/ '';
+			showInitMiboList(sessionQuickSearchWord)
+			
+			const bengoshiMeiboListFragment = $('#bengoshiMeiboListFragment');
+			
+			<!--/* ソート処理 */-->
+			bengoshiMeiboListFragment.find('.bengoshiMeiboColumn').on('click', function() {
+				const asc = /*[[${T(jp.loioz.common.constant.SortConstant$SortOrder).ASC.getCd()}]]*/'';
+				const desc = /*[[${T(jp.loioz.common.constant.SortConstant$SortOrder).DESC.getCd()}]]*/'';
+
+				const currentSortItem = /*[[${meiboListSearchForm.bengoshiMeiboListSearchForm.sortItem}]]*/'';
+				const currentSortOrder = /*[[${meiboListSearchForm.bengoshiMeiboListSearchForm.sortOrder}]]*/'';
+				
+				let optionParam = [];
+				
+				const sortKey = $(this).data('sortKey');
+				if (sortKey != currentSortItem) {
+					optionParam = [
+						{name:"bengoshiMeiboListSearchForm.sortItem", value:sortKey},
+						{name:"bengoshiMeiboListSearchForm.sortOrder", value:desc},
+					];
+				} else {
+					if (currentSortOrder === asc) {
+						optionParam = [
+							{name:"bengoshiMeiboListSearchForm.sortOrder", value:desc},
+						];
+					} 
+					
+					if (currentSortOrder === desc) {
+						optionParam = [
+							{name:"bengoshiMeiboListSearchForm.sortOrder", value:asc},
+						]
+					} 
+				}
+				
+				if (ajaxRunning) {
+					return false;
+				}
+				ajaxRunning = true;
+				Promise.resolve()
+					.then(() => sortMeiboList(optionParam, bengoshi))
+					.catch((errorObj) => console.log(errorObj))
+					.finally(() => ajaxRunning = false);
+			});
+			
+			<!--/* 行をクリック */-->
+			bengoshiMeiboListFragment.on("click", ".transitionBengoshi", function(e){
+				e.stopPropagation();
+				const personId = $(this).data("personId");
+				<!--/* 編集画面へ遷移 */-->
+				window.location.href = "/user/personManagement/edit/" + personId + "/";
+			});
+			
+		});
+		
+		</script>
+		
+		<!--/* 一覧エリア */-->
+		<div id="bengoshiMeiboList">
+			<div class="header_fixed_table_wrapper table_common_list">
+				<table class="table table_standard table_nowrap table-hover">
+					<thead>
+						<tr>
+							<th class="cell_fixed_75 sort_column bengoshiMeiboColumn" 
+								th:with="sortItem=${T(jp.loioz.common.constant.meiboList.MeiboListConstant$BengoshiMeiboListSortItem).PERSON_ID}"
+								th:data-sort-key="${sortItem.getCd()}">名簿ID
+								<th:block th:if="${sortItem == meiboListSearchForm.bengoshiMeiboListSearchForm.sortItem}" th:fragment="bengoshiMeiboColumn">
+									<th:block th:if="${meiboListSearchForm.bengoshiMeiboListSearchForm.sortOrder == T(jp.loioz.common.constant.SortConstant$SortOrder).ASC}">
+										<i class="fas fa-chevron-up"></i>
+									</th:block>
+									<th:block th:if="${meiboListSearchForm.bengoshiMeiboListSearchForm.sortOrder == T(jp.loioz.common.constant.SortConstant$SortOrder).DESC}">
+										<i class="fas fa-chevron-down"></i>
+									</th:block>
+								</th:block>
+							</th>
+							<th class="cell_fixed_150 sort_column bengoshiMeiboColumn" 
+								th:with="sortItem=${T(jp.loioz.common.constant.meiboList.MeiboListConstant$BengoshiMeiboListSortItem).NAME}"
+								th:data-sort-key="${sortItem.getCd()}">
+								名前
+								<th:block th:replace="::bengoshiMeiboColumn"></th:block>
+							</th>
+							<th class="cell_fixed_150 sort_column bengoshiMeiboColumn" 
+								th:with="sortItem=${T(jp.loioz.common.constant.meiboList.MeiboListConstant$BengoshiMeiboListSortItem).JIMUSHO_NAME}"
+								th:data-sort-key="${sortItem.getCd()}">事務所名
+								<th:block th:replace="::bengoshiMeiboColumn"></th:block>
+							</th>
+							<th class="cell_fixed_200">
+								<div class="d-flex">
+									<div>住所</div>
+									<div class="ml-1 d-inline-block stop-events outPutContainerClose" 
+										data-offset="-80,0" data-toggle="popover" data-html="true" th:data-content='|
+											<div class="popover_meibo_list_msg">
+												<div class="pt-2 pb-2 px-3">
+													名簿情報で登録した居住地、所在地です。
+												</div>
+											</div>
+										|'>
+										<i class="far fa-question-circle cursor_pointer" data-outside='close'></i>
+									</div>
+								</div>
+							</th>
+							<th class="cell_fixed_100">
+								<div class="d-flex">
+									<div>電話番号</div>
+									<div class="ml-1 d-inline-block stop-events outPutContainerClose" 
+										data-offset="-80,0" data-toggle="popover" data-html="true" th:data-content='|
+											<div class="popover_meibo_list_msg">
+												<div class="pt-2 pb-2 px-3">
+													連絡先情報の優先設定をした電話番号です。
+													<div>（優先未設定の場合は、1番目に登録した電話番号です。）</div>
+												</div>
+											</div>
+										|'>
+										<i class="far fa-question-circle cursor_pointer" data-outside='close'></i>
+									</div>
+								</div>
+							</th>
+							<th class="cell_fixed_150">
+								<div class="d-flex">
+									<div>メールアドレス</div>
+									<div class="ml-1 d-inline-block stop-events outPutContainerClose" 
+										data-offset="-80,0" data-toggle="popover" data-html="true" th:data-content='|
+											<div class="popover_meibo_list_msg">
+												<div class="pt-2 pb-2 px-3">
+													連絡先情報の優先設定をしたメールアドレスです。
+													<div>（優先未設定の場合は、1番目に登録したメールアドレスです。）</div>
+												</div>
+											</div>
+										|'>
+										<i class="far fa-question-circle cursor_pointer" data-outside='close'></i>
+									</div>
+								</div>
+							</th>
+							<th class="cell_fixed_100 sort_column bengoshiMeiboColumn" 
+								th:with="sortItem=${T(jp.loioz.common.constant.meiboList.MeiboListConstant$BengoshiMeiboListSortItem).CREATE_DATE}"
+								th:data-sort-key="${sortItem.getCd()}">
+								登録日
+								<th:block th:replace="::bengoshiMeiboColumn"></th:block>
+							</th>
+							<th class="cell_fixed_125">特記事項</th>
+						</tr>
+					</thead>
+					<tbody>
+						<th:block th:if="${bengoshiMeiboListViewForm.bengoshiMeiboListDto.size() == 0}">
+							<tr>
+								<td colspan="11" class="no_data"><span th:text="#{I00044('弁護士')}">該当する弁護士は見つかりませんでした。</span></td>
+							</tr>
+						</th:block>
+						<tr th:each="bengoshiMeiboData : ${bengoshiMeiboListViewForm.bengoshiMeiboListDto}" data-click-sync-for-descendants='.transitionBengoshi'>
+							<td class="cell_fixed_75">
+								<span class="main_id" th:text="${bengoshiMeiboData.personId}"></span>
+								<a href="javascript:void(0);" class="transitionBengoshi hidden" th:data-person-id="${bengoshiMeiboData.personId}"></a>
+							</td>
+							<td class="cell_fixed_150 char_ellipsis" th:text="${bengoshiMeiboData.bengoshiName}">名前</td>
+							<td class="cell_fixed_150 char_ellipsis" th:text="${#strings.isEmpty(bengoshiMeiboData.jimushoName)}? '-' : ${bengoshiMeiboData.jimushoName}">事務所名</td>
+							<td class="cell_fixed_200 char_ellipsis">
+								<th:block th:if="${!bengoshiMeiboData.existsAddress() && #strings.isEmpty(bengoshiMeiboData.zipCode)}">
+									<span>-</span>
+								</th:block>
+								<th:block th:if="${bengoshiMeiboData.existsAddress() || !#strings.isEmpty(bengoshiMeiboData.zipCode)}">
+									<div class="row_sub_data lh1" th:text="${#strings.isEmpty(bengoshiMeiboData.zipCode)? '' : '〒' + bengoshiMeiboData.zipCode}"></div>
+									<span th:text="${bengoshiMeiboData.address1}"></span>
+									<span th:text="${bengoshiMeiboData.address2}"></span>
+								</th:block>
+							</td>
+							<td class="cell_fixed_100 char_ellipsis" th:text="${#strings.isEmpty(bengoshiMeiboData.telNo)}? '-' : ${bengoshiMeiboData.telNo}">電話番号</td>
+							<td class="cell_fixed_150 char_ellipsis" th:text="${#strings.isEmpty(bengoshiMeiboData.mailAddress)}? '-' : ${bengoshiMeiboData.mailAddress}">メールアドレス</td>
+							<td class="cell_fixed_100" th:text="${#strings.isEmpty(bengoshiMeiboData.customerCreatedDate)}? '-' : ${bengoshiMeiboData.customerCreatedDate}"></td>
+							<td class="cell_fixed_150 char_ellipsis">
+								<span th:text="${#strings.isEmpty(bengoshiMeiboData.remarks)}? '-' : ${bengoshiMeiboData.remarks}"></span>
+							</td>
+						</tr>
+					</tbody>
+				</table>
+			</div>
+		</div>
+	</div>
+	<!--/* 【一覧】弁護士名簿 end */-->
+	
+	<!--/* 【ページング】フラグメント */-->
+	<div th:fragment="meiboListPagerFragment(page, cd)" id="meiboListPagerFragment">
+		<script type="text/javascript" th:inline="javascript">
+		<!--/* 共有の要素セットアップ処理 */-->
+		$(function(){
+			commonSetUpElement("#meiboListPagerFragment");
+		});
+
+		</script>
+	
+		<th:block th:object="${page}">
+			<div id="meiboListPager" class="list_footer_pager">
+				<div class="list_footer_pager__no"
+					th:insert="common/pagerAjax::pagerAjax(page=${page}, listFragmentId='meiboListPagerFragment', subParam=${cd})"></div>
+				<div class="list_footer_pager__data_cnt"
+					th:with="firstPageNumber=${page.getNumber()} * ${page.getSize()} + 1, lastPageNumber=${page.getNumber()} * ${page.getSize()} + ${page.getNumberOfElements()}">
+					<span th:if="${lastPageNumber} > 0" th:text="|(${firstPageNumber} - ${lastPageNumber}/${page.getTotalElements()})|"></span>
+				</div>
+			</div>
+		</th:block>
+	</div>
+	<!--/* 【ページング】フラグメント end */-->
+	
+	<!--/* 【すべて】と【ページング】のフラグメント */-->
+	<div th:fragment="allMeiboListAndPagerWraperFragment(allMeiboListViewForm)" id="allMeiboListAndPagerWraperFragment">
+		<!--/* 一覧結果 */-->
+		<div id="allMeiboListViewFragmentWrap"
+			th:insert="user/meiboList/meiboListFragment::allMeiboListFragment(${allMeiboListViewForm})"></div>
+		<!--/* ページング */-->
+		<div id="meiboListPagerWrap"
+			th:insert="user/meiboList/meiboListFragment::meiboListPagerFragment(${allMeiboListViewForm.allMeiboPage}, ${allMeiboListViewForm.SELECT_MEIBO_MENU})"></div>
+	</div>
+	
+	<!--/* 【顧客名簿】と【ページング】のフラグメント */-->
+	<div th:fragment="customerAllMeiboListAndPagerWraperFragment(customerAllMeiboListViewForm)" id="customerAllMeiboListAndPagerWraperFragment">
+		<!--/* 一覧結果 */-->
+		<div id="customerAllMeiboListFragmentWrap"
+			th:insert="user/meiboList/meiboListFragment::customerAllMeiboListFragment(${customerAllMeiboListViewForm})"></div>
+		<!--/* ページング */-->
+		<div id="meiboListPagerWrap"
+			th:insert="user/meiboList/meiboListFragment::meiboListPagerFragment(${customerAllMeiboListViewForm.customerAllMeiboPage}, ${customerAllMeiboListViewForm.SELECT_MEIBO_MENU})"></div>
+	</div>
+	
+	<!--/* 【顧客名簿 個人】と【ページング】のフラグメント */-->
+	<div th:fragment="customerKojinMeiboListAndPagerWraperFragment(customerKojinMeiboListViewForm)" id="customerKojinMeiboListAndPagerWraperFragment">
+		<!--/* 一覧結果 */-->
+		<div id="customerKojinMeiboListFragmentWrap"
+			th:insert="user/meiboList/meiboListFragment::customerKojinMeiboListFragment(${customerKojinMeiboListViewForm})"></div>
+		<!--/* ページング */-->
+		<div id="meiboListPagerWrap"
+			th:insert="user/meiboList/meiboListFragment::meiboListPagerFragment(${customerKojinMeiboListViewForm.customerKojinMeiboPage}, ${customerKojinMeiboListViewForm.SELECT_MEIBO_MENU})"></div>
+	</div>
+	
+	<!--/* 【顧客名簿 企業・団体】と【ページング】のフラグメント */-->
+	<div th:fragment="customerHojinMeiboListAndPagerWraperFragment(customerKojinMeiboListViewForm)" id="customerHojinMeiboListAndPagerWraperFragment">
+		<!--/* 一覧結果 */-->
+		<div id="customerHojinMeiboListFragmentWrap"
+			th:insert="user/meiboList/meiboListFragment::customerHojinMeiboListFragment(${customerHojinMeiboListViewForm})"></div>
+		<!--/* ページング */-->
+		<div id="meiboListPagerWrap"
+			th:insert="user/meiboList/meiboListFragment::meiboListPagerFragment(${customerHojinMeiboListViewForm.customerHojinMeiboPage}, ${customerHojinMeiboListViewForm.SELECT_MEIBO_MENU})"></div>
+	</div>
+	
+	<!--/* 【顧客名簿 顧問取引先】と【ページング】のフラグメント */-->
+	<div th:fragment="advisorMeiboListAndPagerWraperFragment(advisorMeiboListViewForm)" id="advisorMeiboListAndPagerWraperFragment">
+		<!--/* 一覧結果 */-->
+		<div id="advisorMeiboListFragmentWrap"
+			th:insert="user/meiboList/meiboListFragment::advisorMeiboListFragment(${advisorMeiboListViewForm})"></div>
+		<!--/* ページング */-->
+		<div id="meiboListPagerWrap"
+			th:insert="user/meiboList/meiboListFragment::meiboListPagerFragment(${advisorMeiboListViewForm.advisorMeiboPage}, ${advisorMeiboListViewForm.SELECT_MEIBO_MENU})"></div>
+	</div>
+	
+	<!--/* 【弁護士名簿】と【ページング】のフラグメント */-->
+	<div th:fragment="bengoshiMeiboListAndPagerWraperFragment(bengoshiMeiboListViewForm)" id="bengoshiMeiboListAndPagerWraperFragment">
+		<!--/* 一覧結果 */-->
+		<div id="bengoshiMeiboListFragmentWrap"
+			th:insert="user/meiboList/meiboListFragment::bengoshiMeiboListFragment(${bengoshiMeiboListViewForm})"></div>
+	
+		<!--/* ページング */-->
+		<div id="meiboListPagerWrap"
+			th:insert="user/meiboList/meiboListFragment::meiboListPagerFragment(${bengoshiMeiboListViewForm.bengoshiMeiboPage}, ${bengoshiMeiboListViewForm.SELECT_MEIBO_MENU})"></div>
+	</div>
+	
+</body>
+</html>

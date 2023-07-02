@@ -1,0 +1,331 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+	xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+	layout:decorator="commonLayout">
+<head>
+<meta charset="utf-8" />
+<title layout:fragment="title-contents">
+	[[${T(jp.loioz.common.utility.LoiozUtils).getHtmlTitle("未収入金一覧", T(jp.loioz.common.utility.SessionUtils).getTenantName())}]]
+</title>
+<style type="text/css" th:inline="css">
+table.table_normal {
+	width: 99.9%;
+	line-height: 1.2;
+	font-size: 1.3rem;
+	background: #ffffff;
+	margin: 0 auto;
+	color: var(--text-color-sub);
+	table-layout: fixed;
+}
+table.table_normal tbody {
+	border-left: none;
+	border-right: none;
+}
+table.table_normal th {
+	color: var(--white);
+	font-size: 1.2rem;
+	padding: 10px 5px 10px 10px;
+	text-align: left;
+}
+table.table_normal td {
+	border-bottom: 1px solid #c1c1c1;
+	border-left: none;
+	padding: 10px 5px 10px 10px;
+	text-align: left;
+	font-size: 1.4rem;
+}
+table.table_normal a {
+	font-weight: 600;
+}
+table.table_normal tr th:first-child {
+	border-radius: 4px 0 0 0;
+}
+table.table_normal tr th:last-child {
+	border-radius: 0 4px 0 0;
+}
+/* loiozブルー */
+table.table_normal.table_info th {
+	background-color: var(--loioz-blue);
+}
+
+.tbl_wrapper_azukarikin {
+	overflow-x: auto;
+	margin-bottom: 20px;
+}
+.tbl_azukarikin .col_id {
+	min-width: 50px;
+	max-width: 55px;
+}
+.tbl_azukarikin .col_customer_name {
+	width: 130px;
+	min-width: 130px;
+	max-width: 150px;
+}
+.tbl_azukarikin .col_bunya {
+	width: 80px;
+	max-width: 100px;
+}
+.tbl_azukarikin .col_anken_name {
+	width: 150px;
+	max-width: 180px;
+}
+.tbl_azukarikin .col_money {
+	width: 90px;
+	max-width: 95px;
+	padding-right: 15px;
+}
+.tbl_azukarikin .col_status {
+	width: 95px;
+	min-width: 95px;
+	max-width: 100px;
+}
+.tbl_azukarikin .col_tanto {
+	width: 85px;
+	max-width: 90px;
+}
+.tbl_azukarikin .col_date {
+	width: 80px;
+}
+/* IDラベル */
+.id_label {
+	padding: 3px 40px 0 6px;
+	width: 80px;
+}
+/* table_list のeven色 */
+.tbl_azukarikin > tbody > tr > td.even {
+	background-color: #f0fdff;
+}
+
+</style>
+
+<!--/* クリアボタン */-->
+<script type="text/javascript">
+$(function() {
+	$("#clearButton").on("click", function() {
+		<!--/* 検索条件をクリア */-->
+		$("#searchForm")
+			.find("input[type='text'], input[type='tel'], input[type='number']")
+			.val("")
+			.end()
+			.find("select:not(#pageSize) option:first-child, select#pageSize option:last-child")
+			.prop("selected", true)
+			.end()
+			.find("input[type='checkbox']")
+			.prop("checked", false);
+
+		<!--/* 絞り込みをすべてに戻す */-->
+		$('input[name=totalSearchType]:eq(0)').prop("checked", true);
+		<!--/* 選択済みの詳細検索をクリア */-->
+		$("#search-bunya option").prop("selected", false);
+		$("#search-ankenStatus option").prop("selected", false);
+		$("#search-salesOwner option").prop("selected", false);
+		$("#search-tantoBengoshi option").prop("selected", false);
+		$("#search-tantoJimu option").prop("selected", false);
+		// 各テキストボックスのクリアボタンを非表示
+		allClearBtnHidden();
+	});
+});
+</script>
+
+<!--/* 一覧出力処理 */-->
+<script type="text/javascript" th:inline="javascript">
+$(function(){
+	<!--/* 複数行対応 */-->
+	addEven();
+	<!--/* 一覧出力 */-->
+	$(document).on('click', '#azukarikinListOutPut', function() {
+		const postUrl = "/user/azukarikinManagement/excel/list";
+		const button = $(this);
+		let formData;
+		downloadFileAjax(postUrl, button,formData);
+	});
+
+	<!--/* 行hover */-->
+	$('.tbl_azukarikin > tbody > tr ').on({
+		'mouseenter' : function() {
+			let customerId = $(this).closest('.customerRow').data('customer-id-row');
+			$('.rowNo' + customerId).find('td').css('background-color', '#fffcde');
+		},
+		'mouseleave' : function(){
+			let customerId = $(this).closest('.customerRow').data('customer-id-row');
+			$('.rowNo' + customerId).find('td').css('background-color', '');
+		}
+	});
+
+});
+</script>
+<body class="bg2">
+	
+	<!--/* メインコンテンツ */-->
+	<div layout:fragment="main-contents">
+		<div class="wrapper">
+			<div class="block_content px-4 pt-4">
+				
+				<!-- メッセージ表示領域 -->
+				<div th:replace="common/messageArea::messageArea"></div>
+				
+				<div>
+				
+					<!-- 検索フォーム -->
+					<form id="searchForm" th:action="@{/user/azukarikinManagement/search}" method="get" th:object="${azukarikinSearchForm}" autocomplete="off" data-enter-sync="#searchButton">
+						<input type="hidden" id="detailSearchFlg" th:field="*{detailSearchFlg}">
+						<div class="searchform_wrapper">
+							<div class="searchform_block">
+								<h3 class="searchform_block_title">検索条件</h3>
+								<!--/* 検索条件部 */-->
+								<div class="searchform_block_main">
+
+									<!--/* 基本検索 */-->
+									<div class="row row_list border-top-0 align-items-start">
+										<div class="col-auto pr-4">
+											<label class="searchLabel">残高合計</label>
+											<div class="d-flex">
+												<label class="radio_btn" th:each=" enum : ${T(jp.loioz.app.user.azukarikinManagement.Enums.CustomerTotalSearchType).values()}">
+													<input type="radio" class="radio_input" th:field="*{totalSearchType}" th:value="${enum.cd}" th:data-checked="*{totalSearchType} == ${enum.cd}">
+													<span class="radio_txt" th:text="${enum.val}">すべて</span>
+												</label>
+											</div>
+											<div>
+												<label class="checkbox_btn">
+													<input type="checkbox" class="checkbox_input" th:field="*{excludeZero}">
+													<span class="checkbox_txt">0円を非表示</span>
+												</label>
+											</div>
+										</div>
+										<div class="col-auto pr-4">
+											<label >最終入金日</label>
+											<div class="d-flex align-items-center">
+												<input type="text" id="search-lastNyukinDtFrom" class="form-control digit7 inputDateSlash" th:field="*{lastNyukinDateFrom}" maxlength="10" data-click-sync="[data-target='#search-lastNyukinDtFrom']">
+												<button type="button" class="btn btn_popcal hidden" data-toggle="datepicker" data-target="#search-lastNyukinDtFrom">カレンダー</button>
+												<div class="mx-2 my-auto">~</div>
+												<input type="text" id="search-lastNyukinDtTo" class="form-control digit7 inputDateSlash" maxlength="10" th:field="*{lastNyukinDateTo}" data-click-sync="[data-target='#search-lastNyukinDtTo']">
+												<button type="button" class="btn btn_popcal hidden" data-toggle="datepicker" data-target="#search-lastNyukinDtTo">カレンダー</button>
+											</div>
+										</div>
+										<div class="col-auto pr-4">
+											<label for="search-ankenStatus" class="searchLabel">顧客ステータス</label>
+											<select multiple="multiple" class="form-control select_multiple" id="search-ankenStatus" th:field="*{ankenStatus}" size="3">
+												<option th:each="enum : ${T(jp.loioz.common.constant.CommonConstant$AnkenStatus).values()}" th:unless="${enum == T(jp.loioz.common.constant.CommonConstant$AnkenStatus).MENDAN_YOTEI}"
+												th:value="${enum.cd}" th:text="${enum.val}"></option>
+											</select>
+										</div>
+										<div class="col-auto pr-4">
+											<label for="search-salesOwner" class="searchLabel">売上計上先</label>
+											<select multiple="multiple" class="form-control select_multiple" id="search-salesOwner" th:field="*{salesOwnerSeq}" size="3">
+												<option th:each="salesOwnerUser : ${azukarikinViewForm.salesOwnerOptionList}"
+													th:value="${salesOwnerUser.value}" th:text="${salesOwnerUser.label}"></option>
+											</select>
+										</div>
+										<div class="col-auto pr-4">
+											<label for="search-tantoBengoshi" class="searchLabel">担当弁護士</label>
+											<select multiple="multiple" class="form-control select_multiple" id="search-tantoBengoshi" th:field="*{tantoLawyerSeq}" size="3">
+												<option th:each="bengoshiUser : ${azukarikinViewForm.tantoLawyerOptionList}"
+													th:value="${bengoshiUser.value}" th:text="${bengoshiUser.label}"></option>
+											</select>
+										</div>
+										<div class="col-auto pr-4">
+											<label for="search-tantoJimu" class="searchLabel">担当事務</label>
+											<select multiple="multiple" class="form-control select_multiple" id="search-tantoJimu" th:field="*{tantoJimuSeq}" size="3">
+												<option th:each="tantoJimuUser : ${azukarikinViewForm.tantoJimuOptionList}"
+													th:value="${tantoJimuUser.value}" th:text="${tantoJimuUser.label}"></option>
+											</select>
+										</div>
+									</div>
+									
+									<!-- コマンド -->
+									<div class="searchform_block_bottom mt-3">
+										<button id="searchBtn" type="submit" class="btn btn-dark" onclick="setDetailSearchOpen(); submit();"><i class="fas fa-search"></i>検索</button>
+										<button id="clearButton" type="button" class="btn btn-light">キャンセル</button>
+									</div>
+								</div>
+							</div>
+						</div>
+					</form>
+				</div>
+
+			<!-- 検索結果 -->
+			<th:block th:object="${azukarikinViewForm}" th:if="${azukarikinViewForm.OpenSearchArea}">
+				<div class="d-flex my-3">
+					<ul class="result_count">
+						<li class="result_count_kokyaku">顧客：<span th:text="*{customerCount}">100</span> 件</li>
+						<li class="result_count_anken">案件：<span th:text="*{ankenCount}">100</span> 件</li>
+					</ul>
+					<div class="ml-auto">
+						<button type="button" id="azukarikinListOutPut" class="btn btn-light">
+						<i class="fas fa-download text-primary mr-2"></i>
+						<i class="fas fa-spinner mr-3 text-primary faa-spin animated hidden"></i>一覧出力</button>
+					</div>
+				</div>
+				<div class="tbl_wrapper_azukarikin">
+					<table class="table_normal table_info tbl_azukarikin addEvenList">
+						<thead>
+							<tr>
+								<th class="col_id">名簿ID</th>
+								<th class="col_customer_name">顧客名</th>
+								<th class="col_money">残高合計</th>
+								<th class="col_id">案件ID</th>
+								<th class="col_bunya">分野</th>
+								<th class="col_anken_name">案件名</th>
+								<th class="col_status">顧客ステータス</th>
+								<th class="col_tanto">売上計上先</th>
+								<th class="col_tanto">担当弁護士</th>
+								<th class="col_tanto">担当事務</th>
+								<th class="col_money">案件別計</th>
+								<th class="col_money">入金計</th>
+								<th class="col_money">報酬計</th>
+								<th class="col_money">出金計</th>
+								<th class="col_date">受任日</th>
+								<th class="col_date">最終入金日</th>
+							</tr>
+						</thead>
+						<tbody>
+<!--/*/ 			<th:block th:if="*{rowData.size() == 0}"> /*/-->
+							<tr>
+								<td colspan="16" class="no_data"><span th:text="#{I00022}">MSG_I00022</span></td>
+							</tr>
+<!--/*/ 			</th:block> /*/-->
+<!--/*/ 		<th:block th:each="customer, stat : *{rowData}"> /*/-->
+<!--/*/ 			<th:block th:each="anken : ${customer.children}"> /*/-->
+							<tr th:class="|customerRow rowNo${customer.customerId.asLong()} azukariRow${stat.index} ${stat.odd ? 'odd' : stat.even ? 'even' : '' }|" th:data-customer-id-row="${customer.customerId.asLong()}">
+<!--/*/ 				<th:block th:if="${ankenStat.first}" th:object="${customer}"> /*/-->
+								<td th:rowspan="*{rowSize}" class="col_id" th:text="*{customerId.asLong()}">
+								</td>
+								<td th:rowspan="*{rowSize}" class="col_customer_name">
+									<div class="char_ellipsis">
+										<a th:href="@{/user/kaikeiManagement/list(transitionCustomerId=*{customerId.asLong()}, transitionAnkenId=null)}" th:text="*{customerName}"></a>
+									</div>
+								</td>
+								<td th:rowspan="*{rowSize}" class="text-right col_money" th:text="*{dispTotalCustomerKaikei}" th:classappend="*{isTotalCustomerMinus()} ? 'minus_money_text':'' " />
+<!--/*/					</th:block> /*/-->
+<!--/*/ 				<th:block th:object="${anken}"> /*/-->
+								<td th:rowspan="*{rowSize}" class="col_id" th:text="*{ankenId.asLong()}"/>
+								<td th:rowspan="*{rowSize}" class="col_bunya char_ellipsis" th:text="*{bunya.getVal()}"/>
+								<td th:rowspan="*{rowSize}" class="col_anken_name char_ellipsis">
+									<a th:href="@{/user/kaikeiManagement/list(transitionAnkenId=*{ankenId.asLong()}, transitionCustomerId=null)}" th:text="*{#strings.isEmpty(ankenName)} ? '(案件名未入力)' : *{ankenName}"></a>
+								</td>
+								<td th:rowspan="*{rowSize}" class="col_status" th:text="*{ankenStatus.getVal()}" />
+								<td th:rowspan="*{rowSize}" class="text-left col_tanto char_ellipsis" th:text="*{salesOwnerName}" data-toggle="tooltip" th:title="*{salesOwnerName}" />
+								<td th:rowspan="*{rowSize}" class="text-left col_tanto char_ellipsis" th:text="*{tantoLawyerName}" data-toggle="tooltip" th:title="*{tantoLawyerName}" />
+								<td th:rowspan="*{rowSize}" class="text-left col_tanto char_ellipsis" th:text="*{tantoZimuName}" data-toggle="tooltip" th:title="*{tantoZimuName}" />
+								<td th:rowspan="*{rowSize}" class="text-right col_money" th:text="*{dispTotalAnkenKaikei}" th:classappend="*{isTotalAnkenMinus()}? 'minus_money_text':_" />
+								<td th:rowspan="*{rowSize}" class="text-right col_money" th:text="*{dispTotalNyukin}" th:classappend="*{T( jp.loioz.common.utility.StringUtils).isMinusDicimalStr(dispTotalNyukin)}? 'minus_money_text':_"/>
+								<td th:rowspan="*{rowSize}" class="text-right col_money" th:text="*{dispHoshu}" th:classappend="*{T( jp.loioz.common.utility.StringUtils).isMinusDicimalStr(dispHoshu)}? 'minus_money_text':_" />
+								<td th:rowspan="*{rowSize}" class="text-right col_money" th:text="*{dispTotalShukkin}" th:classappend="*{T( jp.loioz.common.utility.StringUtils).isMinusDicimalStr(dispTotalShukkin)}? 'minus_money_text':_" />
+								<td th:rowspan="*{rowSize}" class="col_date" th:text ="*{#temporals.format(juninDate, 'yyyy/MM/dd')}" />
+								<td th:rowspan="*{rowSize}" class="col_date" th:text ="*{#temporals.format(lastNyukinDate, 'yyyy/MM/dd')}" />
+<!--/*/ 				</th:block> /*/-->
+								</tr>
+<!--/*/ 			</th:block> /*/-->
+<!--/*/ 		</th:block> /*/-->
+						</tbody>
+					</table>
+					<th:block th:if="*{page.hasPrevious() || page.hasNext()}">
+						<div th:replace="common/pager::pager(page=*{page}, url=@{/user/azukarikinManagement/pageList})"></div>
+					</th:block>
+				</div>
+<!--/*/ </th:block> /*/-->
+			</div>
+		</div>
+	</div>
+</body>
+</html>

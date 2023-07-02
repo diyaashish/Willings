@@ -1,0 +1,620 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+	xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+	layout:decorator="commonLayout">
+<head>
+	<meta charset="utf-8" />
+</head>
+<body>
+
+<!--/* 預り金管理 */-->
+<div th:fragment="depositRecvListSearchFragment(depositRecvListSearchForm)" id="depositRecvListSearchFragment" th:object="${depositRecvListSearchForm}">
+	<script type="text/javascript" th:inline="javascript">
+	$(function() {
+		
+		<!--/* 共有の要素セットアップ処理 */-->
+		commonSetUpElement("#depositRecvListSearchFragment");
+		
+		const depositRecvListSearchFragment = $('#depositRecvListSearchFragment');
+		
+		<!--/* フィルタクリック */-->
+		depositRecvListSearchFragment.on("click", ".filterBtn", function() {
+			<!--/* 検索条件表示／非表示フラグの設定と表示変更 */-->
+			const searchConditionOpen = $('#searchConditionOpen').val();
+			if (searchConditionOpen == "true") {
+				$('#searchConditionOpen').val(false);
+			} else {
+				$('#searchConditionOpen').val(true);
+			}
+			<!--/* パラメータ */-->
+			const formData = $('#depositRecvListSearchForm').serializeArray();
+			<!--/* 検索条件表示 */-->
+			renderDepositRecvSearchFormFragment(formData);
+		});
+		
+		<!--/* 検索条件クリア処理 */-->
+		depositRecvListSearchFragment.on("click", ".cliearBtn", function(e) {
+			<!--/* 検索条件クリア */-->
+			initDepositRecvSearchCondition();
+		});
+		
+		<!--/* テキスト検索 */-->
+		let searchText;
+		let inputText;
+		<!--/* テキストボックス内のクリア処理 */-->
+		depositRecvListSearchFragment.find('.add-clear-span > a').on('click', function() {
+			inputText = '';
+			
+			if ($(this).parent().find('.inputDate').length > 0) {
+				<!--/* 日付の入力項目（DatePickerの項目）の場合は、blurでの再検索は行わず、このケースではchangeイベントが発火せず再検索が行われないので、イベントを発火させる */-->
+				$(this).parent().find('.inputDate').change();
+			}
+		});
+		
+		<!--/* 入力項目削除で検索 */-->
+		depositRecvListSearchFragment.find('.filtersContainer input[type="text"]').on('blur', function() {
+			if ($(this).hasClass('inputDate')) {
+				<!--/* 日付の入力項目（DatePickerの項目）の場合は、blurでの再検索は行わない（changeイベント側で実行されるため） */-->
+				return;
+			}
+			
+			if (searchText !== inputText) {
+				searchFnUsingSearchCondition();
+			}
+		});
+		
+		<!--/* 検索ワードのEnterで検索 */-->
+		depositRecvListSearchFragment.find('input[type="search"]').on('keydown', function(e) {
+			if (e.keyCode == 13) {
+				searchText = $(this).val();
+				searchFnUsingSearchWord();
+			};
+			inputText = $(this).val();
+		});
+		
+		<!--/* 入力項目のEnterで検索 */-->
+		depositRecvListSearchFragment.find('.filtersContainer input[type="text"]').on('keydown', function(e) {
+			if (e.keyCode == 13) {
+				searchText = $(this).val();
+				searchFnUsingSearchCondition();
+			};
+			inputText = $(this).val();
+		});
+		
+		<!--/* 日付の変更で検索 */-->
+		depositRecvListSearchFragment.find('.filtersContainer .inputDate').on('change', function(e) {
+			searchFnUsingSearchCondition();
+		});
+		
+		<!--/* セレクトボックスの変更で検索 */-->
+		depositRecvListSearchFragment.find('.filtersContainer select').on('change', function(e) {
+			searchFnUsingSearchCondition();
+		});
+		
+		<!--/* ラジオボタンで検索 */-->
+		depositRecvListSearchFragment.find('.filtersContainer input:radio').on('change', function(e) {
+			searchFnUsingSearchCondition();
+		});
+		
+		<!--/* 検索ワードを使用した検索処理 */-->
+		function searchFnUsingSearchWord() {
+			const optionParam = depositRecvListSearchFragment.find('#depositRecvListSearchForm').serializeArray();
+			if (ajaxRunning) {
+				return false;
+			}
+			ajaxRunning = true;
+			Promise.resolve()
+				.then(() => searchDepositRecvListUsingSearchWord(optionParam))
+				<!--/* 検索処理時に検索条件のForm情報を変更するため、画面上の検索条件は使用せずセッションにあるものを使用する */-->
+				.then(() => renderDepositRecvSearchFormFragment())
+				.catch((errorObj) => console.log(errorObj))
+				.finally(() => ajaxRunning = false);
+		};
+		
+		<!--/* 検索条件を使用した検索処理 */-->
+		function searchFnUsingSearchCondition() {
+			const optionParam = depositRecvListSearchFragment.find('#depositRecvListSearchForm').serializeArray();
+			if (ajaxRunning) {
+				return false;
+			}
+			ajaxRunning = true;
+			Promise.resolve()
+				.then(() => searchDepositRecvListUsingSearchCondition(optionParam))
+				<!--/* 検索処理時に検索条件のForm情報を変更するため、画面上の検索条件は使用せずセッションにあるものを使用する */-->
+				.then(() => renderDepositRecvSearchFormFragment())
+				.catch((errorObj) => console.log(errorObj))
+				.finally(() => ajaxRunning = false);
+		};
+		<!--/* CSV出力 */-->
+		depositRecvListSearchFragment.on("click", ".csvOutput", function() {
+			<!--/* ダウンロード処理 */-->
+			downloadFeeListCsv($(this));
+		});
+		
+		<!--/* EXCEL出力 */-->
+		depositRecvListSearchFragment.on("click", ".excelOutput", function() {
+			<!--/* ダウンロード処理 */-->
+			downloadFeeListExcel($(this));
+		});
+		
+		<!--/* 報酬一覧CSV出力処理 */-->
+		function downloadFeeListCsv(buttonObj) {
+			
+			<!--/* ダウンロード処理 */-->
+			const url = "/user/depositRecvList/outputDepositRecvListCsv";
+			const button = buttonObj;
+			let formData = {};
+			downloadCsvFileAjax(url, button, formData);
+			
+			return false;
+		}
+		
+		<!--/* 報酬一覧EXCEL出力処理 */-->
+		function downloadFeeListExcel(buttonObj) {
+
+			<!--/* ダウンロード処理 */-->
+			const url = "/user/depositRecvList/outputDepositRecvListExcel";
+			const button = buttonObj;
+			let formData = {};
+			downloadFileAjax(url, button, formData);
+
+			return false;
+		}
+		
+	});
+	</script>
+	
+	<!--/* 検索条件 */-->
+	<form id="depositRecvListSearchForm" autocomplete="off">
+		<!--/* 検索条件の表示／非表示フラグ */-->
+		<input type="hidden" th:field="*{searchConditionOpen}">
+		
+		<!--/* 選択したメニュータイトル */-->
+		<div class="page_list_title_block">
+			<h1 class="page_list__name">預り金／実費管理</h1>
+			<div class="page_list__search_btn" th:with="searchConditionCount=*{getSearchConditionCount()}">
+				<input type="search" th:field="*{searchWord}" class="form-control digit20" placeholder="名前／案件名を検索..." autocomplete="off" maxlength="300">
+				<button type="button" class="btn btn-light filterBtn" th:classAppend="${searchConditionCount} > 0 ?  'filter_active' ">
+					<i class="fas fa-filter"></i>フィルタ
+					<span class="btn_inner_badge" th:classAppend="${searchConditionCount} > 0 ?  'badge_warning' "
+						th:text="${searchConditionCount}">1</span>
+				</button>
+				<div th:id="outPutContainer" class="d-inline-block stop-events outPutContainerClose" data-loading-target=".loadingTarget"
+					data-offset="-80,0" data-boundary="window" data-container="#depositRecvListSearchFragment" data-toggle="popover" data-placement="bottom" data-html="true" th:data-content=
+					'|<ul class="output_nav_list">
+							<li class="title_block">預り金／実費管理出力</li>
+							<li><button class="btn btn-light excelOutput" data-target="#outPutContainer"><i class="fas fa-download text-primary mr-3"></i><i class="fas fa-spinner mr-3 text-primary faa-spin animated hidden"></i>Excel形式で出力する</button></li>
+							<li><button class="btn btn-light csvOutput" data-target="#outPutContainer"><i class="fas fa-download text-primary mr-3"></i><i class="fas fa-spinner mr-3 text-primary faa-spin animated hidden"></i>CSV形式で出力する</button></li>
+					</ul>|'>
+					<button type="button" class="btn btn-light config"><i class="fas fa-ellipsis-h mr-0"></i></button>
+				</div>
+			</div>
+		</div>
+		
+		<!--/* 検索条件 */-->
+		<div class="list_filters_container filtersContainer" th:classappend="*{SearchConditionOpen ? '' : 'hidden'}">
+			<fieldset>
+				<div class="list_filters_header">
+					<div class="filters_title">検索条件</div>
+					<div class="filters_action">
+						<a href="javascript:void(0);" class="filters_action__clear cliearBtn">検索条件をクリア</a>
+						<a href="javascript:void(0);" class="filters_action__close filterBtn"><i class="fas fa-times"></i></a>
+					</div>
+				</div>
+				<div class="form-row">
+					<!--/* 名簿ID */-->
+					<div class="form-group col-md-auto">
+						<label class="input_parts_label">名簿ID</label>
+						<input type="text" class="form-control digit6 inputNumberOnly fcAddTextClear" th:field="*{personId}" maxlength="10">
+					</div>
+					<!--/* 名前 */-->
+					<div class="form-group col-md-auto">
+						<label class="input_parts_label">名前</label>
+						<input type="text" class="form-control digit13 fcAddTextClear" th:field="*{personName}" placeholder="" maxlength="300">
+					</div>
+					<!--/* 分野 */-->
+					<div class="form-group col-md-auto">
+						<label class="input_parts_label">分野</label>
+						<select class="form-control digit8 changeBunya" th:field="*{bunyaId}">
+							<option value="">-</option>
+							<option th:each="bunyaDto : *{bunyaList}"
+								th:value="${bunyaDto.cd}" th:text="${bunyaDto.val}">
+							</option>
+						</select>
+					</div>
+					<!--/* 案件名 */-->
+					<div class="form-group col-md-auto">
+						<label class="input_parts_label">案件名</label>
+						<input type="text" class="form-control digit19 fcAddTextClear" th:field="*{ankenName}" placeholder="" maxlength="300">
+					</div>
+					<!--/* 売上計上先 */-->
+					<div class="form-group col-md-auto">
+						<label class="input_parts_label">売上計上先</label>
+						<select class="form-control digit9" th:field="*{salesOwner}">
+							<option value="">-</option>
+							<option th:each="owner : *{salesOwnerList}" th:value="${owner.value}"
+								th:text="${owner.label}" th:selected="${owner.value} == *{salesOwner}">
+							</option>
+						</select>
+					</div>
+					<!--/* 担当弁護士 */-->
+					<div class="form-group col-md-auto">
+						<label class="input_parts_label">担当弁護士</label>
+						<select class="form-control digit8 changeTantoLawyer" th:field="*{tantoLaywer}">
+							<option value="">-</option>
+							<option th:each="lawyer : *{tantoLawyerList}" th:value="${lawyer.value}"
+								th:text="${lawyer.label}" th:selected="${lawyer.value} == *{tantoLaywer}">
+							</option>
+						</select>
+					</div>
+					<!--/* 担当事務 */-->
+					<div class="form-group col-md-auto">
+						<label class="input_parts_label">担当事務</label>
+						<select class="form-control digit8 changeTantoJimu" th:field="*{tantoJimu}">
+							<option value="">-</option>
+							<option th:each="jimu : *{tantoJimuList}" th:value="${jimu.value}"
+								th:text="${jimu.label}" th:selected="${jimu.value} == *{tantoJimu}">
+							</option>
+						</select>
+					</div>
+				</div>
+				<div class="form-row">
+					<!--/* ステータス */-->
+					<div class="form-group col-md-auto">
+						<label class="input_parts_label">ステータス</label>
+						<div>
+							<label class="radio_btn_select">
+								<input type="radio" class="radio_btn_input" th:value="${T(jp.loioz.common.constant.CommonConstant).ANKEN_STATUS_ALL_CD}"
+									th:field="*{ankenStatus}">
+								<span class="radio_btn_txt">すべて</span>
+							</label>
+							<label class="radio_btn_select">
+								<input type="radio" class="radio_btn_input" th:value="${T(jp.loioz.common.constant.CommonConstant$AnkenStatus).SODAN.getCd()}"
+									th:field="*{ankenStatus}">
+								<span class="radio_btn_txt">相談中</span>
+							</label>
+							<label class="radio_btn_select">
+								<input type="radio" class="radio_btn_input" th:value="${T(jp.loioz.common.constant.CommonConstant$AnkenStatus).SHINKOCHU.getCd()}"
+									th:field="*{ankenStatus}">
+								<span class="radio_btn_txt">進行中</span>
+							</label>
+							<label class="radio_btn_select">
+								<input type="radio" class="radio_btn_input" th:value="${T(jp.loioz.common.constant.CommonConstant$AnkenStatus).SEISAN_MACHI.getCd()}"
+									th:field="*{ankenStatus}">
+								<span class="radio_btn_txt">精算待ち</span>
+							</label>
+							<label class="radio_btn_select">
+								<input type="radio" class="radio_btn_input" th:value="${T(jp.loioz.common.constant.CommonConstant$AnkenStatus).KANRYO_MACHI.getCd()}"
+									th:field="*{ankenStatus}">
+								<span class="radio_btn_txt">完了待ち</span>
+							</label>
+							<label class="radio_btn_select">
+								<input type="radio" class="radio_btn_input" th:value="${T(jp.loioz.common.constant.CommonConstant$AnkenStatus).KANRYO.getCd()}"
+									th:field="*{ankenStatus}">
+								<span class="radio_btn_txt">完了</span>
+							</label>
+							<label class="radio_btn_select">
+								<input type="radio" class="radio_btn_input" th:value="${T(jp.loioz.common.constant.CommonConstant$AnkenStatus).FUJUNIN.getCd()}"
+									th:field="*{ankenStatus}">
+								<span class="radio_btn_txt">不受任</span>
+							</label>
+							<label class="radio_btn_select">
+								<input type="radio" class="radio_btn_input" th:value="${T(jp.loioz.common.constant.CommonConstant).ANKEN_STATUS_INCOMPLETE_CD}"
+									th:field="*{ankenStatus}">
+								<span class="radio_btn_txt">完了、不受任以外</span>
+							</label>
+						</div>
+					</div>
+					<!--/* 預り金残高合計 */-->
+					<div class="form-group col-md-auto">
+						<label class="input_parts_label">預り金残高合計</label>
+						<div>
+							<label class="radio_btn_select">
+								<input type="radio" class="radio_btn_input" th:value="${T(jp.loioz.common.constant.CommonConstant$TotalDepositBalance).All.getCd()}"
+									th:field="*{totalDepositBalance}">
+								<span class="radio_btn_txt">すべて</span>
+							</label>
+							<label class="radio_btn_select">
+								<input type="radio" class="radio_btn_input" th:value="${T(jp.loioz.common.constant.CommonConstant$TotalDepositBalance).PLUS_ONLY.getCd()}"
+									th:field="*{totalDepositBalance}">
+								<span class="radio_btn_txt">プラスのみ</span>
+							</label>
+							<label class="radio_btn_select">
+								<input type="radio" class="radio_btn_input" th:value="${T(jp.loioz.common.constant.CommonConstant$TotalDepositBalance).MINUS_ONLY.getCd()}"
+									th:field="*{totalDepositBalance}">
+								<span class="radio_btn_txt">マイナスのみ</span>
+							</label>
+						</div>
+					</div>
+				</div>
+			</fieldset>
+		</div>
+		<!--/* 検索条件 end */-->
+	</form>
+</div>
+<!--/* 【検索条件】 end */-->
+
+<!--/* 一覧データ */-->
+<div th:fragment="depositRecvListFragment(depositRecvListViewForm)" id="depositRecvListFragment" th:object="${viewForm}">
+	<script type="text/javascript" th:inline="javascript">
+	$(function() {
+		<!--/* 共有の要素セットアップ処理 */-->
+		commonSetUpElement("#depositRecvListFragment");
+		
+		const depositRecvListFragment = $('#depositRecvListFragment');
+		
+		<!--/* ソート処理 */-->
+		depositRecvListFragment.find('.depositRecvListSort').on('click', function() {
+			const asc = /*[[${T(jp.loioz.common.constant.SortConstant$SortOrder).ASC.getCd()}]]*/'';
+			const desc = /*[[${T(jp.loioz.common.constant.SortConstant$SortOrder).DESC.getCd()}]]*/'';
+
+			const currentSortItem = /*[[${depositRecvListSearchForm.depositRecvListSortItem}]]*/'';
+			const currentSortOrder = /*[[${depositRecvListSearchForm.depositRecvListSortOrder}]]*/'';
+			let optionParam = [];
+			
+			const sortKey = $(this).data('sortKey');
+			if (sortKey != currentSortItem) {
+				optionParam = [
+					{name:"depositRecvListSortItem", value:sortKey},
+					{name:"depositRecvListSortOrder", value:desc},
+				];
+			} else {
+				if (currentSortOrder === asc) {
+					optionParam = [
+						{name:"depositRecvListSortOrder", value:desc},
+					];
+				} 
+				
+				if (currentSortOrder === desc) {
+					optionParam = [
+						{name:"depositRecvListSortOrder", value:asc},
+					]
+				} 
+			}
+			
+			if (ajaxRunning) {
+				return false;
+			}
+			ajaxRunning = true;
+			Promise.resolve()
+				.then(() => sortDepositRecvList(optionParam))
+				.catch((errorObj) => console.log(errorObj))
+				.finally(() => ajaxRunning = false);
+		});
+		
+		<!--/* 預り金一覧行をクリック */-->
+		depositRecvListFragment.on("click", ".transitionDepositRecvDetail", function(e){
+			e.stopPropagation();
+			const ankenId = $(this).data('ankenId');
+			const personId = $(this).data('personId');
+			<!--/* 預り金明細画面へ遷移 */-->
+			window.location.href = "/user/depositRecvDetail/" + personId + "/" + ankenId + "/";
+		});
+		
+		<!--/* 名簿IDリンクをクリック */-->
+		depositRecvListFragment.on("click", ".transitionPerson", function(e){
+			e.stopPropagation();
+			const personId = $(this).data('personId');
+			const url = /*[[@{/user/personManagement/edit/}]]*/'';
+			<!--/* 名簿情報画面へ遷移 */-->
+			window.location.href = url + personId + '/';
+		});
+		
+		<!--/* 案件IDリンクをクリック */-->
+		depositRecvListFragment.on("click", ".transitionCase", function(e){
+			e.stopPropagation();
+			const caseId = $(this).data('ankenId');
+			const url = /*[[@{/user/ankenManagement/edit/}]]*/'';
+			<!--/* 案件情報画面へ遷移 */-->
+			window.location.href = url + caseId + '/';
+		});
+
+	});
+	</script>
+	
+	<!--/* 一覧エリア */-->
+	<div id="depositRecvList">
+		<div class="header_fixed_table_wrapper table_common_list">
+			<!--/* 一覧データ */-->
+			<table class="table table_standard table_nowrap table-hover deposit_recv_list row_two_td">
+				<thead>
+					<tr>
+						<th class="th_person_id sort_column depositRecvListSort"
+							th:with="sortItem=${(T(jp.loioz.common.constant.SortConstant$DepositRecvListSortItem).PERSON_ID)}"
+							th:data-sort-key="${sortItem.getCd()}">
+							<div class="ws_nowarp">
+								名簿ID
+								<th:block th:if="${sortItem == depositRecvListSearchForm.depositRecvListSortItem}" th:fragment="depositRecvListColumn">
+									<th:block th:if="${depositRecvListSearchForm.depositRecvListSortOrder == T(jp.loioz.common.constant.SortConstant$SortOrder).ASC}">
+										<i class="fas fa-chevron-up"></i>
+									</th:block>
+									<th:block th:if="${depositRecvListSearchForm.depositRecvListSortOrder == T(jp.loioz.common.constant.SortConstant$SortOrder).DESC}">
+										<i class="fas fa-chevron-down"></i>
+									</th:block>
+								</th:block>
+							</div>
+						</th>
+						<th class="th_person_name sort_column depositRecvListSort"
+							th:with="sortItem=${(T(jp.loioz.common.constant.SortConstant$DepositRecvListSortItem).PERSON_NAME)}"
+							th:data-sort-key="${sortItem.getCd()}">
+							名前
+							<th:block th:replace="::depositRecvListColumn"></th:block>
+						</th>
+						<th class="th_case_id sort_column depositRecvListSort"
+							th:with="sortItem=${(T(jp.loioz.common.constant.SortConstant$DepositRecvListSortItem).ANKEN_ID)}"
+							th:data-sort-key="${sortItem.getCd()}">
+							<div class="ws_nowarp">
+								案件ID<th:block th:replace="::depositRecvListColumn">
+							</div>
+						</th>
+						<th class="th_bunya sort_column depositRecvListSort"
+							th:with="sortItem=${(T(jp.loioz.common.constant.SortConstant$DepositRecvListSortItem).BUNYA_ID)}"
+							th:data-sort-key="${sortItem.getCd()}">
+							<div class="ws_nowarp">
+								分野<th:block th:replace="::depositRecvListColumn">
+							</div>
+						</th>
+						<th class="th_case_name sort_column depositRecvListSort"
+							th:with="sortItem=${(T(jp.loioz.common.constant.SortConstant$DepositRecvListSortItem).ANKEN_NAME)}"
+							th:data-sort-key="${sortItem.getCd()}">
+							<div class="ws_nowarp">
+								案件名<th:block th:replace="::depositRecvListColumn"></th:block>
+							</div>
+						</th>
+						<th class="th_case_status sort_column depositRecvListSort"
+							th:with="sortItem=${(T(jp.loioz.common.constant.SortConstant$DepositRecvListSortItem).ANKEN_STATUS)}"
+							th:data-sort-key="${sortItem.getCd()}">
+							<div class="ws_nowarp">
+								ステータス<th:block th:replace="::depositRecvListColumn"></th:block>
+							</div>
+						</th>
+						<th class="th_deposit sort_column text-right depositRecvListSort"
+							th:with="sortItem=${(T(jp.loioz.common.constant.SortConstant$DepositRecvListSortItem).DEPOSIT_AMOUNT)}"
+							th:data-sort-key="${sortItem.getCd()}">
+							<div class="ws_nowarp d-flex align-items-center justify-content-end">
+								入金額
+								<div class="mnw15" th:insert="::depositRecvListColumn"></div>
+							</div>
+						</th>
+						<th class="th_withdrawal sort_column text-right depositRecvListSort"
+							th:with="sortItem=${(T(jp.loioz.common.constant.SortConstant$DepositRecvListSortItem).WITHDRAWAL_AMOUNT)}"
+							th:data-sort-key="${sortItem.getCd()}">
+							<div class="ws_nowarp d-flex align-items-center justify-content-end">
+								出金額
+								<div class="mnw15" th:insert="::depositRecvListColumn"></div>
+							</div>
+						</th>
+						<th class="th_balance sort_column text-right depositRecvListSort"
+							th:with="sortItem=${(T(jp.loioz.common.constant.SortConstant$DepositRecvListSortItem).DEPOSIT_BALANCE)}"
+							th:data-sort-key="${sortItem.getCd()}">
+							<div class="ws_nowarp d-flex align-items-center justify-content-end">
+								預り金残高
+								<div class="mnw15" th:insert="::depositRecvListColumn"></div>
+							</div>
+						</th>
+						<th class="th_tanto_laywer">担当弁護士</th>
+						<th class="th_tanto_jimu">担当事務</th>
+						<th class="th_last_edit_at sort_column depositRecvListSort"
+							th:with="sortItem=${(T(jp.loioz.common.constant.SortConstant$DepositRecvListSortItem).LAST_EDIT_AT)}"
+							th:data-sort-key="${sortItem.getCd()}">
+							<div class="ws_nowarp">
+								最終更新日時<th:block th:replace="::depositRecvListColumn"></th:block>
+							</div>
+						</th>
+					</tr>
+				</thead>
+				<tbody>
+	<th:block th:if="*{depositRecvList.size() == 0}">
+					<tr>
+						<td colspan="12" class="no_data"><span th:text="#{I00044('預り金／実費情報')}">該当する預り金／実費情報は見つかりませんでした。</span></td>
+					</tr>
+	</th:block>
+					<tr th:each="depositRecvData : ${depositRecvListViewForm.depositRecvList}" data-click-sync-for-descendants=".transitionDepositRecvDetail">
+						<td class="stop-events" th:data-person-id="${depositRecvData.personId}">
+							<!--/* 名簿ID */-->
+							<a href="javascript:void(0);" class="transitionDepositRecvDetail hidden"
+								th:data-anken-id="${depositRecvData.ankenId}" th:data-person-id="${depositRecvData.personId}"></a>
+							<a href="javascript:void(0);" class="transitionPerson main_id" th:data-person-id="${depositRecvData.personId}"
+								data-boundary="window" data-container="body" data-toggle="tooltip" data-trigger="hover" title="名簿情報へ"
+								th:text="${depositRecvData.personId}">1000</a>
+						</td>
+						<td>
+							<!--/* 名前 */-->
+							<div class="char_ellipsis mxw150">
+								<span th:text="${depositRecvData.name}"></span>
+							</div>
+						</td>
+						<td class="stop-events">
+							<!--/* 案件IDリンク */-->
+							<a href="javascript:void(0);" class="transitionCase main_id" th:data-anken-id="${depositRecvData.ankenId}"
+								data-boundary="window" data-container="body" data-toggle="tooltip" data-trigger="hover" title="案件情報へ"
+								th:text="${depositRecvData.ankenId}">1000</a>
+						</td>
+						<td>
+							<!--/* 分野 */-->
+							<div class="char_ellipsis mxw150">
+								<span th:text="${depositRecvData.bunyaName}"></span>
+							</div>
+						</td>
+						<td>
+							<!--/* 案件名 */-->
+							<div class="char_ellipsis mxw200">
+								<span th:text="${#strings.isEmpty(depositRecvData.ankenName)} ? '(案件名未入力)' : ${depositRecvData.ankenName}"></span>
+							</div>
+						</td>
+						<td>
+							<!--/* ステータス */-->
+							<i th:class="|fas fa-circle fa-xs anken_status_${depositRecvData.getAnkenStatus()}|"></i>
+							<span th:text="${#strings.isEmpty(depositRecvData.getAnkenStatusName())} ? '-' : ${depositRecvData.getAnkenStatusName()}">進行中</span>
+						</td>
+						<td class="text-right">
+							<!--/* 入金合計 */-->
+							<span class="fs15" th:text="${#numbers.formatInteger(depositRecvData.nyukinTotal, 1, 'COMMA')}"></span>
+						</td>
+						<td class=" text-right">
+							<!--/* 出金合計 */-->
+							<span class="fs15" th:text="${#numbers.formatInteger(depositRecvData.shukkinTotal, 1, 'COMMA')}"></span>
+						</td>
+						<td class=" text-right">
+							<!--/* 残高合計 */-->
+							<!--/* マイナスを赤字にする */-->
+							<span class="fs15" th:text="${#numbers.formatInteger(depositRecvData.zandakaTotal, 1, 'COMMA')}"
+								th:classAppend="${depositRecvData.zandakaTotal} < 0 ? 'text-danger' : '' "></span>
+						</td>
+						<!--/* 担当弁護士 */-->
+						<td class="cell_fixed_100 char_ellipsis" data-boundary="window" data-container="body" data-toggle="tooltip" data-trigger="hover"
+								th:title="${#strings.isEmpty(depositRecvData.tantoLaywerName)} ? '' : ${depositRecvData.tantoLaywerName}"
+								th:text="${#strings.isEmpty(depositRecvData.tantoLaywerName)} ? '-' : ${depositRecvData.tantoLaywerName}">
+						</td>
+						<!--/* 担当事務 */-->
+						<td class="cell_fixed_100 char_ellipsis" data-boundary="window" data-container="body" data-toggle="tooltip" data-trigger="hover"
+								th:title="${#strings.isEmpty(depositRecvData.tantoJimuName)} ? '' : ${depositRecvData.tantoJimuName}"
+								th:text="${#strings.isEmpty(depositRecvData.tantoJimuName)} ? '-' : ${depositRecvData.tantoJimuName}">
+						</td>
+						<td class="">
+							<span th:text="${#strings.isEmpty(depositRecvData.getLastEditAtFormat())} ? '-' : ${depositRecvData.getLastEditAtFormat()}"></span>
+						</td>
+					</tr>
+				</tbody>
+			</table>
+		</div>
+	</div>
+	
+</div>
+<!--/* 一覧エリア end */-->
+
+<!--/* ページングフラグメント */-->
+<div th:fragment="depositRecvListPagerFragment(page)" id="depositRecvListPagerFragment">
+	
+	<!--/* スクリプト */-->
+	<script th:inline="javascript">
+	$(function(){
+		<!--/* 共有の要素セットアップ処理 */-->
+		commonSetUpElement("#depositRecvListPagerFragment");
+	});
+	</script>
+	
+	<div id="depositRecvListPager" class="list_footer_pager" th:object="${page}">
+		<th:block th:if="${page}">
+			<div  class="list_footer_pager__no" th:insert="common/pagerAjax::pagerAjax(page=${page}, listFragmentId='depositRecvListPagerFragment')"></div>
+			<div class="list_footer_pager__data_cnt" th:with="firstPageNumber=${page.getNumber()} * ${page.getSize()} + 1, lastPageNumber=${page.getNumber()} * ${page.getSize()} + ${page.getNumberOfElements()}">
+				<span th:if="${lastPageNumber} > 0" th:text="|(${firstPageNumber} - ${lastPageNumber}/${page.getTotalElements()})|"></span>
+			</div>
+		</th:block>
+	</div>
+	
+</div>
+<!--/* ページングフラグメント end */-->
+
+<!--/* 一覧フッターのフラグメント */-->
+<div th:fragment="depositRecvListAndPagerWraperFragment(viewForm)" id="depositRecvListAndPagerWraperFragment">
+	<!--/* 一覧結果 */-->
+	<div id="depositRecvListViewFragmentWrap"
+		th:insert="user/depositRecvList/depositRecvListFragment::depositRecvListFragment(${viewForm})"></div>
+	<!--/* ページング */-->
+	<div id="depositRecvListPagerWrap"
+		th:insert="user/depositRecvList/depositRecvListFragment::depositRecvListPagerFragment(${viewForm.page})"></div>
+</div>
+	
+</body>
+</html>

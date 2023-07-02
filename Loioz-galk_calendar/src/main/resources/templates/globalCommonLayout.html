@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout">
+<head>
+<meta charset="utf-8" name="viewport" content="width=device-width,initial-scale=1">
+<meta content="IE=edge" http-equiv="X-UA-Compatible">
+<meta name="robots" content="noindex,nofollow">
+<title>loioz</title>
+<th:block th:with="version=${@environment.getProperty('app.version')}">
+	<link th:href="@{/css/bootstrap.min.css?{ver}(ver=${version})}" rel="stylesheet" type="text/css"/><!--/* ファイル内のmapファイルの参照処理の削除を反映させるためにversionを追加 */-->
+	<link th:href="@{/css/bootstrap-overwrite.css?{ver}(ver=${version})}" rel="stylesheet" type="text/css"/>
+	<link th:href="@{/css/base.css?{ver}(ver=${version})}" rel="stylesheet" type="text/css"/>
+	<link th:href="@{/css/global.css?{ver}(ver=${version})}" rel="stylesheet" type="text/css"/>
+	<script type="text/javascript" th:src="@{/webjars/jquery/3.3.1/jquery.min.js}"></script>
+	<script type="text/javascript" th:src="@{/js/addclear.js}"></script>
+	<script type="text/javascript" th:src="@{/js/jquery-ui-1.12.1.min.js}"></script>
+	<script type="text/javascript" th:src="@{/js/popper.min.js?{ver}(ver=${version})}"></script><!--/* ファイル内のmapファイルの参照処理の削除を反映させるためにversionを追加 */-->
+	<script type="text/javascript" th:src="@{/js/popper-utils.min.js?{ver}(ver=${version})}"></script><!--/* ファイル内のmapファイルの参照処理の削除を反映させるためにversionを追加 */-->
+	<script type="text/javascript" th:src="@{/js/fontawesome-5.15.2-all.min.js}"></script>
+	<script type="text/javascript" th:src="@{/js/bootstrap.min.js?{ver}(ver=${version})}"></script><!--/* ファイル内のmapファイルの参照処理の削除を反映させるためにversionを追加 */-->
+	<script type="text/javascript" th:src="@{/js/common.js?{ver}(ver=${version})}"></script>
+	<script type="text/javascript" th:src="@{/js/navigation.js?{ver}(ver=${version})}"></script>
+	<script type="text/javascript" th:src="@{/js/jquery.autoKana.js}"></script>
+</th:block>
+
+<script type="text/javascript" th:inline="javascript">
+<!--/* Ajax通信時のCSRFトークン設定 */-->
+$(function() {
+	let token = /*[[(${_csrf.token})]]*/ "";
+	let headerName = /*[[(${_csrf.headerName})]]*/ "";
+	$(document).ajaxSend(function(e, xhr, options) {
+		xhr.setRequestHeader(headerName, token);
+	});
+});
+
+<!--/* Ajax通信の処理結果が成功かどうかを判定する */-->
+function isAjaxProcSuccess(jqXHR) {
+	<!--/* Controllerで設定しているvalueと同じ値 */-->
+	const RESPONSE_HEADER_VALUE_OF_AJAX_PROC_RESULT_SUCCESS = /*[[${T(jp.loioz.common.constant.CommonConstant).HEADER_VALUE_OF_AJAX_PROC_RESULT_SUCCESS}]]*/
+	
+	const ajaxResult = getAjaxProcResutl(jqXHR)
+	if (ajaxResult === RESPONSE_HEADER_VALUE_OF_AJAX_PROC_RESULT_SUCCESS) {
+		return true
+	}
+	return false
+}
+<!--/* Ajax通信の処理結果情報をレスポンスヘッダーから取得する */-->
+<!--/* （レスポンスヘッダーの値に独自の値を設定していない限りは、この関数は利用せず、function isAjaxProcSuccess(jqXHR)の関数を利用すること） */-->
+function getAjaxProcResutl(jqXHR) {
+	<!--/* Controllerで設定しているkey名と同じ値 */-->
+	const RESPONSE_HEADER_NAME_OF_AJAX_PROC_RESULT = /*[[${T(jp.loioz.common.constant.CommonConstant).HEADER_NAME_OF_AJAX_PROC_RESULT}]]*/
+	return jqXHR.getResponseHeader(RESPONSE_HEADER_NAME_OF_AJAX_PROC_RESULT)
+}
+<!--/* Ajax通信の処理結果メッセージをレスポンスヘッダーから取得する */-->
+function getAjaxProcResutlMessage(jqXHR) {
+	<!--/* Controllerで設定しているkey名と同じ値 */-->
+	const RESPONSE_HEADER_NAME_OF_AJAX_PROC_RESULT_MESSAGE = /*[[${T(jp.loioz.common.constant.CommonConstant).HEADER_NAME_OF_AJAX_PROC_RESULT_MESSAGE}]]*/
+	const base64Message = jqXHR.getResponseHeader(RESPONSE_HEADER_NAME_OF_AJAX_PROC_RESULT_MESSAGE)
+	// Base64文字をデコードして返却
+	return b64DecodeUnicode(base64Message)
+}
+
+</script>
+
+</head>
+<body>
+	<!--/* ヘッダー */-->
+	<header layout:fragment="headerContainerFragment"></header>
+	<!--/* ヘッダー */-->
+
+	<!--/* メイン */-->
+	<main layout:fragment="mainContainerFragment"></main>
+	<!--/* メイン */-->
+	
+</body>
+</html>

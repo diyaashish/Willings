@@ -1,0 +1,305 @@
+ <!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+<meta charset="utf-8" />
+</head>
+<body>
+	<!--/* 
+		【名簿ポップオーバーの利用方法】
+
+			■ステップ１：
+				・以下のスクリプト/CSSを表示させたい画面の親HTMLに埋め込む
+					<script type="text/javascript" th:replace="common/mvc/person/popover/personPopover::personInfoPopoverJs"></script>
+					<style type="text/css" th:replace="common/mvc/person/popover/personPopover::personInfoPopoverStyle"></style>
+			
+			■ステップ２：
+				・子フラグメントのレンダリング時に、以下の関数を呼び出す
+					benzo.global.fragment.setUpPersonPopover(@Nonnull targetObj, JsonObj popoverOptions);
+				
+				▼ 引数について
+					targetObj：
+						ポップオーバーをアタッチしたいセレクタ要素.
+						ルールとして、該当のセレクタには「data-person-id」のプロパティが必須
+						
+					popoverOptions：
+						bootstrapのポップオーバーのオプションJson型.
+						指定したパラメータが有効であれば、そちらが最上位となる
+						引数に指定しない場合は、関数内で定義したdefault値が適応される。
+						※ オブジェクトごとに個別に指定したい場合は、targetObjのdata-〇〇に指定すると個別に指定することが可能（優先順位は最下位）
+					
+					Bootstrap4.1.3 Popovers Doc
+					https://getbootstrap.jp/docs/4.1/components/popovers/
+
+			■例
+				・スクリプト
+				benzo.global.fragment.setUpPersonPopover(".customerIdLabel");
+				
+				・ターゲットオブジェクト
+				<a class="customerIdLabel"  data-container="#〇〇Fragment"
+					th:data-person-id="1" href="javascript:void(0);">
+					名簿ID：１
+				</a>
+	 */-->
+	<th:block>
+		<style type="text/css" th:fragment="personInfoPopoverStyle">
+		.zindex_unset {
+			z-index: auto!important;
+		}
+		.person_detail_popover {
+			max-width: 380px;
+		}
+		.person_detail_popover .person_body {
+			width: 380px;
+			padding: 0;
+		}
+		</style>
+		<script type="text/javascript" th:fragment="personInfoPopoverJs" th:inline="javascript">
+			benzo.global.fragment.setUpPersonPopover = (targetObj, popoverOptions) => {
+				
+				let ajaxRunning = false;
+				
+				<!--/* デフォルトオプション */-->
+				const defPoperOption = {
+						html: true,
+						trigger: "manual",
+						placement: "bottom",
+						template: '<div class="popover person_detail_popover" role="tooltip"><div class="popover-body person_body"></div></div>',
+						content: () => {}, <!--/* HTMLの取得結果を格納する。*/-->
+				};
+				
+				let margedOptions = Object.assign(defPoperOption, popoverOptions);
+				$(targetObj).on("click.personPopover", function() {
+					if (ajaxRunning) {
+						return false;
+					}
+					const personId = $(this).data("personId");
+					ajaxRunning = true;
+					Promise.resolve()
+						.then(() => _getPoperContents(personId))
+						.then((result) => {
+							margedOptions["content"] = result;
+							_build($(this), margedOptions);
+						})
+						.catch((errorObj) => console.log(errorObj))
+						.finally(() => ajaxRunning = false);
+				});
+				
+				function _getPoperContents(personId) {
+					return new Promise((resolve, reject) => {
+						$.ajax({
+							type : "GET",
+							url : /*[[@{/common/mvc/person/popover/getPersonPopoverFragment}]]*/,
+							data : {"personId": personId},
+							dataType: 'html',
+						}).done(function(result, status, jqXHR) {
+							if (isAjaxProcSuccess(jqXHR)) {
+								<!--/* 処理成功 */-->
+								return resolve(result);
+							} else {
+								const errorMsg = getAjaxProcResutlMessage(jqXHR);
+								showErrorMessageForJs(errorMsg);
+								return reject(errorMsg);
+							}
+						})
+						.fail(function(jqXHR, status, errorThrown) {
+							showErrorMessageForJs(/*[[#{E00091}]]*/ "error");
+							return reject(jqXHR, status, errorThrown)
+						});
+					});
+				};
+				
+				function _build(target, options) {
+					const _$target = $(target);
+					
+					<!--/* ポッパーコンテンツの作成は最初のみなのでFnを無効化 */-->
+					_$target.off("click.personPopover");
+		
+					<!--/* ポッパーコンテンツの作成 */-->
+					_$target.popover(options);
+		
+					<!--/* 対象オブジェクトにクリック処理を付与 */-->
+					_$target.on("click.showPoper", function() {
+						<!--/* 名簿ポッパーが他にあれば閉じる */-->
+						$(".personInfoFragment").closest(".popover").popover("hide");
+		
+						<!--/* 対象モーダルを表示 */-->
+						_$target.popover("show");
+						
+						<!--/* ポップオーバーの表示が完了したときに、閉じたときの関数を追加する */-->
+						_$target.one('shown.bs.popover',function() {
+							
+							<!--/* 別コンテンツを押下したときポップオーバーを閉じる処理を追加 */-->
+							$(document).on('click.personPoperHide touchend.personPoperHide', function(e) {
+								if (!$(e.target).closest('.popover').length && !$(e.target).is(".personInfoFragment") && !$(e.target).closest(_$target).length) {
+									_$target.popover('hide');
+								}
+							});
+							
+							<!--/* 該当コンテンツを閉じたときには、閉じるイベントをOFFにする */-->
+							_$target.one('hide.bs.popover', function() {
+								$(document).off('click.personPoperHide touchend.personPoperHide');
+							});
+						});
+						
+					}).trigger("click.showPoper");
+				};
+			};
+		</script>
+	</th:block>
+	<th:block>
+		<div class="personInfoFragment" th:fragment="personInfoFragment" th:object="${viewForm}">
+			<div class="pop_contents person_pop person_view">
+				<div class="pop_header">
+					<div class="basic_info_contents">
+						<div class="basic_info_contents__image">
+							
+							<!--/* 名簿属性ラベル */-->
+							<div th:class="|person_image_wrapper*{getPersonAttribute().getCd().getCd()} image_wrapper_sm|">
+								<!--/* 個人アイコン */-->
+								<img th:if="${T(jp.loioz.common.constant.CommonConstant$CustomerType).KOJIN.equalsByCode(viewForm.customerType)}" 
+									class="img-thumbnail person_image_sm" th:src="@{/img/person_kojin.svg}"
+									data-boundary="window" data-container="body" data-toggle="tooltip" data-trigger="hover" th:title="個人">
+								
+								<!--/* 企業・団体アイコン */-->
+								<img th:if="${T(jp.loioz.common.constant.CommonConstant$CustomerType).HOJIN.equalsByCode(viewForm.customerType)}"
+									class="img-thumbnail person_image_sm" th:src="@{/img/person_hojin.svg}"
+									data-boundary="window" data-container="body" data-toggle="tooltip" data-trigger="hover" th:title="企業・団体">
+								
+								<!--/* 弁護士アイコン */-->
+								<img th:if="${T(jp.loioz.common.constant.CommonConstant$CustomerType).LAWYER.equalsByCode(viewForm.customerType)}"
+									class="img-thumbnail person_image_sm" th:src="@{/img/person_bengoshi.svg}"
+									data-boundary="window" data-container="body" data-toggle="tooltip" data-trigger="hover" th:title="弁護士">
+							</div>
+						
+						</div>
+						<div class="basic_info_contents__name">
+							<div>
+								<span class="person_name" th:text="*{customerName}"></span>
+								<span th:if="*{Dead}">（故人）</span>
+							</div>
+							<div>
+								<!--/* 名簿ID */-->
+								<span class="app_id_link py-1 fs12" th:text="|名簿ID：*{personId.asLong()}|">その他</span>
+								<span class="fs12 ml-2" th:if="*{!#strings.isEmpty(jimushoName)}" th:text="*{jimushoName}"></span>
+								<th:block th:if="*{T(jp.loioz.common.constant.CommonConstant$CustomerType).KOJIN.equalsByCode(customerType)}" class="person_basic_other">
+									<span th:text="*{gender}"></span>
+									<span th:if="*{!#strings.isEmpty(gender)} and *{!#strings.isEmpty(age)}">／</span>
+									<span th:if="*{age}" th:text="|*{age}歳|"></span>
+								</th:block>
+							</div>
+						</div>
+					</div>
+				</div>
+				
+				<div class="pop_body">
+					<th:block th:if="*{T(jp.loioz.common.constant.CommonConstant$CustomerType).HOJIN.equalsByCode(customerType)}">
+						<div>
+							<div class="mb-3">
+								<span class="badge badge-pill data_label badge_gray badge_square px-3">代表者</span>
+								<th:block th:if="*{#strings.isEmpty(daihyoName) and #strings.isEmpty(daihyoNameKana) and #strings.isEmpty(daihyoPositionName)}">
+									<!-- 代表情報がすべて空の場合 -->
+									<div>
+										<span>-</span>
+									</div>
+								</th:block>
+								<th:block th:unless="*{#strings.isEmpty(daihyoName) and #strings.isEmpty(daihyoNameKana) and #strings.isEmpty(daihyoPositionName)}">
+									<div>
+										<span th:text="*{daihyoName}"></span>
+										<span th:if="*{!#strings.isEmpty(daihyoNameKana)}" th:text="'（' + *{daihyoNameKana} + '）'"></span>
+									</div>
+									<div th:if="*{!#strings.isEmpty(daihyoPositionName)}" th:text="*{daihyoPositionName}"></div>
+								</th:block>
+							</div>
+							<div class="mb-3">
+								<span class="badge badge-pill data_label badge_gray badge_square px-3">担当者</span>
+								<th:block th:if="*{#strings.isEmpty(tantoName) and #strings.isEmpty(tantoNameKana)}">
+									<div>
+										<span>-</span>
+									</div>
+								</th:block>
+								<th:block th:unless="*{#strings.isEmpty(tantoName) and #strings.isEmpty(tantoNameKana)}">
+									<div>
+										<span th:text="*{tantoName}"></span>
+										<span th:if="*{!#strings.isEmpty(tantoNameKana)}" th:text="'（' + *{tantoNameKana} + '）'"></span>
+									</div>
+								</th:block>
+							</div>
+						</div>
+					</th:block>
+					
+					<div>
+						<div class="mb-3">
+							<span class="badge badge-pill data_label badge_gray badge_square px-3">住所</span>
+							<th:block th:if="*{#strings.isEmpty(zipCode) and #strings.isEmpty(address1) and #strings.isEmpty(address2)}">
+								<!-- 住所情報がすべて空の場合 -->
+								<div>
+									<span>-</span>
+								</div>
+							</th:block>
+							<th:block th:unless="*{#strings.isEmpty(zipCode) and #strings.isEmpty(address1) and #strings.isEmpty(address2)}">
+								<!-- 住所情報が存在する場合 -->
+								<div th:text="*{!#strings.isEmpty(zipCode)} ? |〒*{zipCode}| : ''"></div>
+								<div>
+									<span th:text="*{address1}"></span>
+									<span th:text="*{address2}"></span>
+								</div>
+							</th:block>
+						</div>
+					</div>
+					
+					<div>
+						<div class="mb-1">
+							<span class="badge badge-pill data_label badge_gray badge_square px-3">連絡先</span>
+							<div>
+								<div>
+									<span class="sub_text d-inline-block digit4">電話</span>
+									<th:block th:if="*{#strings.isEmpty(telNo) and allowType == null}">
+										<!-- 電話情報がすべて空の場合 -->
+										<span>-</span>
+									</th:block>
+									<th:block th:unless="*{#strings.isEmpty(telNo) and allowType == null}">
+										<!-- 電話情報が存在する場合 -->
+										<span th:if="*{!#strings.isEmpty(telNo)}" th:text="*{telNo}" class="mr-4"></span>
+										<th:block th:unless="*{allowType == null}">
+												<span class="badge badge-pill" 
+													th:classappend="${T(jp.loioz.common.constant.CommonConstant$AllowType).DENY} == *{allowType} ? 'badge_red' : 'badge_cyan' "
+													th:text="*{allowType.val}"></span>
+										</th:block>
+									</th:block>
+								</div>
+								<div>
+									<span class="sub_text d-inline-block digit4">FAX</span>
+									<th:block th:if="*{#strings.isEmpty(faxNo)}">
+										<!-- FAX情報が空の場合 -->
+										<span>-</span>
+									</th:block>
+									<th:block th:unless="*{#strings.isEmpty(faxNo)}">
+										<!-- FAX情報が存在する場合 -->
+										<span th:text="*{faxNo}"></span>
+									</th:block>
+								</div>
+								<div>
+									<span class="sub_text d-inline-block digit4">メール</span>
+									<th:block th:if="*{#strings.isEmpty(mailAddress)}">
+										<!-- メールが空の場合 -->
+										<span>-</span>
+									</th:block>
+									<th:block th:unless="*{#strings.isEmpty(mailAddress)}">
+										<!-- メールが存在する場合 -->
+										<span th:text="*{mailAddress}"></span>
+									</th:block>
+								</div>
+							</div>
+						</div>
+					</div>
+					
+				</div>
+				
+				<div class="pop_fotter">
+					<a class="" th:href="@{/user/personManagement/edit/{personId}/(personId=*{personId.asLong()})}">名簿情報画面を開く<i class="fas fa-caret-right ml-2"></i></a>
+				</div>
+			</div>
+		</div>
+	</th:block>
+</body>
+</html>

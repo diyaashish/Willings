@@ -1,0 +1,388 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+	xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+	layout:decorator="commonLayout">
+<head>
+<meta charset="utf-8" />
+<title layout:fragment="title-contents">
+	[[${T(jp.loioz.common.utility.LoiozUtils).getHtmlTitle("名簿情報", T(jp.loioz.common.utility.SessionUtils).getTenantName())}]]
+</title>
+<style>
+
+/* 一覧の説明ポップオーバー */
+.popover {
+	max-width: 620px
+}
+.popover_meibo_list_msg {
+	font-size: 1.2rem
+}
+.popover_meibo_list_msg ul {
+	padding-left: 3rem;
+	margin-bottom: 0.5rem;
+}
+
+</style>
+<script type="text/javascript" th:replace="common/js/ageCalculationJs::ageCalculationJs"></script>
+<!--/* 名簿ポップオーバー処理 */-->
+<script type="text/javascript" th:replace="common/mvc/anken/popover/ankenPopover::ankenInfoPopoverJs"></script>
+<style type="text/css" th:replace="common/mvc/anken/popover/ankenPopover::ankenInfoPopoverStyle"></style>
+<script type="text/javascript" th:inline="javascript">
+<!--/*
+ 二重送信防止対応用の値。
+ このHTMLに差し込まれるfragment内のScriptの処理も、共通してこの変数を利用する。
+*/-->
+let ajaxRunning = false;
+<!--/* 「すべて」 */-->
+const allMeibo = /*[[${T(jp.loioz.common.constant.meiboList.MeiboListConstant$MeiboMenu).ALL.getCd()}]]*/ '';
+<!--/* 「顧客名簿すべて」 */-->
+const allCustomerMeibo = /*[[${T(jp.loioz.common.constant.meiboList.MeiboListConstant$MeiboMenu).CUSTOMER_ALL.getCd()}]]*/ '';
+<!--/* 「顧客-個人」 */-->
+const customerKojin = /*[[${T(jp.loioz.common.constant.meiboList.MeiboListConstant$MeiboMenu).CUSTOMER_KOJIN.getCd()}]]*/ '';
+<!--/* 「顧客-法人」 */-->
+const customerHojin = /*[[${T(jp.loioz.common.constant.meiboList.MeiboListConstant$MeiboMenu).CUSTOMER_HOJIN.getCd()}]]*/ '';
+<!--/* 「顧問取引先」 */-->
+const advisor = /*[[${T(jp.loioz.common.constant.meiboList.MeiboListConstant$MeiboMenu).ADVISOR.getCd()}]]*/ '';
+<!--/* 「弁護士」 */-->
+const bengoshi = /*[[${T(jp.loioz.common.constant.meiboList.MeiboListConstant$MeiboMenu).BENGOSHI.getCd()}]]*/ '';
+
+<!--/*
+ * 一覧の表示初期処理
+ *
+ * @param {string} sessionQuickSearchWord   Sessionが保持するクイック検索ワード。この関数を実行する側で取得し値を渡す。
+*/-->
+function showInitMiboList(sessionQuickSearchWord) {
+	
+	<!-- /* Sessionのクイック検索ワードを、ヘッダーの検索ワード入力欄に表示する */ -->
+	<!-- /* ※Sessionの値が存在するのは、「すべて」の一覧の表示の場合のみとなるよう、サーバー側で値を制御しているため、「すべて」以外の場合は入力欄を空にする動作になる。 */ -->
+	$('#headerSearchInput').val(sessionQuickSearchWord);
+}
+
+<!--/* 名簿メニューフラグメント表示処理 */-->
+function renderMeiboMenuFragment(optionParam) {
+	return new Promise((resolve, reject) => {
+		$.ajax({
+			url : "/user/meiboList/getMeiboMenuFragment",
+			type : "GET",
+			data : optionParam,
+			dataType: 'html',
+		}).done(function(data, status, jqXHR) {
+			if (isAjaxProcSuccess(jqXHR)) {
+				<!--/* 処理成功 */-->
+				$('#meiboMenuFragmentWrap').html(data);
+				return resolve();
+			} else {
+				<!--/* 処理失敗 */-->
+				const errorMsg = getAjaxProcResutlMessage(jqXHR);
+				showErrorMessageForJs(errorMsg);
+				return reject(errorMsg);
+			}
+		}).fail(function() {
+			showErrorMessageForJs(/*[[#{E00059}]]*/ "データの取得に失敗しました。");
+			return reject();
+		});
+	});
+};
+
+<!--/* 名簿一覧検索処理 */-->
+function searchMeiboList(optionParam, subParam) {
+	return new Promise((resolve, reject) => {
+		$.ajax({
+			url : "/user/meiboList/search",
+			type : "GET",
+			data : optionParam,
+			dataType: 'html',
+		}).done(function(data, status, jqXHR) {
+			if (isAjaxProcSuccess(jqXHR)) {
+				<!--/* 処理成功 */-->
+				renderHtml(data, subParam);
+				return resolve();
+			} else {
+				<!--/* 処理失敗 */-->
+				const errorMsg = getAjaxProcResutlMessage(jqXHR);
+				showErrorMessageForJs(errorMsg);
+				return reject(errorMsg);
+			}
+		}).fail(function() {
+			showErrorMessageForJs(/*[[#{E00059}]]*/ "データの取得に失敗しました。");
+			return reject();
+		});
+	});
+};
+
+<!--/* 名簿一覧ソート処理 */-->
+function sortMeiboList(optionParam, subParam) {
+	return new Promise((resolve, reject) => {
+		$.ajax({
+			url : "/user/meiboList/sort",
+			type : "GET",
+			data : optionParam,
+			dataType: 'html',
+		}).done(function(data, status, jqXHR) {
+			if (isAjaxProcSuccess(jqXHR)) {
+				<!--/* 処理成功 */-->
+				renderHtml(data, subParam);
+				return resolve();
+			} else {
+				<!--/* 処理失敗 */-->
+				const errorMsg = getAjaxProcResutlMessage(jqXHR);
+				showErrorMessageForJs(errorMsg);
+				return reject(errorMsg);
+			}
+		}).fail(function() {
+			showErrorMessageForJs(/*[[#{E00059}]]*/ "データの取得に失敗しました。");
+			return reject();
+		});
+	});
+};
+
+<!--/* 名簿検索条件フラグメント表示処理 */-->
+function renderMeiboSearchFragment(optionParam) {
+	return new Promise((resolve, reject) => {
+		$.ajax({
+			url : "/user/meiboList/getMeiboSearchFragment",
+			type : "GET",
+			data : optionParam,
+			dataType: 'html',
+		}).done(function(data, status, jqXHR) {
+			if (isAjaxProcSuccess(jqXHR)) {
+				<!--/* 処理成功 */-->
+				$('#meiboSearchFragmentWrap').html(data);
+				return resolve();
+			} else {
+				<!--/* 処理失敗 */-->
+				const errorMsg = getAjaxProcResutlMessage(jqXHR);
+				showErrorMessageForJs(errorMsg);
+				return reject(errorMsg);
+			}
+		}).fail(function() {
+			showErrorMessageForJs(/*[[#{E00059}]]*/ "データの取得に失敗しました。");
+			return reject();
+		});
+	});
+};
+
+
+<!--/* 名簿一覧フラグメント表示処理 */-->
+function renderMeiboListFragment(optionParam, subParam) {
+	return new Promise((resolve, reject) => {
+		$.ajax({
+			url : "/user/meiboList/getMeiboListFragment",
+			type : "GET",
+			data : optionParam,
+			dataType: 'html',
+		}).done(function(data, status, jqXHR) {
+			if (isAjaxProcSuccess(jqXHR)) {
+				<!--/* 画面表示 */-->
+				renderHtml(data, subParam);
+				return resolve();
+			} else {
+				<!--/* 処理失敗 */-->
+				const errorMsg = getAjaxProcResutlMessage(jqXHR);
+				showErrorMessageForJs(errorMsg);
+				return reject(errorMsg);
+			}
+		}).fail(function() {
+			showErrorMessageForJs(/*[[#{E00059}]]*/ "データの取得に失敗しました。");
+			return reject();
+		});
+	});
+};
+
+<!--/* ページネーション処理 */-->
+function getListOfPageNumber(pageNum, subParam) {
+	if (ajaxRunning) {
+		return false;
+	}
+	ajaxRunning = true;
+	let optionParam;
+	if (subParam == allMeibo) {
+		<!--/* 「すべて」 */-->
+		optionParam = [{name:"allMeiboListSearchForm.page", value:pageNum}];
+	} else if (subParam == allCustomerMeibo) {
+		<!--/* 「顧客名簿すべて」 */-->
+		optionParam = [{name:"customerAllMeiboListSearchForm.page", value:pageNum}];
+	} else if (subParam == customerKojin) {
+		<!--/* 「顧客-個人」 */-->
+		optionParam = [{name:"customerKojinMeiboListSearchForm.page", value:pageNum}];
+	} else if (subParam == customerHojin) {
+		<!--/* 「顧客-法人」 */-->
+		optionParam = [{name:"customerHojinMeiboListSearchForm.page", value:pageNum}];
+	} else if (subParam == advisor) {
+		<!--/* 「顧問取引先」 */-->
+		optionParam = [{name:"advisorMeiboListSearchForm.page", value:pageNum}];
+	} else if (subParam == bengoshi) {
+		<!--/* 「弁護士」 */-->
+		optionParam = [{name:"bengoshiMeiboListSearchForm.page", value:pageNum}];
+	}
+	Promise.resolve()
+		.then(() => renderMeiboListFragment(optionParam, subParam))
+		.catch((errorObj) => console.log(errorObj))
+		.finally(() => ajaxRunning = false);
+};
+
+<!--/* 取得結果を画面レンダリング */-->
+function renderHtml(data, subParam) {
+	<!--/* ツールチップを非表示にする */-->
+	$('[data-toggle="tooltip"]').tooltip('hide');
+	
+	<!-- /* 一覧エリアのフラグメント更新 */ -->
+	if (subParam == allMeibo) {
+		<!--/* 「すべて」 */-->
+		$('#meiboListFragmentWrap > div').replaceWith($(data).find("#allMeiboListViewFragmentWrap"));
+	} else if (subParam == allCustomerMeibo) {
+		<!--/* 「顧客名簿すべて」 */-->
+		$('#meiboListFragmentWrap > div').replaceWith($(data).find("#customerAllMeiboListFragmentWrap"));
+	} else if (subParam == customerKojin) {
+		<!--/* 「顧客-個人」 */-->
+		$('#meiboListFragmentWrap > div').replaceWith($(data).find("#customerKojinMeiboListFragmentWrap"));
+	} else if (subParam == customerHojin) {
+		<!--/* 「顧客-法人」 */-->
+		$('#meiboListFragmentWrap > div').replaceWith($(data).find("#customerHojinMeiboListFragmentWrap"));
+	} else if (subParam == advisor) {
+		<!--/* 「顧問取引先」 */-->
+		$('#meiboListFragmentWrap > div').replaceWith($(data).find("#advisorMeiboListFragmentWrap"));
+	} else if (subParam == bengoshi) {
+		<!--/* 「弁護士」 */-->
+		$('#meiboListFragmentWrap > div').replaceWith($(data).find("#bengoshiMeiboListFragmentWrap"));
+	}
+	
+	<!-- /* ページングフラグメント更新 */ -->
+	$('#meiboListPagerWrap').replaceWith($(data).find("#meiboListPagerWrap"));
+}
+
+</script>
+
+</head>
+<body>
+	<div layout:fragment="main-contents" th:remove="tag">
+	
+		<div class="contents_sidebar_wrapper_user anken_meibo_list">
+			
+			<!--/* 案件／名簿サイドメニュー */-->
+			<div id="meiboMenuFragmentWrap" style="display:contents" th:insert="user/meiboList/meiboMenu::meiboMenuFragment(${viewForm.meiboMenuViewForm})"></div>
+			
+			<!--/* メインコンテンツの外側 */-->
+			<div class="contents_wrapper">
+				<div class="container-fluid">
+					<main class="content">
+
+						<!--/* メッセージエリア */-->
+						<div th:replace="common/messageArea::messageArea"></div>
+
+						<div class="page_list">
+							<div class="vertical_block_wrapper">
+								
+								<!--/* タイトル - アクション */-->
+								<div class="vertical_block_header">
+									<!--/* 検索条件 */-->
+									<div id="meiboSearchFragmentWrap">
+										<th:block th:switch="${meiboListSearchForm.meiboMenuCd}">
+											<!--/* 「すべて」 */-->
+											<th:block th:case="${T(jp.loioz.common.constant.meiboList.MeiboListConstant$MeiboMenu).ALL.getCd()}">
+												<div th:replace="user/meiboList/meiboListFragment::allMeiboSearchFragment(${viewForm.meiboSearchViewForm})"></div>
+											</th:block>
+											<!--/* 「顧客名簿すべて」 */-->
+											<th:block th:case="${T(jp.loioz.common.constant.meiboList.MeiboListConstant$MeiboMenu).CUSTOMER_ALL.getCd()}">
+												<div th:replace="user/meiboList/meiboListFragment::customerAllMeiboSearchFragment(${viewForm.meiboSearchViewForm})"></div>
+											</th:block>
+											<!--/* 「顧客-個人」 */-->
+											<th:block th:case="${T(jp.loioz.common.constant.meiboList.MeiboListConstant$MeiboMenu).CUSTOMER_KOJIN.getCd()}">
+												<div th:replace="user/meiboList/meiboListFragment::customerKojinMeiboSearchFragment(${viewForm.meiboSearchViewForm})"></div>
+											</th:block>
+											<!--/* 「顧客-法人」 */-->
+											<th:block th:case="${T(jp.loioz.common.constant.meiboList.MeiboListConstant$MeiboMenu).CUSTOMER_HOJIN.getCd()}">
+												<div th:replace="user/meiboList/meiboListFragment::customerHojinMeiboSearchFragment(${viewForm.meiboSearchViewForm})"></div>
+											</th:block>
+											<!--/* 「顧問取引先」 */-->
+											<th:block th:case="${T(jp.loioz.common.constant.meiboList.MeiboListConstant$MeiboMenu).ADVISOR.getCd()}">
+												<div th:replace="user/meiboList/meiboListFragment::advisorMeiboSearchFragment(${viewForm.meiboSearchViewForm})"></div>
+											</th:block>
+											<!--/* 「弁護士」 */-->
+											<th:block th:case="${T(jp.loioz.common.constant.meiboList.MeiboListConstant$MeiboMenu).BENGOSHI.getCd()}">
+												<div th:replace="user/meiboList/meiboListFragment::bengoshiMeiboSearchFragment(${viewForm.meiboSearchViewForm})"></div>
+											</th:block>
+											<div th:case="*"></div>
+										</th:block>
+									</div>
+								</div>
+								<!--/* タイトル - アクション end */-->
+
+								<!--/* 一覧データ */-->
+								<div class="vertical_block_body">
+									<!--/* 一覧結果 */-->
+									<div id="meiboListFragmentWrap">
+										<th:block th:switch="${meiboListSearchForm.meiboMenuCd}">
+											<!--/* 「すべて」 */-->
+											<th:block th:case="${T(jp.loioz.common.constant.meiboList.MeiboListConstant$MeiboMenu).ALL.getCd()}">
+												<div id="allMeiboListViewFragmentWrap" th:insert="user/meiboList/meiboListFragment::allMeiboListFragment(${viewForm.allMeiboListViewForm})"></div>
+											</th:block>
+											<!--/* 「顧客名簿すべて」 */-->
+											<th:block th:case="${T(jp.loioz.common.constant.meiboList.MeiboListConstant$MeiboMenu).CUSTOMER_ALL.getCd()}">
+												<div id="customerAllMeiboListViewFragmentWrap" th:insert="user/meiboList/meiboListFragment::customerAllMeiboListFragment(${viewForm.customerAllMeiboListViewForm})"></div>
+											</th:block>
+											<!--/* 「顧客-個人」 */-->
+											<th:block th:case="${T(jp.loioz.common.constant.meiboList.MeiboListConstant$MeiboMenu).CUSTOMER_KOJIN.getCd()}">
+												<div id="customerKojinMeiboListViewFragmentWrap" th:insert="user/meiboList/meiboListFragment::customerKojinMeiboListFragment(${viewForm.customerKojinMeiboListViewForm})"></div>
+											</th:block>
+											<!--/* 「顧客-法人」 */-->
+											<th:block th:case="${T(jp.loioz.common.constant.meiboList.MeiboListConstant$MeiboMenu).CUSTOMER_HOJIN.getCd()}">
+												<div id="customerHojinMeiboListViewFragmentWrap" th:insert="user/meiboList/meiboListFragment::customerHojinMeiboListFragment(${viewForm.customerHojinMeiboListViewForm})"></div>
+											</th:block>
+											<!--/* 「顧問取引先」 */-->
+											<th:block th:case="${T(jp.loioz.common.constant.meiboList.MeiboListConstant$MeiboMenu).ADVISOR.getCd()}">
+												<div id="advisorMeiboListViewFragmentWrap" th:insert="user/meiboList/meiboListFragment::advisorMeiboListFragment(${viewForm.advisorMeiboListViewForm})"></div>
+											</th:block>
+											<!--/* 「弁護士」 */-->
+											<th:block th:case="${T(jp.loioz.common.constant.meiboList.MeiboListConstant$MeiboMenu).BENGOSHI.getCd()}">
+												<div id="bengoshiMeiboListViewFragmentWrap" th:insert="user/meiboList/meiboListFragment::bengoshiMeiboListFragment(${viewForm.bengoshiMeiboListViewForm})"></div>
+											</th:block>
+											<div th:case="*"></div>
+										</th:block>
+									</div>
+								</div>
+								<!--/* 一覧データ end */-->
+								
+								<!--/* 固定footer */-->
+								<div class="vertical_block_footer">
+									<!--/* ページング */-->
+									<div id="meiboListPagerWrap">
+										<th:block th:switch="${meiboListSearchForm.meiboMenuCd}">
+											<!--/* 「すべて」 */-->
+											<th:block th:case="${T(jp.loioz.common.constant.meiboList.MeiboListConstant$MeiboMenu).ALL.getCd()}">
+												<div th:insert="user/meiboList/meiboListFragment::meiboListPagerFragment(${viewForm.allMeiboListViewForm.allMeiboPage}, ${viewForm.allMeiboListViewForm.SELECT_MEIBO_MENU})"></div>
+											</th:block>
+											<!--/* 「顧客名簿すべて」 */-->
+											<th:block th:case="${T(jp.loioz.common.constant.meiboList.MeiboListConstant$MeiboMenu).CUSTOMER_ALL.getCd()}">
+												<div th:insert="user/meiboList/meiboListFragment::meiboListPagerFragment(${viewForm.customerAllMeiboListViewForm.customerAllMeiboPage}, ${viewForm.customerAllMeiboListViewForm.SELECT_MEIBO_MENU})"></div>
+											</th:block>
+											<!--/* 「顧客-個人」 */-->
+											<th:block th:case="${T(jp.loioz.common.constant.meiboList.MeiboListConstant$MeiboMenu).CUSTOMER_KOJIN.getCd()}">
+												<div th:insert="user/meiboList/meiboListFragment::meiboListPagerFragment(${viewForm.customerKojinMeiboListViewForm.customerKojinMeiboPage}, ${viewForm.customerKojinMeiboListViewForm.SELECT_MEIBO_MENU})"></div>
+											</th:block>
+											<!--/* 「顧客-法人」 */-->
+											<th:block th:case="${T(jp.loioz.common.constant.meiboList.MeiboListConstant$MeiboMenu).CUSTOMER_HOJIN.getCd()}">
+												<div th:insert="user/meiboList/meiboListFragment::meiboListPagerFragment(${viewForm.customerHojinMeiboListViewForm.customerHojinMeiboPage}, ${viewForm.customerHojinMeiboListViewForm.SELECT_MEIBO_MENU})"></div>
+											</th:block>
+											<!--/* 「顧問取引先」 */-->
+											<th:block th:case="${T(jp.loioz.common.constant.meiboList.MeiboListConstant$MeiboMenu).ADVISOR.getCd()}">
+												<div th:insert="user/meiboList/meiboListFragment::meiboListPagerFragment(${viewForm.advisorMeiboListViewForm.advisorMeiboPage}, ${viewForm.advisorMeiboListViewForm.SELECT_MEIBO_MENU})"></div>
+											</th:block>
+											<!--/* 「弁護士」 */-->
+											<th:block th:case="${T(jp.loioz.common.constant.meiboList.MeiboListConstant$MeiboMenu).BENGOSHI.getCd()}">
+												<div th:insert="user/meiboList/meiboListFragment::meiboListPagerFragment(${viewForm.bengoshiMeiboListViewForm.bengoshiMeiboPage}, ${viewForm.bengoshiMeiboListViewForm.SELECT_MEIBO_MENU})"></div>
+											</th:block>
+											<div th:case="*"></div>
+										</th:block>
+									</div>
+								</div>
+								<!--/* 固定footer end */-->
+								
+							</div>
+						</div>
+					</main>
+				</div>
+			</div>
+		</div>
+	</div>
+</body>
+</html>

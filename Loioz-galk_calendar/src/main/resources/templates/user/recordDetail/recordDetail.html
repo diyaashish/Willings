@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+	xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+	layout:decorator="commonLayout">
+<head>
+<meta charset="utf-8" />
+<title layout:fragment="title-contents">
+	[[${T(jp.loioz.common.utility.LoiozUtils).getHtmlTitle("取引実績", T(jp.loioz.common.utility.SessionUtils).getTenantName())}]]
+</title>
+<th:block th:with="version=${@environment.getProperty('app.version')}">
+	<link href="./css/accg/accg.css" th:href="@{/css/accg/accg.css?{ver}(ver=${version})}" rel="stylesheet" type="text/css" />
+</th:block>
+<script type="text/javascript" th:inline="javascript">
+<!--/*
+ 二重送信防止対応用の値。
+ このHTMLに差し込まれるfragment内のScriptの処理も、共通してこの変数を利用する。
+*/-->
+let ajaxRunning = false;
+
+<!--/* 取引実績 会計書類（請求書・精算書）の再レンダリング処理 */-->
+function renderRecordDetailAccgDocViewFargment() {
+	return new Promise((resolve, reject) => {
+		$.ajax({
+			url : /*[[@{/user/recordDetail/{accgRecordSeq}/getRecordDetailAccgDocViewFargment(accgRecordSeq=${viewForm.accgRecordSeq})}]]*/'',
+			type : "GET",
+		})
+		.done(function(data, status, jqXHR) {
+			if (isAjaxProcSuccess(jqXHR)) {
+				// HTML表示
+				$('#recordDetailHeaderViewFargmentWrap').html(data);
+				return resolve();
+			} else {
+				// 処理失敗
+				const errorMsg = getAjaxProcResutlMessage(jqXHR);
+				showErrorMessageForJs(errorMsg);
+				return reject();
+			}
+		})
+		.fail(function(jqXHR, status, errorThrown) {
+			showErrorMessageForJs(/*[[#{E00091}]]*/ "error");
+			return reject();
+		});
+	});
+};
+
+<!--/* 取引実績画面：報酬、預り金／実費内訳の再レンダリング処理 */-->
+function renderBreakdownOfFeeAndDepositViewFragment() {
+	return new Promise((resolve, reject) => {
+		$.ajax({
+			url : /*[[@{/user/recordDetail/{accgRecordSeq}/getBreakdownOfFeeAndDepositViewFragment(accgRecordSeq=${viewForm.accgRecordSeq})}]]*/'',
+			type : "GET",
+		})
+		.done(function(data, status, jqXHR) {
+			if (isAjaxProcSuccess(jqXHR)) {
+				<!--/* HTML表示 */-->
+				$('#breakdownOfFeeAndDepositViewFragmentWrap').html(data);
+				return resolve();
+			} else {
+				<!--/* 処理失敗 */-->
+				const errorMsg = getAjaxProcResutlMessage(jqXHR);
+				showErrorMessageForJs(errorMsg);
+				return reject();
+			}
+		})
+		.fail(function(jqXHR, status, errorThrown) {
+			showErrorMessageForJs(/*[[#{E00091}]]*/ "error");
+			return reject();
+		});
+	});
+};
+
+<!--/* 取引実績画面：取引実績一覧の再レンダリング処理 */-->
+function renderRecordDetailListViewFragment() {
+	return new Promise((resolve, reject) => {
+		$.ajax({
+			url : /*[[@{/user/recordDetail/{accgRecordSeq}/getRecordDetailListViewFragment(accgRecordSeq=${viewForm.accgRecordSeq})}]]*/'',
+			type : "GET",
+		})
+		.done(function(data, status, jqXHR) {
+			if (isAjaxProcSuccess(jqXHR)) {
+				// HTML表示
+				$('#recordDetailListViewFragmentWrap').html(data);
+				return resolve();
+			} else {
+				// 処理失敗
+				const errorMsg = getAjaxProcResutlMessage(jqXHR);
+				showErrorMessageForJs(errorMsg);
+				return reject();
+			}
+		})
+		.fail(function(jqXHR, status, errorThrown) {
+			showErrorMessageForJs(/*[[#{E00091}]]*/ "error");
+			return reject();
+		});
+	});
+};
+
+<!--/* 取引実績画面：支払計画一覧の表示 */-->
+function renderPaymentPlanListViewFragment() {
+	return new Promise((resolve, reject) => {
+		$.ajax({
+			url : /*[[@{/user/recordDetail/{accgRecordSeq}/getPaymentPlanListViewFragment(accgRecordSeq=${viewForm.accgRecordSeq})}]]*/'',
+			type : "GET",
+		})
+		.done(function(data, status, jqXHR) {
+			if (isAjaxProcSuccess(jqXHR)) {
+				// HTML表示
+				$('#paymentPlanListViewFragmentWrap').html(data);
+				return resolve();
+			} else {
+				// 処理失敗
+				const errorMsg = getAjaxProcResutlMessage(jqXHR);
+				showErrorMessageForJs(errorMsg);
+				return reject();
+			}
+		})
+		.fail(function(jqXHR, status, errorThrown) {
+			showErrorMessageForJs(/*[[#{E00091}]]*/ "error");
+			return reject();
+		});
+	});
+}
+
+</script>
+</head>
+<body>
+	<div layout:fragment="main-contents" th:remove="tag">
+		
+		<div class="contents_sidebar_wrapper_user accg_side_menu" th:object="${viewForm}"
+			th:with="
+				isStatement=*{T(jp.loioz.common.constant.CommonConstant$AccgDocType).STATEMENT == accgDocType},
+				isInvoice=*{T(jp.loioz.common.constant.CommonConstant$AccgDocType).INVOICE == accgDocType},
+				isAccgAnkenSide=${T(jp.loioz.common.utility.SessionUtils).getSessionVaule(T(jp.loioz.common.constant.SessionAttrKeyEnum).ACCG_ANKEN_SCREEN_BOOL.codeKey)}"
+			th:classappend="${isAccgAnkenSide} ? 'contentsSlidebarWrapper':_"
+			th:data-click-open="${isAccgAnkenSide} ? ${customerAnkenMenuOpenClickForSessionValue} : 'true' "
+			th:data-resize-open="${isAccgAnkenSide} ? ${customerAnkenMenuOpenResizeForSessionValue} : 'true' ">
+			
+	<!--/* 会計管理メニュー */-->
+	<th:block th:if="!${isAccgAnkenSide}">
+		<!--/* 会計管理メニュー */-->
+		<th:block th:if="${isStatement}">
+				<div id="accgMenuFragmentWrap"
+					th:replace="common/accg/accgMenu::accgMenuFragment(${T(jp.loioz.common.constant.CommonConstant$AccgMenu).STATEMENT.getCd()})">
+				</div>
+		</th:block>
+		<th:block th:if="${isInvoice}">
+				<div id="accgMenuFragmentWrap"
+					th:replace="common/accg/accgMenu::accgMenuFragment(${T(jp.loioz.common.constant.CommonConstant$AccgMenu).INVOICE.getCd()})">
+				</div>
+		</th:block>
+	</th:block>
+			
+	<!--/* 案件軸の遷移の場合 ->案件メニュー */-->
+	<th:block th:if="${isAccgAnkenSide}">
+			<div th:replace="common/customerAnkenMenu::menuList(
+				sideMenuAnkenId=${viewForm.ankenId},
+				sideMenuCustomerId=null,
+				selectedTabClass='is_invoice_statement',
+				focusPersonId=${viewForm.personId})">
+			</div>
+	</th:block>
+			
+			<!--/* メインコンテンツの外側 */-->
+			<div class="contents_wrapper">
+				<div class="container-fluid">
+					<main class="content">
+						
+						<div class="page_inner">
+							<!--/* ぱんくず */-->
+							<div th:if="!${isAccgAnkenSide}" class="breadcrumb_area">
+								<ul th:if="${isStatement}">
+									<li><span><a href="/user/statementList/">精算書一覧</a></span></li>
+									<li><i class="fas fa-angle-right"></i></li>
+									<li><span><a th:href="@{/user/statementDetail/{statementSeq}/(statementSeq=*{statementSeq})}">精算書</a></span></li>
+									<li><i class="fas fa-angle-right"></i></li>
+									<li><span class="selected_menu">取引実績</span></li>
+								</ul>
+								<ul th:if="${isInvoice}">
+									<li><span><a href="/user/invoiceList/">請求書一覧</a></span></li>
+									<li><i class="fas fa-angle-right"></i></li>
+									<li><span><a th:href="@{/user/invoiceDetail/{invoiceSeq}/(invoiceSeq=*{invoiceSeq})}">請求書</a></span></li>
+									<li><i class="fas fa-angle-right"></i></li>
+									<li><span class="selected_menu">取引実績</span></li>
+								</ul>
+							</div>
+							
+	<!--/* 案件軸の場合のぱんくず */-->
+	<th:block th:if="${isAccgAnkenSide}">
+		<th:block th:if="${isStatement}">
+							<div th:replace="common/wrapHeader::wrapHeader(
+								returnListScreen=${T(jp.loioz.common.utility.SessionUtils).getSessionVaule(T(jp.loioz.common.constant.SessionAttrKeyEnum).RETURN_LIST_SCREEN.codeKey)},
+								sideMenuAnkenId=${viewForm.ankenId},
+								accgSideMenuPersonId=${viewForm.personId},
+								accgStatementSeq=*{statementSeq},
+								selectedTabClass = 'is_statement_record_detail')"></div>
+		</th:block>
+		<th:block th:if="${isInvoice}">
+							<div th:replace="common/wrapHeader::wrapHeader(
+								returnListScreen=${T(jp.loioz.common.utility.SessionUtils).getSessionVaule(T(jp.loioz.common.constant.SessionAttrKeyEnum).RETURN_LIST_SCREEN.codeKey)},
+								sideMenuAnkenId=${viewForm.ankenId},
+								accgSideMenuPersonId=${viewForm.personId},
+								accgInvoiceSeq=*{invoiceSeq},
+								selectedTabClass = 'is_invoice_record_detail')"></div>
+		</th:block>
+	</th:block>
+							<!--/* メッセージエリア */-->
+							<div th:replace="common/messageArea::messageArea"></div>
+							
+							<div class="record_container">
+								<!--/* 会計書類（請求書・精算書）情報 */-->
+								<div class="record_container__doc" id="recordDetailHeaderViewFargmentWrap"
+									th:insert="user/recordDetail/recordDetailFragment::recordDetailHeaderViewFargment(*{recordDetailAccgDocViewForm})"></div>
+									
+								<!--/* 一覧 */-->
+								<div class="record_container__list">
+									
+									<!--/* 報酬、預り金／実費内訳 */-->
+									<div id="breakdownOfFeeAndDepositViewFragmentWrap" class="wid_fc">
+										<th:block th:replace="user/recordDetail/recordDetailFragment::breakdownOfFeeAndDepositViewFragment(*{breakdownOfFeeAndDepositViewForm})"></th:block>
+									</div>
+									
+									<!--/* 取引実績一覧 */-->
+									<div id="recordDetailListViewFragmentWrap" th:insert="user/recordDetail/recordDetailFragment::recordDetailListViewFragment(*{recordListViewForm})"></div>
+									
+									<!--/* 支払計画一覧 */-->
+									<div id="paymentPlanListViewFragmentWrap">
+										<th:block th:if="${isInvoice}" th:replace="user/recordDetail/recordDetailFragment::paymentPlanListViewFragment(*{paymentPlanListViewForm})"></th:block>
+									</div>
+										
+								</div>
+							</div>
+						</div>
+					</main>
+				</div>
+			</div>
+		</div>
+	</div>
+</body>
+</html>

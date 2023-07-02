@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+	xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+	layout:decorator="commonLayout">
+<head>
+	<meta charset="utf-8" />
+</head>
+<body>
+	<!--/* 名簿メニュー */-->
+	<div th:fragment="meiboMenuFragment(meiboMenuViewForm)" id="meiboMenuFragment" style="display:contents">
+		<script type="text/javascript" th:inline="javascript">
+		$(function() {
+			
+			<!--/* 共有の要素セットアップ処理 */-->
+			commonSetUpElement();
+			
+			const meiboMenuFragment = $('#meiboMenuFragment');
+			const selectedMenuCd = /*[[${meiboListSearchForm.meiboMenuCd}]]*/'';
+			
+			<!--/* メニューの選択処理 */-->
+			meiboMenuFragment.find('.menuClick').on('click', function() {
+				const menuCd = $(this).data('cd');
+				
+				const menuOptionParam = [
+					{name:"meiboMenuCd", value: menuCd},
+				]
+				
+				if (ajaxRunning) {
+					return false;
+				}
+				ajaxRunning = true;
+				Promise.resolve()
+					.then(() => {
+						return new Promise((resolve, reject) => {
+							$.ajax({
+								url : "/user/meiboList/changeMenu",
+								type : "GET",
+								data : menuOptionParam,
+								dataType: 'html',
+							}).done(function(data, status, jqXHR) {
+								if (isAjaxProcSuccess(jqXHR)) {
+									<!--/* 処理成功 */-->
+									$('#meiboMenuFragmentWrap').html(data);
+									return resolve();
+								} else {
+									<!--/* 処理失敗 */-->
+									const errorMsg = getAjaxProcResutlMessage(jqXHR);
+									showErrorMessageForJs(errorMsg);
+									return reject(errorMsg);
+								}
+							}).fail(function() {
+								showErrorMessageForJs(/*[[#{E00059}]]*/ "データの取得に失敗しました。");
+								return reject();
+							});
+						});
+					})
+					.then(() => renderMeiboSearchFragment())
+					.then(() => renderMeiboListFragment(menuOptionParam, menuCd))
+					.catch((errorObj) => console.log(errorObj))
+					.finally(() => ajaxRunning = false);
+			});
+		});
+		</script>
+		<div class="nav_sidebar_user">
+			<div class="nav_sidebar_user_inner">
+				<div class="list_page_menu_title">
+					名簿情報
+				</div>
+				<ul class="list_page_menu">
+					<li class="allList" th:classappend="${T(jp.loioz.common.constant.meiboList.MeiboListConstant$MeiboMenu).ALL.equalsByCode(meiboListSearchForm.meiboMenuCd)} ? 'selected'">
+						<a href="#" class="menuClick" th:data-cd="${T(jp.loioz.common.constant.meiboList.MeiboListConstant$MeiboMenu).ALL.getCd()}">
+							<div class="meibo_list_menu"><span>すべて</span></div>
+						</a>
+					</li>
+					<li class="customerAll menuClick" th:data-cd="${T(jp.loioz.common.constant.meiboList.MeiboListConstant$MeiboMenu).CUSTOMER_ALL.getCd()}"
+						th:classappend="${T(jp.loioz.common.constant.meiboList.MeiboListConstant$MeiboMenu).CUSTOMER_ALL.equalsByCode(meiboListSearchForm.meiboMenuCd)} ? 'selected'">
+						<a href="#">
+							<div class="meibo_list_menu"><span>顧客名簿</span></div>
+						</a>
+					</li>
+					<li class="customerKojin menuClick" th:data-cd="${T(jp.loioz.common.constant.meiboList.MeiboListConstant$MeiboMenu).CUSTOMER_KOJIN.getCd()}"
+						th:classappend="${T(jp.loioz.common.constant.meiboList.MeiboListConstant$MeiboMenu).CUSTOMER_KOJIN.equalsByCode(meiboListSearchForm.meiboMenuCd)} ? 'selected'">
+						<a href="#"><div class="meibo_list_menu"><span><i class="fas fa-user mx-3"></i>個人</span></div></a>
+					</li>
+					<li class="customerHojin menuClick" th:data-cd="${T(jp.loioz.common.constant.meiboList.MeiboListConstant$MeiboMenu).CUSTOMER_HOJIN.getCd()}"
+						th:classappend="${T(jp.loioz.common.constant.meiboList.MeiboListConstant$MeiboMenu).CUSTOMER_HOJIN.equalsByCode(meiboListSearchForm.meiboMenuCd)} ? 'selected'">
+						<a href="#"><div class="meibo_list_menu"><span><i class="fas fa-building mx-3"></i>企業・団体</span></div></a>
+					</li>
+					<li class="meiboAdvisor menuClick" th:data-cd="${T(jp.loioz.common.constant.meiboList.MeiboListConstant$MeiboMenu).ADVISOR.getCd()}"
+						th:classappend="${T(jp.loioz.common.constant.meiboList.MeiboListConstant$MeiboMenu).ADVISOR.equalsByCode(meiboListSearchForm.meiboMenuCd)} ? 'selected'">
+						<a href="#"><div class="meibo_list_menu"><span><i class="fas fa-file-signature mx-3"></i>顧問取引先</span></div></a>
+					</li>
+					<li class="meiboBengoshi menuClick" th:data-cd="${T(jp.loioz.common.constant.meiboList.MeiboListConstant$MeiboMenu).BENGOSHI.getCd()}"
+						th:classappend="${T(jp.loioz.common.constant.meiboList.MeiboListConstant$MeiboMenu).BENGOSHI.equalsByCode(meiboListSearchForm.meiboMenuCd)} ? 'selected'">
+						<a href="#"><div class="meibo_list_menu"><span>弁護士名簿</span></div></a>
+					</li>
+				</ul>
+			</div>
+		</div>
+	</div>
+</body>
+</html>

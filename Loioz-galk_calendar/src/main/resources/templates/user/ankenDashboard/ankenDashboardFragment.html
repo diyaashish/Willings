@@ -1,0 +1,907 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+	<meta charset="utf-8" />
+</head>
+<body>
+
+
+<!--/* 業務履歴一覧で扱うフラグメント */-->
+<div th:fragment="ankenDashboardGyomuHistoryViewFragment(ankenDashboardSearchForm, ankenDashboardGyomuHistoryViewForm)" id="ankenDashboardGyomuHistoryViewFragment">
+	<th:block th:if="${T(jp.loioz.common.utility.SessionUtils).canUsePlanFunc(T(jp.loioz.common.constant.plan.PlanConstant$PlanFuncRestrict).PF0001)}">
+		<th:block th:with="version=${@environment.getProperty('app.version')}">
+			<script th:src="@{/js/dengon/dengon-edit.js?{ver}(ver=${version})}" type="text/javascript"></script>
+		</th:block>
+	</th:block>
+	<script type="text/javascript" th:inline="javascript" th:with="wrapId=${wrapId}?: 'ankenDashboardGyomuHistoryViewFragmentWrap'">
+	$(function() {
+		<!--/* 共有の要素セットアップ処理 */-->
+		commonSetUpElement();
+		
+		let ajaxRunning = false;
+		const $ankenDashboardGyomuHistoryViewFragmentWrap = $("#" + /*[[${wrapId}]]*/"");
+		const $ankenDashboardGyomuHistoryViewFragment = $("#ankenDashboardGyomuHistoryViewFragment");
+		
+		<!--/* 業務履歴の検索 */-->
+		$ankenDashboardGyomuHistoryViewFragment.on("change", '#gyomuHistoryAreaForm [name="dispType"]', function() {
+			if (ajaxRunning) {
+				return false;
+			}
+			ajaxRunning = true;
+			getAnkenDashboardGyomuHistoryViewFragment()
+				.catch((errors) => {console.log(errors);})
+				.finally(() => {ajaxRunning = false;});
+		});
+		
+		<!--/* 本文 すべて見る */-->
+		$('#ankenDashboardGyomuHistoryViewFragment .showAllMainText').on('click', function() {
+			const gyomuHistorySeq = $(this).data('gyomu-history-seq');
+			showAllMainText(gyomuHistorySeq);
+		})
+		
+		<!--/* 業務履歴エリア最新HTMLを取得 */-->
+		function getAnkenDashboardGyomuHistoryViewFragment() {
+			return new Promise(function(resolve, reject) {
+				const form = $ankenDashboardGyomuHistoryViewFragment.find("#gyomuHistoryAreaForm");
+				const path =form.attr("action");
+				let param = form.serializeArray();
+				$.ajax({
+					url : path,
+					type : "GET",
+					data : param,
+				}).done(function(data, status, jqXHR) {
+					if (isAjaxProcSuccess(jqXHR)) {
+						// 親HTMLのID
+						$ankenDashboardGyomuHistoryViewFragmentWrap.html(data);
+						return resolve();
+					} else {
+						// 処理失敗
+						const errorMsg = getAjaxProcResutlMessage(jqXHR);
+						showErrorMessageForJs(errorMsg);
+						return reject([errorMsg]);
+					}
+				}).fail(function(jqXHR, textStatus, errorThrown) {
+					const errorMsg = /*[[#{E00091}]]*/ "error";
+					showErrorMessageForJs(errorMsg);
+					return reject([errorMsg, jqXHR, textStatus, errorThrown]);
+				});
+			})
+		};
+		
+		<!--/* （作りを修正するまで）モーダルに対してtrigger処理を書かないこと *-->
+		const gyomuHistoryModal = $("#selectGyomuHistoryModal");
+		
+		<!--/* 
+			業務履歴の登録・編集・削除処理をオーバーライドする 
+			※元となる処理は @link{/user/gyomuHistory/anken/gyomuHistoryEditByAnken.html} 
+		*/-->
+		benzo.global.gyomuHistoryEdit.anken.saveAction = function(gyomuHistoryModal, path, params) {
+			if(benzo.global.gyomuHistoryEdit.anken.ajaxRunning){
+				return false;
+			}
+			benzo.global.gyomuHistoryEdit.anken.ajaxRunning = true;
+			$.ajax({
+				url : path,
+				type : "POST",
+				data : params,
+			}).done(function(result) {
+				if (result.succeeded) {
+					gyomuHistoryModal.modal("hide");
+					showInfoMessageForJs(result.message, gyomuHistoryModal);
+					getAnkenDashboardGyomuHistoryViewFragment()
+						.catch((errors) => {console.log(errors);});
+				} else {
+					showErrorMessage(result.message, gyomuHistoryModal, result.errors);
+				}
+			}).fail(function(jqXHR, textStatus, errorThrown) {
+				window.location.href = "/systemError";
+			}).always(function() {
+				benzo.global.gyomuHistoryEdit.anken.ajaxRunning = false;
+			});
+		}
+
+		<!--/* 本文 すべて見る */-->
+		function showAllMainText(gyomuHistorySeq) {
+			changeShowCloseMainText(gyomuHistorySeq, true);
+		}
+		
+		<!--/* -->
+		/**
+		 * 備考の表示、閉じるを切り替える
+		 * 
+		 * @param {number} gyomuHistorySeq - 表示を切り替える業務履歴のSEQ
+		 * @param {boolean} toShow - true : 表示する false : 閉じる
+		 */
+		 <!-- */-->
+		function changeShowCloseMainText(gyomuHistorySeq, toShow) {
+			
+			if (toShow) {
+				<!--/* 表示 */-->
+				
+				<!--/* 「すべて見る」部分のコンテンツを非表示 */-->
+				$('#showAllMainTextWrap_' + gyomuHistorySeq).addClass('hidden');
+				
+				<!--/* すべての本部部分のコンテンツを表示 */-->
+				$('#allMainTextWrap_' + gyomuHistorySeq).removeClass('hidden');
+				
+			} else {
+				<!--/* 閉じる */-->
+				<!--/* 閉じる操作は存在しない */-->
+			}
+		}
+
+	});
+	</script>
+
+	<form id="gyomuHistoryAreaForm" th:action="@{/user/ankenDashboard/{ankenId}/getAnkenDashboardGyomuHistoryViewFragment(ankenId=${ankenDashboardGyomuHistoryViewForm.ankenId.asLong()})}">
+		<section class="section_info">
+			<div class="section_header">
+				<div class="section_header__title">直近の業務履歴</div>
+				<div class="section_header__action">
+					<a href="javascript:void(0);" class="openGyomuHistoryModal fs15" th:data-anken_id="${ankenDashboardGyomuHistoryViewForm.ankenId.asLong()}"
+						data-toggle="modal" data-target="#selectGyomuHistoryModal">
+						<i class="fas fa-plus-square mr-2"></i>業務履歴を追加</a>
+				</div>
+			</div>
+			<div class="section_body">
+				<div class="section_body__contents p-0">
+				
+	<th:block th:if="${T(jp.loioz.common.constant.CommonConstant.DashGyomuAreaDispType).GYOMUHISTORY == ankenDashboardSearchForm.dispType}">
+		
+		<th:block th:if="${ankenDashboardGyomuHistoryViewForm.gyomuHistoryList.size() == 0}">
+					<div class="no_data_msg">
+						<span th:text="#{I00035('業務履歴')}">MSG_I00035</span>
+					</div>
+		</th:block>
+		
+		<th:block th:if="${ankenDashboardGyomuHistoryViewForm.gyomuHistoryList.size() > 0}">
+					<ul class="section_list pt-2">
+						<li class="list_contents" th:each="gyomuHistoryList : ${ankenDashboardGyomuHistoryViewForm.gyomuHistoryList}" th:data-seq="${gyomuHistoryList.gyomuHistorySeq}">
+							<div class="section_list_item_wrap">
+								<div class="section_list_item">
+									<div class="item_title_block">
+										<div class="item_title">
+											<a href="javascript:void(0);" class="item_name openGyomuHistoryModal"
+												th:data-gyomu_history_seq="${gyomuHistoryList.gyomuHistorySeq}"
+												th:data-anken_id="${ankenDashboardGyomuHistoryViewForm.ankenId.asLong()}"
+												data-toggle="modal" data-target="#selectGyomuHistoryModal">
+												<i class="far fa-sticky-note"></i>
+												<span th:text="${gyomuHistoryList.subject}"
+													data-boundary="window" data-container="body" data-toggle="tooltip" data-trigger="hover" th:title="編集する"></span>
+			<th:block th:if="${gyomuHistoryList.transitionType == T(jp.loioz.common.constant.CommonConstant$TransitionType).CUSTOMER}">
+													<span class="transitionId hidden" th:each="customer : ${gyomuHistoryList.customerList}"
+														th:if="${customer.customerId.asLong() > 0}" th:data-customer-id="${customer.customerId.asLong()}"></span>
+			</th:block>	
+											</a>
+										</div>
+										<div class="item_sub pt-1 fs13">
+											<div class="mr-4 stop-events">
+												<th:block th:if="${T(jp.loioz.common.utility.SessionUtils).canUsePlanFunc(T(jp.loioz.common.constant.plan.PlanConstant$PlanFuncRestrict).PF0001)}">
+													<button th:if="${!gyomuHistoryList.SentDengon}" type="button" class="btn btn-primary btn_icon_only_send createMsg" data-target="#dengonCreateModal" th:data-gyomu-history-seq= "${gyomuHistoryList.gyomuHistorySeq}" data-toggle="tooltip" data-trigger="hover" data-original-title="メッセージを作成する">
+														<i class="fas fa-paper-plane"></i></button>
+													<button th:if="${gyomuHistoryList.SentDengon}" type="button" class="btn btn-secondary btn_icon_only_send sendMsg" data-target="#dengonCreateModal" th:data-gyomu-history-seq= "${gyomuHistoryList.gyomuHistorySeq}" data-toggle="tooltip" data-trigger="hover" data-original-title="送信済みメッセージを確認する">
+														<i class="fas fa-paper-plane"></i></button>
+												</th:block>
+											</div>
+											<div class="lh1_3">
+												<div th:text="${gyomuHistoryList.getDispUpdatedAt()}"></div>
+												<div th:text="${gyomuHistoryList.createrName}"></div>
+											</div>
+										</div>
+									</div>
+									
+									<!--/* 本文の表示 */-->
+									<div class="item_content_block mt-4">
+										<!--/* 対応日時 */-->
+										<div class="item_other fs13" th:if="${!#strings.isEmpty(gyomuHistoryList.getDispSupportedAt())}">
+											<label class="side_parts_label"><i class="far fa-clock mr-2"></i>対応日時：</label>
+											<span th:text="${gyomuHistoryList.getDispSupportedAt()}"></span>
+										</div>
+										<div class="item_other mt-1">
+										
+			<!--/* 名簿情報 */-->
+			<th:block th:each="customer : ${gyomuHistoryList.customerList}">
+											<a th:if="${customer.customerId}" class="relation_link mr-3 mt-1" th:href="@{/user/personManagement/edit/{customerId}/(customerId=${customer.customerId.asLong()})}"
+												data-boundary="window" data-container="body" data-toggle="tooltip" data-trigger="hover" title="名簿情報へ">
+												<i class="fas fa-hashtag"></i>
+												<span class="relation_link_text" th:text="${customer.customerName}"></span>
+											</a>
+			</th:block>
+										
+			<!--/* 裁判情報 */-->
+			<th:block th:if="${gyomuHistoryList.saibanSeq}">
+											<a class="relation_link mt-1" th:href="@{/user/saibanManagement/{ankenId}/{branchNo}/(ankenId=${gyomuHistoryList.ankenId},branchNo=${gyomuHistoryList.saibanBranchNo})}"
+												data-boundary="window" data-container="body" data-toggle="tooltip" data-trigger="hover" th:title="裁判管理へ">
+												<i class="fas fa-hashtag"></i>
+												<span class="relation_link_text" th:text="${#strings.isEmpty(gyomuHistoryList.jikenName)} ? '(事件名未入力)' : ${gyomuHistoryList.jikenName}"></span>
+											</a>
+			</th:block>
+										</div>
+										
+										<div class="mt-2" th:unless="${#strings.isEmpty(gyomuHistoryList.mainText)}"
+											th:with="
+												initShowMaxCharCountMainText=100,
+												isOverCharCount=(${initShowMaxCharCountMainText} < ${#strings.length(gyomuHistoryList.mainText)})">
+												
+											<!-- 文字数が多い場合の表示 -->
+											<th:block th:if="${isOverCharCount}">
+												<!-- 一部の本文文字のみ表示（すべて見るリンク） -->
+												<div th:id="|showAllMainTextWrap_${gyomuHistoryList.gyomuHistorySeq}|">
+													<!-- 本文 -->
+													<span myth:nl2br="|${#strings.substring(gyomuHistoryList.mainText,0,initShowMaxCharCountMainText)}|"></span>
+													<!-- すべて見るリンク -->
+													<p class="mb-0 text-left">
+														<a href="javascirpt:void(0);" onClick="return false;">
+															<span class="showAllMainText" th:data-gyomu-history-seq="${gyomuHistoryList.gyomuHistorySeq}">
+																...すべて見る
+															</span>
+														</a>
+													</p>
+												</div>
+												<!-- 全ての本文文字を表示（すべて見るリンククリックで表示する） -->
+												<div th:id="|allMainTextWrap_${gyomuHistoryList.gyomuHistorySeq}|" class="hidden">
+													<!-- 備考 -->
+													<div>
+														<span myth:nl2br="${gyomuHistoryList.mainText}"></span>
+													</div>
+												</div>
+											</th:block>
+											
+											<!-- 文字数が多くない場合の表示 -->
+											<th:block th:unless="${isOverCharCount}">
+												<!--  全ての備考文字を表示 -->
+												<div>
+													<!-- 備考 -->
+													<span myth:nl2br="${gyomuHistoryList.mainText}"></span>
+												</div>
+											</th:block>
+										</div>
+									</div>
+								</div>
+							</div>
+						</li>
+					</ul>
+				</div>
+			</div>
+			<div class="section_block_footer">
+				<a th:href="@{/user/gyomuHistory/anken/list(transitionAnkenId=${ankenDashboardGyomuHistoryViewForm.ankenId.asLong()}, transitionCustomerId=null)}">
+						業務履歴画面を開く<i class="fas fa-caret-right ml-2"></i>
+				</a>
+			</div>
+		</section>
+<!--/*/ 	</th:block> /*/-->
+	</form>
+	<!--/* モーダル*/-->
+	<div id="selectEditModal">
+		<!--/* 伝言関連モーダル */-->
+		<div th:replace="::dengonCreateModalTemplate(target='dengon-create-modal-body')"></div>
+		<!--/* 伝言関連モーダル end */-->
+	</div>
+</div>
+
+<!--/** モーダルテンプレート */-->
+<div th:fragment="modalTemplate(id,target,modalSize)" th:id="${id}" class="modal fade" tabindex="-1" role="dialog" aria-hidden="true" data-backdrop="static">
+	<div class="modal-dialog modal-dialog-centered" role="document" th:classappend="${modalSize}">
+		<div class="modal-content">
+			<div th:class="${target}"></div>
+		</div>
+	</div>
+</div>
+
+<!--/* メッセージ作成モーダル */-->
+<div th:fragment="dengonCreateModalTemplate(target)" id="dengonCreateModal" class="modal fade" tabindex="-1" role="dialog" aria-hidden="true" data-backdrop="static">
+	<div class="modal-dialog modal-dialog-centered modal_mail_edit" role="document">
+		<div class="modal-content">
+			<div th:class="${target}"></div>
+		</div>
+	</div>
+</div>
+
+
+<!--/* タスク一覧で扱うフラグメント */-->
+<div th:fragment="ankenDashboardTaskViewFragment(ankenDashboardSearchForm, ankenDashboardTaskViewForm)" id="ankenDashboardTaskViewFragment">
+
+	<script type="text/javascript" th:inline="javascript" th:with="wrapId=${wrapId}?: 'ankenDashboardTaskViewFragmentWrap'">
+	$(function() {
+		
+		<!--/* 共有の要素セットアップ処理 */-->
+		commonSetUpElement();
+		
+		let ajaxRunning = false;
+		const $ankenDashboardTaskViewFragmentWrap = $("#" + /*[[${wrapId}]]*/"");
+		const $ankenDashboardTaskViewFragment = $("#ankenDashboardTaskViewFragment");
+		
+		<!--/* タスクエリア最新HTMLを取得 */-->
+		function getAnkenDashboardTaskViewFragment() {
+			return new Promise((resolve, reject) => {
+				const form = $("#taskAreaForm");
+				const path =form.attr("action");
+				let param = form.serializeArray();
+				$.ajax({
+					url : path,
+					type : "GET",
+					data : param,
+				}).done(function(data, status, jqXHR) {
+					if (isAjaxProcSuccess(jqXHR)) {
+						// 親HTMLのID
+						$ankenDashboardTaskViewFragmentWrap.html(data);
+						return resolve();
+					} else {
+						// 処理失敗
+						const errorMsg = getAjaxProcResutlMessage(jqXHR);
+						showErrorMessageForJs(errorMsg);
+						return reject([errorMsg]);
+					}
+				}).fail(function(jqXHR, textStatus, errorThrown) {
+					console.log(jqXHR, textStatus, errorThrown);
+					const errorMsg = /*[[#{E00091}]]*/ "error";
+					showErrorMessageForJs(errorMsg);
+					return reject([errorMsg, jqXHR, textStatus, errorThrown]);
+				});
+			});
+		};
+		
+		<!--/* 
+			タスクの登録・編集・削除処理をオーバーライドする
+			※元となる処理は @link{/user/taskManagement/taskEditModal.html} 
+		*/-->
+		benzo.global.taskEdit.saveAction = function(modal, path, params) {
+			if(benzo.global.taskEdit.ajaxRunning){
+				return false
+			}
+			benzo.global.taskEdit.ajaxRunning = true;
+			$.ajax({
+				url : path,
+				type : "POST",
+				data : params,
+			}).done(function(result) {
+				if(result.succeeded){
+					showInfoMessageForJs(result.message, modal);
+					modal.modal("hide");
+					getAnkenDashboardTaskViewFragment()
+						.catch((errors)=> {console.log(errors);})
+				} else {
+					showErrorMessage(result.message, modal, result.errors);
+				}
+			}).fail(function(jqXHR, textStatus, errorThrown) {
+				window.location.href = "/systemError";
+			}).always(function() {
+				benzo.global.taskEdit.ajaxRunning = false;
+			});
+		}
+		
+		<!--/* 
+			モーダル閉じる処理をオーバーライドする
+			※元となる処理は @link{/user/taskManagement/taskEditModal.html} 
+		*/-->
+		benzo.global.taskEdit.closeModalAction = function() {
+			getAnkenDashboardTaskViewFragment()
+			.catch((errors)=> {console.log(errors);})
+		}
+		
+		<!--/* タスクの検索 */-->
+		$ankenDashboardTaskViewFragment.on("change", '#taskAreaForm [name="allDispTaskList"]', function() {
+			if(ajaxRunning) {
+				return false;
+			}
+			ajaxRunning = true;
+			getAnkenDashboardTaskViewFragment()
+				.catch((errors)=> {console.log(errors);})
+				.finally(() => {ajaxRunning = false;})
+		});
+		
+		<!--/* タスク一覧ステータスの編集 */-->
+		$ankenDashboardTaskViewFragment.on("click", ".taskCheck", function() {
+			if (ajaxRunning) {
+				return false;
+			}
+			const taskSeq = $(this).data('taskseq');
+			const taskStatus = $(this).data('task-status');
+			let preparingFlg = false;
+			<!-- /* 完了にする */ -->
+			let changeTaskStaus = /*[[${T(jp.loioz.common.constant.CommonConstant$TaskStatus).COMPLETED}]]*/ '';
+			if (taskStatus == changeTaskStaus) {
+				<!-- /* 未完了に戻す */ -->
+				changeTaskStaus = /*[[${T(jp.loioz.common.constant.CommonConstant$TaskStatus).PREPARING}]]*/ '';
+				preparingFlg = true;
+			}
+			ajaxRunning = true;
+			
+			<!-- /* タスクの状態を操作する */ -->
+			if (preparingFlg) {
+				<!-- /* 完了タスクを未着手に戻す */ -->
+				$('#taskData' + taskSeq).find('.taskTitle').css('text-decoration', 'none');
+				$('#taskData' + taskSeq).find('.taskTitle').css('color', 'var(--text-color-main)');
+				$('#taskData' + taskSeq).find('.taskStatusComp').addClass('hidden');
+				$('#taskData' + taskSeq).find('.taskStatusPreparing').removeClass('hidden');
+				$('#taskData' + taskSeq).find('.taskCheckHoverComp').removeClass('taskCheckHoverComp');
+				
+			} else {
+				<!-- /* タスクを完了にして取り消し線をつける */ -->
+				$('#taskData' + taskSeq).find('.taskTitle').css('text-decoration', 'line-through');
+				$('#taskData' + taskSeq).find('.taskTitle').css('color', 'var(--text-color-title)');
+				$('#taskData' + taskSeq).find('.taskStatusPreparing').addClass('hidden');
+				$('#taskData' + taskSeq).find('.taskStatusComp').removeClass('hidden');
+				$('#taskData' + taskSeq).find('.taskCheckHover').removeClass('taskCheckHover');
+			}
+			
+			<!--/* このメソッドは共通化されていないものを使用しているので、タスクを共通化した後変更する */-->
+			$.ajax({
+				url : "/user/taskManagement/changeStatusAnkenDashbord",
+				type : "POST",
+				data : {
+					"taskSeq" : taskSeq,
+					"taskStatus" : changeTaskStaus,
+				}
+			}).done(function(data, status, jqXHR) {
+				if (isAjaxProcSuccess(jqXHR)) {
+					// 処理成功
+					showInfoMessageForJs(getAjaxProcResutlMessage(jqXHR));
+
+					<!-- /* 完了にしたタスクを再読み込み */ -->
+					setTimeout(function(){
+						<!--/* このメソッドは共通化されていないものを使用しているので、タスクを共通化した後変更する */-->
+						// 一覧の最新化
+						getAnkenDashboardTaskViewFragment()
+							.catch((errors)=> {console.log(errors);})
+					}, 300);
+					<!--/* ヘッダーの更新 */-->
+					headerRefresh();
+				} else {
+					// 処理失敗
+					const errorMsg = getAjaxProcResutlMessage(jqXHR);
+					showErrorMessageForJs(errorMsg);
+				}
+			}).fail(function(jqXHR, textStatus, errorThrown) {
+				const errorMsg = /*[[#{E00091}]]*/ "error";
+				showErrorMessageForJs(errorMsg);
+			}).always(function() {
+				ajaxRunning = false;
+			});
+		});
+		
+		<!-- /* タスク【未着手・進行中】チェックhoverアクション */ -->
+		$('.dashboard_task_list').on({
+			mouseenter: function() {
+				$(this).children('.taskStatusPreparing').addClass('hidden');
+				$(this).children('.taskStatusComp').removeClass('hidden');
+			},
+			mouseleave: function() {
+				$(this).children('.taskStatusPreparing').removeClass('hidden');
+				$(this).children('.taskStatusComp').addClass('hidden');
+			}
+		}, '.taskCheckHover');
+		
+		<!-- /* タスク【完了】チェックhoverアクション */ -->
+		$('.dashboard_task_list').on({
+			mouseenter: function() {
+				$(this).children('.taskStatusPreparing').removeClass('hidden');
+				$(this).children('.taskStatusComp').addClass('hidden');
+			},
+			mouseleave: function() {
+				$(this).children('.taskStatusPreparing').addClass('hidden');
+				$(this).children('.taskStatusComp').removeClass('hidden');
+			}
+		}, '.taskCheckHoverComp');
+	
+	});
+	</script>
+	
+	<form id="taskAreaForm" th:action="@{/user/ankenDashboard/{ankenId}/getAnkenDashboardTaskViewFragment(ankenId=${ankenDashboardTaskViewForm.ankenId.asLong()})}">
+		<section class="section_border">
+			<div class="section_header">
+				<div class="section_header__title">
+					<span class="mr-2">タスク</span>
+					<label class="check_area checkbox_btn fs12 fw0">
+						<input type="checkbox" class="checkbox_input" th:field="${ankenDashboardSearchForm.allDispTaskList}">
+						<span class="checkbox_txt">完了済みも表示</span>
+					</label>
+				</div>
+				<div class="section_header__action">
+					<a href="javascript:void(0);" class="openTaskModal fs15" data-toggle="modal" data-target="#selectTaskModal" th:data-anken_id="${ankenDashboardTaskViewForm.ankenId.asLong()}">
+						<i class="fas fa-plus-square mr-2"></i>タスクを追加</a>
+				</div>
+			</div>
+			<div class="section_body section_task hover_scroll">
+				<div class="section_body__contents p-0">
+				
+<!--/*/		<th:block th:if="${ankenDashboardTaskViewForm.taskList.size() == 0}"> /*/-->
+					<div class="no_data_msg">
+							<span th:text="#{I00035('タスク')}">MSG_I00035</span>
+					</div>
+<!--/*/		</th:block> /*/-->
+
+<!--/*/		<th:block th:if="${ankenDashboardTaskViewForm.taskList.size() > 0}"> /*/-->
+					<ul class="section_card_list dashboard_task_list">
+						<li class="taskListRow openTaskModal" th:id="|taskData${task.taskSeq}|" th:each="task : ${ankenDashboardTaskViewForm.taskList}" th:object="${task}" th:data-seq="${task.taskSeq}"
+							data-toggle="modal" data-target="#selectTaskModal" th:data-task_seq="${task.taskSeq}" th:data-anken_id="${ankenDashboardTaskViewForm.ankenId.asLong()}">
+							
+							<div class="dashboard_task_data">
+								<!--/* タスクチェック */-->
+								<div class="dashboard_task_data_comp stop-events taskCheck" data-boundary="window" data-container=".section_task" data-toggle="tooltip"
+									th:data-task-status="*{taskStatus}" th:data-taskSeq="${task.taskSeq}"
+									th:title="${(T(jp.loioz.common.constant.CommonConstant$TaskStatus).COMPLETED.equalsByCode(task.taskStatus) ? '未着手に戻す' : '完了にする')}"
+									th:classappend="${(T(jp.loioz.common.constant.CommonConstant$TaskStatus).COMPLETED.equalsByCode(task.taskStatus) ? 'taskCheckHoverComp' : 'taskCheckHover')}">
+									<div class="taskStatusPreparing" th:classappend="${(T(jp.loioz.common.constant.CommonConstant$TaskStatus).COMPLETED.equalsByCode(task.taskStatus) ? 'hidden' : ' ')}">
+										<i class="far fa-circle"></i>
+									</div>
+									<div class="taskStatusComp task_comp" th:classappend="${(T(jp.loioz.common.constant.CommonConstant$TaskStatus).COMPLETED.equalsByCode(task.taskStatus) ? 'noHoverTask' : 'hidden')}" >
+										<i class="far fa-check-circle"></i>
+									</div>
+								</div>
+								<!--/* タスク詳細 */-->
+								<div class="dashboard_task_data_detail">
+									<!--/* タイトル */-->
+									<div class="dashboard_task_list_row__title taskTitle" 
+										th:classappend="${(T(jp.loioz.common.constant.CommonConstant$TaskStatus).COMPLETED.equalsByCode(task.taskStatus) ? 'task_title_comp' : '')}"
+										th:text ="*{title}"></div>
+									<div class="dashboard_task_list_row">
+										<!--/* 期限 */-->
+										<div th:if ="*{limitDt} != ''" class="dashboard_task_list_row__limit" th:classappend="${task.limitDateStyle}">
+											<i class="far fa-calendar-alt"></i>
+											<span th:text="*{getDispLimitDateTime()}">1月1日</span>
+										</div>
+										<!--/* コメント件数 */-->
+										<div class="dashboard_task_list_row__comment" th:if="${task.commentCount} > 0">
+											<i class="far fa-comment"></i>
+											<span  th:text="${task.commentCount}"></span>
+										</div>
+										<!--/* サブタスクが有る場合、件数を表示） */-->
+										<div class="check_item_count">
+											<th:block th:if="${task.checkItemCount != 0}">
+												<i class="far fa-check-square mr-1"></i>
+												<span th:text="${task.completeCheckItemCount}"></span>/<span th:text="${task.checkItemCount}"></span>
+											</th:block>
+										</div>
+									</div>
+									<div class="dashboard_task_list_row justify-content-end mt-2">
+										<th:block th:each="taskTanto : ${task.taskTantoList}">
+											<span data-boundary="window" data-container=".section_task" data-toggle="tooltip" th:title="${taskTanto.workerAccountName}" >
+												<i class="fas fa-user-circle ml-2 fa-lg" th:style="|color: ${taskTanto.accountColor}|"></i>
+											</span>
+										</th:block>
+									</div>
+								</div>
+							</div>
+						</li>
+					</ul>
+<!--/*/		</th:block> /*/-->
+				</div>
+			</div>
+		</section>
+	</form>
+</div>
+
+
+<!--/* 予定一覧で扱うフラグメント */-->
+<div th:fragment="ankenDashboardScheduleViewFragment(ankenDashboardSearchForm,ankenDashboardScheduleViewForm)" id="ankenDashboardScheduleViewFragment">
+
+	<script type="text/javascript" th:inline="javascript" th:with="wrapId=${wrapId}?: 'ankenDashboardScheduleViewFragmentWrap'">
+	$(function() {
+		<!--/* 共有の要素セットアップ処理 */-->
+		commonSetUpElement();
+		
+		let ajaxRunning = false;
+		let canOpenModal = true;
+		const $ankenDashboardScheduleViewFragmentWrap = $("#" + /*[[${wrapId}]]*/"");
+		const $ankenDashboardScheduleViewFragment = $("#ankenDashboardScheduleViewFragment");
+		
+		let scheduleModal = benzo.global.scheduleModal.modal;
+		<!--/* 画面読込時に顧客案件ステータスの予定データを取得 */-->
+		const scheduleListSize = /*[[${ankenDashboardScheduleViewForm.scheduleList.size()}]]*/0;
+		<!--/* 検索情報はSessionに管理しているため不要 */-->
+		if (scheduleListSize) {
+			$.ajax({
+				type : "GET",
+				url : /*[[(@{getAnkenDashScheduleDetail})]]*/ "/",
+				dataType : "json"
+			})
+			.done(function(result) {
+				<!--/* 予定キャッシュに予定データを追加 */-->
+				$.extend(scheduleCache, result);
+				<!--/* 予定登録モーダル表示ボタンの設定 */-->
+				setupModalButton();
+			})
+			.fail(function() {
+			});
+		} else {
+			<!--/* 予定登録モーダル表示ボタンの設定 */-->
+			setupModalButton();
+		}
+		
+		function setupModalButton() {
+			<!--/* モーダルを開く */-->
+			$ankenDashboardScheduleViewFragment.on("click",".openScheduleModal", function(){
+
+				if(!canOpenModal){
+					return;
+				}
+
+				<!--/* 保存処理を上書き */-->
+				setupSaveAction()
+				
+				<!--/* 予定表データを取得 */-->
+				let scheduleData = {};
+				let scheduleSeq = $(this).data("scheduleSeq");
+				let modalConfig = {};
+				if(!scheduleSeq){
+					<!--/* 新規 */-->
+					modalConfig.isCreate = true;
+					scheduleData = $.extend(true, {}, benzo.global.scheduleModal.emptyScheduleData);
+
+					let defDateSetting = benzo.global.scheduleModal.getDefaultDateForOther();
+					scheduleData.dateFrom = defDateSetting.dateFrom;
+					scheduleData.dateTo = defDateSetting.dateFrom;
+					scheduleData.hourFrom = defDateSetting.hourFrom;
+					scheduleData.timeFrom = defDateSetting.timeFrom;
+					scheduleData.hourTo = defDateSetting.hourTo;
+					scheduleData.timeTo = defDateSetting.timeTo;
+
+					scheduleData.member = [];
+					scheduleData.ankenId = /*[[${ankenDashboardScheduleViewForm.ankenId.asLong()}]]*/ null;
+					scheduleData.ankenIdDisp = /*[[${ankenDashboardScheduleViewForm.ankenId.toString()}]]*/ null;
+					scheduleData.ankenName = /*[[${#strings.isEmpty(ankenDashboardScheduleViewForm.ankenName) ? '(案件名未入力)' : ankenDashboardScheduleViewForm.ankenName}]]*/ null;
+					scheduleData.bunyaName = /*[[${ankenDashboardScheduleViewForm.bunya?.getVal()}]]*/ null;
+				} else {
+					<!--/* 編集 */-->
+					modalConfig.isUpdate = true;
+					scheduleData = $.extend(true, {}, benzo.global.scheduleModal.emptyScheduleData, scheduleCache[scheduleSeq]);
+				}
+
+				<!--/* モーダルを表示 */-->
+				benzo.global.scheduleModal.openModal(scheduleData, modalConfig);
+				<!--/* 案件主担当の設定 */-->
+				benzo.global.scheduleModal.setAnkenMain(scheduleData.ankenId);
+				<!--/* 案件担当者のプルダウンを設定 */-->
+				benzo.global.scheduleModal.setUpAnkenTantoOption(scheduleData.ankenId);
+				
+				<!--/* 初回面談・裁判期日は、予定表からは一部項目が編集不可 */-->
+				if(scheduleData.saibanLimit){
+					scheduleModal.find('[data-contains="subject"], [data-contains="date"], [data-contains="place"], [data-contains="shokaiMendan"], [data-contains="saibanLimit"]')
+						.find("input, textarea, select, button").prop("disabled", true);
+					scheduleModal.find('[data-contains="subject"], [data-contains="date"], [data-contains="place"], [data-contains="shokaiMendan"], [data-contains="saibanLimit"]')
+						.find(".select").attr("disabled",true);
+				} else {
+					scheduleModal.find('[data-contains="subject"], [data-contains="date"], [data-contains="place"], [data-contains="shokaiMendan"], [data-contains="saibanLimit"]')
+					.find("input, textarea, select, button").prop("disabled", false);
+					scheduleModal.find('[data-contains="subject"], [data-contains="date"], [data-contains="place"], [data-contains="shokaiMendan"], [data-contains="saibanLimit"]')
+					.find(".select").attr("disabled",false);
+				}
+			});
+		}
+		
+		<!--/* 該当フラグメントから開いたときの保存処理を定義する */-->
+		function setupSaveAction() {
+			benzo.global.scheduleModal.saveAction = function(triggerBtn) {
+				if(benzo.global.scheduleModal.ajaxRunning){
+					return false;
+				}
+				let button = $(triggerBtn);
+				if(button.is(".deleteButton")){
+					if(!confirm("この予定を削除します。よろしいですか？")){
+						return false;
+					}
+				}
+				benzo.global.scheduleModal.ajaxRunning = true;
+				Promise.resolve()
+					.then(() => beforeCheck(button)) // 保存前チェック
+					.then(() => saveAjax(button)) // 保存処理
+					.then(() => getAnkenDashboardScheduleViewFragment()) // 再レンダリング
+					.catch((errors) => {console.log(errors);})
+					.finally(() => {benzo.global.scheduleModal.ajaxRunning = false;});
+				
+				// 内部関数 : 保存前チェック
+				function beforeCheck(triggerBtn) {
+					if(triggerBtn.is(".deleteButton")){
+						// 削除時は確認処理が不要なので成功として扱う
+						return Promise.resolve();
+					}
+					return new Promise((resolve, reject) => {
+						$.ajax({
+							type : "POST",
+							url : /*[[(@{/user/schedule/needConfirm})]]*/ "/",
+							data : benzo.global.scheduleModal.getModalFormParams(),
+							dataType : "json"
+						}).done(function(checked) {
+							if(checked.needConfirm &&!confirm(checked.message)){
+								return reject(["処理がキャンセルされました。"]);
+							}
+							return resolve();
+						}).fail(function(jqXHR, textStatus, errorThrown) {
+							const errorMsg = /*[[#{E00091}]]*/ "error";
+							showErrorMessageForJs(errorMsg);
+							return reject([jqXHR, textStatus, errorThrown]);
+						});
+					});
+				};
+				
+				// 内部関数 : 保存
+				function saveAjax(triggerBtn) {
+					return new Promise((resolve, reject) => {
+						$.ajax({
+							type : "POST",
+							url : button.data("url"),
+							data : benzo.global.scheduleModal.getModalFormParams(),
+							dataType: 'json',
+						}).done(function(result) {
+							if(result.succeeded){
+								// modal('hide')だと共通の処理が発火しないので、クリック連動で閉じる
+								scheduleModal.find(".closeButton").trigger("click"); 
+								showInfoMessageForJs(result.message, scheduleModal);
+								return resolve();
+							} else {
+								showErrorMessage(result.message, scheduleModal, result.errors);
+								return reject([result.message]);
+							}
+						}).fail(function() {
+							const errorMsg = /*[[#{E00091}]]*/ "error";
+							showErrorMessageForJs(errorMsg);
+							return reject([jqXHR, textStatus, errorThrown]);
+						});
+					});
+				};
+			};
+		};
+		
+		<!--/* スケジュールエリア最新HTMLを取得 */-->
+		function getAnkenDashboardScheduleViewFragment() {
+			return new Promise(function(resolve, reject) {
+				const form = $ankenDashboardScheduleViewFragment.find("#scheduleAreaForm");
+				const path =form.attr("action");
+				let param = form.serializeArray();
+				
+				$.ajax({
+					url : path,
+					type : "GET",
+					data : param,
+				}).done(function(data, status, jqXHR) {
+					if (isAjaxProcSuccess(jqXHR)) {
+						// 親HTMLのID
+						$ankenDashboardScheduleViewFragmentWrap.html(data);
+						return resolve();
+					} else {
+						// 処理失敗
+						const errorMsg = getAjaxProcResutlMessage(jqXHR);
+						showErrorMessageForJs(errorMsg);
+						return reject([errorMsg]);
+					}
+				}).fail(function(jqXHR, textStatus, errorThrown) {
+					const errorMsg = /*[[#{E00091}]]*/ "error";
+					showErrorMessageForJs(errorMsg);
+					return reject([errorMsg, jqXHR, textStatus, errorThrown]);
+				});
+			});
+		};
+		
+		<!--/* スケジュールの検索 */-->
+		$ankenDashboardScheduleViewFragment.on("change", '#scheduleAreaForm [name="allDispScheduleList"]', function() {
+			if (ajaxRunning) {
+				return false;
+			}
+			ajaxRunning = true;
+			getAnkenDashboardScheduleViewFragment()
+				.catch((errors) => {console.log(errors);})
+				.finally(() => {ajaxRunning = false;});
+		});
+
+		<!-- 裁判管理画面リンク -->
+		$('#ankenDashboardScheduleViewFragment .saiban').on({
+			'mouseenter' : function() {
+				canOpenModal = false;
+			},
+			'mouseleave' : function(){
+				canOpenModal = true;
+			}
+		});
+
+	});
+	</script>
+
+	<form id="scheduleAreaForm" th:action="@{/user/ankenDashboard/{ankenId}/getAnkenDashboardScheduleViewFragment(ankenId=${ankenDashboardScheduleViewForm.ankenId.asLong()})}">
+		<section class="section_border section_yotei">
+			<div class="section_header">
+				<div class="section_header__title">
+					<span class="mr-2">予定</span>
+					<label class="check_area checkbox_btn fs12 fw0">
+						<input type="checkbox" class="checkbox_input" th:field="${ankenDashboardSearchForm.allDispScheduleList}">
+						<span class="checkbox_txt">過去の予定も表示</span>
+					</label>
+				</div>
+				<div class="section_header__action">
+					<a href="javascript:void(0);" class="openScheduleModal fs15"><i class="fas fa-plus-square mr-2"></i>予定を追加</a>
+				</div>
+			</div>
+			<div class="section_body dashboard_yotei_list hover_scroll">
+				<div class="section_body__contents p-0">
+				
+	<!--/*/	<th:block th:if="${ankenDashboardScheduleViewForm.scheduleList.size() == 0}"> /*/-->
+					<div class="no_data_msg">
+						<span th:text="#{I00035('予定')}">MSG_I00035</span>
+					</div>
+	<!--/*/	</th:block> /*/-->
+	
+	<!--/*/		<th:block th:if="${ankenDashboardScheduleViewForm.scheduleList.size() > 0}"> /*/-->
+					<ul class="section_card_list card_yotei_list">
+						<li th:each="scheduleList : ${ankenDashboardScheduleViewForm.scheduleList}" th:data-seq="${scheduleList.scheduleSeq}"
+							class="openScheduleModal" th:data-schedule-seq="${scheduleList.scheduleSeq}">
+							<div>
+								<!-- 裁判以外の予定の場合 -->
+								<th:block th:unless="${scheduleList.isSaibanSchedule()}">
+									<h3 class="cal_subject cal_anken" th:classappend="${scheduleList.isKakoYotei()} ? 'kako_yotei' : ''" th:text="${scheduleList.subject}"></h3>
+								</th:block>
+								<!--/* 裁判の予定（期日）の場合 */-->
+	<!--/*/					<th:block th:if="${scheduleList.isSaibanSchedule()}"> /*/-->
+									<h3 class="cal_subject cal_saiban" th:classappend="${scheduleList.isKakoYotei()} ? 'kako_yotei' : ''" th:text="${scheduleList.subject}"></h3>
+	<!--/*/					</th:block> /*/-->
+	
+							</div>
+							<div class="yotei_date">
+	<!--/*/				<th:block th:if="${scheduleList.allDay}"> /*/-->
+								<i class="far fa-calendar-alt mr-3"></i>
+								<span th:text="${scheduleList.getDispAllDayDateFrom()}"></span>
+	<!--/*/					<th:block th:if="${scheduleList.allDayPeriodIsOneDay()}"> /*/-->
+									<span class="icon_syujitsu_char small ml-1">終日</span>
+	<!--/*/					</th:block> /*/-->
+	<!--/*/					<th:block th:unless="${scheduleList.allDayPeriodIsOneDay()}"> /*/-->
+									<span th:text="${scheduleList.getDispAllDayDateTo()}"></span>
+	<!--/*/					</th:block> /*/-->
+	<!--/*/				</th:block> /*/-->
+	
+	<!--/*/				<th:block th:unless="${scheduleList.allDay}"> /*/-->
+								<i class="far fa-calendar-alt mr-3"></i>
+								<span th:text="${scheduleList.getDispDate()}"></span>
+								<span th:text="${scheduleList.getDispDateTime()}"></span>
+	<!--/*/				</th:block> /*/-->
+								<span th:if="${T(jp.loioz.common.constant.CommonConstant$ShutteiType).NOT_REQUIRED == scheduleList.shutteiType}" class="text-danger">出廷不要</span>
+							</div>
+							<div class="yotei_place">
+								<i class="fas fa-map-marker-alt mr-3"></i>
+								<span th:text="${scheduleList.place}"></span>
+							</div>
+							<!-- 裁判の予定（期日）の場合 -->
+	<!--/*/				<th:block th:if="${scheduleList.isSaibanSchedule()}"> /*/-->
+							<div class="yotei_saiban">
+								<div class="d-flex">
+									<div>
+										<i class="fas fa-gavel reverses_text"></i>
+									</div>
+									<div class="w-100">
+										<div class="stop-events">
+											<a class="saiban" th:href="@{/user/saibanManagement/{ankenId}/{branchNumber}/(ankenId=${scheduleList.ankenId}, branchNumber=${scheduleList.saibanBranchNo})}" data-toggle="tooltip" title="裁判管理へ">
+												<span th:text="${#strings.isEmpty(scheduleList.jikenName) ? '(事件名未入力)' : scheduleList.jikenName }">事件名</span>
+											</a>
+											<div class="sub_text">
+												<span th:text="${scheduleList.caseNumber}">事件No</span>
+											</div>
+										</div>
+										<div class="yotei_saiban_tojisha row mt-2">
+											<div class="col-sm-6">
+												<div class="data_item_label">当事者</div>
+												<div class="data_item" th:text="${scheduleList.saibanTojishaNameLabel}"></div>
+											</div>
+											<div class="col-sm-6">
+												<div class="data_item_label">相手方</div>
+												<div class="data_item" th:text="${scheduleList.saibanAitegataNameLabel}"></div>
+											</div>
+										</div>
+									</div>
+								</div>
+							</div>
+	<!--/*/				</th:block> /*/-->
+							<div class="yotei_account">
+								<i class="fas fa-user mr-2" th:if="${scheduleList.accountNameList?.size() <=1}"></i>
+								<i class="fas fa-users mr-2" th:if="${scheduleList.accountNameList?.size() > 1}"></i>
+								<span th:each="name, i : ${scheduleList.accountNameList}" th:text="${i.first} ? ${name}:_"></span>
+								<span th:if="${scheduleList.accountNameList?.size() > 1}" th:text="| 外${scheduleList.accountNameList?.size() - 1}名|"></span>
+							</div>
+						</li>
+					</ul>
+				</div>
+			</div>
+		</section>
+	</form>
+</div>
+
+
+</body>
+</html>

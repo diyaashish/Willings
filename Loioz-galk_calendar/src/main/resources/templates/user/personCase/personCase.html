@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+	xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+	xmlns:xtra="https://github.com/connect-group/thymeleaf-extras"
+	layout:decorator="commonLayout">
+<head>
+<meta charset="utf-8" />
+<title layout:fragment="title-contents">
+	[[${T(jp.loioz.common.utility.LoiozUtils).getHtmlTitle("案件", T(jp.loioz.common.utility.SessionUtils).getTenantName())}]]
+</title>
+<th:block th:with="version=${@environment.getProperty('app.version')}">
+	<link th:href="@{/css/person/person.css?{ver}(ver=${version})}" rel="stylesheet" type="text/css"/>
+	<link th:href="@{/css/accg/accg.css?{ver}(ver=${version})}" rel="stylesheet" type="text/css"/>
+</th:block>
+<script type="text/javascript" th:inline="javascript">
+<!--/*
+ 二重送信防止対応用の値。
+ このHTMLに差し込まれるfragment内のScriptの処理も、共通してこの変数を利用する。
+*/-->
+let ajaxRunning = false;
+
+</script>
+</head>
+<body>
+	<div layout:fragment="main-contents" th:remove="tag">
+		
+		<!--/* サイドメニューあり */-->
+		<div class="contents_sidebar_wrapper contentsSlidebarWrapper" th:data-click-open=${customerAnkenMenuOpenClickForSessionValue} th:data-resize-open=${customerAnkenMenuOpenResizeForSessionValue}>
+			
+			<!--/* 名簿・案件 サイドメニュー */-->
+			<div th:replace="common/customerAnkenMenu::menuList(
+				sideMenuAnkenId=null,
+				sideMenuCustomerId=${viewForm.personId},
+				selectedTabClass='is_person_case')">
+			</div>
+			
+			<!--/* メインコンテンツの外側 */-->
+			<div class="contents_wrapper">
+				<div class="container-fluid">
+					
+					<!--/* 画面メイン */-->
+					<main class="content">
+						
+						<!--/* ぱんくず */-->
+						<div th:replace="common/wrapHeader::wrapHeader(
+							returnListScreen=${T(jp.loioz.common.utility.SessionUtils).getSessionVaule(T(jp.loioz.common.constant.SessionAttrKeyEnum).RETURN_LIST_SCREEN.codeKey)},
+							sideMenuPersonId=${viewForm.personId},
+							selectedTabClass='is_person_case',
+							returnPrevScreenName=${T(jp.loioz.common.utility.SessionUtils).getSessionVaule(T(jp.loioz.common.constant.SessionAttrKeyEnum).RETURN_PREV_SCREEN_NAME)},
+							returnPrevScreenUrl=${T(jp.loioz.common.utility.SessionUtils).getSessionVaule(T(jp.loioz.common.constant.SessionAttrKeyEnum).RETURN_PREV_SCREEN_URL)})">
+						</div>
+						
+						<!--/* メッセージエリア */-->
+						<div th:replace="common/messageArea::messageArea"></div>
+						
+						<!--/* 顧客情報・案件情報 */-->
+						<div id="customerAnkenSelectedWrap" th:insert="common/customerAnkenSelected::detailInfo(
+							wrapHeaderAnkenId=null,
+							wrapHeaderCustomerId=${viewForm.personId})">
+						</div>
+						
+						<!--/* 案件一覧ブロック */-->
+						<div id="personCaseAnkenListViewFragmentWrap" 
+							th:insert="user/personCase/personCaseFragment::personCaseAnkenListViewFragment(${viewForm})">
+						</div>
+						
+					</main>
+				</div>
+			</div>
+		</div>
+	</div>
+</body>
+</html>

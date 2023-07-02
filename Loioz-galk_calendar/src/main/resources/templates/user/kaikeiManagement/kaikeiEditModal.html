@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+		xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+		layout:decorator="commonLayout">
+<head>
+<meta charset="utf-8" />
+</head>
+<body>
+	<!--/* 案件選択モーダル */-->
+	<div th:fragment="ankenModal" >
+		<div class="modal-header">
+			<h2 th:if="${ankenMeisaiEditForm.transitionCustomerId}" class="modalheader_title">案件選択</h2>
+			<h2 th:if="${ankenMeisaiEditForm.transitionAnkenId}" class="modalheader_title">顧客選択</h2>
+		</div>
+		<div class="modal-body">
+			<!-- メッセージ表示領域 -->
+			<div th:replace="common/messageArea::jsMessageArea"></div>
+			
+			<div th:classappend="${ankenMeisaiEditForm.transitionCustomerId} ? 'table_anken' : 'table_customer' ">
+				<table class="table_select table-hover" th:fragment="ankenList">
+					<thead>
+						<tr>
+<!--/*/ 			<th:block th:if="${ankenMeisaiEditForm.transitionCustomerId}"> /*/-->
+							<th scope="col" class="col_id">案件ID</th>
+							<th scope="col" class="col_select_anken">案件名</th>
+<!--/*/ 			</th:block> /*/-->
+<!--/*/ 			<th:block th:if="${ankenMeisaiEditForm.transitionAnkenId}"> /*/-->
+							<th scope="col" class="col_id">名簿ID</th>
+							<th scope="col" class="col_customer_name">顧客名</th>
+<!--/*/ 			</th:block> /*/-->
+						</tr>
+					</thead>
+					<tbody>
+						<tr th:each="item :${ankenMeisaiEditForm.kaikeiManagementList}" class="" data-click-sync-for-descendants="a" th:classappend="${T(jp.loioz.common.constant.CommonConstant$AnkenStatus).KANRYO.equalsByCode(item.ankenStatusCd) || T(jp.loioz.common.constant.CommonConstant$AnkenStatus).FUJUNIN.equalsByCode(item.ankenStatusCd)} ? 'anken_select_modal_completed' : 'anken_select_modal'">
+<!--/*/ 			<th:block th:if="${ankenMeisaiEditForm.transitionCustomerId}"> /*/-->
+							<td class="col_id">
+								<a th:text="${item.ankenId.asLong()}"
+									th:href="@{/user/seisansho/create?(seisanAnkenId=${item.ankenId.asLong()}, seisanCustomerId=${item.customerId.asLong()}, transitionType=1)}">
+									
+								</a>
+							</td>
+							<td class="col_select_anken char_ellipsis" th:text="${#strings.isEmpty(item.ankenName)}? '(案件名未入力)' : ${item.ankenName}">案件名</td>
+<!--/*/ 			</th:block> /*/-->
+<!--/*/ 			<th:block th:if="${ankenMeisaiEditForm.transitionAnkenId}"> /*/-->
+<!--/*/ 				<th:block th:if="${T(jp.loioz.common.constant.CommonConstant$AnkenStatus).KANRYO.equalsByCode(item.ankenStatusCd) || T(jp.loioz.common.constant.CommonConstant$AnkenStatus).FUJUNIN.equalsByCode(item.ankenStatusCd)}"> /*/-->
+							<td class="col_id">
+								<span th:text="${item.customerId.asLong()}"></span>
+							</td>
+<!--/*/ 				</th:block> /*/-->
+<!--/*/ 				<th:block th:if="!${T(jp.loioz.common.constant.CommonConstant$AnkenStatus).KANRYO.equalsByCode(item.ankenStatusCd) || T(jp.loioz.common.constant.CommonConstant$AnkenStatus).FUJUNIN.equalsByCode(item.ankenStatusCd)}"> /*/-->
+							<td class="col_id">
+								<a th:text="${item.customerId.asLong()}"
+									th:href="@{/user/seisansho/create?(seisanAnkenId=${item.ankenId.asLong()}, seisanCustomerId=${item.customerId.asLong()}, transitionType=2)}">
+								</a>
+							</td>
+<!--/*/ 				</th:block> /*/-->
+						<td class="col_customer_name char_ellipsis" th:text="${item.customerName}">顧客名</td>
+<!--/*/ 			</th:block> /*/-->
+						</tr>
+					</tbody>
+				</table>
+			</div>
+		</div>
+		<div class="modal-footer">
+			<button type="button" class="btn btn-light" data-dismiss="modal"><i class="fas fa-times"></i>閉じる</button>
+		</div>
+	</div>
+
+</body>
+</html>

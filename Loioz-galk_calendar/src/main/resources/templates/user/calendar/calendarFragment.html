@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+<meta charset="utf-8" />
+</head>
+<body>
+
+
+<!--/* カレンダー選択肢 */-->
+<div th:fragment="calendarOptionsFragment(calendarOptionsViewForm)" id="calendarOptionsFragment">
+
+	<!--/* 案件登録モーダルを扱うので共通JS定義 */-->
+	<script type="text/javascript" th:replace="common/mvc/calendarEdit/calendarEditModal::calendarEditModalFragmentJs"></script>
+	
+	<!--/* script */-->
+	<script th:inline="javascript">
+	$(function(){
+		<!--/* 共有の要素セットアップ処理 */-->
+		commonSetUpElement();
+		<!--/* 二重送信防止対応用の値 */-->
+		let ajaxRunning = false;
+		
+		const $calendarOptionsFragment = $('#calendarOptionsFragment');
+		const $calendarEditModal = $("#calendarOptionsFragment #calendarEditModal");
+		
+		<!--/* チェックボックス選択 */-->
+		$calendarOptionsFragment.on("click", ".checkboxValue", function() {
+			let val = $(this).prop('checked');
+			if (val) {
+				<!--/* アクテイブ状態 */-->
+				$(this).closest('span').removeClass('unselected');
+			} else {
+				<!--/* 非アクテイブ状態 */-->
+				$(this).closest('span').addClass('unselected');
+			}
+			<!--/* スケジュール & タスク取得処理 ↓↓↓ */-->
+			
+			<!--/* スケジュール & タスク取得処理 ↑↑↑ */-->
+		});
+		
+		<!-- カレンダー予定登録モーダル表示 -->
+		$calendarOptionsFragment.on('click', '.openRegistCalendarSchedule', function() {
+			if (ajaxRunning) {
+				return false
+			}
+			ajaxRunning = true;
+			Promise.resolve()
+				.then(() => initRenderRegistViewAction())
+				.then(() => $calendarEditModal.modal("show"))
+				.catch((errors) => console.log(errors))
+				.finally(() => ajaxRunning = false);
+		});
+		
+		<!--/* 予定編集モーダルの初期レンダリング処理 */-->
+		function initRenderRegistViewAction() {
+			return new Promise((resolve, reject) => {
+				const url = /*[[@{/common/mvc/calendarEdit/getCalendarEditModalFragment}]]*/"";
+				
+				const param = {
+				};
+				
+				$.ajax({
+					type : "GET",
+					url : url,
+					data : param,
+					dataType : "html"
+				})
+				.done(function(result, status, jqXHR) {
+					if (isAjaxProcSuccess(jqXHR)) {
+						<!--/* 処理成功 */-->
+						$calendarOptionsFragment.find(".calendarEditModalFragmentWrap").html(result);
+						return resolve();
+					} else {
+						const errorMsg = getAjaxProcResutlMessage(jqXHR);
+						showErrorMessageForJs(errorMsg);
+						return reject(errorMsg);
+					}
+				})
+				.fail(function(jqXHR, status, errorThrown) {
+					showErrorMessageForJs(/*[[#{E00091}]]*/ "error");
+					return reject([jqXHR, status, errorThrown]);
+				});
+			});
+		};
+		
+	});
+	</script>
+	
+	<!--/* カレンダー画面の左枠 */-->
+	<div class="options_wrapper" th:object="${calendarOptionsViewForm}">
+		<div>
+			<button type="button" class="openRegistCalendarSchedule btn btn-light text-primary"><i class="fas fa-plus"></i>新規作成</button>
+		</div>
+		<!--/* カレンダーから日付選択 */-->
+		<div class="options_mini_calendar">
+		</div>
+		
+		<!--/* 自分の予定表示の選択 */-->
+		<div class="options_my_schedule">
+			<div class="options_title">自分の予定</div>
+			<div class="options_check_list list-group">
+				<label class="list-group-item checkbox_btn">
+					<span class="options_check_box unselected" style="background-color: #4A86E8; border-color:#4A86E8;">
+						<input type="checkbox" class="hidden checkboxValue">
+						<i class="fas fa-check"></i>
+					</span>
+					<span class="checkbox_txt">Login User Name</span>
+				</label>
+				<label class="list-group-item checkbox_btn">
+					<span class="options_check_box unselected" style="background-color: #571fE8; border-color:#571fE8;">
+						<input type="checkbox" class="hidden checkboxValue">
+						<i class="fas fa-check"></i>
+					</span>
+					<span class="checkbox_txt">Tasks</span>
+				</label>
+			</div>
+		</div>
+		<!--/* 自分の予定表示の選択 end */-->
+		
+		<!--/* 部門毎に表示 */-->
+		<div class="options_department_schedule">
+			<div class="options_title op_cl">
+				<div>部門未所属</div>
+				<div class="ml-auto fc_title"><i class=" fas fa-chevron-up icon_wrap"></i></div>
+			</div>
+			<div class="options_check_list list-group">
+				<label class="list-group-item checkbox_btn">
+					<span class="options_check_box unselected" style="background-color: #80DFFF; border-color: #80DFFF;">
+						<input type="checkbox" class="hidden checkboxValue">
+						<i class="fas fa-check"></i>
+					</span>
+					<span class="checkbox_txt">Login User Name</span>
+				</label>
+				<label class="list-group-item checkbox_btn">
+					<span class="options_check_box unselected" style="background-color: #17ACC7; border-color: #17ACC7">
+						<input type="checkbox" class="hidden checkboxValue">
+						<i class="fas fa-check"></i>
+					</span>
+					<span class="checkbox_txt">account Name</span>
+				</label>
+			</div>
+		</div>
+		<!--/* 部門毎に表示 end */-->
+		
+	</div>
+	
+	<!--/* カレンダー予定登録モーダル テンプレート */-->
+	<div id="calendarEditModal" class="modal fade ui-draggable modeless" tabindex="-1" role="dialog" aria-hidden="true" data-keyboard="true" data-backdrop="false">
+		<div class="modal-dialog modal-dialog-centered modal-dialog-scrollable modal_calender_edit" role="document">
+			<div class="modal-content">
+				<div class="calendarEditModalFragmentWrap" style="display:contents;"></div>
+			</div>
+		</div>
+	</div>
+	
+</div>
+<!--/* カレンダー選択肢 end */-->
+
+
+<!--/* カレンダー予定 */-->
+<div th:fragment="calendarScheduleFragment(calendarScheduleViewForm)" id="calendarScheduleFragment" th:object="${calendarScheduleViewForm}">
+
+	<!--/* script */-->
+	<script th:inline="javascript">
+	$(function(){
+		
+		<!--/* 共有の要素セットアップ処理 */-->
+		commonSetUpElement();
+		
+		<!--/* 二重送信防止対応用の値 */-->
+		let ajaxRunning = false;
+		
+		<!--/* Calendar sample */-->
+		var calendarEl = document.getElementById('calendar');
+		
+		var calendar = new FullCalendar.Calendar(calendarEl, {
+			schedulerLicenseKey: /*[[${@environment.getProperty('full-calendar.license-key')}]]*/'',
+			
+			<!--/* sample parameters */-->
+			initialDate: '2023-06-01',
+			timeZone: 'local',
+			editable: true, // enable draggable events
+			selectable: true,
+			aspectRatio: 1.8,
+			height: 850,
+			headerToolbar: {
+				left: 'prev,today,next',
+				center: 'title',
+				right: 'resourceTimeGridDay,timeGridWeek,dayGridMonth,resourceTimelineDay,list'
+			},
+			buttonText: {
+				resourceTimeGridDay:'Day',
+				timeGridWeek: 'week',
+				dayGridMonth:'month',
+				resourceTimelineDay:'room',
+				list: 'List'
+			},
+			initialView: 'timeGridWeek',
+			resourceAreaHeaderContent: 'Rooms',
+			resources: [
+				{ id: 'a', title: 'Auditorium A' },
+				{ id: 'b', title: 'Auditorium B', eventColor: 'green' },
+				{ id: 'c', title: 'Auditorium C', eventColor: 'orange' },
+				{ id: 'd', title: 'Auditorium D', children: [
+					{ id: 'd1', title: 'Room D1' },
+					{ id: 'd2', title: 'Room D2' }
+				] },
+				{ id: 'e', title: 'Auditorium E' },
+				{ id: 'f', title: 'Auditorium F', eventColor: 'red' },
+				{ id: 'g', title: 'Auditorium G' },
+				{ id: 'h', title: 'Auditorium H' },
+				{ id: 'z', title: 'Auditorium Z' }
+			],
+			events: [
+				{ id: '1', resourceId: 'b', start: '2023-06-07T08:00:00', end: '2023-06-07T15:00:00', title: 'event 1' },
+				{ id: '2', resourceId: 'c', start: '2023-06-07T11:00:00', end: '2023-06-07T12:00:00', title: 'event 2' },
+				{ id: '3', resourceId: 'd', start: '2023-06-01', end: '2023-06-08', title: 'event 3' },
+				{ id: '4', resourceId: 'e', start: '2023-06-02T09:00:00', end: '2023-06-02T14:00:00', title: 'event 4' },
+				{ id: '5', resourceId: 'f', start: '2023-06-03T06:30:00', end: '2023-06-03T08:30:00', title: 'event 5' }
+			]
+		});
+
+		calendar.render();
+		
+		
+	});
+	</script>
+	
+	<!--/* Calendar */-->
+	<div id='calendar'></div>
+	
+	
+</div>
+<!--/* カレンダー予定 end */-->
+
+
+</body>
+</html>

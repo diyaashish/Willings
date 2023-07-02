@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+<meta charset="utf-8" th:remove="tag"/>
+</head>
+<body>
+
+<div th:fragment="eidtSaibanJikenModalFragment" id="eidtSaibanJikenModalFragment">
+	<script th:inline="javascript">
+	$(function() {
+		
+		<!--/* 保存ボタン */-->
+		$('#eidtSaibanJikenModalFragment .updateSaibanJiken').on("click", function(){
+			// 2重押下防止
+			if(ajaxRunning){
+				return false;
+			}
+			
+			// 押下したボタンのIDをアクションとして取得し、実行する
+			let modal = $(this).closest(".modal");
+			let action = "/user/saibanMinjiManagement/updateSaibanJiken";
+			let params = $("#eidtSaibanJikenModalFragment .saibanJikenForm").serializeArray();
+			
+			ajaxRunning = true;
+			$.ajax({
+				type : "POST",
+				url : action,
+				data : params,
+			})
+			.done(function(data, status, jqXHR) {
+				if (isAjaxProcSuccess(jqXHR)) {
+					// 処理成功
+					const infoMsg = getAjaxProcResutlMessage(jqXHR);
+					showInfoMessageForJs(infoMsg);
+					
+					<!--/* リクエストパラメータ */-->
+					let saibanSeq = $(".saibanTab.selected").data("saiban-seq");
+					let bunriTorisageButtonFlg = $(".saibanTab.selected").data("bunri-button-flg");
+					let isChildSaiban = $(".saibanTab.selected").data("child-saiban");
+					let isDisplayOnly = $(".saibanTab.selected").data("display-only");
+		
+					Promise.resolve()
+						.then(() => modalHidePromise(modal))
+						.then(() => renderTabContentBySaibanSeq(saibanSeq, isDisplayOnly, bunriTorisageButtonFlg, isChildSaiban))
+						.catch((errorObj) => console.log(errorObj));
+
+				} else {
+					// 処理失敗
+					if (data) {
+						// エラーメッセージの表示
+						$("#eidtSaibanJikenModal .editSaibanJiken").html(data);
+					}
+					const errorMsg = getAjaxProcResutlMessage(jqXHR);
+					showErrorMessage(errorMsg, modal);
+				}
+			})
+			.fail(function() {
+				showErrorMessage(/*[[#{E00013}]]*/ "error", modal);
+			})
+			.always(function(){
+				ajaxRunning = false;
+			});
+		});
+		
+		<!--/* モーダル閉じる処理をPromise化 */-->
+		function modalHidePromise(modal){
+			return new Promise((resolve) => {
+				$(modal).one('hidden.bs.modal', function() {
+					resolve();
+				});
+				$(modal).modal("hide");
+			});
+		};
+	});
+	</script>
+
+	<th:block th:object="${viewForm}">
+		<div class="modal-header">
+			<h2 class="modalheader_title">事件情報の編集</h2>
+		</div>
+		<div class="modal-body">
+			<div th:replace="common/messageArea::jsMessageArea"></div>
+			<form class="saibanJikenForm">
+				<input type="hidden" th:field="*{jikenSeq}">
+
+				<!-- 入力エリア -->
+				<div class="modal_input_area">
+					<!-- 名称 -->
+					<div class="form-row">
+						<div class="form-group col-md-12">
+							<label class="input_parts_label">事件番号</label>
+							<span class="mark_equired">必須</span>
+							<div class="d-flex align-items-center">
+								<select class="form-control digit5 mr-3" th:field="*{jikenGengo}">
+									<option th:each="enum : ${T(jp.loioz.common.constant.CommonConstant$EraType).saibanValues()}"
+										th:value="${enum.cd}" th:text="${enum.val}">令和</option>
+								</select>
+								<input type="text" class="form-control digit2 input_number_only" th:field="*{jikenYear}" maxlength="2" autocomplete="off">
+								<div class="mx-2">年 (</div>
+								<input type="text" class="form-control digit3" placeholder="符号" th:field="*{jikenMark}" maxlength="2" autocomplete="off">
+								<div class="mx-2">) 第</div>
+								<input type="text" class="form-control digit6 input_number_only" placeholder="番号" th:field="*{jikenNo}" maxlength="7" autocomplete="off">
+								<div class="mx-2">号</div>
+							</div>
+							<div th:if="*{#fields.hasErrors('jikenGengo')}" th:errors="*{jikenGengo}" class="error_mag_point">error</div>
+							<div th:if="*{#fields.hasErrors('jikenYear')}" th:errors="*{jikenYear}" class="error_mag_point">error</div>
+							<div th:if="*{#fields.hasErrors('jikenMark')}" th:errors="*{jikenMark}" class="error_mag_point">error</div>
+							<div th:if="*{#fields.hasErrors('jikenNo')}" th:errors="*{jikenNo}" class="error_mag_point">error</div>
+						</div>
+					</div>
+					<!-- 名称 end -->
+
+					<!-- 事件名 -->
+					<div class="form-row">
+						<div class="form-group col-md-12">
+							<label class="input_parts_label">事件名</label>
+							<input type="text" class="form-control" th:field="*{jikenName}" maxlength="100" autocomplete="off">
+							<div th:if="*{#fields.hasErrors('jikenName')}" th:errors="*{jikenName}" class="error_mag_point">error</div>
+						</div>
+					</div>
+				</div>
+			</form>
+		</div>
+		<div class="modal-footer">
+			<button type="button" class="btn btn-info updateSaibanJiken"><i class="fas fa-check"></i>保存</button>
+			<button type="button" class="btn btn-light" data-dismiss="modal"><i class="fas fa-times"></i>閉じる</button>
+		</div>
+	</th:block>
+</div>
+
+
+</body>
+</html>

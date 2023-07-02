@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html  xmlns:th="http://www.thymeleaf.org"
+	xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+	layout:decorator="noLoginCommonLayout">
+<head>
+<title layout:fragment="title-contents">
+	[[${T(jp.loioz.common.utility.LoiozUtils).getHtmlTitle("事務所ID入力", "")}]]
+</title>
+<!-- Google recaptcha ライブラリ -->
+<script src="https://www.google.com/recaptcha/api.js?onload=onloadCallback&render=explicit" async defer></script>
+<style>
+/* Bootstrap tooltip のスタイル上書き */
+.tooltip-inner {
+	text-align: left;
+	max-width: 210px !important;
+}
+</style>
+<script th:inline="javascript">
+	$(function() {
+		judgeBrowser();
+	});
+	
+	$(function() {
+		
+		let ajaxRunning = false;
+		
+		$('#toLoginPage').on('click', function() {
+			
+			<!--/*
+			 reCAPTCHA にチェックが入っているかを確認。チェックがない場合は処理を終了する。
+			 （ウィジェットの要素に verified クラスが付与されているか）
+			*/-->
+			if(!$('#recaptcha').hasClass('verified')) {
+				return false;
+			}
+			
+			clearAllItemMsg();
+			
+			let $preLoginForm = $('#preLoginForm');
+			
+			let preLoginUrl = /*[[${T(jp.loioz.common.constant.UrlConstant).PRE_LOGIN_URL}]]*/ ''
+			let formData = $preLoginForm.serializeArray();
+			
+			<!--/* 2重押下防止 */-->
+			if(ajaxRunning){
+				return false;
+			}
+			
+			ajaxRunning = true;
+			
+			$.ajax({
+				url : "/" + preLoginUrl + "/getLoginUrl",
+				type : "GET",
+				data : formData,
+				dataType : "json"
+			}).done(function(result) {
+				
+				if (!result.succeeded) {
+					if (result.message) {
+						showErrorMessage(result.message, $preLoginForm, result.errors);
+					} else {
+						<!--/* 上部のメッセージは表示せず、入力項目ごとのメッセージのみ表示したいケース */-->
+						showItemMsg(result.errors);
+					}
+					return;
+				}
+				
+				<!--/* 画面遷移中（画面ロード中）に再度ボタンが押されないよう、クリックイベントを削除 */-->
+				<!--/* ※画面遷移の完了より前にalwaysの関数が実行され、通常の2重押下防止対応だけでは対応しきれないことによる特別な対応 */-->
+				$('#toLoginPage').off('click');
+				
+				<!--/* 画面遷移 */-->
+				window.location = result.loginUrl;
+				
+			}).fail(function(jqXHR, textStatus, errorThrown) {
+			}).always(function() {
+				ajaxRunning = false;
+			});
+		})
+	});
+</script>
+<script th:inline="javascript">
+	<!--/* reCAPTCHAの動作に関するスクリプト */-->
+	
+	var onloadCallback = function() {
+		//ウィジェットを表示するメソッド
+		
+		const googleRecaptchaSitekey = /*[[${@environment.getProperty('google.recaptcha.sitekey')}]]*/""
+		
+		grecaptcha.render('recaptcha', {
+			'sitekey' : googleRecaptchaSitekey,
+			'callback' : verifyCallback,
+			'expired-callback' : expiredCallback
+		});
+	};
+	//チェックを入れて成功した場合に呼び出されるコールバック関数
+	var verifyCallback = function(response) { 
+		//ウィジェットの要素に verified クラスを設定
+		document.getElementById('recaptcha').className = "verified";
+		
+		// ボタンの非活性を解除
+		$('#toLoginPage').prop('disabled', false);
+	};
+	//期限切れの場合に呼び出されるコールバック関数
+	var expiredCallback = function() {
+		//verified クラスを削除
+		document.getElementById('recaptcha').classList.remove('verified');
+		
+		// ボタンを非活性にする
+		$('#toLoginPage').prop('disabled', true);
+	};
+</script>
+</head>
+<body class="body_one_block">
+	<!--/* ヘッダーなし */-->
+	<header layout:fragment="header-contents" th:remove="all"></header>
+
+	<main layout:fragment="main-contents">
+		
+		<div class="login_form">
+			<div class="loioz_logo">
+				<img th:src="@{/img/logo_1.png}">
+			</div>
+
+			<form id="preLoginForm" class="pre_login_form fc_sub">
+				<!-- Enter key対応のダミー -->
+				<input type="text" name="dummy" style="display:none;">
+				<div class="card">
+					<div class="card-header d-flex">
+						<div class="card_title">事務所IDの入力</div>
+					</div>
+
+					<!--/* card-body */-->
+					<div class="card-body">
+
+						<!--/* detail_input_area */-->
+						<div class="detail_input_area">
+
+							<div class="browser_message error_msg_browser" style = "display:none">
+								<div class="d-flex mb-3">
+									<div><i class="fas fa-exclamation-triangle mr-2 text-danger"></i></div>
+									<div>
+										<div>現在ご利用のブラウザは推奨環境ではありません。</div>
+										<div>動作保証している下記ブラウザをご利用ください。</div>
+									</div>
+								</div>
+								<div>
+									<div><i class="fas fa-circle fs9 mr-2"></i>Windows10</div>
+									<div class="d-flex pl-4">
+										<div>推奨ブラウザ：</div>
+										<div>
+											<div>Google Chrome 最新Version</div>
+											<div>Microsoft Edge 最新Version</div>
+										</div>
+									</div>
+								</div>
+								<div>
+									<div><i class="fas fa-circle fs9 mr-2"></i>macOS</div>
+									<div class="d-flex pl-4">
+										<div>推奨ブラウザ：</div>
+										<div>
+											<div>Safari 最新Version</div>
+											<div>Google Chrome 最新Version</div>
+										</div>
+									</div>
+								</div>
+								<div class="mt-4 text-center">
+									Google Chromeのダウンロードは、<a href="https://www.google.com/chrome/" target="_blank">こちら</a>
+								</div>
+							</div>
+							
+							<!-- メッセージ -->
+							<div th:replace="common/messageArea::jsMessageArea"></div>
+							
+							<!--/* 事務所ID */-->
+							<div class="form-row align-items-center">
+								<div class="input_parts form-group mb-0 pb-2">
+									<span class="h2 font-weight-bold">https://</span>
+								</div>
+								<div class="input_parts form-group col-4 col-md-6 mb-0 pb-2">
+									<input type="text" class="form-control input_jimushoId" th:field="${viewForm.jimushoId}" th:autocomplete="off" maxlength="30" placeholder="事務所IDを入力" autofocus>
+								</div>
+								<div class="input_parts form-group col-4 col-md-3 mb-0 pb-2">
+									<span class="h2 font-weight-bold">.loioz.jp</span>
+								</div>
+							</div>
+							<div class="form-row px-2">
+								<div class="input_parts form-group mb-0 col-md-12 px-0">
+									<!--/* エラーメッセージ */-->
+									<span class="error_mag_point hidden d-inline-block mt-2" id="itemMsg_jimushoId"></span>
+								</div>
+							</div>
+							<div class="form-row mt-3 px-2">
+								<div class="input_nav my-0">
+									※事務所IDは、loiozのお申込み時に設定いただいたIDです。
+									<div class="ml-3 mt-1">
+										<a href="https://www.loioz.co.jp/contact/" target="_blank">お忘れの方はこちらから<i class="fas fa-external-link-alt ml-2"></i></a>
+									</div>
+								</div>
+							</div>
+							
+							<!--/* ロボットチェック */-->
+							<div class="form-row justify-content-center mt-5">
+								<div id="recaptcha"></div>
+							</div>
+							
+							<!--/* ボタン */-->
+							<div class="form_action mt-4 pt-4">
+								<button type="button" id="toLoginPage" class="btn btn-primary" disabled>
+									ログイン画面へ
+								</button>
+							</div>
+							
+						</div>
+						<!--/* detail_input_area end */-->
+
+					</div>
+					<!--/* card-body end */-->
+
+					<!--/* card-footer */-->
+					<div class="card-footer">
+						<div class="row">
+							<div class="col-sm-2"></div>
+							<div class="col-sm-8 text-center">Copyright © loioz All rights Reserved.</div>
+							<div class="col-sm-2 ml-auto text-right pl-0 pr-3" th:text="${@environment.getProperty('app.version')}"></div>
+						</div>
+					</div>
+					<!--/* card-footer end */-->
+
+				</div>
+
+			</form>
+		</div>
+	</main>
+</body>
+</html>

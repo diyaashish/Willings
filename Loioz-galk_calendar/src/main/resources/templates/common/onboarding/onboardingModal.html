@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+<meta charset="utf-8" />
+</head>
+<body>
+<!--/*
+	■ 作成ルール
+	１．onboarding毎にHTMLを作成。
+		・「<th:block th:fragment="onboardingContents"></th:block>」でターゲティングする
+			配下要素がコンテンツとして差し込まれるイメージ
+
+		・「<div class="onboard_contents"></div>」要素で１スライド分
+			１つのHTML(onboarding)で複数スライドに分けたい場合、この要素が複数になるイメージ
+
+		参考例
+			@link{/loioz/src/main/resources/templates/common/onboarding/firstLoginOnboarding.html}
+
+	２．OnboadingConstatにEnum値を追加
+
+	■ 呼び出し
+	@param title ：タイトル文字列
+	@param onboards ：OnboadingConstatのEnum値(配列型可能)
+
+	e.g.) onboarding呼び出し
+	<div th:replace="common/onboarding/onboardingModal::onboardingModal(
+			onboards=${T(jp.loioz.common.constant.OnboardingConstant$Onboarding).FIRST_LOGIN},
+			title='タイトル')"></div>
+
+	■ TODO
+	・各アカウント毎で必要なonboardingを判別、表示させる（動的にする）
+
+	■ 課題
+	・各onboardingで使うスタイルはどうするか。現状、競合しないようにスタイルを作成する
+		必要に応じて必要なスタイルを当てるようにしたい
+
+*/-->
+<th:block th:fragment="onboardingModal">
+	<div id="onboardingModal" class="modal fade" tabindex="-1" role="dialog" aria-hidden="true" data-backdrop="static">
+		<div id="firstLoginOnboarding" class="modal-dialog modal-dialog-centered modal_onboarding" role="document">
+			<div class="modal-content">
+				<div class="modal-header">
+					<div class="text-center">
+						<ul class="header_close">
+							<li><a class="close_icon" data-dismiss="modal"></a></li>
+						</ul>
+						<label class="h2 font-weight-bold" th:text="${title}"></label>
+					</div>
+				</div>
+				<div class="modal-body m-0">
+					<div class="onboard_body slider">
+						<th:block th:each="id : ${onboards}">
+							<div th:replace="common/onboarding/__${id.getHtml()}__::onboardingContents"></div>
+						</th:block>
+					</div>
+				</div>
+				<div class="hidden">
+					<button id="slidePrev">前へ</button>
+					<button id="slideNext">次へ</button>
+				</div>
+			</div>
+		</div>
+<script type="text/javascript" th:inline="javascript">
+$(function() {
+
+	// モーダル表示処理
+	$("#onboardingModal").modal("show");
+
+	// スライダーの設定
+	const slider = $(".slider").slick({
+		infinite: false,
+		arrows : true,
+		prevArrow :$("#slidePrev"),
+		nextArrow : $("#slideNext"),
+		speed : 0,
+		draggable : false,
+		swipe: false,
+		adaptiveHeight: false,
+	});
+	
+	<!--/* 次ページ、戻るボタン */-->
+	$('.slickClick').on('click', function() {
+	 });
+
+	// モーダル表示のアニメーション時間分遅延
+	slider.css('opacity',0);
+	slider.animate({'z-index':1},300,function(){
+		slider.slick('setPosition');
+		slider.animate({'opacity':1});
+	});
+});
+</script>
+	</div>
+</th:block>
+	<!--/*
+		スライド切り替え(fotter)のテンプレート
+
+		@param prev : 一つ前のスライドに戻るボタンのテキスト文字列 (default:"戻る")
+		@param prevNone : 戻るボタンの表示非表示切り替え(default:false)
+		@param next : 一つ先のスライドに進むボタンのテキスト文字列 (default:"次へ")
+		@param prevNone : 次へボタンの表示非表示切り替え(default:false)
+		@param isEnd : 閉じるボタンの表示非表示切り替え(default:false)
+			※ trueの場合、次へボタンは非表示となる
+		@param end : 閉じるボタンのテキスト文字列(default:"閉じる")
+
+		e.g.) 呼び出し
+		<div th:replace="common/onboarding/onboardingModal::onboardNextPrevTemplate"></div>
+
+	 */-->
+	<div th:fragment="onboardNextPrevTemplate">
+		<ul class="navi_list">
+			<li class="">
+				<button type="button" class="btn btn-light slickClick" data-click-sync="#slidePrev"
+					th:text="${prev}?:'戻る'" th:classappend="${prevNone}? 'hidden' ">戻る</button></li>
+			<li class="ml-auto">
+				<button th:if="!${isEnd}" type="button" class="btn btn-light slickClick" data-click-sync="#slideNext"
+					th:text="${next}?:'スキップする'" th:classappend="${nextNone}? 'hidden' ">スキップする</button>
+			</li>
+		</ul>
+	</div>
+
+	<!-- TOP page -->
+	<div th:fragment="onboardNextTemplate">
+		<ul class="navi_list_firstLoginOnboarding">
+			<li class="li_border_dashed">
+				<th:block th:if="${T(jp.loioz.common.utility.SessionUtils).isSystemMng()}">
+					<a href="/user/officeSetting/">初期設定をはじめる</a>
+				</th:block>
+				<th:block th:unless="${T(jp.loioz.common.utility.SessionUtils).isSystemMng()}">
+					<a href="/user/myAccountEdit/">初期設定をはじめる</a>
+				</th:block>
+			</li>
+		</ul>
+	</div>
+
+	<!-- END page -->
+	<div th:fragment="onboardPrevTemplate">
+		<ul class="navi_list">
+			<li>
+				<button type="button" class="btn btn-light slickClick" data-click-sync="#slidePrev"
+					th:text="${prev}?:'戻る'" th:classappend="${prevNone}? 'hidden' ">戻る</button>
+			</li>
+			<li class="ml-auto">
+				<button th:if="!${isEnd}" type="button" class="btn btn-light slickClick"  data-dismiss="modal"
+					th:text="${next}?:'loiozをはじめる'" th:classappend="${nextNone}? 'hidden' " >loiozをはじめる</button>
+			</li>
+		</ul>
+	</div>
+</body>
+</html>

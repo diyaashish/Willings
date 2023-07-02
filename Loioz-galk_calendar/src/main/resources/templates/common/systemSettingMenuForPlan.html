@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+	layout:decorator="commonLayout">
+<head>
+<meta charset="UTF-8" />
+</head>
+<body>
+
+<div class="nav_sidebar_setting" th:fragment="selectMenu(cd, isOnlyPlanSettingAccessible, isLawyer, tenantUrlContextPath, isFreePlanStatus, canUseKaikei, oldKaikeiIsOpenInLoiozAdminControl)">
+	<div class="nav_sidebar_setting_inner">
+		<ul>
+			<!--/* プラン画面にアクセスできてる時点でシステム管理者であることは保証されているので無条件で表示 */-->
+			<li class="category">事務所設定</li>
+			<li>
+				<ul class="nav_sidebar_office__menu_items" th:classappend="${isOnlyPlanSettingAccessible} ? not_active">
+					<li th:classappend="${cd == T(jp.loioz.common.constant.CommonConstant$SystemSettingMenu).OFFICE_EDIT.getCd()} ? 'selected' ">
+						<th:block th:if="!${isOnlyPlanSettingAccessible}">
+							<a th:href="@{{contextPath}/user/officeSetting/(contextPath=${tenantUrlContextPath})}">事務所情報の設定</a>
+						</th:block>
+						<th:block th:unless="!${isOnlyPlanSettingAccessible}">
+							<a href="javascript:void(0);">事務所情報の設定</a>
+						</th:block>
+					</li>
+					<li th:classappend="${cd == T(jp.loioz.common.constant.CommonConstant$SystemSettingMenu).OFFICE_BUMON.getCd()} ? 'selected' ">
+						<th:block th:if="!${isOnlyPlanSettingAccessible}">
+							<a th:href="@{{contextPath}/user/bushoManagement/list(contextPath=${tenantUrlContextPath})}">部門の設定</a>
+						</th:block>
+						<th:block th:unless="!${isOnlyPlanSettingAccessible}">
+							<a href="javascript:void(0);">部門の設定</a>
+						</th:block>
+					</li>
+					<li th:classappend="${cd == T(jp.loioz.common.constant.CommonConstant$SystemSettingMenu).DATA_ROOM.getCd()} ? 'selected' ">
+						<th:block th:if="!${isOnlyPlanSettingAccessible}">
+							<a th:href="@{{contextPath}/user/roomManagement/list(contextPath=${tenantUrlContextPath})}">施設の設定</a>
+						</th:block>
+						<th:block th:unless="!${isOnlyPlanSettingAccessible}">
+							<a href="javascript:void(0);">施設の設定</a>
+						</th:block>
+					</li>
+					<li th:classappend="${cd == T(jp.loioz.common.constant.CommonConstant$SystemSettingMenu).STORAGE.getCd()} ? 'selected' ">
+						<th:block th:if="!${isOnlyPlanSettingAccessible}">
+							<a th:href="@{{contextPath}/user/fileManagementSetting/(contextPath=${tenantUrlContextPath})}">外部サービス連携</a>
+						</th:block>
+						<th:block th:unless="!${isOnlyPlanSettingAccessible}">
+							<a href="javascript:void(0);">外部サービス連携</a>
+						</th:block>
+					</li>
+				</ul>
+			</li>
+			
+			<th:block th:if="${canUseKaikei}">
+				<!-- /* ロイオズ管理者制御による利用判定 */ -->
+				<th:block th:if="${oldKaikeiIsOpenInLoiozAdminControl}">
+			
+					<!-- /* ※※ 現在は、機能設定のメニュー項目に、「旧会計管理」のメニューしかないため、会計機能を利用できない状態の場合は機能設定のメニュー項目ごと非表示としている */ -->
+			
+					<li class="category">機能設定</li>
+					<li>
+						<ul class="nav_sidebar_office__menu_items" th:classappend="${isOnlyPlanSettingAccessible} ? not_active">
+							<li th:classappend="${cd == T(jp.loioz.common.constant.CommonConstant$SystemSettingMenu).FUNC_OLD_KAIKEI_SETTING.getCd()} ? 'selected' ">
+								<a th:href="@{{contextPath}/user/funcOldKaikeiSetting/(contextPath=${tenantUrlContextPath})}">旧会計管理
+									<i class="fas fa-exclamation-circle exclamation_circle isRegistOfficeKoza hidden"></i>
+								</a>
+							</li>
+						</ul>
+					</li>
+				
+				</th:block>
+			</th:block>
+			
+			<th:block th:if="${canUseKaikei}">
+				<li class="category">会計設定</li>
+				<li>
+					<ul class="nav_sidebar_office__menu_items" th:classappend="${isOnlyPlanSettingAccessible} ? not_active">
+						<li th:classappend="${cd == T(jp.loioz.common.constant.CommonConstant$SystemSettingMenu).OFFICE_KOZA.getCd()} ? 'selected' ">
+							<th:block th:if="!${isOnlyPlanSettingAccessible}">
+								<a th:href="@{{contextPath}/user/officeKozaList/(contextPath=${tenantUrlContextPath})}">事務所口座の設定
+									<i class="fas fa-exclamation-circle exclamation_circle isRegistOfficeKoza hidden"></i>
+								</a>
+							</th:block>
+							<th:block th:unless="!${isOnlyPlanSettingAccessible}">
+								<a href="javascript:void(0);">事務所口座の設定
+									<i class="fas fa-exclamation-circle exclamation_circle isRegistOfficeKoza hidden"></i>
+								</a>
+							</th:block>
+						</li>
+						<li th:classappend="${cd == T(jp.loioz.common.constant.CommonConstant$SystemSettingMenu).FRACTION_SETTING.getCd()} ? 'selected' ">
+							<th:block th:if="!${isOnlyPlanSettingAccessible}">
+								<a th:href="@{{contextPath}/user/fractionSetting/(contextPath=${tenantUrlContextPath})}">端数処理</a>
+							</th:block>
+							<th:block th:unless="!${isOnlyPlanSettingAccessible}">
+								<a href="javascript:void(0);">端数処理</a>
+							</th:block>
+						</li>
+						<li th:classappend="${cd == T(jp.loioz.common.constant.CommonConstant$SystemSettingMenu).ACCG_FEE_MST.getCd()} ? 'selected' ">
+							<th:block th:if="!${isOnlyPlanSettingAccessible}">
+								<a th:href="@{{contextPath}/user/feeMaster/(contextPath=${tenantUrlContextPath})}">報酬項目の設定</a>
+							</th:block>
+							<th:block th:unless="!${isOnlyPlanSettingAccessible}">
+								<a href="javascript:void(0);">報酬項目の設定</a>
+							</th:block>
+						</li>
+						<li th:classappend="${cd == T(jp.loioz.common.constant.CommonConstant$SystemSettingMenu).ACCG_DEPOSIT_MST.getCd()} ? 'selected' ">
+							<th:block th:if="!${isOnlyPlanSettingAccessible}">
+								<a th:href="@{{contextPath}/user/depositRecvMaster/(contextPath=${tenantUrlContextPath})}">預り金／実費項目の設定</a>
+							</th:block>
+							<th:block th:unless="!${isOnlyPlanSettingAccessible}">
+								<a href="javascript:void(0);">預り金／実費項目の設定</a>
+							</th:block>
+						</li>
+					</ul>
+				</li>
+				<li class="category">帳票設定</li>
+				<li>
+					<ul class="nav_sidebar_office__menu_items" th:classappend="${isOnlyPlanSettingAccessible} ? not_active">
+						<li th:classappend="${cd == T(jp.loioz.common.constant.CommonConstant$SystemSettingMenu).DOC_INVOICE.getCd()} ? 'selected' ">
+							<th:block th:if="!${isOnlyPlanSettingAccessible}">
+								<a th:href="@{{contextPath}/user/invoiceSetting/(contextPath=${tenantUrlContextPath})}">請求書</a>
+							</th:block>
+							<th:block th:unless="!${isOnlyPlanSettingAccessible}">
+								<a href="javascript:void(0);">請求書</a>
+							</th:block>
+						</li>
+						<li th:classappend="${cd == T(jp.loioz.common.constant.CommonConstant$SystemSettingMenu).DOC_STATEMENT.getCd()} ? 'selected' ">
+							<th:block th:if="!${isOnlyPlanSettingAccessible}">
+								<a th:href="@{{contextPath}/user/statementSetting/(contextPath=${tenantUrlContextPath})}">精算書</a>
+							</th:block>
+							<th:block th:unless="!${isOnlyPlanSettingAccessible}">
+								<a href="javascript:void(0);">精算書</a>
+							</th:block>
+						</li>
+					</ul>
+				</li>
+			</th:block>
+			<li class="category">データ設定</li>
+			<li>
+				<ul class="nav_sidebar_office__menu_items" th:classappend="${isOnlyPlanSettingAccessible} ? not_active">
+					<li th:classappend="${cd == T(jp.loioz.common.constant.CommonConstant$SystemSettingMenu).DATA_BUNYA.getCd()} ? 'selected' ">
+						<th:block th:if="!${isOnlyPlanSettingAccessible}">
+							<a th:href="@{{contextPath}/user/bunyaManagement/list(contextPath=${tenantUrlContextPath})}"><span class="side_menu_txt">分野の設定</span></a>
+						</th:block>
+						<th:block th:unless="!${isOnlyPlanSettingAccessible}">
+							<a href="javascript:void(0);"><span class="side_menu_txt">分野の設定</span></a>
+						</th:block>
+					</li>
+					<li th:classappend="${cd == T(jp.loioz.common.constant.CommonConstant$SystemSettingMenu).DATA_SAIBANSHO.getCd()} ? 'selected' ">
+						<th:block th:if="!${isOnlyPlanSettingAccessible}">
+							<a th:href="@{{contextPath}/user/saibanshoManagement/list(contextPath=${tenantUrlContextPath})}">裁判所の設定</a>
+						</th:block>
+						<th:block th:unless="!${isOnlyPlanSettingAccessible}">
+							<a href="javascript:void(0);">裁判所の設定</a>
+						</th:block>
+					</li>
+					<li th:classappend="${cd == T(jp.loioz.common.constant.CommonConstant$SystemSettingMenu).DATA_SOSAKIKAN.getCd()} ? 'selected' ">
+						<th:block th:if="!${isOnlyPlanSettingAccessible}">
+							<a th:href="@{{contextPath}/user/sosakikanManagement/list(contextPath=${tenantUrlContextPath})}">捜査機関の設定</a>
+						</th:block>
+						<th:block th:unless="!${isOnlyPlanSettingAccessible}">
+							<a href="javascript:void(0);">捜査機関の設定</a>
+						</th:block>
+					</li>
+					<li th:classappend="${cd == T(jp.loioz.common.constant.CommonConstant$SystemSettingMenu).DATA_SODANKEIRO.getCd()} ? 'selected' ">
+						<th:block th:if="!${isOnlyPlanSettingAccessible}">
+							<a th:href="@{{contextPath}/user/selectListManagement/list(contextPath=${tenantUrlContextPath})}" data-type="08"><span class="side_menu_txt">相談経路の設定</span></a>
+						</th:block>
+						<th:block th:unless="!${isOnlyPlanSettingAccessible}">
+							<a href="javascript:void(0);" data-type="08"><span class="side_menu_txt">相談経路の設定</span></a>
+						</th:block>
+					</li>
+				</ul>
+			</li>
+			
+			<th:block th:if="${canUseKaikei}">
+				<li class="category">メール設定</li>
+				<li>
+					<ul class="nav_sidebar_office__menu_items" th:classappend="${isOnlyPlanSettingAccessible} ? not_active">
+						<li th:classappend="${cd == T(jp.loioz.common.constant.CommonConstant$SystemSettingMenu).MAIL_BASE.getCd()} ? 'selected' ">
+							<th:block th:if="!${isOnlyPlanSettingAccessible}">
+								<a th:href="@{{contextPath}/user/mailBaseSetting/(contextPath=${tenantUrlContextPath})}">基本設定</a>
+							</th:block>
+							<th:block th:unless="!${isOnlyPlanSettingAccessible}">
+								<a href="javascript:void(0);">基本設定</a>
+							</th:block>
+						</li>
+						<li th:classappend="${cd == T(jp.loioz.common.constant.CommonConstant$SystemSettingMenu).MAIL_TEMPLATE.getCd()} ? 'selected' ">
+							<th:block th:if="!${isOnlyPlanSettingAccessible}">
+								<a th:href="@{{contextPath}/user/mailTemplate/(contextPath=${tenantUrlContextPath})}">メールテンプレート</a>
+							</th:block>
+							<th:block th:unless="!${isOnlyPlanSettingAccessible}">
+								<a href="javascript:void(0);">メールテンプレート</a>
+							</th:block>
+						</li>
+					</ul>
+				</li>
+			</th:block>
+				
+			<li class="category">契約管理</li>
+			<li>
+				<ul class="nav_sidebar_office__menu_items" th:classappend="${isOnlyPlanSettingAccessible} ? not_active">
+					<li th:classappend="${cd == T(jp.loioz.common.constant.CommonConstant$SystemSettingMenu).OFFICE_CONTRACT_MANAGER.getCd()} ? 'selected' ">
+						<th:block th:if="!${isOnlyPlanSettingAccessible}">
+							<a th:href="@{{contextPath}/user/officeContractManageSetting/(contextPath=${tenantUrlContextPath})}">契約担当者の設定</a>
+						</th:block>
+						<th:block th:unless="!${isOnlyPlanSettingAccessible}">
+							<a href="javascript:void(0);">契約担当者の設定</a>
+						</th:block>
+					</li>
+					<li th:classappend="${cd == T(jp.loioz.common.constant.CommonConstant$SystemSettingMenu).KEIYAKU_ACCOUNT.getCd()} ? 'selected' ">
+						<th:block th:if="!${isOnlyPlanSettingAccessible}">
+							<a th:href="@{{contextPath}/user/officeAccountSetting/list(contextPath=${tenantUrlContextPath})}">アカウントの管理</a>
+						</th:block>
+						<th:block th:unless="!${isOnlyPlanSettingAccessible}">
+							<a href="javascript:void(0);">アカウントの管理</a>
+						</th:block>
+					</li>
+					<li th:classappend="${cd == T(jp.loioz.common.constant.CommonConstant$SystemSettingMenu).KEIYAKU_PLAN.getCd()} ? 'selected' ">
+						<a class="openPlanSetting" href="javascript:void(0);" th:text="${isFreePlanStatus} ? 'ご利用プランの設定' : 'ご利用プラン／請求情報' "></a>
+					</li>
+				</ul>
+			</li>
+		</ul>
+	</div>
+	<script type="text/javascript" th:inline="javascript">
+	<!-- /* 事務所口座の登録有無を確認する */ -->
+	let ajaxRunning = false;
+	$(function() {
+		<!-- /* プランが口座情報を変更できる場合に口座登録有無を確認する */ -->
+		if ([[${canUseKaikei}]]) {
+			if(ajaxRunning){
+				return false;
+			}
+			let url = "/user/planSetting/isRegistOfficeKoza";
+			ajaxRunning = true;
+			$.ajax({
+				url : url,
+				type : "GET",
+				dataType : "json"
+			}).done(function(result) {
+				if (!result.isRegist) {
+					<!-- /* 事務所口座に登録がない場合は(！)を表示する */ -->
+					$(".isRegistOfficeKoza").removeClass("hidden");
+				}
+			}).always(function() {
+				ajaxRunning = false;
+			});
+		}
+	});
+	</script>
+</div>
+</body>
+</html>

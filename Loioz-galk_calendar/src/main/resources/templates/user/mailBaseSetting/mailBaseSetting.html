@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+	xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+	layout:decorator="commonLayout">
+<head>
+<meta charset="utf-8" />
+<title layout:fragment="title-contents">
+	[[${T(jp.loioz.common.utility.LoiozUtils).getHtmlTitle("基本設定", T(jp.loioz.common.utility.SessionUtils).getTenantName())}]]
+</title>
+<th:block th:with="version=${@environment.getProperty('app.version')}">
+</th:block>
+<script type="text/javascript" th:inline="javascript">
+<!--/* ダウンロード設定画面情報取得 */-->
+function getDownloadPeriodSettingFragment() {
+	return new Promise((resolve, reject) => {
+		$.ajax({
+			url : '/user/mailBaseSetting/getDownloadPeriodSettingFragment',
+			type : "GET",
+		}).done(function(data, status, jqXHR) {
+			<!--/* 成功 */-->
+			if (isAjaxProcSuccess(jqXHR)) {
+				$("#downloadPeriodSettingFragmentWrap").html(data);
+				return resolve();
+			} else {
+				// 処理失敗
+				const errorMsg = getAjaxProcResutlMessage(jqXHR);
+				showErrorMessageForJs(errorMsg);
+				return reject();
+			}
+		}).fail(function(jqXHR, textStatus, errorThrown) {
+			<!--/* 失敗 */-->
+			const errorMsg = /*[[#{E00091}]]*/ "error";
+			showErrorMessageForJs(errorMsg);
+			return reject();
+		});
+	});
+};
+
+<!--/* メールパスワード設定画面情報取得 */-->
+function getMailPasswordSettingFragment() {
+	return new Promise((resolve, reject) => {
+		$.ajax({
+			url : '/user/mailBaseSetting/getMailPasswordSettingFragment',
+			type : "GET",
+		}).done(function(data, status, jqXHR) {
+			<!--/* 成功 */-->
+			if (isAjaxProcSuccess(jqXHR)) {
+				$("#mailPasswordSettingFragmentWrap").html(data);
+				return resolve();
+			} else {
+				// 処理失敗
+				const errorMsg = getAjaxProcResutlMessage(jqXHR);
+				showErrorMessageForJs(errorMsg);
+				return reject();
+			}
+		}).fail(function(jqXHR, textStatus, errorThrown) {
+			<!--/* 失敗 */-->
+			const errorMsg = /*[[#{E00091}]]*/ "error";
+			showErrorMessageForJs(errorMsg);
+			return reject();
+		});
+	});
+};
+</script>
+
+</head>
+<body>
+	<div layout:fragment="main-contents" th:remove="tag">
+		
+		<div class="contents_sidebar_wrapper_setting">
+			
+		<!-- サイドメニュー -->
+		<div th:replace="common/systemSettingMenu::selectMenu(${T(jp.loioz.common.constant.CommonConstant$SystemSettingMenu).MAIL_BASE.getCd()})"></div>
+			
+			<!--/* メインコンテンツの外側 */-->
+			<div class="contents_wrapper">
+				<div class="container-fluid contents_limited_width_setting">
+					<main class="content">
+						
+						<!--/* メッセージエリア */-->
+						<div th:replace="common/messageArea::messageArea"></div>
+						
+						<!-- パンくず-->
+						<div class="breadcrumb_area">
+							<ul>
+								<li><span>メール設定</span></li>
+								<li><i class="fas fa-angle-right"></i></li>
+								<li>基本設定</li>
+							</ul>
+						</div>
+						
+						<div class="contents_block">
+							<!--/* 詳細 */-->
+							<div id="downloadPeriodSettingFragmentWrap" th:insert="user/mailBaseSetting/mailBaseSettingFragment::downloadPeriodSettingFragment(${downloadPeriodSettingInputForm})"></div>
+							<hr>
+							<div id="mailPasswordSettingFragmentWrap" th:insert="user/mailBaseSetting/mailBaseSettingFragment::mailPasswordSettingFragment(${mailPasswordSettingInputForm})"></div>
+							
+						</div>
+						
+					</main>
+				</div>
+			</div>
+		</div>
+	</div>
+</body>
+</html>

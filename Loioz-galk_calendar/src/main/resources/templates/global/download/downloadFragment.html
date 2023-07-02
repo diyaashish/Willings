@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+	<meta charset="utf-8" />
+</head>
+<body>
+
+<!--/* fragment */-->
+<div th:fragment="downloadListFragment(downloadListViewForm)" id="downloadListFragment" th:object="${downloadListViewForm}">
+	<!--/* javascript */-->
+	<script type="text/javascript" th:inline="javascript">
+	$(function() {
+		<!--/* 定数 */-->
+		const downloadListFragment = $('#downloadListFragment');
+		
+		<!--/* 共有の要素セットアップ処理 */-->
+		commonSetUpElement("#downloadListFragment");
+		
+		<!--/* ダウンロード処理 */-->
+		downloadListFragment.find('.download').on('click', function() {
+			if (ajaxRunning) {
+				return false;
+			}
+
+			const accgDocActSendFileSeq = $(this).data('seq');
+			const codeKey = getCodeKey();
+			const downloadViewKey = getDownloadViewKey();
+			const url = `/global/download/${codeKey}/${downloadViewKey}/downloadFile`;
+			const params = {"accgDocActSendFileSeq": accgDocActSendFileSeq};
+			
+			ajaxRunning = true;
+			Promise.resolve()
+				.then(() => downloadFilePromise(url, params))
+				.catch((errorObj) => console.log(errorObj))
+				.finally(() => {
+					ajaxRunning = false;
+				});
+		});
+		
+		function downloadFilePromise(postUrl, params) {
+			return new Promise((resolve, reject) => {
+				$.ajax({
+					url : postUrl,
+					type : "POST",
+					data : params,
+					xhrFields : {
+						responseType: 'blob'
+					},
+				}).done(function (response, status, xhr) {
+					if (getAjaxProcResutl(xhr) == /*[[${T(jp.loioz.app.global.download.controller.DownloadController).HEADER_VALUE_OF_AJAX_PROC_RESULT_AUTH_TIME_OUT}]]*/'auth_time_out') {
+						window.location.href = getAjaxProcResutlMessage(xhr);
+						return resolve();
+					}
+					
+					if (!isAjaxProcSuccess(xhr)) {
+						// 処理失敗
+						const errorMsg = getAjaxProcResutlMessage(xhr);
+						showErrorMessageForJs(errorMsg);
+						return resolve();
+					}
+					
+					let filename = "";
+					let disposition = xhr.getResponseHeader('Content-Disposition');
+
+					if (disposition) {
+						let filenameRegex = /filename[^;=\n]*=((['"]).*?\2|[^;\n]*)/;
+						let matches = filenameRegex.exec(disposition);
+						if (matches !== null && matches[1]) filename = decodeURI(decodeURI(matches[1].replace(/['"]/g, '')));
+					}
+
+					let linkelem = document.createElement('a');
+					try {
+						let blob = new Blob([response], { type: 'application/octet-stream' });
+
+						if (typeof window.navigator.msSaveBlob !== 'undefined') {
+							window.navigator.msSaveBlob(blob, filename);
+						} else {
+							let URL = window.URL || window.webkitURL;
+							let downloadUrl = URL.createObjectURL(blob);
+							if (filename) {
+								let a = document.createElement("a");
+
+								if (typeof a.download === 'undefined') {
+									window.location = downloadUrl;
+								} else {
+									a.href = downloadUrl;
+									a.download = filename;
+									document.body.appendChild(a);
+									a.target = "_blank";
+									a.click();
+								}
+							} else {
+								window.location = downloadUrl;
+							}
+						}
+						
+						// 処理成功
+						return resolve();
+						
+					} catch (ex) {
+						showErrorMessageForJs("ファイルダウンロードに失敗しました。");
+						return reject();
+					}
+				}).fail(function(xhr, textStatus, errorThrown) {
+					showErrorMessageForJs(/*[[#{E00091}]]*/"error");
+					return reject();
+				});
+				
+			});
+		}
+		
+	});
+	</script>
+	<!--/* javascript */-->
+	<div class="table-responsive">
+		<table class="table table-sm">
+			<thead>
+				<tr>
+					<th>発行日</th>
+					<th>ファイル</th>
+					<th>ダウンロード</th>
+				</tr>
+			</thead>
+			<tbody>
+				<tr th:each="listItem : *{downloadFileList}" class="" th:classAppend="${listItem.Downloaded} ? 'download_comp' ">
+					<td th:text="${listItem.issueDate}">2022-12-01</td>
+					<td th:text="${listItem.fileName}">請求書_20221011</td>
+					<td>
+						<!--/* ダウンロード */-->
+						<div class="d-flex flex-wrap align-items-center">
+							<a href="javascript:void(0);" class="btn btn-sm" th:classappend="*{DownloadExpired} ? 'btn-secondary cursor_default' : 'btn-info download' " th:data-seq="${listItem.accgDocActSendFileSeq}">ダウンロード</a>
+							<th:block th:if="${listItem.Downloaded}">
+								<span class="ml-2 fs13">済</span>
+								<span class="ml-2 fs13" th:text="${listItem.downloadDate}"></span>
+							</th:block>
+						</div>
+						
+					</td>
+				</tr>
+			</tbody>
+		</table>
+	</div>
+	
+</div>
+<!--/* fragment */-->
+	
+</body>
+</html>

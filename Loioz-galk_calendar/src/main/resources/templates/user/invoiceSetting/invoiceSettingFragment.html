@@ -1,0 +1,273 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+	xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+	layout:decorator="commonLayout">
+<head>
+	<meta charset="utf-8" />
+</head>
+<body>
+
+<!--/* 詳細データ */-->
+<div th:fragment="invoiceSettingFragment(invoiceSettingFragmentInputForm)" id="invoiceSettingFragment" th:object="${invoiceSettingFragmentInputForm}">
+	<script type="text/javascript" th:inline="javascript">
+	$(function() {
+		
+		<!--/* 定数 */-->
+		const invoiceSettingFragmentWrap = $('#invoiceSettingFragmentWrap');
+		const invoiceSettingFragment = $('#invoiceSettingFragment');
+		
+		<!--/* 共有の要素セットアップ処理 */-->
+		commonSetUpElement("#invoiceSettingFragment");
+		
+		<!--/* 請求書番号のプレビュー表示用データ */-->
+		let invoiceData = {
+				'invoiceNoPrefix' : /*[[*{invoiceNoPrefix}]]*/'',
+				'invoiceNoYFmtCd' : /*[[*{invoiceNoYFmtCd}]]*/'',
+				'invoiceNoMFmtCd' : /*[[*{invoiceNoMFmtCd}]]*/'',
+				'invoiceNoDFmtCd' : /*[[*{invoiceNoDFmtCd}]]*/'',
+				'invoiceNoDelimiter' : /*[[*{invoiceNoDelimiter}]]*/'',
+				'invoiceNoNumberingTypeCd' : /*[[*{invoiceNoNumberingTypeCd}]]*/'',
+				'InvoiceNoZeroPadEnabled' : /*[[*{InvoiceNoZeroPadEnabled}]]*/'',
+				'invoiceNoZeroPadDigits' : /*[[*{invoiceNoZeroPadDigits}]]*/'',
+		};
+		
+		<!--/* 請求書番号の入力によるプレビュー切り替え */-->
+		invoiceSettingFragment.find('.invoiceNoTarget[type="text"]').on('input', function() {
+			const name = $(this).prop('name');
+			const value = $(this).val();
+			invoiceData[name] = value;
+			
+			invoiceNoPreview();
+		});
+		
+		<!--/* 請求書番号のチェックボックス入力によるプレビュー切り替え */-->
+		invoiceSettingFragment.find('.invoiceNoTarget[type="checkbox"]').on('change', function() {
+			const name = $(this).prop('name');
+			const value = $(this).prop('checked');
+			invoiceData[name] = value;
+			
+			invoiceNoPreview()
+		});
+		
+		<!--/* 請求書番号のプルダウン切り替えによるプレビュー切り替え */-->
+		invoiceSettingFragment.find('select.invoiceNoTarget').on('change', function() {
+			const name = $(this).prop('name');
+			const value = $(this).val();
+			invoiceData[name] = value;
+			
+			invoiceNoPreview();
+		});
+		
+		<!--/* ゼロ埋めチェック時に桁数Disabled */-->
+		invoiceSettingFragment.find('.invoiceNoTarget[name="InvoiceNoZeroPadEnabled"]').on('change', function() {
+			invoiceSettingFragment.find('.invoiceNoTarget[name="invoiceNoZeroPadDigits"]').prop('disabled', !$(this).prop('checked')).val('');
+			invoiceData['invoiceNoZeroPadDigits'] = '';
+		});
+		
+		<!--/* 保存処理 */-->
+		invoiceSettingFragment.find('#update').on('click', function() {
+			if(ajaxRunning){
+				return false;
+			}
+			const formData = invoiceSettingFragment.find('#invoiceSettingForm').serializeArray();
+			ajaxRunning = true;
+			Promise.resolve(formData)
+				.then((params) => {
+					return new Promise((resolve, reject) =>{
+						$.ajax({
+							url : '/user/invoiceSetting/update',
+							type : "POST",
+							data : params,
+						}).done(function(data, status, jqXHR) {
+							<!--/* 成功 */-->
+							if (isAjaxProcSuccess(jqXHR)) {
+								showInfoMessageForJs(getAjaxProcResutlMessage(jqXHR));
+								return resolve();
+							} else {
+								if (data) {
+									invoiceSettingFragmentWrap.html(data);
+								}
+								// 処理失敗
+								const errorMsg = getAjaxProcResutlMessage(jqXHR);
+								showErrorMessageForJs(errorMsg);
+								return reject();
+							}
+						}).fail(function(jqXHR, textStatus, errorThrown) {
+							<!--/* 失敗 */-->
+							const errorMsg = /*[[#{E00091}]]*/ "error";
+							showErrorMessageForJs(errorMsg);
+							return reject();
+						});
+					});
+				})
+				.then(getInvoiceSettingFragment)
+				.catch((errors) => console.log(errors))
+				.finally(() => ajaxRunning = false);
+		});
+
+		<!--/* 請求書番号のプレビュー表示 */-->
+		function invoiceNoPreview() {
+			const previewStr = toPreviewStr((() => {
+				return {
+					'prefix' : invoiceData.invoiceNoPrefix,
+					'yearFmtCd' : invoiceData.invoiceNoYFmtCd,
+					'monthFmtCd' : invoiceData.invoiceNoMFmtCd,
+					'dayFmtCd' : invoiceData.invoiceNoDFmtCd,
+					'delimiter' : invoiceData.invoiceNoDelimiter,
+					'numberingTypeCd' : invoiceData.invoiceNoNumberingTypeCd,
+					'isZeroPadEnabled' : invoiceData.InvoiceNoZeroPadEnabled,
+					'zeroPadDigits' : invoiceData.invoiceNoZeroPadDigits,
+				}
+			})());
+			invoiceSettingFragment.find('.previewTarget').text(previewStr);
+		}
+		
+	});
+	</script>
+	
+	<!-- コンテンツブロック start -->
+	<div class="contents_block">
+		<div class="block_title">請求書</div>
+		<div class="block_detail d-flex">
+			<div>
+				<p>請求書の詳細設定ができます。設定した内容は新たに生成された帳票のみに反映されます。</p>
+			</div>
+		</div>
+		<form id="invoiceSettingForm" th:autocomplete="off">
+			<input type="hidden" th:field="*{invoiceSettingSeq}">
+		
+			<div class="detail_input_area">
+				<div class="form-row">
+					<div class="form-group col-md-6">
+						<label class="input_parts_label">帳票タイトル</label>
+						<span class="mark_equired">必須</span>
+						<input type="text" class="form-control" th:field="*{defaultTitle}" placeholder="例）請求書" maxlength="20">
+						<div th:if="*{#fields.hasErrors('defaultTitle')}" th:errors="*{defaultTitle}" class="error_mag_point">error</div>
+					</div>
+				</div>
+				<div class="form-row">
+					<div class="form-group col-md-6">
+						<label class="input_parts_label">挿入文</label>
+						<input type="text" class="form-control" th:field="*{defaultSubText}" placeholder="例）下記の通り、ご請求申し上げます。" maxlength="20">
+						<div th:if="*{#fields.hasErrors('defaultSubText')}" th:errors="*{defaultSubText}" class="error_mag_point">error</div>
+					</div>
+				</div>
+				<div class="form-row">
+					<div class="form-group col-md-8">
+						<label class="input_parts_label">件名表記</label>
+						<div class="d-flex align-items-center">
+							<input type="text" class="form-control digit6" th:field="*{subjectPrefix}" placeholder="件名：" maxlength="5">
+							<div class="digit5 text-center mx-1">{案件名}</div>
+							<input type="text" class="form-control digit6" th:field="*{subjectSuffix}" maxlength="5">
+						</div>
+						<div th:if="*{#fields.hasErrors('subjectPrefix')}" th:errors="*{subjectPrefix}" class="error_mag_point">error</div>
+						<div th:if="*{#fields.hasErrors('subjectSuffix')}" th:errors="*{subjectSuffix}" class="error_mag_point">error</div>
+					</div>
+				</div>
+				<div class="form-row">
+					<div class="form-group col-md-12 mb-1">
+						<label class="input_parts_label">請求番号</label>
+						<div class="d-flex align-items-start">
+							<div>
+								<span class="sub_text">接頭辞</span>
+								<input type="text" class="form-control digit4 mr-2 invoiceNoTarget" th:field="*{invoiceNoPrefix}" maxlength="3">
+							</div>
+							<div>
+								<span class="sub_text">年</span>
+								<select class="form-control digit4 mr-2 invoiceNoTarget" th:field="*{invoiceNoYFmtCd}">
+									<option th:each="enum: ${T(jp.loioz.common.constant.CommonConstant$AccgNoYFmt).values()}"
+										th:text="${enum.val}" th:value="${enum.cd}">-</option>
+								</select>
+							</div>
+							<div>
+								<span class="sub_text">月</span>
+								<select class="form-control digit4 mr-2 invoiceNoTarget" th:field="*{invoiceNoMFmtCd}">
+									<option th:each="enum: ${T(jp.loioz.common.constant.CommonConstant$AccgNoMFmt).values()}"
+										th:text="${enum.val}" th:value="${enum.cd}">-</option>
+								</select>
+							</div>
+							<div>
+								<span class="sub_text">日</span>
+								<select class="form-control digit4 mr-2 invoiceNoTarget" th:field="*{invoiceNoDFmtCd}">
+									<option th:each="enum: ${T(jp.loioz.common.constant.CommonConstant$AccgNoDFmt).values()}"
+										th:text="${enum.val}" th:value="${enum.cd}">-</option>
+								</select>
+							</div>
+							<div>
+								<span class="sub_text">区切り文字</span>
+								<input type="text" class="form-control digit5 mr-2 invoiceNoTarget" th:field="*{invoiceNoDelimiter}" maxlength="1">
+							</div>
+							<div>
+								<span class="sub_text">連番</span>
+								<div>
+									<select class="form-control digit8 invoiceNoTarget" th:field="*{invoiceNoNumberingTypeCd}">
+										<option th:each="enum: ${T(jp.loioz.common.constant.CommonConstant$AccgNoNumberingType).values()}"
+											th:text="${enum.val}" th:value="${enum.cd}">-</option>
+									</select>
+								</div>
+								<div class="d-flex align-items-center mt-2">
+									<label class="checkbox_btn">
+										<input type="checkbox" class="checkbox_input invoiceNoTarget" th:field="*{InvoiceNoZeroPadEnabled}">
+										<span class="checkbox_txt">ゼロ埋め</span>
+									</label>
+									<input type="text" class="form-control inputNumberOnly digit3 mr-2 invoiceNoTarget" th:field="*{invoiceNoZeroPadDigits}" th:disabled="!*{InvoiceNoZeroPadEnabled}" maxlength="1" placeholder="桁数">
+								</div>
+							</div>
+						</div>
+						<div th:if="*{#fields.hasErrors('invoiceNoPrefix')}" th:errors="*{invoiceNoPrefix}" class="error_mag_point">error</div>
+						<div th:if="*{#fields.hasErrors('invoiceNoYFmtCd')}" th:errors="*{invoiceNoYFmtCd}" class="error_mag_point">error</div>
+						<div th:if="*{#fields.hasErrors('invoiceNoMFmtCd')}" th:errors="*{invoiceNoMFmtCd}" class="error_mag_point">error</div>
+						<div th:if="*{#fields.hasErrors('invoiceNoDFmtCd')}" th:errors="*{invoiceNoDFmtCd}" class="error_mag_point">error</div>
+						<div th:if="*{#fields.hasErrors('invoiceNoDelimiter')}" th:errors="*{invoiceNoDelimiter}" class="error_mag_point">error</div>
+						<div th:if="*{#fields.hasErrors('invoiceNoNumberingTypeCd')}" th:errors="*{invoiceNoNumberingTypeCd}" class="error_mag_point">error</div>
+						<div th:if="*{#fields.hasErrors('invoiceNoZeroPadDigits')}" th:errors="*{invoiceNoZeroPadDigits}" class="error_mag_point">error</div>
+					</div>
+				</div>
+				<div class="form-row">
+					<div class="form-group col-md-auto">
+						<label class="input_parts_label">プレビュー</label>
+						<div class="preview_no previewTarget" th:text="*{preview}"></div>
+					</div>
+				</div>
+				<div class="form-row">
+					<div class="form-group col-md-12">
+						<label class="input_parts_label">取引日</label>
+						<div>
+							<label class="checkbox_btn">
+								<input type="checkbox" class="checkbox_input" th:field="*{TransactionDatePrintEnabled}">
+								<span class="checkbox_txt">帳票に印字する</span>
+							</label>
+						</div>
+					</div>
+				</div>
+				<div class="form-row">
+					<div class="form-group col-md-12">
+						<label class="input_parts_label">支払期限</label>
+						<div>
+							<label class="checkbox_btn">
+								<input type="checkbox" class="checkbox_input" th:field="*{DueDatePrintEnabled}">
+								<span class="checkbox_txt">帳票に印字する</span>
+							</label>
+						</div>
+					</div>
+				</div>
+				<div class="form-row">
+					<div class="form-group col-md-8">
+						<label class="input_parts_label">備考</label>
+						<div>
+							<textarea class="minh100 form-control" th:field="*{defaultRemarks}" th:maxlength="${(T(jp.loioz.common.constant.AccgConstant).MX_LEN_REMARKS)}"></textarea>
+							<div th:if="*{#fields.hasErrors('defaultRemarks')}" th:errors="*{defaultRemarks}" class="error_mag_point">error</div>
+						</div>
+					</div>
+				</div>
+			</div>
+			<div class="input_block_btn_area">
+				<button type="button" id="update" class="btn btn-info"><i class="fas fa-check"></i>保存する</button>
+			</div>
+		</form>
+	</div>
+</div>
+<!--/* 詳細エリア end */-->
+	
+</body>
+</html>

@@ -1,0 +1,256 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+	xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+	layout:decorator="commonLayout">
+<head>
+	<meta charset="utf-8" />
+</head>
+<body>
+
+<!--/* 詳細データ */-->
+<div th:fragment="templateEditFragment(templateInputForm)" id="templateEditFragment" th:object="${templateInputForm}">
+	<script type="text/javascript" th:inline="javascript">
+	$(function() {
+
+		<!--/* 定数 */-->
+		const templateEditFragmentWrap = $("#templateEditFragmentWrap");
+		const templateEditFragment = $("#templateEditFragment");
+		
+		<!--/* 共有の要素セットアップ処理 */-->
+		commonSetUpElement("#templateEditFragment");
+
+		<!--/* メールテンプレートの登録処理 */-->
+		templateEditFragment.find(".regist").on('click', function(e) {
+			const formData = templateEditFragment.find('.mailTemplateEditForm').serializeArray();
+			const defaultUse = templateEditFragment.find('[name="DefaultUse"]');
+			
+			if(defaultUse.prop('checked')) {
+				// 新たに既定利用を設定する場合のみ、確認confirmを表示
+				if(!confirm(/*[[#{I00135('メールテンプレート')}]]*/"")) {
+					return false;
+				}
+			}
+			
+			if (ajaxRunning) {
+				return false;
+			}
+			ajaxRunning = true;
+			$.ajax({
+				url : '/user/mailTemplateEdit/registMailTemplate',
+				type : 'POST',
+				data : formData
+			})
+			.done(function(data, status, jqXHR) {
+				if (getAjaxProcResutl(jqXHR) == /*[[${T(jp.loioz.app.user.mailTemplateEdit.controller.MailTemplateEditController).HEADER_VALUE_OF_AJAX_PROC_RESULT_TEMPLATE_REGIST_SUCCESS_REDIRECT}]]*/'success_redirect') {
+					window.location.href = getAjaxProcResutlMessage(jqXHR);
+				} else {
+					// 処理失敗
+					if (data) {
+						templateEditFragmentWrap.html(data);
+					}
+					const errorMsg = getAjaxProcResutlMessage(jqXHR);
+					showErrorMessageForJs(errorMsg);
+				}
+			})
+			.fail(function(jqXHR, status, errorThrown) {
+				showErrorMessageForJs(/*[[#{E00091}]]*/ "error");
+			})
+			.always(function() {
+				ajaxRunning = false;
+			});
+		});
+		
+		<!--/* メールテンプレートの更新処理 */-->
+		templateEditFragment.find(".update").on('click', function(e) {
+			const formData = templateEditFragment.find('.mailTemplateEditForm').serializeArray();
+			const defaultUse = templateEditFragment.find('[name="DefaultUse"]');
+			
+			if(!defaultUse.data("current") && defaultUse.prop('checked')) {
+				// 新たに既定利用を設定する場合のみ、確認confirmを表示
+				if(!confirm(/*[[#{I00135('メールテンプレート')}]]*/"")) {
+					return false;
+				}
+			}
+			
+			if (ajaxRunning) {
+				return false;
+			}
+			ajaxRunning = true;
+			
+			Promise.resolve()
+				.then(() => {
+					return new Promise((resolve, reject) => {
+						$.ajax({
+							url : '/user/mailTemplateEdit/updateMailTemplate',
+							type : 'POST',
+							data : formData
+						})
+						.done(function(data, status, jqXHR) {
+							if (isAjaxProcSuccess(jqXHR)) {
+								showInfoMessageForJs(getAjaxProcResutlMessage(jqXHR));
+								return resolve();
+							} else {
+								// 処理失敗
+								if (data) {
+									templateEditFragmentWrap.html(data);
+								}
+								const errorMsg = getAjaxProcResutlMessage(jqXHR);
+								showErrorMessageForJs(errorMsg);
+								return reject();
+							}
+						})
+						.fail(function(jqXHR, status, errorThrown) {
+							showErrorMessageForJs(/*[[#{E00091}]]*/ "error");
+							return reject();
+						})
+					});
+				})
+				.then(renderEditTemplateFragment)
+				.catch((errorObj) => console.log(errorObj))
+				.finally(() => ajaxRunning = false);
+		});
+		
+		<!--/* メールテンプレートの削除処理 */-->
+		templateEditFragment.find(".delete").on('click', function(e) {
+			const mailTemplateSeq = templateEditFragment.find('[name="mailTemplateSeq"]').val();
+			
+			if (!confirm('削除します。よろしいですか?')){
+				return false;
+			}
+			
+			if (ajaxRunning) {
+				return false;
+			}
+			ajaxRunning = true;
+			$.ajax({
+				url : '/user/mailTemplateEdit/deleteMailTemplate',
+				type : 'POST',
+				data : {"mailTemplateSeq" : mailTemplateSeq}
+			})
+			.done(function(data, status, jqXHR) {
+				if (getAjaxProcResutl(jqXHR) == /*[[${T(jp.loioz.app.user.mailTemplateEdit.controller.MailTemplateEditController).HEADER_VALUE_OF_AJAX_PROC_RESULT_TEMPLATE_DELETE_SUCCESS_REDIRECT}]]*/'delete_success_redirect') {
+					window.location.href = getAjaxProcResutlMessage(jqXHR);
+				} else {
+					// 処理失敗
+					const errorMsg = getAjaxProcResutlMessage(jqXHR);
+					showErrorMessageForJs(errorMsg);
+				}
+			})
+			.fail(function(jqXHR, status, errorThrown) {
+				showErrorMessageForJs(/*[[#{E00091}]]*/ "error");
+			})
+			.always(function() {
+				ajaxRunning = false;
+			});
+		});
+		
+	});
+	</script>
+	
+	<!-- コンテンツブロック start -->
+	<div class="contents_block">
+		<div class="block_title">
+			<span th:if="*{isNew()}">メールテンプレートの作成</span>
+			<span th:if="*{!isNew()}">メールテンプレートの編集</span>
+		</div>
+		<div class="block_detail d-flex">
+			<div>
+				<p>CC、BCCは、カンマ区切りで複数のメールアドレスを指定することができます。</p>
+			</div>
+		</div>
+		
+		<form class="mailTemplateEditForm">
+			<input type="hidden" th:field="*{mailTemplateSeq}">
+			
+			<div class="detail_input_area">
+				<div class="form-row">
+					<div class="form-group col-md-6">
+						<label class="input_parts_label">種別</label>
+						<div class="mt-1">
+							<label class="radio_btn" th:each="enum : ${T(jp.loioz.common.constant.CommonConstant$MailTemplateType).values()}">
+								<input type="radio" class="radio_input" th:value="${enum.cd}" th:field="*{templateType}">
+								<span class="radio_txt" th:text="${enum.val}">請求書</span>
+							</label>
+							<div th:if="*{#fields.hasErrors('templateType')}" th:errors="*{templateType}" class="error_mag_point">error</div>
+						</div>
+					</div>
+				</div>
+				<div class="form-row">
+					<div class="form-group col-md-10">
+						<label class="input_parts_label">テンプレート名</label>
+						<input type="text" class="form-control" th:field="*{templateTitle}" maxlength="30">
+						<div th:if="*{#fields.hasErrors('templateTitle')}" th:errors="*{templateTitle}" class="error_mag_point">error</div>
+					</div>
+				</div>
+				<div class="form-row">
+					<div class="form-group col-md-10">
+						<label class="input_parts_label">CC</label>
+						<input type="text" class="form-control inputRemoveSpace" th:field="*{mailCc}" placeholder="例）example1@loioz.co.jp,example2@loioz.co.jp,example2@loioz.co.jp">
+						<div th:if="*{#fields.hasErrors('mailCc')}" th:errors="*{mailCc}" class="error_mag_point">error</div>
+					</div>
+				</div>
+				<div class="form-row">
+					<div class="form-group col-md-10">
+						<label class="input_parts_label">BCC</label>
+						<input type="text" class="form-control inputRemoveSpace" th:field="*{mailBcc}" placeholder="例）example1@loioz.co.jp,example2@loioz.co.jp,example2@loioz.co.jp">
+						<div th:if="*{#fields.hasErrors('mailBcc')}" th:errors="*{mailBcc}" class="error_mag_point">error</div>
+					</div>
+				</div>
+				<div class="form-row">
+					<div class="form-group col-md-10">
+						<label class="input_parts_label">送信元メールアドレス（from）</label>
+						<div>invoice.noreply@loioz.jp</div>
+					</div>
+				</div>
+				<div class="form-row">
+					<div class="form-group col-md-10">
+						<label class="input_parts_label">返信先メールアドレス</label>
+						<input type="text" class="form-control inputRemoveSpace" th:field="*{mailReplyTo}" placeholder="例）example1@loioz.co.jp">
+						<div th:if="*{#fields.hasErrors('mailReplyTo')}" th:errors="*{mailReplyTo}" class="error_mag_point">error</div>
+					</div>
+				</div>
+				<div class="form-row">
+					<div class="form-group col-md-10">
+						<label class="input_parts_label">件名</label>
+						<input type="text" class="form-control" th:field="*{subject}" maxlength="100" placeholder="例）請求書送付のご案内｜ロイオズ法律事務所">
+						<div th:if="*{#fields.hasErrors('subject')}" th:errors="*{subject}" class="error_mag_point">error</div>
+					</div>
+				</div>
+				<div class="form-row">
+					<div class="form-group col-md-10">
+						<label class="input_parts_label">本文</label>
+						<div>
+							<textarea class="form-control minh100" th:field="*{contents}" maxlength="10000" placeholder="平素より大変お世話になっております。"></textarea>
+							<div th:if="*{#fields.hasErrors('contents')}" th:errors="*{contents}" class="error_mag_point">error</div>
+						</div>
+					</div>
+				</div>
+				<div class="form-row">
+					<div class="form-group col-md-12 mt-5">
+						<div>
+							<label class="checkbox_btn">
+								<input type="checkbox" class="checkbox_input" th:field="*{DefaultUse}" th:data-current="*{DefaultUse}">
+								<span class="checkbox_txt">既定の定型文として使う</span>
+							</label>
+						</div>
+					</div>
+				</div>
+			</div>
+		</form>
+		
+		
+		<div class="input_block_btn_area" th:if="*{isNew()}">
+			<button type="button" class="btn btn-info regist"><i class="fas fa-check"></i>保存する</button>
+		</div>
+
+		<div class="input_block_btn_area d-flex" th:if="*{!isNew()}">
+			<button type="button" class="btn btn-light delete"><i class="far fa-trash-alt"></i>削除</button>
+			<button type="button" class="btn btn-info update mr-auto ml-auto"><i class="fas fa-check"></i>保存する</button>
+		</div>
+
+	</div>
+</div>
+<!--/* 詳細エリア end */-->
+	
+</body>
+</html>

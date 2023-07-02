@@ -1,0 +1,2416 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+	<meta charset="utf-8" />
+</head>
+<body>
+
+
+
+<!--/* すべての案件 検索条件 */-->
+<div th:fragment="allAnkenListSearchFormFragment(ankenListSearchForm)" id="allAnkenListSearchFormFragment">
+
+	<!--/* スクリプト */-->
+	<script th:inline="javascript">
+	$(function(){
+		
+		<!--/* 共有の要素セットアップ処理 */-->
+		commonSetUpElement("#allAnkenListSearchFormFragment");
+		
+		const allAnkenListSearchFormFragment = $('#allAnkenListSearchFormFragment');
+		
+		<!--/* 案件を追加クリック */-->
+		allAnkenListSearchFormFragment.on("click", ".addAnken", function() {
+			window.location.href = "/user/ankenRegist/";
+		});
+		
+		<!--/* フィルタクリック */-->
+		allAnkenListSearchFormFragment.on("click", ".filterBtn", function() {
+			<!--/* 検索条件表示／非表示フラグの設定と表示変更 */-->
+			const searchConditionOpen = $('#searchConditionOpen').val();
+			if (searchConditionOpen == "true") {
+				$('#searchConditionOpen').val(false);
+			} else {
+				$('#searchConditionOpen').val(true);
+			}
+			<!--/* パラメータ */-->
+			const formData = $('#ankenListSearchForm').serializeArray();
+			<!--/* 検索条件表示 */-->
+			renderAnkenSearchFormFragment(formData);
+		});
+
+		<!--/* 検索条件クリア処理 */-->
+		allAnkenListSearchFormFragment.on("click", ".initSearchCondition", function(e) {
+			<!--/* 検索条件クリア */-->
+			initAllAnkenSearchCondition();
+		});
+		
+		<!--/* テキスト検索 */-->
+		let searchText;
+		let inputText;
+		<!--/* テキストボックス内のクリア処理 */-->
+		allAnkenListSearchFormFragment.find('.add-clear-span > a').on('click', function() {
+			inputText = '';
+			
+			if ($(this).parent().find('.inputDate').length > 0) {
+				<!--/* 日付の入力項目（DatePickerの項目）の場合は、blurでの再検索は行わず、このケースではchangeイベントが発火せず再検索が行われないので、イベントを発火させる */-->
+				$(this).parent().find('.inputDate').change();
+			}
+		});
+		<!--/* 入力項目削除で検索 */-->
+		allAnkenListSearchFormFragment.find('.filtersContainer input[type="text"]').on('blur', function() {
+			if ($(this).hasClass('inputDate')) {
+				<!--/* 日付の入力項目（DatePickerの項目）の場合は、blurでの再検索は行わない（changeイベント側で実行されるため） */-->
+				return;
+			}
+			
+			if (searchText !== inputText) {
+				searchFn();
+			}
+		});
+		<!--/* 入力項目のEnterで検索 */-->
+		allAnkenListSearchFormFragment.find('.filtersContainer input[type="text"]').on('keydown', function(e) {
+			if (e.keyCode == 13) {
+				searchText = $(this).val();
+				searchFn();
+			};
+			inputText = $(this).val();
+		});
+		<!--/* 日付の変更で検索 */-->
+		allAnkenListSearchFormFragment.find('.filtersContainer .inputDate').on('change', function(e) {
+			searchFn();
+		});
+
+		<!--/* セレクトボックスの変更で検索 */-->
+		allAnkenListSearchFormFragment.find('.filtersContainer select').on('change', function(e) {
+			searchFn();
+		});
+		<!--/* ラジオボタンで検索 */-->
+		allAnkenListSearchFormFragment.find('.filtersContainer input:radio').on('change', function(e) {
+			searchFn();
+		});
+		<!--/* CSV出力 */-->
+		allAnkenListSearchFormFragment.on("click", ".csvOutput", function() {
+			<!--/* ダウンロード処理 */-->
+			downloadAnkenListCsv($(this));
+		});
+		<!--/* EXCEL出力 */-->
+		allAnkenListSearchFormFragment.on("click", ".excelOutput", function() {
+			<!--/* ダウンロード処理 */-->
+			downloadAnkenListExcel($(this));
+		});
+		
+		<!--/* 検索処理 */-->
+		function searchFn() {
+			const optionParam = allAnkenListSearchFormFragment.find('#ankenListSearchForm').serializeArray();
+			if (ajaxRunning) {
+				return false;
+			}
+			ajaxRunning = true;
+			Promise.resolve()
+				.then(() => searchAllAnkenList(optionParam))
+				.then(() => renderAnkenSearchFormFragment(optionParam))
+				.catch((errorObj) => console.log(errorObj))
+				.finally(() => ajaxRunning = false);
+		};
+	});
+
+	</script>
+
+	<th:block th:object="${ankenListSearchForm}">
+
+		<!--/* 選択したメニュータイトル */-->
+		<div class="page_list_title_block">
+			<h1 class="page_list__name" th:text="*{getPageTitle()}">進行中</h1>
+			<div class="page_list__btn" th:with="searchConditionCount=*{allAnkenListSearchForm.getSearchConditionCount()}">
+				<button type="button" class="btn btn-primary addAnken"><i class="fas fa-plus mr-2"></i>案件を追加</button>
+				<button type="button" class="btn btn-light filterBtn" th:classAppend="${searchConditionCount} > 0 ?  'filter_active' ">
+					<i class="fas fa-filter"></i>フィルタ
+					<span class="btn_inner_badge" th:classAppend="${searchConditionCount} > 0 ?  'badge_warning' "
+						th:text="${searchConditionCount}">1</span>
+				</button>
+				<div th:id="outPutContainer" class="d-inline-block stop-events outPutContainerClose" data-loading-target=".loadingTarget"
+					data-offset="-80,0" data-boundary="window" data-container="#allAnkenListSearchFormFragment" data-toggle="popover" data-placement="bottom" data-html="true" th:data-content=
+					'|<ul class="output_nav_list">
+							<li class="title_block">案件情報出力</li>
+							<li><button class="btn btn-light excelOutput" data-target="#outPutContainer"><i class="fas fa-download text-primary mr-3"></i><i class="fas fa-spinner mr-3 text-primary faa-spin animated hidden"></i>Excel形式で出力する</button></li>
+							<li><button class="btn btn-light csvOutput" data-target="#outPutContainer"><i class="fas fa-download text-primary mr-3"></i><i class="fas fa-spinner mr-3 text-primary faa-spin animated hidden"></i>CSV形式で出力する</button></li>
+					</ul>|'>
+					<button type="button" class="btn btn-light config"><i class="fas fa-ellipsis-h mr-0"></i></button>
+				</div>
+			</div>
+		</div>
+
+		<!--/* 一覧ヘッダ */-->
+		<form id="ankenListSearchForm" autocomplete="off">
+			<!--/* 選択中のメニュー保持 */-->
+			<input type="hidden" th:field="*{selectedAnkenListMenu}">
+
+			<!--/* 検索条件の表示／非表示フラグ */-->
+			<input type="hidden" th:field="*{searchConditionOpen}">
+
+			<!--/* 検索条件 */-->
+			<div class="list_filters_container filtersContainer" th:classappend="*{SearchConditionOpen ? '' : 'hidden'}">
+				<fieldset>
+					<div class="list_filters_header">
+						<div class="filters_title">検索条件</div>
+						<div class="filters_action">
+							<a href="javascript:void(0);" class="filters_action__clear initSearchCondition">検索条件をクリア</a>
+							<a href="javascript:void(0);" class="filters_action__close filterBtn"><i class="fas fa-times"></i></a>
+						</div>
+					</div>
+					<div class="form-row">
+						<!--/* キーワード検索 */-->
+						<div class="form-group col-md-auto">
+							<label class="input_parts_label">キーワード</label>
+							<input type="text" class="form-control digit18 fcAddTextClear" th:field="*{allAnkenListSearchForm.searchWord}" placeholder="ID、案件名、顧客名、相手方..." maxlength="300">
+						</div>
+						<!--/* 分野 */-->
+						<div class="form-group col-md-auto">
+							<label class="input_parts_label">分野</label>
+							<select class="form-control digit8 changeBunya" th:field="*{allAnkenListSearchForm.bunyaId}">
+								<option value="">-</option>
+								<option th:each="bunyaDto : *{allAnkenListSearchForm.bunyaList}"
+									th:value="${bunyaDto.cd}" th:text="${bunyaDto.val}"></option>
+							</select>
+						</div>
+						<!--/* 担当弁護士 */-->
+						<div class="form-group col-md-auto">
+							<label class="input_parts_label">担当弁護士</label>
+							<select class="form-control digit8 changeTantoLawyer" th:field="*{allAnkenListSearchForm.tantoLaywer}">
+								<option value="">-</option>
+								<option th:each="lawyer : *{tantoLawyerList}" th:value="${lawyer.accountSeq}" th:text="|${lawyer.accountNameSei} ${lawyer.accountNameMei}|" th:selected="${lawyer.accountSeq} == *{allAnkenListSearchForm.tantoLaywer}"></option>
+							</select>
+						</div>
+						<!--/* 担当事務 */-->
+						<div class="form-group col-md-auto">
+							<label class="input_parts_label">担当事務</label>
+							<select class="form-control digit8 changeTantoJimu" th:field="*{allAnkenListSearchForm.tantoJimu}">
+								<option value="">-</option>
+								<option th:each="jimu : *{tantoJimuList}" th:value="${jimu.accountSeq}" th:text="|${jimu.accountNameSei} ${jimu.accountNameMei}|" th:selected="${jimu.accountSeq} == *{allAnkenListSearchForm.tantoJimu}"></option>
+							</select>
+						</div>
+						<!--/* 受任日 */-->
+						<div class="form-group col-md-auto">
+							<label class="input_parts_label">受任日</label>
+							<div class="d-flex align-items-start">
+								<div>
+									<div class="d-flex jyuninDateFrom">
+										<input type="text" class="form-control digit8 inputDateSlash fcAddTextClear inputDate" maxlength="10"
+											th:field="*{allAnkenListSearchForm.jyuninDateFrom}"
+											data-click-sync="[data-target-name='allAnkenListSearchForm.jyuninDateFrom']">
+										<button type="button" class="btn btn_popcal hidden" data-toggle="datepicker" data-target-name="allAnkenListSearchForm.jyuninDateFrom">カレンダー</button>
+										<div class="fs15 mt-2 mx-2">〜</div>
+									</div>
+								</div>
+								<div>
+									<div class="jyuninDateTo">
+										<input type="text" class="form-control digit8 inputDateSlash fcAddTextClear inputDate" maxlength="10"
+											th:field="*{allAnkenListSearchForm.jyuninDateTo}"
+											data-click-sync="[data-target-name='allAnkenListSearchForm.jyuninDateTo']">
+										<button type="button" class="btn btn_popcal hidden" data-toggle="datepicker" data-target-name="allAnkenListSearchForm.jyuninDateTo">カレンダー</button>
+									</div>
+								</div>
+							</div>
+						</div>
+						<!--/* 登録日 */-->
+						<div class="form-group col-md-auto">
+							<label class="input_parts_label">登録日</label>
+							<div class="d-flex align-items-start">
+								<div>
+									<div class="d-flex ankenCreateDateFrom">
+										<input type="text" class="form-control digit8 inputDateSlash fcAddTextClear inputDate" maxlength="10"
+											th:field="*{allAnkenListSearchForm.ankenCreateDateFrom}"
+											data-click-sync="[data-target-name='allAnkenListSearchForm.ankenCreateDateFrom']">
+										<button type="button" class="btn btn_popcal hidden" data-toggle="datepicker" data-target-name="allAnkenListSearchForm.ankenCreateDateFrom">カレンダー</button>
+										<div class="fs15 mt-2 mx-2">〜</div>
+									</div>
+								</div>
+								<div>
+									<div class="ankenCreateDateTo">
+										<input type="text" class="form-control digit8 inputDateSlash fcAddTextClear inputDate" maxlength="10"
+											th:field="*{allAnkenListSearchForm.ankenCreateDateTo}"
+											data-click-sync="[data-target-name='allAnkenListSearchForm.ankenCreateDateTo']">
+										<button type="button" class="btn btn_popcal hidden" data-toggle="datepicker" data-target-name="allAnkenListSearchForm.ankenCreateDateTo">カレンダー</button>
+									</div>
+								</div>
+							</div>
+						</div>
+					</div>
+					<div class="form-row">
+						<!--/* 顧客ステータス */-->
+						<div class="form-group col-md-auto">
+							<label class="input_parts_label">顧客ステータス</label>
+							<div>
+								<label class="radio_btn_select">
+									<input type="radio" class="radio_btn_input" th:value="${T(jp.loioz.common.constant.CommonConstant).ANKEN_STATUS_ALL_CD}"
+										th:field="*{allAnkenListSearchForm.ankenStatus}">
+									<span class="radio_btn_txt">すべて</span>
+								</label>
+								<label class="radio_btn_select">
+									<input type="radio" class="radio_btn_input" th:value="${T(jp.loioz.common.constant.CommonConstant$AnkenStatus).SODAN.getCd()}"
+										th:field="*{allAnkenListSearchForm.ankenStatus}">
+									<span class="radio_btn_txt">相談中</span>
+								</label>
+								<label class="radio_btn_select">
+									<input type="radio" class="radio_btn_input" th:value="${T(jp.loioz.common.constant.CommonConstant$AnkenStatus).SHINKOCHU.getCd()}"
+										th:field="*{allAnkenListSearchForm.ankenStatus}">
+									<span class="radio_btn_txt">進行中</span>
+								</label>
+								<label class="radio_btn_select">
+									<input type="radio" class="radio_btn_input" th:value="${T(jp.loioz.common.constant.CommonConstant$AnkenStatus).SEISAN_MACHI.getCd()}"
+										th:field="*{allAnkenListSearchForm.ankenStatus}">
+									<span class="radio_btn_txt">精算待ち</span>
+								</label>
+								<label class="radio_btn_select">
+									<input type="radio" class="radio_btn_input" th:value="${T(jp.loioz.common.constant.CommonConstant$AnkenStatus).KANRYO_MACHI.getCd()}"
+										th:field="*{allAnkenListSearchForm.ankenStatus}">
+									<span class="radio_btn_txt">完了待ち</span>
+								</label>
+								<label class="radio_btn_select">
+									<input type="radio" class="radio_btn_input" th:value="${T(jp.loioz.common.constant.CommonConstant$AnkenStatus).KANRYO.getCd()}"
+										th:field="*{allAnkenListSearchForm.ankenStatus}">
+									<span class="radio_btn_txt">完了</span>
+								</label>
+								<label class="radio_btn_select">
+									<input type="radio" class="radio_btn_input" th:value="${T(jp.loioz.common.constant.CommonConstant$AnkenStatus).FUJUNIN.getCd()}"
+										th:field="*{allAnkenListSearchForm.ankenStatus}">
+									<span class="radio_btn_txt">不受任</span>
+								</label>
+								<label class="radio_btn_select">
+									<input type="radio" class="radio_btn_input" th:value="${T(jp.loioz.common.constant.CommonConstant).ANKEN_STATUS_INCOMPLETE_CD}"
+										th:field="*{allAnkenListSearchForm.ankenStatus}">
+									<span class="radio_btn_txt">完了、不受任以外</span>
+								</label>
+							</div>
+						</div>
+					</div>
+				</fieldset>
+			</div>
+			<!--/* 検索条件 end */-->
+		</form>
+	</th:block>
+</div>
+
+
+
+<!--/* 自分の担当案件検索条件 */-->
+<div th:fragment="myAnkenListSearchFormFragment(ankenListSearchForm)" id="myAnkenListSearchFormFragment">
+
+	<!--/* スクリプト */-->
+	<script th:inline="javascript">
+	$(function(){
+		
+		<!--/* 共有の要素セットアップ処理 */-->
+		commonSetUpElement("#myAnkenListSearchFormFragment");
+		
+		const myAnkenListSearchFormFragment = $('#myAnkenListSearchFormFragment');
+		
+		<!--/* 案件を追加クリック */-->
+		myAnkenListSearchFormFragment.on("click", ".addAnken", function() {
+			window.location.href = "/user/ankenRegist/";
+		});
+
+		<!--/* フィルタクリック */-->
+		myAnkenListSearchFormFragment.on("click", ".filterBtn", function() {
+			<!--/* 検索条件表示／非表示フラグの設定と表示変更 */-->
+			const searchConditionOpen = $('#searchConditionOpen').val();
+			if (searchConditionOpen == "true") {
+				$('#searchConditionOpen').val(false);
+			} else {
+				$('#searchConditionOpen').val(true);
+			}
+			<!--/* パラメータ */-->
+			const formData = $('#ankenListSearchForm').serializeArray();
+			<!--/* 検索条件表示 */-->
+			renderAnkenSearchFormFragment(formData);
+		});
+
+		<!--/* 検索条件クリア処理 */-->
+		myAnkenListSearchFormFragment.on("click", ".initSearchCondition", function(e) {
+			<!--/* 検索条件クリア */-->
+			initMyAnkenSearchCondition();
+		});
+		
+		<!--/* テキスト検索 */-->
+		let searchText;
+		let inputText;
+		<!--/* テキストボックス内のクリア処理 */-->
+		myAnkenListSearchFormFragment.find('.add-clear-span > a').on('click', function() {
+			inputText = '';
+			
+			if ($(this).parent().find('.inputDate').length > 0) {
+				<!--/* 日付の入力項目（DatePickerの項目）の場合は、blurでの再検索は行わず、このケースではchangeイベントが発火せず再検索が行われないので、イベントを発火させる */-->
+				$(this).parent().find('.inputDate').change();
+			}
+		});
+		<!--/* 入力項目削除で検索 */-->
+		myAnkenListSearchFormFragment.find('.filtersContainer input[type="text"]').on('blur', function() {
+			if ($(this).hasClass('inputDate')) {
+				<!--/* 日付の入力項目（DatePickerの項目）の場合は、blurでの再検索は行わない（changeイベント側で実行されるため） */-->
+				return;
+			}
+			
+			if (searchText !== inputText) {
+				searchFn();
+			}
+		});
+		<!--/* 入力項目のEnterで検索 */-->
+		myAnkenListSearchFormFragment.find('.filtersContainer input[type="text"]').on('keydown', function(e) {
+			if (e.keyCode == 13) {
+				searchText = $(this).val();
+				searchFn();
+			};
+			inputText = $(this).val();
+		});
+		<!--/* 日付の変更で検索 */-->
+		myAnkenListSearchFormFragment.find('.filtersContainer .inputDate').on('change', function(e) {
+			searchFn();
+		});
+		
+		<!--/* セレクトボックスの変更で検索 */-->
+		myAnkenListSearchFormFragment.find('.filtersContainer select').on('change', function(e) {
+			searchFn();
+		});
+		<!--/* ラジオボタンで検索 */-->
+		myAnkenListSearchFormFragment.find('.filtersContainer input:radio').on('change', function(e) {
+			searchFn();
+		});
+
+		<!--/* CSV出力 */-->
+		myAnkenListSearchFormFragment.on("click", ".csvOutput", function() {
+			<!--/* ダウンロード処理 */-->
+			downloadAnkenListCsv($(this));
+		});
+		<!--/* EXCEL出力 */-->
+		myAnkenListSearchFormFragment.on("click", ".excelOutput", function() {
+			<!--/* ダウンロード処理 */-->
+			downloadAnkenListExcel($(this));
+		});
+		
+		<!--/* 検索処理 */-->
+		function searchFn() {
+			const optionParam = myAnkenListSearchFormFragment.find('#ankenListSearchForm').serializeArray();
+			if (ajaxRunning) {
+				return false;
+			}
+			ajaxRunning = true;
+			Promise.resolve()
+				.then(() => searchMyAnkenList(optionParam))
+				.then(() => renderAnkenSearchFormFragment(optionParam))
+				.catch((errorObj) => console.log(errorObj))
+				.finally(() => ajaxRunning = false);
+		};
+	});
+
+	</script>
+
+	<th:block th:object="${ankenListSearchForm}">
+
+		<!--/* 選択したメニュータイトル */-->
+		<div class="page_list_title_block">
+			<h1 class="page_list__name" th:text="*{getPageTitle()}">自分の担当案件</h1>
+			<div class="page_list__btn" th:with="searchConditionCount=*{myAnkenListSearchForm.getSearchConditionCount()}">
+				<button type="button" class="btn btn-primary addAnken"><i class="fas fa-plus mr-2"></i>案件を追加</button>
+				<button type="button" class="btn btn-light filterBtn" th:classAppend="${searchConditionCount} > 0 ?  'filter_active' ">
+					<i class="fas fa-filter"></i>フィルタ
+					<span class="btn_inner_badge" th:classAppend="${searchConditionCount} > 0 ?  'badge_warning' "
+						th:text="${searchConditionCount}">1</span>
+				</button>
+				<div th:id="outPutContainer" class="d-inline-block stop-events outPutContainerClose" data-loading-target=".loadingTarget"
+					data-offset="-80,0" data-boundary="window" data-container="#myAnkenListSearchFormFragment" data-toggle="popover" data-placement="bottom" data-html="true" th:data-content=
+					'|<ul class="output_nav_list">
+							<li class="title_block">案件情報出力</li>
+							<li><button class="btn btn-light excelOutput w-100" data-target="#outPutContainer"><i class="fas fa-download text-primary mr-3"></i><i class="fas fa-spinner mr-3 text-primary faa-spin animated hidden"></i>Excel形式で出力する</button></li>
+							<li><button class="btn btn-light csvOutput w-100" data-target="#outPutContainer"><i class="fas fa-download text-primary mr-3"></i><i class="fas fa-spinner mr-3 text-primary faa-spin animated hidden"></i>CSV形式で出力する</button></li>
+					</ul>|'>
+					<button type="button" class="btn btn-light config"><i class="fas fa-ellipsis-h mr-0"></i></button>
+				</div>
+			</div>
+		</div>
+
+		<!--/* 一覧ヘッダ */-->
+		<form id="ankenListSearchForm" autocomplete="off">
+			<!--/* 選択中のメニュー保持 */-->
+			<input type="hidden" th:field="*{selectedAnkenListMenu}">
+
+			<!--/* 検索条件の表示／非表示フラグ */-->
+			<input type="hidden" th:field="*{searchConditionOpen}">
+
+			<!--/* 検索条件 */-->
+			<div class="list_filters_container filtersContainer" th:classappend="*{SearchConditionOpen ? '' : 'hidden'}">
+				<fieldset>
+					<div class="list_filters_header">
+						<div class="filters_title">検索条件</div>
+						<div class="filters_action">
+							<a href="javascript:void(0);" class="filters_action__clear initSearchCondition">検索条件をクリア</a>
+							<a href="javascript:void(0);" class="filters_action__close filterBtn"><i class="fas fa-times"></i></a>
+						</div>
+					</div>
+					<div class="form-row">
+						<!--/* キーワード検索 */-->
+						<div class="form-group col-md-auto">
+							<label class="input_parts_label">キーワード</label>
+							<input type="text" class="form-control digit18 fcAddTextClear" th:field="*{myAnkenListSearchForm.searchWord}" 
+								placeholder="ID、案件名、顧客名、相手方..." maxlength="300">
+						</div>
+						<!--/* 分野 */-->
+						<div class="form-group col-md-auto">
+							<label class="input_parts_label">分野</label>
+							<select class="form-control digit8 changeBunya" th:field="*{myAnkenListSearchForm.bunyaId}">
+								<option value="">-</option>
+								<option th:each="bunyaDto : *{myAnkenListSearchForm.bunyaList}" th:value="${bunyaDto.cd}" th:text="${bunyaDto.val}"></option>
+							</select>
+						</div>
+						<!--/* 担当弁護士 */-->
+						<div class="form-group col-md-auto">
+							<label class="input_parts_label">担当弁護士</label>
+							<!--/* ログインユーザーが弁護士であれば担当弁護士の変更を不可とする */-->
+							<th:block th:if="${(T(jp.loioz.common.constant.CommonConstant$AccountType).LAWYER.equals(T(jp.loioz.common.utility.SessionUtils).getAccountType()))}">
+								<select class="form-control digit8 changeTantoLawyer" disabled="disabled" th:field="*{myAnkenListSearchForm.tantoLaywer}">
+									<option value="">-</option>
+									<option th:each="lawyer : *{tantoLawyerList}" th:value="${lawyer.accountSeq}" th:text="|${lawyer.accountNameSei} ${lawyer.accountNameMei}|" th:selected="${lawyer.accountSeq} == *{myAnkenListSearchForm.tantoLaywer}"></option>
+								</select>
+							</th:block>
+							<!--/* ログインユーザーが弁護士でなければ担当弁護士の変更を可能とする */-->
+							<th:block th:unless="${(T(jp.loioz.common.constant.CommonConstant$AccountType).LAWYER.equals(T(jp.loioz.common.utility.SessionUtils).getAccountType()))}">
+								<select class="form-control digit8 changeTantoLawyer" th:field="*{myAnkenListSearchForm.tantoLaywer}">
+									<option value="">-</option>
+									<option th:each="lawyer : *{tantoLawyerList}" th:value="${lawyer.accountSeq}" th:text="|${lawyer.accountNameSei} ${lawyer.accountNameMei}|" th:selected="${lawyer.accountSeq} == *{myAnkenListSearchForm.tantoLaywer}"></option>
+								</select>
+							</th:block>
+						</div>
+						<!--/* 担当事務 */-->
+						<div class="form-group col-md-auto">
+							<label class="input_parts_label">担当事務</label>
+							<!--/* ログインユーザーが事務員であれば担当事務の変更を不可とする */-->
+							<th:block th:if="${(T(jp.loioz.common.constant.CommonConstant$AccountType).JIMU.equals(T(jp.loioz.common.utility.SessionUtils).getAccountType()))}">
+								<select class="form-control digit8 changeTantoJimu" disabled="disabled" th:field="*{myAnkenListSearchForm.tantoJimu}">
+									<option value="">-</option>
+									<option th:each="jimu : *{tantoJimuList}" th:value="${jimu.accountSeq}" th:text="|${jimu.accountNameSei} ${jimu.accountNameMei}|" th:selected="${jimu.accountSeq} == *{myAnkenListSearchForm.tantoJimu}"></option>
+								</select>
+							</th:block>
+							<!--/* ログインユーザーが事務員でなければ担当事務の変更を可能とする */-->
+							<th:block th:unless="${(T(jp.loioz.common.constant.CommonConstant$AccountType).JIMU.equals(T(jp.loioz.common.utility.SessionUtils).getAccountType()))}">
+								<select class="form-control digit8 changeTantoJimu" th:field="*{myAnkenListSearchForm.tantoJimu}">
+									<option value="">-</option>
+									<option th:each="jimu : *{tantoJimuList}" th:value="${jimu.accountSeq}" th:text="|${jimu.accountNameSei} ${jimu.accountNameMei}|" th:selected="${jimu.accountSeq} == *{myAnkenListSearchForm.tantoJimu}"></option>
+								</select>
+							</th:block>
+						</div>
+						<!--/* 案件登録日 */-->
+						<div class="form-group col-md-auto">
+							<label class="input_parts_label">登録日</label>
+							<div class="d-flex align-items-start">
+								<div>
+									<div class="d-flex ankenCreateDateFrom">
+										<input type="text" class="form-control digit8 inputDateSlash fcAddTextClear inputDate" th:field="*{myAnkenListSearchForm.ankenCreateDateFrom}"
+											data-click-sync="[data-target-name='myAnkenListSearchForm.ankenCreateDateFrom']">
+										<button type="button" class="btn btn_popcal hidden" data-toggle="datepicker" data-target-name="myAnkenListSearchForm.ankenCreateDateFrom">カレンダー</button>
+										<div class="fs15 mt-2 mx-2">〜</div>
+									</div>
+								</div>
+								<div>
+									<div class="ankenCreateDateTo">
+										<input type="text" class="form-control digit8 inputDateSlash fcAddTextClear inputDate" th:field="*{myAnkenListSearchForm.ankenCreateDateTo}"
+											data-click-sync="[data-target-name='myAnkenListSearchForm.ankenCreateDateTo']">
+										<button type="button" class="btn btn_popcal hidden" data-toggle="datepicker" data-target-name="myAnkenListSearchForm.ankenCreateDateTo">カレンダー</button>
+									</div>
+								</div>
+							</div>
+						</div>
+						<!--/* 受任日 */-->
+						<div class="form-group col-md-auto">
+							<label class="input_parts_label">受任日</label>
+							<div class="d-flex align-items-start">
+								<div>
+									<div class="d-flex jyuninDateFrom">
+										<input type="text" class="form-control digit8 inputDateSlash fcAddTextClear inputDate" th:field="*{myAnkenListSearchForm.jyuninDateFrom}"
+											data-click-sync="[data-target-name='myAnkenListSearchForm.jyuninDateFrom']">
+										<button type="button" class="btn btn_popcal hidden" data-toggle="datepicker" data-target-name="myAnkenListSearchForm.jyuninDateFrom">カレンダー</button>
+										<div class="fs15 mt-2 mx-2">〜</div>
+									</div>
+								</div>
+								<div>
+									<div class="jyuninDateTo">
+										<input type="text" class="form-control digit8 inputDateSlash fcAddTextClear inputDate" th:field="*{myAnkenListSearchForm.jyuninDateTo}"
+											data-click-sync="[data-target-name='myAnkenListSearchForm.jyuninDateTo']">
+										<button type="button" class="btn btn_popcal hidden" data-toggle="datepicker" data-target-name="myAnkenListSearchForm.jyuninDateTo">カレンダー</button>
+									</div>
+								</div>
+							</div>
+						</div>
+					</div>
+					<div class="form-row">
+						<!--/* 顧客ステータス */-->
+						<div class="form-group col-md-auto">
+							<label class="input_parts_label">顧客ステータス</label>
+							<div>
+								<label class="radio_btn_select">
+									<input type="radio" class="radio_btn_input" th:value="${T(jp.loioz.common.constant.CommonConstant).ANKEN_STATUS_ALL_CD}"
+										th:field="*{myAnkenListSearchForm.ankenStatus}">
+									<span class="radio_btn_txt">すべて</span>
+								</label>
+								<label class="radio_btn_select">
+									<input type="radio" class="radio_btn_input" th:value="${T(jp.loioz.common.constant.CommonConstant$AnkenStatus).SODAN.getCd()}"
+										th:field="*{myAnkenListSearchForm.ankenStatus}">
+									<span class="radio_btn_txt">相談中</span>
+								</label>
+								<label class="radio_btn_select">
+									<input type="radio" class="radio_btn_input" th:value="${T(jp.loioz.common.constant.CommonConstant$AnkenStatus).SHINKOCHU.getCd()}"
+										th:field="*{myAnkenListSearchForm.ankenStatus}">
+									<span class="radio_btn_txt">進行中</span>
+								</label>
+								<label class="radio_btn_select">
+									<input type="radio" class="radio_btn_input" th:value="${T(jp.loioz.common.constant.CommonConstant$AnkenStatus).SEISAN_MACHI.getCd()}"
+										th:field="*{myAnkenListSearchForm.ankenStatus}">
+									<span class="radio_btn_txt">精算待ち</span>
+								</label>
+								<label class="radio_btn_select">
+									<input type="radio" class="radio_btn_input" th:value="${T(jp.loioz.common.constant.CommonConstant$AnkenStatus).KANRYO_MACHI.getCd()}"
+										th:field="*{myAnkenListSearchForm.ankenStatus}">
+									<span class="radio_btn_txt">完了待ち</span>
+								</label>
+								<label class="radio_btn_select">
+									<input type="radio" class="radio_btn_input" th:value="${T(jp.loioz.common.constant.CommonConstant$AnkenStatus).KANRYO.getCd()}"
+										th:field="*{myAnkenListSearchForm.ankenStatus}">
+									<span class="radio_btn_txt">完了</span>
+								</label>
+								<label class="radio_btn_select">
+									<input type="radio" class="radio_btn_input" th:value="${T(jp.loioz.common.constant.CommonConstant$AnkenStatus).FUJUNIN.getCd()}"
+										th:field="*{myAnkenListSearchForm.ankenStatus}">
+									<span class="radio_btn_txt">不受任</span>
+								</label>
+								<label class="radio_btn_select">
+									<input type="radio" class="radio_btn_input" th:value="${T(jp.loioz.common.constant.CommonConstant).ANKEN_STATUS_INCOMPLETE_CD}"
+										th:field="*{myAnkenListSearchForm.ankenStatus}">
+									<span class="radio_btn_txt">完了、不受任以外</span>
+								</label>
+							</div>
+						</div>
+					</div>
+				</fieldset>
+			</div>
+			<!--/* 検索条件 end */-->
+		</form>
+	</th:block>
+</div>
+
+
+
+<!--/* 顧問案件 検索条件 */-->
+<div th:fragment="advisorAnkenListSearchFormFragment(ankenListSearchForm)" id="advisorAnkenListSearchFormFragment">
+
+	<!--/* スクリプト */-->
+	<script th:inline="javascript">
+	$(function(){
+		
+		<!--/* 共有の要素セットアップ処理 */-->
+		commonSetUpElement("#advisorAnkenListSearchFormFragment");
+		
+		const advisorAnkenListSearchFormFragment = $("#advisorAnkenListSearchFormFragment");
+		
+		<!--/* 案件を追加クリック */-->
+		advisorAnkenListSearchFormFragment.on("click", ".addAnken", function() {
+			window.location.href = "/user/ankenRegist/";
+		});
+		
+		<!--/* フィルタクリック */-->
+		advisorAnkenListSearchFormFragment.on("click", ".filterBtn", function() {
+			<!--/* 検索条件表示／非表示フラグの設定と表示変更 */-->
+			const searchConditionOpen = $('#searchConditionOpen').val();
+			if (searchConditionOpen == "true") {
+				$('#searchConditionOpen').val(false);
+			} else {
+				$('#searchConditionOpen').val(true);
+			}
+			<!--/* パラメータ */-->
+			const formData = $('#ankenListSearchForm').serializeArray();
+			<!--/* 検索条件表示 */-->
+			renderAnkenSearchFormFragment(formData);
+		});
+
+		<!--/* 検索条件クリア処理 */-->
+		advisorAnkenListSearchFormFragment.on("click", ".initSearchCondition", function(e) {
+			<!--/* 検索条件クリア */-->
+			initAdvisorAnkenSearchCondition();
+		});
+
+		<!--/* テキスト検索 */-->
+		let searchText;
+		let inputText;
+		<!--/* テキストボックス内のクリア処理 */-->
+		advisorAnkenListSearchFormFragment.find('.add-clear-span > a').on('click', function() {
+			inputText = '';
+			
+			if ($(this).parent().find('.inputDate').length > 0) {
+				<!--/* 日付の入力項目（DatePickerの項目）の場合は、blurでの再検索は行わず、このケースではchangeイベントが発火せず再検索が行われないので、イベントを発火させる */-->
+				$(this).parent().find('.inputDate').change();
+			}
+		});
+		<!--/* 入力項目削除で検索 */-->
+		advisorAnkenListSearchFormFragment.find('.filtersContainer input[type="text"]').on('blur', function() {
+			if ($(this).hasClass('inputDate')) {
+				<!--/* 日付の入力項目（DatePickerの項目）の場合は、blurでの再検索は行わない（changeイベント側で実行されるため） */-->
+				return;
+			}
+			
+			if (searchText !== inputText) {
+				searchFn();
+			}
+		});
+		<!--/* 入力項目のEnterで検索 */-->
+		advisorAnkenListSearchFormFragment.find('.filtersContainer input[type="text"]').on('keydown', function(e) {
+			if (e.keyCode == 13) {
+				searchText = $(this).val();
+				searchFn();
+			};
+			inputText = $(this).val();
+		});
+		<!--/* 日付の変更で検索 */-->
+		advisorAnkenListSearchFormFragment.find('.filtersContainer .inputDate').on('change', function(e) {
+			searchFn();
+		});
+		
+		<!--/* セレクトボックスの変更で検索 */-->
+		advisorAnkenListSearchFormFragment.find('.filtersContainer select').on('change', function(e) {
+			searchFn();
+		});
+		<!--/* ラジオボタンで検索 */-->
+		advisorAnkenListSearchFormFragment.find('.filtersContainer input:radio').on('change', function(e) {
+			searchFn();
+		});
+		
+		<!--/* CSV出力 */-->
+		advisorAnkenListSearchFormFragment.on("click", ".csvOutput", function() {
+			<!--/* ダウンロード処理 */-->
+			downloadAnkenListCsv($(this));
+		});
+		<!--/* EXCEL出力 */-->
+		advisorAnkenListSearchFormFragment.on("click", ".excelOutput", function() {
+			<!--/* ダウンロード処理 */-->
+			downloadAnkenListExcel($(this));
+		});
+		
+		<!--/* 検索処理 */-->
+		function searchFn() {
+			const optionParam = advisorAnkenListSearchFormFragment.find('#ankenListSearchForm').serializeArray();
+			if (ajaxRunning) {
+				return false;
+			}
+			ajaxRunning = true;
+			Promise.resolve()
+				.then(() => searchAdvisorAnkenList(optionParam))
+				.then(() => renderAnkenSearchFormFragment(optionParam))
+				.catch((errorObj) => console.log(errorObj))
+				.finally(() => ajaxRunning = false);
+		};
+		
+	});
+
+	</script>
+
+	<th:block th:object="${ankenListSearchForm}">
+
+		<!--/* 選択したメニュータイトル */-->
+		<div class="page_list_title_block">
+			<h1 class="page_list__name" th:text="*{getPageTitle()}">進行中</h1>
+			<div class="page_list__btn" th:with="searchConditionCount=*{advisorAnkenListSearchForm.getSearchConditionCount()}">
+				<button type="button" class="btn btn-primary addAnken"><i class="fas fa-plus mr-2"></i>案件を追加</button>
+				<button type="button" class="btn btn-light filterBtn" th:classAppend="${searchConditionCount} > 0 ?  'filter_active' ">
+					<i class="fas fa-filter"></i>フィルタ
+					<span class="btn_inner_badge" th:classAppend="${searchConditionCount} > 0 ?  'badge_warning' "
+						th:text="${searchConditionCount}">1</span>
+				</button>
+				<div th:id="outPutContainer" class="d-inline-block stop-events outPutContainerClose" data-loading-target=".loadingTarget"
+					data-offset="-80,0" data-boundary="window" data-container="#advisorAnkenListSearchFormFragment" data-toggle="popover" data-placement="bottom" data-html="true" th:data-content=
+					'|<ul class="output_nav_list">
+							<li class="title_block">案件情報出力</li>
+							<li><button class="btn btn-light excelOutput" data-target="#outPutContainer"><i class="fas fa-download text-primary mr-3"></i><i class="fas fa-spinner mr-3 text-primary faa-spin animated hidden"></i>Excel形式で出力する</button></li>
+							<li><button class="btn btn-light csvOutput" data-target="#outPutContainer"><i class="fas fa-download text-primary mr-3"></i><i class="fas fa-spinner mr-3 text-primary faa-spin animated hidden"></i>CSV形式で出力する</button></li>
+					</ul>|'>
+					<button type="button" class="btn btn-light config"><i class="fas fa-ellipsis-h mr-0"></i></button>
+				</div>
+			</div>
+		</div>
+
+		<!--/* 一覧ヘッダ */-->
+		<form id="ankenListSearchForm" autocomplete="off">
+			<!--/* 選択中のメニュー保持 */-->
+			<input type="hidden" th:field="*{selectedAnkenListMenu}">
+
+			<!--/* 検索条件の表示／非表示フラグ */-->
+			<input type="hidden" th:field="*{searchConditionOpen}">
+
+			<!--/* 検索条件 */-->
+			<div class="list_filters_container filtersContainer" th:classappend="*{SearchConditionOpen ? '' : 'hidden'}">
+				<fieldset>
+					<div class="list_filters_header">
+						<div class="filters_title">検索条件</div>
+						<div class="filters_action">
+							<a href="javascript:void(0);" class="filters_action__clear initSearchCondition">検索条件をクリア</a>
+							<a href="javascript:void(0);" class="filters_action__close filterBtn"><i class="fas fa-times"></i></a>
+						</div>
+					</div>
+					<div class="form-row">
+						<!--/* テキスト検索 */-->
+						<div class="form-group col-md-auto">
+							<label class="input_parts_label">キーワード</label>
+							<input type="text" class="form-control digit18 fcAddTextClear" th:field="*{advisorAnkenListSearchForm.searchWord}"
+								placeholder="ID、案件名、顧客名、相手方..." maxlength="300">
+						</div>
+						<!--/* 分野 */-->
+						<div class="form-group col-md-auto">
+							<label class="input_parts_label">分野</label>
+							<select class="form-control digit8 changeBunya" th:field="*{advisorAnkenListSearchForm.bunyaId}">
+								<option value="">-</option>
+								<option th:each="bunyaDto : *{advisorAnkenListSearchForm.bunyaList}"
+									th:value="${bunyaDto.cd}" th:text="${bunyaDto.val}"></option>
+							</select>
+						</div>
+						<!--/* 担当弁護士 */-->
+						<div class="form-group col-md-auto">
+							<label class="input_parts_label">担当弁護士</label>
+							<select class="form-control digit8 changeTantoLawyer" th:field="*{advisorAnkenListSearchForm.tantoLaywer}">
+								<option value="">-</option>
+								<option th:each="lawyer : *{tantoLawyerList}" th:value="${lawyer.accountSeq}" th:text="|${lawyer.accountNameSei} ${lawyer.accountNameMei}|" th:selected="${lawyer.accountSeq} == *{advisorAnkenListSearchForm.tantoLaywer}"></option>
+							</select>
+						</div>
+						<!--/* 担当事務 */-->
+						<div class="form-group col-md-auto">
+							<label class="input_parts_label">担当事務</label>
+							<select class="form-control digit8 changeTantoJimu" th:field="*{advisorAnkenListSearchForm.tantoJimu}">
+								<option value="">-</option>
+								<option th:each="jimu : *{tantoJimuList}" th:value="${jimu.accountSeq}" th:text="|${jimu.accountNameSei} ${jimu.accountNameMei}|" th:selected="${jimu.accountSeq} == *{advisorAnkenListSearchForm.tantoJimu}"></option>
+							</select>
+						</div>
+						<!--/* 案件登録日 */-->
+						<div class="form-group col-md-auto">
+							<label class="input_parts_label">登録日</label>
+							<div class="d-flex align-items-start">
+								<div>
+									<div class="d-flex ankenCreateDateFrom">
+										<input type="text" class="form-control digit8 inputDateSlash fcAddTextClear inputDate" maxlength="10"
+											th:field="*{advisorAnkenListSearchForm.ankenCreateDateFrom}"
+											data-click-sync="[data-target-name='advisorAnkenListSearchForm.ankenCreateDateFrom']">
+										<button type="button" class="btn btn_popcal hidden" data-toggle="datepicker" data-target-name="advisorAnkenListSearchForm.ankenCreateDateFrom">カレンダー</button>
+										<div class="fs15 mt-2 mx-2">〜</div>
+									</div>
+								</div>
+								<div>
+									<div class="ankenCreateDateTo">
+										<input type="text" class="form-control digit8 inputDateSlash fcAddTextClear inputDate" maxlength="10"
+											th:field="*{advisorAnkenListSearchForm.ankenCreateDateTo}"
+											data-click-sync="[data-target-name='advisorAnkenListSearchForm.ankenCreateDateTo']">
+										<button type="button" class="btn btn_popcal hidden" data-toggle="datepicker" data-target-name="advisorAnkenListSearchForm.ankenCreateDateTo">カレンダー</button>
+									</div>
+								</div>
+							</div>
+						</div>
+						<!--/* 受任日 */-->
+						<div class="form-group col-md-auto">
+							<label class="input_parts_label">受任日</label>
+							<div class="d-flex align-items-start">
+								<div>
+									<div class="d-flex jyuninDateFrom">
+										<input type="text" class="form-control digit8 inputDateSlash fcAddTextClear inputDate" maxlength="10"
+											th:field="*{advisorAnkenListSearchForm.jyuninDateFrom}"
+											data-click-sync="[data-target-name='advisorAnkenListSearchForm.jyuninDateFrom']">
+										<button type="button" class="btn btn_popcal hidden" data-toggle="datepicker" data-target-name="advisorAnkenListSearchForm.jyuninDateFrom">カレンダー</button>
+										<div class="fs15 mt-2 mx-2">〜</div>
+									</div>
+								</div>
+								<div>
+									<div class="jyuninDateTo">
+										<input type="text" class="form-control digit8 inputDateSlash fcAddTextClear inputDate" maxlength="10"
+											th:field="*{advisorAnkenListSearchForm.jyuninDateTo}"
+											data-click-sync="[data-target-name='advisorAnkenListSearchForm.jyuninDateTo']">
+										<button type="button" class="btn btn_popcal hidden" data-toggle="datepicker" data-target-name="advisorAnkenListSearchForm.jyuninDateTo">カレンダー</button>
+									</div>
+								</div>
+							</div>
+						</div>
+					</div>
+					<div class="form-row">
+						<!--/* 顧客ステータス */-->
+						<div class="form-group col-md-auto">
+							<label class="input_parts_label">顧客ステータス</label>
+							<div>
+								<label class="radio_btn_select">
+									<input type="radio" class="radio_btn_input" th:value="${T(jp.loioz.common.constant.CommonConstant).ANKEN_STATUS_ALL_CD}"
+										th:field="*{advisorAnkenListSearchForm.ankenStatus}">
+									<span class="radio_btn_txt">すべて</span>
+								</label>
+								<label class="radio_btn_select">
+									<input type="radio" class="radio_btn_input" th:value="${T(jp.loioz.common.constant.CommonConstant$AnkenStatus).SODAN.getCd()}"
+										th:field="*{advisorAnkenListSearchForm.ankenStatus}">
+									<span class="radio_btn_txt">相談中</span>
+								</label>
+								<label class="radio_btn_select">
+									<input type="radio" class="radio_btn_input" th:value="${T(jp.loioz.common.constant.CommonConstant$AnkenStatus).SHINKOCHU.getCd()}"
+										th:field="*{advisorAnkenListSearchForm.ankenStatus}">
+									<span class="radio_btn_txt">進行中</span>
+								</label>
+								<label class="radio_btn_select">
+									<input type="radio" class="radio_btn_input" th:value="${T(jp.loioz.common.constant.CommonConstant$AnkenStatus).SEISAN_MACHI.getCd()}"
+										th:field="*{advisorAnkenListSearchForm.ankenStatus}">
+									<span class="radio_btn_txt">精算待ち</span>
+								</label>
+								<label class="radio_btn_select">
+									<input type="radio" class="radio_btn_input" th:value="${T(jp.loioz.common.constant.CommonConstant$AnkenStatus).KANRYO_MACHI.getCd()}"
+										th:field="*{advisorAnkenListSearchForm.ankenStatus}">
+									<span class="radio_btn_txt">完了待ち</span>
+								</label>
+								<label class="radio_btn_select">
+									<input type="radio" class="radio_btn_input" th:value="${T(jp.loioz.common.constant.CommonConstant$AnkenStatus).KANRYO.getCd()}"
+										th:field="*{advisorAnkenListSearchForm.ankenStatus}">
+									<span class="radio_btn_txt">完了</span>
+								</label>
+								<label class="radio_btn_select">
+									<input type="radio" class="radio_btn_input" th:value="${T(jp.loioz.common.constant.CommonConstant$AnkenStatus).FUJUNIN.getCd()}"
+										th:field="*{advisorAnkenListSearchForm.ankenStatus}">
+									<span class="radio_btn_txt">不受任</span>
+								</label>
+								<label class="radio_btn_select">
+									<input type="radio" class="radio_btn_input" th:value="${T(jp.loioz.common.constant.CommonConstant).ANKEN_STATUS_INCOMPLETE_CD}"
+										th:field="*{advisorAnkenListSearchForm.ankenStatus}">
+									<span class="radio_btn_txt">完了、不受任以外</span>
+								</label>
+							</div>
+						</div>
+					</div>
+				</fieldset>
+			</div>
+			<!--/* 検索条件 end */-->
+		</form>
+	</th:block>
+</div>
+
+
+
+<!--/* 案件情報一覧フラグメント */-->
+<div th:fragment="ankenListViewFragment(viewForm)" id="ankenListViewFragment">
+
+	<!--/* スクリプト */-->
+	<script th:inline="javascript">
+	$(function(){
+
+		<!--/* 共有の要素セットアップ処理 */-->
+		commonSetUpElement("#ankenListViewFragment");
+
+		<!-- /* 一覧の表示初期処理（親HTMLの関数） */ -->
+		const sessionQuickSearchWord = /*[[${T(jp.loioz.common.utility.SessionUtils).getSessionVaule(T(jp.loioz.common.constant.SessionAttrKeyEnum).QUICK_SEARCH_WORD)}]]*/ '';
+		showInitAnkenList(sessionQuickSearchWord)
+		
+		<!--/* 案件一覧並び替え処理 */-->
+		$('#ankenListViewFragment').on("click", ".ankenListSort", function() {
+
+			<!--/* 選択中のメニュー */-->
+			const selectedAnkenList = $('#selectedAnkenListMenu').val();
+
+			<!--/* 現在のソートキー */-->
+			let sortedKey;
+			let sortedOrder;
+			<!--/* 選択しているメニューのソートキーを取得 （セッションの検索条件フォームからソートキーを取得）*/-->
+			if (selectedAnkenList == /*[[${T(jp.loioz.common.constant.CommonConstant$AnkenListMenu).All_ANKEN_LIST.cd}]]*/) {
+				sortedKey = $('[id="allAnkenListSearchForm.allAnkenListSortKey"]').val();
+				sortedOrder = $('[id="allAnkenListSearchForm.allAnkenListSortOrder"]').val();
+			} else if (selectedAnkenList == /*[[${T(jp.loioz.common.constant.CommonConstant$AnkenListMenu).MY_ANKEN_LIST.cd}]]*/) {
+				sortedKey = $('[id="myAnkenListSearchForm.myAnkenListSortKey"]').val();
+				sortedOrder = $('[id="myAnkenListSearchForm.myAnkenListSortOrder"]').val();
+			} else {
+				sortedKey = $('[id="advisorAnkenListSearchForm.advisorAnkenListSortKey"]').val();
+				sortedOrder = $('[id="advisorAnkenListSearchForm.advisorAnkenListSortOrder"]').val();
+			}
+
+			<!--/* 並び替えをするためのソートキー */-->
+			const sortKey = $(this).data("sort-key");
+
+			<!--/* 選択しているメニューのページ番号を取得 （セッションの検索条件フォームからページ番号を取得） */-->
+			let pageNumber;
+			if (selectedAnkenListMenu == /*[[${T(jp.loioz.common.constant.CommonConstant$AnkenListMenu).All_ANKEN_LIST.cd}]]*/) {
+				pageNumber = $('[id="allAnkenListSearchForm.page"]').val();
+			} else if (selectedAnkenListMenu == /*[[${T(jp.loioz.common.constant.CommonConstant$AnkenListMenu).MY_ANKEN_LIST.cd}]]*/) {
+				pageNumber = $('[id="myAnkenListSearchForm.page"]').val();
+			} else {
+				pageNumber = $('[id="advisorAnkenListSearchForm.page"]').val();
+			}
+
+			<!--/* 並び替え処理 */-->
+			sortAnkenList(sortedKey, sortedOrder, sortKey, pageNumber);
+		});
+
+		<!--/* 案件行リンクをクリック */-->
+		$('#ankenListViewFragment').on("click", ".transitionAnken", function(e){
+			e.stopPropagation();
+			const ankenId = $(this).data("ankenId");
+			<!--/* 案件ダッシュボード画面へ遷移 */-->
+			window.location.href = "/user/ankenDashboard/" + ankenId + "/";
+		});
+
+		<!--/* 案件IDリンクをクリック */-->
+		$('#ankenListViewFragment').on("click", ".transitionAnkenDetail", function(e){
+			e.stopPropagation();
+			const ankenId = $(this).data("ankenId");
+			<!--/* 案件情報画面へ遷移 */-->
+			window.location.href = "/user/ankenManagement/edit/" + ankenId + "/";
+		});
+
+		<!--/* 顧客名リンクをクリック */-->
+		$('#ankenListViewFragment').on("click", ".transitionCustomer", function(e){
+			e.stopPropagation();
+			const personId = $(this).data("personId");
+			<!--/* 顧客情報画面へ遷移 */-->
+			window.location.href = "/user/personManagement/edit/" + personId + "/";
+		});
+
+	});
+
+	</script>
+
+	<th:block th:object="${viewForm}">
+
+		<!--/* 一覧結果 */-->
+		<div id="ankenList" class="">
+			<div class="header_fixed_table_wrapper table_common_list">
+				<!--/* 一覧のソートキー セッションの検索条件フォームからソートキーを取得 */-->
+				<input type="hidden" th:field="${ankenListSearchForm.allAnkenListSearchForm.allAnkenListSortKey}">
+				<input type="hidden" th:field="${ankenListSearchForm.allAnkenListSearchForm.allAnkenListSortOrder}">
+				<input type="hidden" th:field="${ankenListSearchForm.myAnkenListSearchForm.myAnkenListSortKey}">
+				<input type="hidden" th:field="${ankenListSearchForm.myAnkenListSearchForm.myAnkenListSortOrder}">
+				<input type="hidden" th:field="${ankenListSearchForm.advisorAnkenListSearchForm.advisorAnkenListSortKey}">
+				<input type="hidden" th:field="${ankenListSearchForm.advisorAnkenListSearchForm.advisorAnkenListSortOrder}">
+				<!--/* 一覧の表示ページ番号 セッションの検索条件フォームからページ番号を取得 */-->
+				<input type="hidden" th:field="${ankenListSearchForm.allAnkenListSearchForm.page}">
+				<input type="hidden" th:field="${ankenListSearchForm.myAnkenListSearchForm.page}">
+				<input type="hidden" th:field="${ankenListSearchForm.advisorAnkenListSearchForm.page}">
+				
+				<!--/* 案件一覧 */-->
+				<table class="table table_standard table-hover">
+					<thead>
+						<tr>
+							<th class="cell_fixed_75 sort_column ankenListSort" th:data-sort-key="${(T(jp.loioz.common.constant.SortConstant$AnkenListSortItem).ANKEN_ID.cd)}">
+								案件ID
+								<th:block th:if="*{ankenList.size() > 0}">
+									<!--/* ソートキーが分野の場合は、ソート矢印のいずれかを表示する */-->
+									<th:block th:if="${(T(jp.loioz.common.constant.SortConstant$AnkenListSortItem).ANKEN_ID.equalsByCode(viewForm.ankenListSortKey.cd))}">
+										<!--/* ソート順が昇順の場合、上矢印を表示 */-->
+										<th:block th:if="${(T(jp.loioz.common.constant.SortConstant$SortOrder).ASC.equalsByCode(viewForm.ankenListSortOrder.cd))}">
+											<i class="fas fa-chevron-up"></i>
+										</th:block>
+										<!--/* ソート順が降順の場合、下矢印を表示 */-->
+										<th:block th:if="${(T(jp.loioz.common.constant.SortConstant$SortOrder).DESC.equalsByCode(viewForm.ankenListSortOrder.cd))}">
+											<i class="fas fa-chevron-down"></i>
+										</th:block>
+									</th:block>
+								</th:block>
+							</th>
+							<th class="cell_fixed_100 sort_column ankenListSort" th:data-sort-key="${(T(jp.loioz.common.constant.SortConstant$AnkenListSortItem).BUNYA_ID.cd)}">
+								分野
+								<th:block th:if="*{ankenList.size() > 0}">
+									<!--/* ソートキーが分野の場合は、ソート矢印のいずれかを表示する */-->
+									<th:block th:if="${(T(jp.loioz.common.constant.SortConstant$AnkenListSortItem).BUNYA_ID.equalsByCode(viewForm.ankenListSortKey.cd))}">
+										<!--/* ソート順が昇順の場合、上矢印を表示 */-->
+										<th:block th:if="${(T(jp.loioz.common.constant.SortConstant$SortOrder).ASC.equalsByCode(viewForm.ankenListSortOrder.cd))}">
+											<i class="fas fa-chevron-up"></i>
+										</th:block>
+										<!--/* ソート順が降順の場合、下矢印を表示 */-->
+										<th:block th:if="${(T(jp.loioz.common.constant.SortConstant$SortOrder).DESC.equalsByCode(viewForm.ankenListSortOrder.cd))}">
+											<i class="fas fa-chevron-down"></i>
+										</th:block>
+									</th:block>
+								</th:block>
+							</th>
+							<th class="cell_fixed_200 sort_column ankenListSort" th:data-sort-key="${(T(jp.loioz.common.constant.SortConstant$AnkenListSortItem).ANKEN_NAME.cd)}">
+								案件名
+								<th:block th:if="*{ankenList.size() > 0}">
+									<!--/* ソートキーが案件の場合は、ソート矢印のいずれかを表示する */-->
+									<th:block th:if="${(T(jp.loioz.common.constant.SortConstant$AnkenListSortItem).ANKEN_NAME.equalsByCode(viewForm.ankenListSortKey.cd))}">
+										<!--/* ソート順が昇順の場合、上矢印を表示 */-->
+										<th:block th:if="${(T(jp.loioz.common.constant.SortConstant$SortOrder).ASC.equalsByCode(viewForm.ankenListSortOrder.cd))}">
+											<i class="fas fa-chevron-up"></i>
+										</th:block>
+										<!--/* ソート順が降順の場合、下矢印を表示 */-->
+										<th:block th:if="${(T(jp.loioz.common.constant.SortConstant$SortOrder).DESC.equalsByCode(viewForm.ankenListSortOrder.cd))}">
+											<i class="fas fa-chevron-down"></i>
+										</th:block>
+									</th:block>
+								</th:block>
+							</th>
+							<!--/* 依頼者 */-->
+							<th class="cell_fixed_150 sort_column ankenListSort" th:data-sort-key="${(T(jp.loioz.common.constant.SortConstant$AnkenListSortItem).CUSTOMER_NAME_KANA.cd)}">
+								顧客名
+								<th:block th:if="*{ankenList.size() > 0}">
+									<!--/* ソートキーが顧客登録日の場合は、ソート矢印のいずれかを表示する */-->
+									<th:block th:if="${(T(jp.loioz.common.constant.SortConstant$AnkenListSortItem).CUSTOMER_NAME_KANA.equalsByCode(viewForm.ankenListSortKey.cd))}">
+										<!--/* ソート順が昇順の場合、上矢印を表示する */-->
+										<th:block th:if="${(T(jp.loioz.common.constant.SortConstant$SortOrder).ASC.equalsByCode(viewForm.ankenListSortOrder.cd))}">
+											<i class="fas fa-chevron-up"></i>
+										</th:block>
+										<!--/* ソート順が降順の場合、下矢印を表示 */-->
+										<th:block th:if="${(T(jp.loioz.common.constant.SortConstant$SortOrder).DESC.equalsByCode(viewForm.ankenListSortOrder.cd))}">
+											<i class="fas fa-chevron-down"></i>
+										</th:block>
+									</th:block>
+								</th:block>
+							</th>
+							<!--/* 相手方 */-->
+							<th class="cell_fixed_150">相手方</th>
+							<!--/* 顧客ステータス */-->
+							<th class="cell_fixed_100 sort_column ankenListSort" th:data-sort-key="${(T(jp.loioz.common.constant.SortConstant$AnkenListSortItem).ANKEN_STATUS_ID.cd)}">
+								顧客ステータス
+								<th:block th:if="*{ankenList.size() > 0}">
+									<!--/* ソートキーが案件の場合は、ソート矢印のいずれかを表示する */-->
+									<th:block th:if="${(T(jp.loioz.common.constant.SortConstant$AnkenListSortItem).ANKEN_STATUS_ID.equalsByCode(viewForm.ankenListSortKey.cd))}">
+										<!--/* ソート順が昇順の場合、上矢印を表示 */-->
+										<th:block th:if="${(T(jp.loioz.common.constant.SortConstant$SortOrder).ASC.equalsByCode(viewForm.ankenListSortOrder.cd))}">
+											<i class="fas fa-chevron-up"></i>
+										</th:block>
+										<!--/* ソート順が降順の場合、下矢印を表示 */-->
+										<th:block th:if="${(T(jp.loioz.common.constant.SortConstant$SortOrder).DESC.equalsByCode(viewForm.ankenListSortOrder.cd))}">
+											<i class="fas fa-chevron-down"></i>
+										</th:block>
+									</th:block>
+								</th:block>
+							</th>
+							<!--/* 担当弁護士 */-->
+							<th class="cell_fixed_100">担当弁護士</th>
+							<!--/* 担当事務 */-->
+							<th class="cell_fixed_100">担当事務</th>
+							<!--/* 受任日 */-->
+							<th class="cell_fixed_100 sort_column ankenListSort" th:data-sort-key="${(T(jp.loioz.common.constant.SortConstant$AnkenListSortItem).JUNIN_DATE.cd)}">
+								受任日
+								<th:block th:if="*{ankenList.size() > 0}">
+									<!--/* ソートキーが受任日の場合は、ソート矢印のいずれかを表示する */-->
+									<th:block th:if="${(T(jp.loioz.common.constant.SortConstant$AnkenListSortItem).JUNIN_DATE.equalsByCode(viewForm.ankenListSortKey.cd))}">
+										<!--/* ソート順が昇順の場合、上矢印を表示 */-->
+										<th:block th:if="${(T(jp.loioz.common.constant.SortConstant$SortOrder).ASC.equalsByCode(viewForm.ankenListSortOrder.cd))}">
+											<i class="fas fa-chevron-up"></i>
+										</th:block>
+										<!--/* ソート順が降順の場合、下矢印を表示 */-->
+										<th:block th:if="${(T(jp.loioz.common.constant.SortConstant$SortOrder).DESC.equalsByCode(viewForm.ankenListSortOrder.cd))}">
+											<i class="fas fa-chevron-down"></i>
+										</th:block>
+									</th:block>
+								</th:block>
+							</th>
+							
+							<!--/* 案件登録日 */-->
+							<th class="cell_fixed_100 sort_column ankenListSort" th:data-sort-key="${(T(jp.loioz.common.constant.SortConstant$AnkenListSortItem).ANKEN_CREATE_DATE.cd)}">
+								登録日
+								<th:block th:if="*{ankenList.size() > 0}">
+									<!--/* ソートキーが案件登録日の場合は、ソート矢印のいずれかを表示する */-->
+									<th:block th:if="${(T(jp.loioz.common.constant.SortConstant$AnkenListSortItem).ANKEN_CREATE_DATE.equalsByCode(viewForm.ankenListSortKey.cd))}">
+										<!--/* ソート順が昇順の場合、上矢印を表示 */-->
+										<th:block th:if="${(T(jp.loioz.common.constant.SortConstant$SortOrder).ASC.equalsByCode(viewForm.ankenListSortOrder.cd))}">
+											<i class="fas fa-chevron-up"></i>
+										</th:block>
+										<!--/* ソート順が降順の場合、下矢印を表示 */-->
+										<th:block th:if="${(T(jp.loioz.common.constant.SortConstant$SortOrder).DESC.equalsByCode(viewForm.ankenListSortOrder.cd))}">
+											<i class="fas fa-chevron-down"></i>
+										</th:block>
+									</th:block>
+								</th:block>
+							</th>
+							
+						</tr>
+					</thead>
+					
+					<tbody>
+<!--/*/ 		<th:block th:if="*{ankenList.size() == 0}"> /*/-->
+						<tr>
+							<td colspan="10" class="no_data"><span th:text="#{I00044('案件情報')}">該当する案件情報は見つかりませんでした。</span></td>
+						</tr>
+<!--/*/			</th:block> /*/-->
+						<tr th:each="anken : *{ankenList}" data-click-sync-for-descendants=".transitionAnken">
+							<!--/* 案件ID */-->
+							<td class="cell_fixed_75">
+								<a href="javascript:void(0);" class="transitionAnkenDetail main_id" th:data-anken-id="${anken.ankenId.asLong()}"
+									data-boundary="window" data-container="body" data-toggle="tooltip" data-trigger="hover" title="案件情報へ"
+									th:text="${anken.ankenId.asLong()}">1000</a>
+								<a href="javascript:void(0);" class="transitionAnken hidden" th:data-anken-id="${anken.ankenId.asLong()}"></a>
+							</td>
+							<!--/* 分野 */-->
+							<td class="cell_fixed_100 char_ellipsis" th:text="${#strings.isEmpty(anken.getBunyaName())} ? '-' : ${anken.getBunyaName()}">労働</td>
+							<!--/* 案件名 */-->
+							<td class="cell_fixed_200 char_ellipsis" 
+								th:text="${#strings.isEmpty(anken.ankenName)} ? '(案件名未入力)' : ${anken.ankenName}">残業代請求事件</td>
+							<!--/* 顧客名 */-->
+							<td class="cell_fixed_150 char_ellipsis">
+								<a href="javascript:void(0);" class="transitionCustomer" th:data-person-id="${anken.personId}"  data-boundary="window" data-container="body" data-toggle="tooltip" data-trigger="hover" title="名簿詳細へ"
+									th:text="|${anken.customerNameSei} ${anken.customerNameMei}|">山田　太郎
+								</a>
+							</td>
+							<!--/* 相手方 */-->
+							<td class="cell_fixed_150 char_ellipsis">
+								<span th:text="${#strings.isEmpty(anken.aitegataName)} ? '-' : ${anken.aitegataName}">株式会社〇〇商事</span>
+								<div class="row_sub_data lh1 sub_text" th:if="${anken.numberOfAitegata > 1}" th:text="|外${anken.numberOfAitegata-1}名|">山田　太郎 (テスト法律事務所)</div>
+							</td>
+							<!--/* 進捗 */-->
+							<td class="cell_fixed_100"> 
+								<i th:class="|fas fa-circle fa-xs anken_status_${anken.getAnkenStatus()}|"></i>
+								<span th:text="${#strings.isEmpty(anken.getAnkenStatusName())} ? '-' : ${anken.getAnkenStatusName()}">進行中</span>
+							</td>
+							<!--/* 担当弁護士 */-->
+							<td class="cell_fixed_100 char_ellipsis" data-boundary="window" data-container="body" data-toggle="tooltip" data-trigger="hover" th:title="${#strings.isEmpty(anken.tantoLaywerName)} ? '' : ${anken.tantoLaywerName}" th:text="${#strings.isEmpty(anken.tantoLaywerName)} ? '-' : ${anken.tantoLaywerName}">
+								鈴木　二郎
+							</td>
+							<!--/* 担当事務 */-->
+							<td class="cell_fixed_100 char_ellipsis" data-boundary="window" data-container="body" data-toggle="tooltip" data-trigger="hover" th:title="${#strings.isEmpty(anken.tantoJimuName)} ? '' : ${anken.tantoJimuName}" th:text="${#strings.isEmpty(anken.tantoJimuName)} ? '-' : ${anken.tantoJimuName}">
+								鈴木　二郎
+							</td>
+							<!--/* 受任日 */-->
+							<td class="cell_fixed_100" th:text="${#strings.isEmpty(anken.getJuninDateFormat())} ? '-' : ${anken.getJuninDateFormat()}">2021/08/25</td>
+							<!--/* 案件登録日 */-->
+							<td class="cell_fixed_100" th:text="${#strings.isEmpty(anken.getAnkenCreatedDateFormat())} ? '-' : ${anken.getAnkenCreatedDateFormat()}">2021/08/11</td>
+						</tr>
+					</tbody>
+				</table>
+			</div>
+		</div>
+	</th:block>
+</div>
+
+
+
+<!--/* 民事裁判 検索条件 */-->
+<div th:fragment="minjiSaibanListSearchFormFragment(ankenListSearchForm)" id="minjiSaibanListSearchFormFragment">
+
+	<!--/* スクリプト */-->
+	<script th:inline="javascript">
+	$(function(){
+
+		<!--/* 共有の要素セットアップ処理 */-->
+		commonSetUpElement("#minjiSaibanListSearchFormFragment");
+		
+		const minjiSaibanListSearchFormFragment = $("#minjiSaibanListSearchFormFragment");
+		
+		<!--/* 案件を追加クリック */-->
+		minjiSaibanListSearchFormFragment.on("click", ".addAnken", function() {
+			window.location.href = "/user/ankenRegist/";
+		});
+
+		<!--/* フィルタクリック */-->
+		minjiSaibanListSearchFormFragment.on("click", ".filterBtn", function() {
+			<!--/* 検索条件表示／非表示フラグの設定と表示変更 */-->
+			const searchConditionOpen = $('#searchConditionOpen').val();
+			if (searchConditionOpen == "true") {
+				$('#searchConditionOpen').val(false);
+			} else {
+				$('#searchConditionOpen').val(true);
+			}
+			<!--/* パラメータ */-->
+			const formData = $('#ankenListSearchForm').serializeArray();
+			<!--/* 検索条件表示 */-->
+			renderAnkenSearchFormFragment(formData);
+		});
+		
+		<!--/* 検索条件クリア処理 */-->
+		minjiSaibanListSearchFormFragment.on("click", ".initSearchCondition", function(e) {
+			<!--/* 検索条件クリア */-->
+			initMinjiSaibanSearchCondition();
+		});
+		
+		<!--/* テキスト検索 */-->
+		let searchText;
+		let inputText;
+		<!--/* テキストボックス内のクリア処理 */-->
+		minjiSaibanListSearchFormFragment.find('.add-clear-span > a').on('click', function() {
+			inputText = '';
+			
+			if ($(this).parent().find('.inputDate').length > 0) {
+				<!--/* 日付の入力項目（DatePickerの項目）の場合は、blurでの再検索は行わず、このケースではchangeイベントが発火せず再検索が行われないので、イベントを発火させる */-->
+				$(this).parent().find('.inputDate').change();
+			}
+		});
+		<!--/* 入力項目削除で検索 */-->
+		minjiSaibanListSearchFormFragment.find('.filtersContainer input[type="text"]').on('blur', function() {
+			if ($(this).hasClass('inputDate')) {
+				<!--/* 日付の入力項目（DatePickerの項目）の場合は、blurでの再検索は行わない（changeイベント側で実行されるため） */-->
+				return;
+			}
+			
+			if (searchText !== inputText) {
+			searchFn();
+			}
+		});
+		<!--/* 入力項目のEnterで検索 */-->
+		minjiSaibanListSearchFormFragment.find('.filtersContainer input[type="text"]').on('keydown', function(e) {
+			if (e.keyCode == 13) {
+				searchText = $(this).val();
+				searchFn();
+			};
+			inputText = $(this).val();
+		});
+		<!--/* 日付の変更で検索 */-->
+		minjiSaibanListSearchFormFragment.find('.filtersContainer .inputDate').on('change', function(e) {
+			searchFn();
+		});
+
+		<!--/* セレクトボックスの変更で検索 */-->
+		minjiSaibanListSearchFormFragment.find('.filtersContainer select').on('change', function(e) {
+			searchFn();
+		});
+		<!--/* ラジオボタンで検索 */-->
+		minjiSaibanListSearchFormFragment.find('.filtersContainer input:radio').on('change', function(e) {
+			searchFn();
+		});
+		
+		<!--/* CSV出力 */-->
+		minjiSaibanListSearchFormFragment.on("click", ".csvOutput", function() {
+			<!--/* ダウンロード処理 */-->
+			downloadMinjiSaibanListCsv($(this));
+		});
+		<!--/* EXCEL出力 */-->
+		minjiSaibanListSearchFormFragment.on("click", ".excelOutput", function() {
+			<!--/* ダウンロード処理 */-->
+			downloadMinjiSaibanListExcel($(this));
+		});
+		
+		<!--/* 検索処理 */-->
+		function searchFn() {
+			const optionParam = minjiSaibanListSearchFormFragment.find('#ankenListSearchForm').serializeArray();
+			if (ajaxRunning) {
+				return false;
+			}
+			ajaxRunning = true;
+			Promise.resolve()
+				.then(() => searchMinjiSaibanList(optionParam))
+				.then(() => renderAnkenSearchFormFragment(optionParam))
+				.catch((errorObj) => console.log(errorObj))
+				.finally(() => ajaxRunning = false);
+		};
+
+	});
+
+	</script>
+
+	<th:block th:object="${ankenListSearchForm}">
+
+		<!--/* 選択したメニュータイトル */-->
+		<div class="page_list_title_block">
+			<h1 class="page_list__name" th:text="*{getPageTitle()}">進行中</h1>
+			<div class="page_list__btn" th:with="searchConditionCount=*{minjiSaibanListSearchForm.getSearchConditionCount()}">
+				<button type="button" class="btn btn-primary addAnken"><i class="fas fa-plus mr-2"></i>案件を追加</button>
+				<button type="button" class="btn btn-light filterBtn" th:classAppend="${searchConditionCount} > 0 ?  'filter_active' ">
+					<i class="fas fa-filter"></i>フィルタ
+					<span class="btn_inner_badge" th:classAppend="${searchConditionCount} > 0 ?  'badge_warning' "
+						th:text="${searchConditionCount}">1</span>
+				</button>
+				<div th:id="outPutContainer" class="d-inline-block stop-events outPutContainerClose" data-loading-target=".loadingTarget"
+					data-offset="-80,0" data-boundary="window" data-container="#minjiSaibanListSearchFormFragment" data-toggle="popover" data-placement="bottom" data-html="true" th:data-content=
+					'|<ul class="output_nav_list">
+							<li class="title_block">裁判情報出力</li>
+							<li><button class="btn btn-light excelOutput" data-target="#outPutContainer"><i class="fas fa-download text-primary mr-3"></i><i class="fas fa-spinner mr-3 text-primary faa-spin animated hidden"></i>Excel形式で出力する</button></li>
+							<li><button class="btn btn-light csvOutput" data-target="#outPutContainer"><i class="fas fa-download text-primary mr-3"></i><i class="fas fa-spinner mr-3 text-primary faa-spin animated hidden"></i>CSV形式で出力する</button></li>
+					</ul>|'>
+					<button type="button" class="btn btn-light config"><i class="fas fa-ellipsis-h mr-0"></i></button>
+				</div>
+			</div>
+		</div>
+
+		<!--/* 一覧ヘッダ */-->
+		<form id="ankenListSearchForm" autocomplete="off">
+			<!--/* 選択中のメニュー保持 */-->
+			<input type="hidden" th:field="*{selectedAnkenListMenu}">
+
+			<!--/* 検索条件の表示／非表示フラグ */-->
+			<input type="hidden" th:field="*{searchConditionOpen}">
+
+			<!--/* 検索条件 */-->
+			<div class="list_filters_container filtersContainer" th:classappend="*{SearchConditionOpen ? '' : 'hidden'}">
+				<fieldset>
+					<div class="list_filters_header">
+						<div class="filters_title">検索条件</div>
+						<div class="filters_action">
+							<a href="javascript:void(0);" class="filters_action__clear initSearchCondition">検索条件をクリア</a>
+							<a href="javascript:void(0);" class="filters_action__close filterBtn"><i class="fas fa-times"></i></a>
+						</div>
+					</div>
+					<div class="form-row">
+						<!--/* テキスト検索 */-->
+						<div class="form-group col-md-auto">
+							<label class="input_parts_label">キーワード</label>
+							<input type="text" class="form-control digit23 fcAddTextClear" th:field="*{minjiSaibanListSearchForm.searchWord}"
+								placeholder="裁判所、事件番号、事件名、当事者、相手方..." maxlength="300">
+						</div>
+						<!--/* 分野 */-->
+						<div class="form-group col-md-auto">
+							<label class="input_parts_label">分野</label>
+							<select class="form-control digit8 changeBunya" th:field="*{minjiSaibanListSearchForm.bunyaId}">
+								<option value="">-</option>
+								<option th:each="bunyaDto : *{minjiSaibanListSearchForm.bunyaList}"
+									th:value="${bunyaDto.cd}" th:text="${bunyaDto.val}"></option>
+							</select>
+						</div>
+						<!--/* 担当弁護士 */-->
+						<div class="form-group col-md-auto">
+							<label class="input_parts_label">担当弁護士</label>
+							<select class="form-control digit8 changeTantoLawyer" th:field="*{minjiSaibanListSearchForm.tantoLaywerId}">
+								<option value="">-</option>
+								<option th:each="lawyer : *{tantoLawyerList}" th:value="${lawyer.accountSeq}" th:text="|${lawyer.accountNameSei} ${lawyer.accountNameMei}|" th:selected="${lawyer.accountSeq} == *{minjiSaibanListSearchForm.tantoLaywerId}"></option>
+							</select>
+						</div>
+						<!--/* 担当事務 */-->
+						<div class="form-group col-md-auto">
+							<label class="input_parts_label">担当事務</label>
+							<select class="form-control digit8 changeTantoJimu" th:field="*{minjiSaibanListSearchForm.tantoJimuId}">
+								<option value="">-</option>
+								<option th:each="jimu : *{tantoJimuList}" th:value="${jimu.accountSeq}" th:text="|${jimu.accountNameSei} ${jimu.accountNameMei}|" th:selected="${jimu.accountSeq} == *{minjiSaibanListSearchForm.tantoJimuId}"></option>
+							</select>
+						</div>
+						<!--/* 申立日 */-->
+						<div class="form-group col-md-auto">
+							<label class="input_parts_label">申立日</label>
+							<div class="d-flex align-items-start">
+								<div>
+									<div class="d-flex saibanStartDateFrom">
+										<input type="text" class="form-control digit8 inputDateSlash fcAddTextClear inputDate" th:field="*{minjiSaibanListSearchForm.saibanStartDateFrom}"
+											data-click-sync="[data-target-name='minjiSaibanListSearchForm.saibanStartDateFrom']">
+										<button type="button" class="btn btn_popcal hidden" data-toggle="datepicker" data-target-name="minjiSaibanListSearchForm.saibanStartDateFrom">カレンダー</button>
+										<div class="fs15 mt-2 mx-2">〜</div>
+									</div>
+								</div>
+								<div>
+									<div class="saibanStartDateTo">
+										<input type="text" class="form-control digit8 inputDateSlash fcAddTextClear inputDate" th:field="*{minjiSaibanListSearchForm.saibanStartDateTo}"
+											data-click-sync="[data-target-name='minjiSaibanListSearchForm.saibanStartDateTo']">
+										<button type="button" class="btn btn_popcal hidden" data-toggle="datepicker" data-target-name="minjiSaibanListSearchForm.saibanStartDateTo">カレンダー</button>
+									</div>
+								</div>
+							</div>
+						</div>
+						<!--/* 終了日 */-->
+						<div class="form-group col-md-auto">
+							<label class="input_parts_label">終了日</label>
+							<div class="d-flex align-items-start">
+								<div>
+									<div class="d-flex saibanEndDateFrom">
+										<input type="text" class="form-control digit8 inputDateSlash fcAddTextClear inputDate" th:field="*{minjiSaibanListSearchForm.saibanEndDateFrom}"
+											data-click-sync="[data-target-name='minjiSaibanListSearchForm.saibanEndDateFrom']">
+										<button type="button" class="btn btn_popcal hidden" data-toggle="datepicker" data-target-name="minjiSaibanListSearchForm.saibanEndDateFrom">カレンダー</button>
+										<div class="fs15 mt-2 mx-2">〜</div>
+									</div>
+								</div>
+								<div>
+									<div class="saibanEndDateTo">
+										<input type="text" class="form-control digit8 inputDateSlash fcAddTextClear inputDate" th:field="*{minjiSaibanListSearchForm.saibanEndDateTo}"
+											data-click-sync="[data-target-name='minjiSaibanListSearchForm.saibanEndDateTo']">
+										<button type="button" class="btn btn_popcal hidden" data-toggle="datepicker" data-target-name="minjiSaibanListSearchForm.saibanEndDateTo">カレンダー</button>
+									</div>
+								</div>
+							</div>
+						</div>
+					</div>
+					<div class="form-row">
+						<!--/* 裁判手続き */-->
+						<div class="form-group col-md-auto">
+							<label class="input_parts_label">裁判手続き</label>
+							<div>
+								<label class="radio_btn_select">
+									<input type="radio" class="radio_btn_input" th:value="${T(jp.loioz.common.constant.CommonConstant).SAIBAN_STATUS_ALL_CD}"
+										th:field="*{minjiSaibanListSearchForm.saibanStatus}">
+									<span class="radio_btn_txt">すべて</span>
+								</label>
+								<label class="radio_btn_select">
+									<input type="radio" class="radio_btn_input" th:value="${T(jp.loioz.common.constant.CommonConstant$SaibanStatus).PREPARING.getCd()}"
+										th:field="*{minjiSaibanListSearchForm.saibanStatus}">
+									<span class="radio_btn_txt">準備中</span>
+								</label>
+								<label class="radio_btn_select">
+									<input type="radio" class="radio_btn_input" th:value="${T(jp.loioz.common.constant.CommonConstant$SaibanStatus).PROGRESSING.getCd()}"
+										th:field="*{minjiSaibanListSearchForm.saibanStatus}">
+									<span class="radio_btn_txt">進行中</span>
+								</label>
+								<label class="radio_btn_select">
+									<input type="radio" class="radio_btn_input" th:value="${T(jp.loioz.common.constant.CommonConstant$SaibanStatus).CLOSED.getCd()}"
+										th:field="*{minjiSaibanListSearchForm.saibanStatus}">
+									<span class="radio_btn_txt">完了</span>
+								</label>
+								<label class="radio_btn_select">
+									<input type="radio" class="radio_btn_input" th:value="${T(jp.loioz.common.constant.CommonConstant).SAIBAN_STATUS_INCOMPLETE_CD}"
+										th:field="*{minjiSaibanListSearchForm.saibanStatus}">
+									<span class="radio_btn_txt">完了以外</span>
+								</label>
+							</div>
+						</div>
+					</div>
+				</fieldset>
+			</div>
+			<!--/* 検索条件 end */-->
+		</form>
+	</th:block>
+</div>
+
+
+
+<!--/* 刑事裁判 検索条件 */-->
+<div th:fragment="keijiSaibanListSearchFormFragment(ankenListSearchForm)" id="keijiSaibanListSearchFormFragment">
+
+	<!--/* スクリプト */-->
+	<script th:inline="javascript">
+	$(function(){
+		
+		<!--/* 共有の要素セットアップ処理 */-->
+		commonSetUpElement("#keijiSaibanListSearchFormFragment");
+		
+		const keijiSaibanListSearchFormFragment = $("#keijiSaibanListSearchFormFragment");
+		
+		<!--/* 案件を追加クリック */-->
+		keijiSaibanListSearchFormFragment.on("click", ".addAnken", function() {
+			window.location.href = "/user/ankenRegist/";
+		});
+		
+		<!--/* フィルタクリック */-->
+		keijiSaibanListSearchFormFragment.on("click", ".filterBtn", function() {
+			<!--/* 検索条件表示／非表示フラグの設定と表示変更 */-->
+			const searchConditionOpen = $('#searchConditionOpen').val();
+			if (searchConditionOpen == "true") {
+				$('#searchConditionOpen').val(false);
+			} else {
+				$('#searchConditionOpen').val(true);
+			}
+			<!--/* パラメータ */-->
+			const formData = $('#ankenListSearchForm').serializeArray();
+			<!--/* 検索条件表示 */-->
+			renderAnkenSearchFormFragment(formData);
+		});
+		
+		<!--/* 検索条件クリア処理 */-->
+		keijiSaibanListSearchFormFragment.on("click", ".initSearchCondition", function(e) {
+			<!--/* 検索条件クリア */-->
+			initKeijiSaibanSearchCondition();
+		});
+		
+		<!--/* テキスト検索 */-->
+		let searchText;
+		let inputText;
+		<!--/* テキストボックス内のクリア処理 */-->
+		keijiSaibanListSearchFormFragment.find('.add-clear-span > a').on('click', function() {
+			inputText = '';
+			
+			if ($(this).parent().find('.inputDate').length > 0) {
+				<!--/* 日付の入力項目（DatePickerの項目）の場合は、blurでの再検索は行わず、このケースではchangeイベントが発火せず再検索が行われないので、イベントを発火させる */-->
+				$(this).parent().find('.inputDate').change();
+			}
+		});
+		<!--/* 入力項目削除で検索 */-->
+		keijiSaibanListSearchFormFragment.find('.filtersContainer input[type="text"]').on('blur', function() {
+			if ($(this).hasClass('inputDate')) {
+				<!--/* 日付の入力項目（DatePickerの項目）の場合は、blurでの再検索は行わない（changeイベント側で実行されるため） */-->
+				return;
+			}
+			
+			if (searchText !== inputText) {
+			searchFn();
+			}
+		});
+		<!--/* 入力項目のEnterで検索 */-->
+		keijiSaibanListSearchFormFragment.find('.filtersContainer input[type="text"]').on('keydown', function(e) {
+			if (e.keyCode == 13) {
+				searchText = $(this).val();
+				searchFn();
+			};
+			inputText = $(this).val();
+		});
+		<!--/* 日付の変更で検索 */-->
+		keijiSaibanListSearchFormFragment.find('.filtersContainer .inputDate').on('change', function(e) {
+			searchFn();
+		});
+
+		<!--/* セレクトボックスの変更で検索 */-->
+		keijiSaibanListSearchFormFragment.find('.filtersContainer select').on('change', function(e) {
+			searchFn();
+		});
+		<!--/* ラジオボタンで検索 */-->
+		keijiSaibanListSearchFormFragment.find('.filtersContainer input:radio').on('change', function(e) {
+			searchFn();
+		});
+		
+		<!--/* CSV出力 */-->
+		keijiSaibanListSearchFormFragment.on("click", ".csvOutput", function() {
+			<!--/* ダウンロード処理 */-->
+			downloadKeijiSaibanListCsv($(this));
+		});
+		<!--/* EXCEL出力 */-->
+		keijiSaibanListSearchFormFragment.on("click", ".excelOutput", function() {
+			<!--/* ダウンロード処理 */-->
+			downloadKeijiSaibanListExcel($(this));
+		});
+		
+		<!--/* 検索処理 */-->
+		function searchFn() {
+			const optionParam = keijiSaibanListSearchFormFragment.find('#ankenListSearchForm').serializeArray();
+			if (ajaxRunning) {
+				return false;
+			}
+			ajaxRunning = true;
+			Promise.resolve()
+				.then(() => searchKeijiSaibanList(optionParam))
+				.then(() => renderAnkenSearchFormFragment(optionParam))
+				.catch((errorObj) => console.log(errorObj))
+				.finally(() => ajaxRunning = false);
+		};
+		
+	});
+
+	</script>
+
+	<th:block th:object="${ankenListSearchForm}">
+
+		<!--/* 選択したメニュータイトル */-->
+		<div class="page_list_title_block">
+			<h1 class="page_list__name" th:text="*{getPageTitle()}">進行中</h1>
+			<div class="page_list__btn" th:with="searchConditionCount=*{keijiSaibanListSearchForm.getSearchConditionCount()}">
+				<button type="button" class="btn btn-primary addAnken"><i class="fas fa-plus mr-2"></i>案件を追加</button>
+				<button type="button" class="btn btn-light filterBtn" th:classAppend="${searchConditionCount} > 0 ?  'filter_active' ">
+					<i class="fas fa-filter"></i>フィルタ
+					<span class="btn_inner_badge" th:classAppend="${searchConditionCount} > 0 ?  'badge_warning' "
+						th:text="${searchConditionCount}">1</span>
+				</button>
+				<div th:id="outPutContainer" class="d-inline-block stop-events outPutContainerClose" data-loading-target=".loadingTarget"
+					data-offset="-80,0" data-boundary="window" data-container="#keijiSaibanListSearchFormFragment" data-toggle="popover" data-placement="bottom" data-html="true" th:data-content=
+					'|<ul class="output_nav_list">
+							<li class="title_block">裁判情報出力</li>
+							<li><button class="btn btn-light excelOutput" data-target="#outPutContainer"><i class="fas fa-download text-primary mr-3"></i><i class="fas fa-spinner mr-3 text-primary faa-spin animated hidden"></i>Excel形式で出力する</button></li>
+							<li><button class="btn btn-light csvOutput" data-target="#outPutContainer"><i class="fas fa-download text-primary mr-3"></i><i class="fas fa-spinner mr-3 text-primary faa-spin animated hidden"></i>CSV形式で出力する</button></li>
+					</ul>|'>
+					<button type="button" class="btn btn-light config"><i class="fas fa-ellipsis-h mr-0"></i></button>
+				</div>
+			</div>
+		</div>
+
+		<!--/* 一覧ヘッダ */-->
+		<form id="ankenListSearchForm" autocomplete="off">
+			<!--/* 選択中のメニュー保持 */-->
+			<input type="hidden" th:field="*{selectedAnkenListMenu}">
+
+			<!--/* 検索条件の表示／非表示フラグ */-->
+			<input type="hidden" th:field="*{searchConditionOpen}">
+
+			<!--/* 検索条件 */-->
+			<div class="list_filters_container filtersContainer" th:classappend="*{SearchConditionOpen ? '' : 'hidden'}">
+				<fieldset>
+					<div class="list_filters_header">
+						<div class="filters_title">検索条件</div>
+						<div class="filters_action">
+							<a href="javascript:void(0);" class="filters_action__clear initSearchCondition">検索条件をクリア</a>
+							<a href="javascript:void(0);" class="filters_action__close filterBtn"><i class="fas fa-times"></i></a>
+						</div>
+					</div>
+					<div class="form-row">
+						<!--/* テキスト検索 */-->
+						<div class="form-group col-md-auto">
+							<label class="input_parts_label">キーワード</label>
+							<input type="text" class="form-control digit23 fcAddTextClear" th:field="*{keijiSaibanListSearchForm.searchWord}"
+								placeholder="裁判所、事件番号、事件名、被告人、検察庁..." maxlength="300">
+						</div>
+						<!--/* 分野 */-->
+						<div class="form-group col-md-auto">
+							<label class="input_parts_label">分野</label>
+							<select class="form-control digit8 changeBunya" th:field="*{keijiSaibanListSearchForm.bunyaId}">
+								<option value="">-</option>
+								<option th:each="bunyaDto : *{keijiSaibanListSearchForm.bunyaList}"
+									th:value="${bunyaDto.cd}" th:text="${bunyaDto.val}"></option>
+							</select>
+						</div>
+						<!--/* 担当弁護士 */-->
+						<div class="form-group col-md-auto">
+							<label class="input_parts_label">担当弁護士</label>
+							<select class="form-control digit8 changeTantoLawyer" th:field="*{keijiSaibanListSearchForm.tantoLaywerId}">
+								<option value="">-</option>
+								<option th:each="lawyer : *{tantoLawyerList}" th:value="${lawyer.accountSeq}" th:text="|${lawyer.accountNameSei} ${lawyer.accountNameMei}|" th:selected="${lawyer.accountSeq} == *{keijiSaibanListSearchForm.tantoLaywerId}"></option>
+							</select>
+						</div>
+						<!--/* 担当事務 */-->
+						<div class="form-group col-md-auto">
+							<label class="input_parts_label">担当事務</label>
+							<select class="form-control digit8 changeTantoJimu" th:field="*{keijiSaibanListSearchForm.tantoJimuId}">
+								<option value="">-</option>
+								<option th:each="jimu : *{tantoJimuList}" th:value="${jimu.accountSeq}" th:text="|${jimu.accountNameSei} ${jimu.accountNameMei}|" th:selected="${jimu.accountSeq} == *{keijiSaibanListSearchForm.tantoJimuId}"></option>
+							</select>
+						</div>
+						<!--/* 申立日 */-->
+						<div class="form-group col-md-auto">
+							<label class="input_parts_label">起訴日/上訴日</label>
+							<div class="d-flex align-items-start">
+								<div>
+									<div class="d-flex saibanStartDateFrom">
+										<input type="text" class="form-control digit8 inputDateSlash fcAddTextClear inputDate" th:field="*{keijiSaibanListSearchForm.saibanStartDateFrom}"
+											data-click-sync="[data-target-name='keijiSaibanListSearchForm.saibanStartDateFrom']">
+										<button type="button" class="btn btn_popcal hidden" data-toggle="datepicker" data-target-name="keijiSaibanListSearchForm.saibanStartDateFrom">カレンダー</button>
+										<div class="fs15 mt-2 mx-2">〜</div>
+									</div>
+								</div>
+								<div>
+									<div class="saibanStartDateTo">
+										<input type="text" class="form-control digit8 inputDateSlash fcAddTextClear inputDate" th:field="*{keijiSaibanListSearchForm.saibanStartDateTo}"
+											data-click-sync="[data-target-name='keijiSaibanListSearchForm.saibanStartDateTo']">
+										<button type="button" class="btn btn_popcal hidden" data-toggle="datepicker" data-target-name="keijiSaibanListSearchForm.saibanStartDateTo">カレンダー</button>
+									</div>
+								</div>
+							</div>
+						</div>
+						<!--/* 終了日 */-->
+						<div class="form-group col-md-auto">
+							<label class="input_parts_label">判決日</label>
+							<div class="d-flex align-items-start">
+								<div>
+									<div class="d-flex saibanEndDateFrom">
+										<input type="text" class="form-control digit8 inputDateSlash fcAddTextClear inputDate" th:field="*{keijiSaibanListSearchForm.saibanEndDateFrom}"
+											data-click-sync="[data-target-name='keijiSaibanListSearchForm.saibanEndDateFrom']">
+										<button type="button" class="btn btn_popcal hidden" data-toggle="datepicker" data-target-name="keijiSaibanListSearchForm.saibanEndDateFrom">カレンダー</button>
+										<div class="fs15 mt-2 mx-2">〜</div>
+									</div>
+								</div>
+								<div>
+									<div class="saibanEndDateTo">
+										<input type="text" class="form-control digit8 inputDateSlash fcAddTextClear inputDate" th:field="*{keijiSaibanListSearchForm.saibanEndDateTo}"
+											data-click-sync="[data-target-name='keijiSaibanListSearchForm.saibanEndDateTo']">
+										<button type="button" class="btn btn_popcal hidden" data-toggle="datepicker" data-target-name="keijiSaibanListSearchForm.saibanEndDateTo">カレンダー</button>
+									</div>
+								</div>
+							</div>
+						</div>
+					</div>
+					<div class="form-row">
+						<!--/* 裁判手続き */-->
+						<div class="form-group col-md-auto">
+							<label class="input_parts_label">裁判手続き</label>
+							<div>
+								<label class="radio_btn_select">
+									<input type="radio" class="radio_btn_input" th:value="${T(jp.loioz.common.constant.CommonConstant).SAIBAN_STATUS_ALL_CD}"
+										th:field="*{keijiSaibanListSearchForm.saibanStatus}">
+									<span class="radio_btn_txt">すべて</span>
+								</label>
+								<label class="radio_btn_select">
+									<input type="radio" class="radio_btn_input" th:value="${T(jp.loioz.common.constant.CommonConstant$SaibanStatus).PREPARING.getCd()}"
+										th:field="*{keijiSaibanListSearchForm.saibanStatus}">
+									<span class="radio_btn_txt">準備中</span>
+								</label>
+								<label class="radio_btn_select">
+									<input type="radio" class="radio_btn_input" th:value="${T(jp.loioz.common.constant.CommonConstant$SaibanStatus).PROGRESSING.getCd()}"
+										th:field="*{keijiSaibanListSearchForm.saibanStatus}">
+									<span class="radio_btn_txt">進行中</span>
+								</label>
+								<label class="radio_btn_select">
+									<input type="radio" class="radio_btn_input" th:value="${T(jp.loioz.common.constant.CommonConstant$SaibanStatus).CLOSED.getCd()}"
+										th:field="*{keijiSaibanListSearchForm.saibanStatus}">
+									<span class="radio_btn_txt">完了</span>
+								</label>
+								<label class="radio_btn_select">
+									<input type="radio" class="radio_btn_input" th:value="${T(jp.loioz.common.constant.CommonConstant).SAIBAN_STATUS_INCOMPLETE_CD}"
+										th:field="*{keijiSaibanListSearchForm.saibanStatus}">
+									<span class="radio_btn_txt">完了以外</span>
+								</label>
+							</div>
+						</div>
+					</div>
+				</fieldset>
+			</div>
+			<!--/* 検索条件 end */-->
+		</form>
+	</th:block>
+</div>
+
+
+
+<!--/* 民事裁判情報一覧フラグメント */-->
+<div th:fragment="minjiSaibanListViewFragment(viewForm)" id="minjiSaibanListViewFragment">
+
+	<!--/* スクリプト */-->
+	<script th:inline="javascript">
+	$(function(){
+
+		<!--/* 共有の要素セットアップ処理 */-->
+		commonSetUpElement("#minjiSaibanListViewFragment");
+
+		<!-- /* 一覧の表示初期処理（親HTMLの関数） */ -->
+		const sessionQuickSearchWord = /*[[${T(jp.loioz.common.utility.SessionUtils).getSessionVaule(T(jp.loioz.common.constant.SessionAttrKeyEnum).QUICK_SEARCH_WORD)}]]*/ '';
+		showInitAnkenList(sessionQuickSearchWord)
+		
+		<!--/* 裁判一覧並び替え処理 */-->
+		$('#minjiSaibanListViewFragment').on("click", ".saibanListSort", function() {
+
+			<!--/* 現在のソートキー */-->
+			const sortedKey = $('[id="minjiSaibanListSearchForm.minjiSaibanListSortKey"]').val();
+			const sortedOrder = $('[id="minjiSaibanListSearchForm.minjiSaibanListSortOrder"]').val();
+
+			<!--/* 並び替えをするためのソートキー */-->
+			const sortKey = $(this).data("sort-key");
+
+			<!--/* 選択しているメニューのページ番号を取得 （セッションの検索条件フォームからページ番号を取得） */-->
+			let pageNumber = $('[id="minjiSaibanListSearchForm.page"]').val();
+
+			<!--/* 並び替え処理 */-->
+			sortAnkenList(sortedKey, sortedOrder, sortKey, pageNumber);
+		});
+
+		<!--/* 行をクリック */-->
+		$('#minjiSaibanListViewFragment').on("click", ".transitionSaiban", function(e){
+			e.stopPropagation();
+			const saibanSeq = $(this).data("saibanSeq");
+			const ankenId = $(this).data("ankenId");
+			<!--/* 裁判管理画面へ遷移 */-->
+			window.location.href = "/user/saibanMinjiManagement/" + saibanSeq + "/" + ankenId + "/";
+		});
+		
+		<!--/* 案件IDリンクをクリック */-->
+		$('#minjiSaibanListViewFragment').on("click", ".transitionAnken", function(e){
+			e.stopPropagation();
+			const ankenId = $(this).data("ankenId");
+			<!--/* 案件情報画面へ遷移 */-->
+			window.location.href = "/user/ankenManagement/edit/" + ankenId + "/";
+		});
+		
+		<!--/* 顧客名リンクをクリック */-->
+		$('#minjiSaibanListViewFragment').on("click", ".transitionCustomer", function(e){
+			e.stopPropagation();
+			const personId = $(this).data("personId");
+			<!--/* 顧客情報画面へ遷移 */-->
+			window.location.href = "/user/personManagement/edit/" + personId + "/";
+		});
+
+	});
+
+	</script>
+
+	<th:block th:object="${viewForm}">
+
+		<!--/* 一覧結果 */-->
+		<div id="ankenList" class="">
+			<div class="header_fixed_table_wrapper table_common_list">
+				<!--/* 一覧のソートキー セッションの検索条件フォームからソートキーを取得 */-->
+				<input type="hidden" th:field="${ankenListSearchForm.minjiSaibanListSearchForm.minjiSaibanListSortKey}">
+				<input type="hidden" th:field="${ankenListSearchForm.minjiSaibanListSearchForm.minjiSaibanListSortOrder}">
+				<!--/* 一覧の表示ページ番号 セッションの検索条件フォームからページ番号を取得 */-->
+				<input type="hidden" th:field="${ankenListSearchForm.minjiSaibanListSearchForm.page}">
+				
+				<!--/* 裁判一覧 */-->
+				<table class="table table_standard table-hover">
+					<thead>
+						<tr>
+							<!--/* 案件ID */-->
+							<th class="cell_fixed_100 sort_column saibanListSort" th:data-sort-key="${(T(jp.loioz.common.constant.SortConstant$SaibanListSortItem).ANKEN_ID.cd)}">
+								案件ID
+								<th:block th:if="*{saibanList.size() > 0}">
+									<!--/* ソートキーが分野の場合は、ソート矢印のいずれかを表示する */-->
+									<th:block th:if="${(T(jp.loioz.common.constant.SortConstant$SaibanListSortItem).ANKEN_ID.equalsByCode(viewForm.saibanListSortKey.cd))}">
+										<!--/* ソート順が昇順の場合、上矢印を表示 */-->
+										<th:block th:if="${(T(jp.loioz.common.constant.SortConstant$SortOrder).ASC.equalsByCode(viewForm.saibanListSortOrder.cd))}">
+											<i class="fas fa-chevron-up"></i>
+										</th:block>
+										<!--/* ソート順が降順の場合、下矢印を表示 */-->
+										<th:block th:if="${(T(jp.loioz.common.constant.SortConstant$SortOrder).DESC.equalsByCode(viewForm.saibanListSortOrder.cd))}">
+											<i class="fas fa-chevron-down"></i>
+										</th:block>
+									</th:block>
+								</th:block>
+							</th>
+							<!--/* 分野 */-->
+							<th class="cell_fixed_100 sort_column saibanListSort" th:data-sort-key="${(T(jp.loioz.common.constant.SortConstant$SaibanListSortItem).BUNYA_ID.cd)}">
+								分野
+								<th:block th:if="*{saibanList.size() > 0}">
+									<!--/* ソートキーが分野の場合は、ソート矢印のいずれかを表示する */-->
+									<th:block th:if="${(T(jp.loioz.common.constant.SortConstant$SaibanListSortItem).BUNYA_ID.equalsByCode(viewForm.saibanListSortKey.cd))}">
+										<!--/* ソート順が昇順の場合、上矢印を表示 */-->
+										<th:block th:if="${(T(jp.loioz.common.constant.SortConstant$SortOrder).ASC.equalsByCode(viewForm.saibanListSortOrder.cd))}">
+											<i class="fas fa-chevron-up"></i>
+										</th:block>
+										<!--/* ソート順が降順の場合、下矢印を表示 */-->
+										<th:block th:if="${(T(jp.loioz.common.constant.SortConstant$SortOrder).DESC.equalsByCode(viewForm.saibanListSortOrder.cd))}">
+											<i class="fas fa-chevron-down"></i>
+										</th:block>
+									</th:block>
+								</th:block>
+							</th>
+							<!--/* 裁判所 */-->
+							<th class="cell_fixed_150 sort_column saibanListSort" th:data-sort-key="${(T(jp.loioz.common.constant.SortConstant$SaibanListSortItem).SAIBANSHO_NAME.cd)}">
+								裁判所
+								<th:block th:if="*{saibanList.size() > 0}">
+									<!--/* ソートキーが裁判所の場合は、ソート矢印のいずれかを表示する */-->
+									<th:block th:if="${(T(jp.loioz.common.constant.SortConstant$SaibanListSortItem).SAIBANSHO_NAME.equalsByCode(viewForm.saibanListSortKey.cd))}">
+										<!--/* ソート順が昇順の場合、上矢印を表示 */-->
+										<th:block th:if="${(T(jp.loioz.common.constant.SortConstant$SortOrder).ASC.equalsByCode(viewForm.saibanListSortOrder.cd))}">
+											<i class="fas fa-chevron-up"></i>
+										</th:block>
+										<!--/* ソート順が降順の場合、下矢印を表示 */-->
+										<th:block th:if="${(T(jp.loioz.common.constant.SortConstant$SortOrder).DESC.equalsByCode(viewForm.saibanListSortOrder.cd))}">
+											<i class="fas fa-chevron-down"></i>
+										</th:block>
+									</th:block>
+								</th:block>
+							</th>
+							<!--/* 事件番号 */-->
+							<th class="cell_fixed_200 sort_column saibanListSort" th:data-sort-key="${(T(jp.loioz.common.constant.SortConstant$SaibanListSortItem).JIKEN_NO.cd)}">
+								事件番号
+								<th:block th:if="*{saibanList.size() > 0}">
+									<!--/* ソートキーが事件番号の場合は、ソート矢印のいずれかを表示する */-->
+									<th:block th:if="${(T(jp.loioz.common.constant.SortConstant$SaibanListSortItem).JIKEN_NO.equalsByCode(viewForm.saibanListSortKey.cd))}">
+										<!--/* ソート順が昇順の場合、上矢印を表示 */-->
+										<th:block th:if="${(T(jp.loioz.common.constant.SortConstant$SortOrder).ASC.equalsByCode(viewForm.saibanListSortOrder.cd))}">
+											<i class="fas fa-chevron-up"></i>
+										</th:block>
+										<!--/* ソート順が降順の場合、下矢印を表示 */-->
+										<th:block th:if="${(T(jp.loioz.common.constant.SortConstant$SortOrder).DESC.equalsByCode(viewForm.saibanListSortOrder.cd))}">
+											<i class="fas fa-chevron-down"></i>
+										</th:block>
+									</th:block>
+								</th:block>
+							</th>
+							<!--/* 事件名 */-->
+							<th class="cell_fixed_175 sort_column saibanListSort" th:data-sort-key="${(T(jp.loioz.common.constant.SortConstant$SaibanListSortItem).JIKEN_NAME.cd)}">
+								事件名
+								<th:block th:if="*{saibanList.size() > 0}">
+									<!--/* ソートキーが事件名の場合は、ソート矢印のいずれかを表示する */-->
+									<th:block th:if="${(T(jp.loioz.common.constant.SortConstant$SaibanListSortItem).JIKEN_NAME.equalsByCode(viewForm.saibanListSortKey.cd))}">
+										<!--/* ソート順が昇順の場合、上矢印を表示 */-->
+										<th:block th:if="${(T(jp.loioz.common.constant.SortConstant$SortOrder).ASC.equalsByCode(viewForm.saibanListSortOrder.cd))}">
+											<i class="fas fa-chevron-up"></i>
+										</th:block>
+										<!--/* ソート順が降順の場合、下矢印を表示 */-->
+										<th:block th:if="${(T(jp.loioz.common.constant.SortConstant$SortOrder).DESC.equalsByCode(viewForm.saibanListSortOrder.cd))}">
+											<i class="fas fa-chevron-down"></i>
+										</th:block>
+									</th:block>
+								</th:block>
+							</th>
+							<!--/* 名前（当事者） */-->
+							<th class="cell_fixed_175 sort_column saibanListSort" th:data-sort-key="${(T(jp.loioz.common.constant.SortConstant$SaibanListSortItem).CUSTOMER_NAME_KANA.cd)}">
+								名前（当事者）
+								<th:block th:if="*{saibanList.size() > 0}">
+									<!--/* ソートキーが名前の場合は、ソート矢印のいずれかを表示する */-->
+									<th:block th:if="${(T(jp.loioz.common.constant.SortConstant$SaibanListSortItem).CUSTOMER_NAME_KANA.equalsByCode(viewForm.saibanListSortKey.cd))}">
+										<!--/* ソート順が昇順の場合、上矢印を表示 */-->
+										<th:block th:if="${(T(jp.loioz.common.constant.SortConstant$SortOrder).ASC.equalsByCode(viewForm.saibanListSortOrder.cd))}">
+											<i class="fas fa-chevron-up"></i>
+										</th:block>
+										<!--/* ソート順が降順の場合、下矢印を表示 */-->
+										<th:block th:if="${(T(jp.loioz.common.constant.SortConstant$SortOrder).DESC.equalsByCode(viewForm.saibanListSortOrder.cd))}">
+											<i class="fas fa-chevron-down"></i>
+										</th:block>
+									</th:block>
+								</th:block>
+							</th>
+							<!--/* 相手方 */-->
+							<th class="cell_fixed_150 sort_column saibanListSort" th:data-sort-key="${(T(jp.loioz.common.constant.SortConstant$SaibanListSortItem).AITEGATA_NAME_KANA.cd)}">
+								相手方
+								<th:block th:if="*{saibanList.size() > 0}">
+									<!--/* ソートキーが相手方の場合は、ソート矢印のいずれかを表示する */-->
+									<th:block th:if="${(T(jp.loioz.common.constant.SortConstant$SaibanListSortItem).AITEGATA_NAME_KANA.equalsByCode(viewForm.saibanListSortKey.cd))}">
+										<!--/* ソート順が昇順の場合、上矢印を表示 */-->
+										<th:block th:if="${(T(jp.loioz.common.constant.SortConstant$SortOrder).ASC.equalsByCode(viewForm.saibanListSortOrder.cd))}">
+											<i class="fas fa-chevron-up"></i>
+										</th:block>
+										<!--/* ソート順が降順の場合、下矢印を表示 */-->
+										<th:block th:if="${(T(jp.loioz.common.constant.SortConstant$SortOrder).DESC.equalsByCode(viewForm.saibanListSortOrder.cd))}">
+											<i class="fas fa-chevron-down"></i>
+										</th:block>
+									</th:block>
+								</th:block>
+							</th>
+							<!--/* 裁判手続き */-->
+							<th class="cell_fixed_100 sort_column saibanListSort" th:data-sort-key="${(T(jp.loioz.common.constant.SortConstant$SaibanListSortItem).SAIBAN_STATUS_ID.cd)}">
+								裁判手続き
+								<th:block th:if="*{saibanList.size() > 0}">
+									<!--/* ソートキーが裁判手続きの場合は、ソート矢印のいずれかを表示する */-->
+									<th:block th:if="${(T(jp.loioz.common.constant.SortConstant$SaibanListSortItem).SAIBAN_STATUS_ID.equalsByCode(viewForm.saibanListSortKey.cd))}">
+										<!--/* ソート順が昇順の場合、上矢印を表示 */-->
+										<th:block th:if="${(T(jp.loioz.common.constant.SortConstant$SortOrder).ASC.equalsByCode(viewForm.saibanListSortOrder.cd))}">
+											<i class="fas fa-chevron-up"></i>
+										</th:block>
+										<!--/* ソート順が降順の場合、下矢印を表示 */-->
+										<th:block th:if="${(T(jp.loioz.common.constant.SortConstant$SortOrder).DESC.equalsByCode(viewForm.saibanListSortOrder.cd))}">
+											<i class="fas fa-chevron-down"></i>
+										</th:block>
+									</th:block>
+								</th:block>
+							</th>
+							<!--/* 担当弁護士 */-->
+							<th class="cell_fixed_100">担当弁護士</th>
+							<!--/* 担当事務 */-->
+							<th class="cell_fixed_100">担当事務</th>
+							<!--/* 申立日 */-->
+							<th class="cell_fixed_100 sort_column saibanListSort" th:data-sort-key="${(T(jp.loioz.common.constant.SortConstant$SaibanListSortItem).SAIBAN_START_DATE.cd)}">
+								申立日
+								<th:block th:if="*{saibanList.size() > 0}">
+									<!--/* ソートキーが申立日の場合は、ソート矢印のいずれかを表示する */-->
+									<th:block th:if="${(T(jp.loioz.common.constant.SortConstant$SaibanListSortItem).SAIBAN_START_DATE.equalsByCode(viewForm.saibanListSortKey.cd))}">
+										<!--/* ソート順が昇順の場合、上矢印を表示 */-->
+										<th:block th:if="${(T(jp.loioz.common.constant.SortConstant$SortOrder).ASC.equalsByCode(viewForm.saibanListSortOrder.cd))}">
+											<i class="fas fa-chevron-up"></i>
+										</th:block>
+										<!--/* ソート順が降順の場合、下矢印を表示 */-->
+										<th:block th:if="${(T(jp.loioz.common.constant.SortConstant$SortOrder).DESC.equalsByCode(viewForm.saibanListSortOrder.cd))}">
+											<i class="fas fa-chevron-down"></i>
+										</th:block>
+									</th:block>
+								</th:block>
+							</th>
+							<!--/* 終了日 */-->
+							<th class="cell_fixed_100 sort_column saibanListSort" th:data-sort-key="${(T(jp.loioz.common.constant.SortConstant$SaibanListSortItem).SAIBAN_END_DATE.cd)}">
+								終了日
+								<th:block th:if="*{saibanList.size() > 0}">
+									<!--/* ソートキーが終了日の場合は、ソート矢印のいずれかを表示する */-->
+									<th:block th:if="${(T(jp.loioz.common.constant.SortConstant$SaibanListSortItem).SAIBAN_END_DATE.equalsByCode(viewForm.saibanListSortKey.cd))}">
+										<!--/* ソート順が昇順の場合、上矢印を表示 */-->
+										<th:block th:if="${(T(jp.loioz.common.constant.SortConstant$SortOrder).ASC.equalsByCode(viewForm.saibanListSortOrder.cd))}">
+											<i class="fas fa-chevron-up"></i>
+										</th:block>
+										<!--/* ソート順が降順の場合、下矢印を表示 */-->
+										<th:block th:if="${(T(jp.loioz.common.constant.SortConstant$SortOrder).DESC.equalsByCode(viewForm.saibanListSortOrder.cd))}">
+											<i class="fas fa-chevron-down"></i>
+										</th:block>
+									</th:block>
+								</th:block>
+							</th>
+						</tr>
+					</thead>
+					
+					<tbody>
+						<th:block th:if="*{saibanList.size() == 0}">
+							<tr>
+								<td colspan="12" class="no_data"><span th:text="#{I00044('裁判情報')}">該当する裁判情報は見つかりませんでした。</span></td>
+							</tr>
+						</th:block>
+						<tr th:each="saiban : *{saibanList}" class="transitionSaiban" th:data-saiban-seq="${saiban.getSaibanSeq()}" th:data-anken-id="${saiban.getAnkenId().asLong()}">
+							<!--/* 案件ID */-->
+							<td class="cell_fixed_100">
+								<a href="javascript:void(0);" class="transitionAnken" th:data-anken-id="${saiban.getAnkenId().asLong()}"
+									data-boundary="window" data-container="body" data-toggle="tooltip" data-trigger="hover" title="案件情報へ"
+									th:text="${saiban.getAnkenId().asLong()}">1000</a>
+							</td>
+							<!--/* 分野 */-->
+							<td class="cell_fixed_100 char_ellipsis" th:text="${#strings.isEmpty(saiban.getBunyaName())} ? '-' : ${saiban.getBunyaName()}">労働</td>
+							<!--/* 裁判所 */-->
+							<td class="cell_fixed_150 char_ellipsis" th:text="${#strings.isEmpty(saiban.getSaibanshoNameMei())} ? '-' : ${saiban.getSaibanshoNameMei()}">裁判所</td>
+							<!--/* 事件番号 */-->
+							<td class="cell_fixed_200" th:text="${#strings.isEmpty(saiban.getJikenNumber())} ? '-' : ${saiban.getJikenNumber()}">事件番号</td>
+							<!--/* 事件名 */-->
+							<td class="cell_fixed_175 char_ellipsis"  th:text="${#strings.isEmpty(saiban.getJikenName())} ? '(事件名未入力)' : ${saiban.getJikenName()}">事件名</td>
+							<!--/* 名前（当事者） */-->
+							<td class="cell_fixed_175 char_ellipsis">
+								<th:block th:if="${saiban.customerId != null}">
+									<a href="javascript:void(0);" class="transitionCustomer" th:data-person-id="${saiban.personId}"
+										data-boundary="window" data-container="body" data-toggle="tooltip" data-trigger="hover" title="名簿詳細へ"
+										th:text="|${saiban.customerNameSei} ${saiban.customerNameMei}|">山田　太郎
+									</a>
+								</th:block>
+								<th:block th:if="${saiban.personId == null}">
+									-
+								</th:block>
+								<th:block th:if="${saiban.personId != null}">
+									<div class="row_sub_data lh1 sub_text" th:if="${saiban.getNumberOfCustomer() > 1}" th:text="|外${saiban.getNumberOfCustomer()-1}名|">外〇名</div>
+								</th:block>
+							</td>
+							<!--/* 相手方 */-->
+							<td class="cell_fixed_150 char_ellipsis">
+								<span th:text="${#strings.isEmpty(saiban.getAitegataName())} ? '-' : ${saiban.getAitegataName()}">株式会社〇〇商事</span>
+								<div th:if="${saiban.getNumberOfAitegata() > 1}" class="row_sub_data lh1" th:text="|外${saiban.getNumberOfAitegata()-1}名|">外〇名</div>
+							</td>
+							<!--/* 裁判手続き */-->
+							<td class="cell_fixed_100 char_ellipsis">
+								<i th:class="|fas fa-circle fa-xs saiban_status_${saiban.getSaibanStatus()}|"></i>
+								<span th:text="${#strings.isEmpty(saiban.getSaibanStatusName())} ? '-' : ${saiban.getSaibanStatusName()}">進行中</span>
+							</td>
+							<!--/* 担当者弁護士 */-->
+							<td class="cell_fixed_100 char_ellipsis" data-boundary="window" data-container="body" data-toggle="tooltip" data-trigger="hover" th:title="${#strings.isEmpty(saiban.tantoLaywerName)} ? '' : ${saiban.tantoLaywerName}" th:text="${#strings.isEmpty(saiban.tantoLaywerName)} ? '-' : ${saiban.tantoLaywerName}">
+								鈴木　二郎
+							</td>
+							<!--/* 担当事務 */-->
+							<td class="cell_fixed_100 char_ellipsis" data-boundary="window" data-container="body" data-toggle="tooltip" data-trigger="hover" th:title="${#strings.isEmpty(saiban.tantoJimuName)} ? '' : ${saiban.tantoJimuName}" th:text="${#strings.isEmpty(saiban.tantoJimuName)} ? '-' : ${saiban.tantoJimuName}">
+								鈴木　二郎
+							</td>
+							<!--/* 申立日 */-->
+							<td class="cell_fixed_100" th:text="${#strings.isEmpty(saiban.getSaibanStartDateFormat())} ? '-' : ${saiban.getSaibanStartDateFormat()}">2021/08/11</td>
+							<!--/* 終了日 */-->
+							<td class="cell_fixed_100" th:text="${#strings.isEmpty(saiban.getSaibanEndDateFormat())} ? '-' : ${saiban.getSaibanEndDateFormat()}">2021/08/25</td>
+						</tr>
+					</tbody>
+				</table>
+			</div>
+		</div>
+	</th:block>
+</div>
+
+
+
+<!--/* 刑事裁判情報一覧フラグメント */-->
+<div th:fragment="keijiSaibanListViewFragment(viewForm)" id="keijiSaibanListViewFragment">
+
+	<!--/* スクリプト */-->
+	<script th:inline="javascript">
+	$(function(){
+
+		<!--/* 共有の要素セットアップ処理 */-->
+		commonSetUpElement("#keijiSaibanListViewFragment");
+
+		<!-- /* 一覧の表示初期処理（親HTMLの関数） */ -->
+		const sessionQuickSearchWord = /*[[${T(jp.loioz.common.utility.SessionUtils).getSessionVaule(T(jp.loioz.common.constant.SessionAttrKeyEnum).QUICK_SEARCH_WORD)}]]*/ '';
+		showInitAnkenList(sessionQuickSearchWord)
+		
+		<!--/* 裁判一覧並び替え処理 */-->
+		$('#keijiSaibanListViewFragment').on("click", ".saibanListSort", function() {
+
+			<!--/* 現在のソートキー */-->
+			const sortedKey = $('[id="keijiSaibanListSearchForm.keijiSaibanListSortKey"]').val();
+			const sortedOrder = $('[id="keijiSaibanListSearchForm.keijiSaibanListSortOrder"]').val();
+
+			<!--/* 並び替えをするためのソートキー*/-->
+			const sortKey = $(this).data("sort-key");
+
+			<!--/* 選択しているメニューのページ番号を取得 （セッションの検索条件フォームからページ番号を取得） */-->
+			const pageNumber = $('[id="keijiSaibanListSearchForm.page"]').val();
+
+			<!--/* 並び替え処理 */-->
+			sortAnkenList(sortedKey, sortedOrder, sortKey, pageNumber);
+		});
+
+		<!--/* 行をクリック */-->
+		$('#keijiSaibanListViewFragment').on("click", ".transitionSaiban", function(e){
+			e.stopPropagation();
+			const saibanSeq = $(this).data("saibanSeq");
+			const ankenId = $(this).data("ankenId");
+			<!--/* 裁判管理画面へ遷移 */-->
+			window.location.href = "/user/saibanKeijiManagement/" + saibanSeq + "/" + ankenId + "/";
+		});
+
+		<!--/* 案件IDリンクをクリック */-->
+		$('#keijiSaibanListViewFragment').on("click", ".transitionAnken", function(e){
+			e.stopPropagation();
+			const ankenId = $(this).data("ankenId");
+			<!--/* 案件情報画面へ遷移 */-->
+			window.location.href = "/user/ankenManagement/edit/" + ankenId + "/";
+		});
+
+		<!--/* 名前リンクをクリック */-->
+		$('#keijiSaibanListViewFragment').on("click", ".transitionCustomer", function(e){
+			e.stopPropagation();
+			const personId = $(this).data("personId");
+			<!--/* 顧客情報画面へ遷移 */-->
+			window.location.href = "/user/personManagement/edit/" + personId + "/";
+		});
+
+	});
+
+	</script>
+
+	<th:block th:object="${viewForm}">
+
+		<!--/* 一覧結果 */-->
+		<div id="ankenList" class="">
+			<div class="header_fixed_table_wrapper table_common_list">
+				<!--/* 一覧のソートキー セッションの検索条件フォームからソートキーを取得 */-->
+				<input type="hidden" th:field="${ankenListSearchForm.keijiSaibanListSearchForm.keijiSaibanListSortKey}">
+				<input type="hidden" th:field="${ankenListSearchForm.keijiSaibanListSearchForm.keijiSaibanListSortOrder}">
+				<!--/* 一覧の表示ページ番号 セッションの検索条件フォームからページ番号を取得 */-->
+				<input type="hidden" th:field="${ankenListSearchForm.keijiSaibanListSearchForm.page}">
+				
+				<!--/* 裁判一覧 */-->
+				<table class="table table_standard table-hover">
+					<thead>
+						<tr>
+							<!--/* 案件ID */-->
+							<th class="cell_fixed_100 sort_column saibanListSort" th:data-sort-key="${(T(jp.loioz.common.constant.SortConstant$SaibanListSortItem).ANKEN_ID.cd)}">
+								案件ID
+								<th:block th:if="*{saibanList.size() > 0}">
+									<!--/* ソートキーが分野の場合は、ソート矢印のいずれかを表示する */-->
+									<th:block th:if="${(T(jp.loioz.common.constant.SortConstant$SaibanListSortItem).ANKEN_ID.equalsByCode(viewForm.saibanListSortKey.cd))}">
+										<!--/* ソート順が昇順の場合、上矢印を表示 */-->
+										<th:block th:if="${(T(jp.loioz.common.constant.SortConstant$SortOrder).ASC.equalsByCode(viewForm.saibanListSortOrder.cd))}">
+											<i class="fas fa-chevron-up"></i>
+										</th:block>
+										<!--/* ソート順が降順の場合、下矢印を表示 */-->
+										<th:block th:if="${(T(jp.loioz.common.constant.SortConstant$SortOrder).DESC.equalsByCode(viewForm.saibanListSortOrder.cd))}">
+											<i class="fas fa-chevron-down"></i>
+										</th:block>
+									</th:block>
+								</th:block>
+							</th>
+							
+							<!--/* 分野 */-->
+							<th class="cell_fixed_100 sort_column saibanListSort" th:data-sort-key="${(T(jp.loioz.common.constant.SortConstant$SaibanListSortItem).BUNYA_ID.cd)}">
+								分野
+								<th:block th:if="*{saibanList.size() > 0}">
+									<!--/* ソートキーが分野の場合は、ソート矢印のいずれかを表示する */-->
+									<th:block th:if="${(T(jp.loioz.common.constant.SortConstant$SaibanListSortItem).BUNYA_ID.equalsByCode(viewForm.saibanListSortKey.cd))}">
+										<!--/* ソート順が昇順の場合、上矢印を表示 */-->
+										<th:block th:if="${(T(jp.loioz.common.constant.SortConstant$SortOrder).ASC.equalsByCode(viewForm.saibanListSortOrder.cd))}">
+											<i class="fas fa-chevron-up"></i>
+										</th:block>
+										<!--/* ソート順が降順の場合、下矢印を表示 */-->
+										<th:block th:if="${(T(jp.loioz.common.constant.SortConstant$SortOrder).DESC.equalsByCode(viewForm.saibanListSortOrder.cd))}">
+											<i class="fas fa-chevron-down"></i>
+										</th:block>
+									</th:block>
+								</th:block>
+							</th>
+							<!--/* 裁判所 */-->
+							<th class="cell_fixed_150 sort_column saibanListSort" th:data-sort-key="${(T(jp.loioz.common.constant.SortConstant$SaibanListSortItem).SAIBANSHO_NAME.cd)}">
+								裁判所
+								<th:block th:if="*{saibanList.size() > 0}">
+									<!--/* ソートキーが裁判所の場合は、ソート矢印のいずれかを表示する */-->
+									<th:block th:if="${(T(jp.loioz.common.constant.SortConstant$SaibanListSortItem).SAIBANSHO_NAME.equalsByCode(viewForm.saibanListSortKey.cd))}">
+										<!--/* ソート順が昇順の場合、上矢印を表示 */-->
+										<th:block th:if="${(T(jp.loioz.common.constant.SortConstant$SortOrder).ASC.equalsByCode(viewForm.saibanListSortOrder.cd))}">
+											<i class="fas fa-chevron-up"></i>
+										</th:block>
+										<!--/* ソート順が降順の場合、下矢印を表示 */-->
+										<th:block th:if="${(T(jp.loioz.common.constant.SortConstant$SortOrder).DESC.equalsByCode(viewForm.saibanListSortOrder.cd))}">
+											<i class="fas fa-chevron-down"></i>
+										</th:block>
+									</th:block>
+								</th:block>
+							</th>
+							<!--/* 事件番号 */-->
+							<th class="cell_fixed_200 sort_column saibanListSort" th:data-sort-key="${(T(jp.loioz.common.constant.SortConstant$SaibanListSortItem).JIKEN_NO.cd)}">
+								事件番号
+								<th:block th:if="*{saibanList.size() > 0}">
+									<!--/* ソートキーが事件番号の場合は、ソート矢印のいずれかを表示する */-->
+									<th:block th:if="${(T(jp.loioz.common.constant.SortConstant$SaibanListSortItem).JIKEN_NO.equalsByCode(viewForm.saibanListSortKey.cd))}">
+										<!--/* ソート順が昇順の場合、上矢印を表示 */-->
+										<th:block th:if="${(T(jp.loioz.common.constant.SortConstant$SortOrder).ASC.equalsByCode(viewForm.saibanListSortOrder.cd))}">
+											<i class="fas fa-chevron-up"></i>
+										</th:block>
+										<!--/* ソート順が降順の場合、下矢印を表示 */-->
+										<th:block th:if="${(T(jp.loioz.common.constant.SortConstant$SortOrder).DESC.equalsByCode(viewForm.saibanListSortOrder.cd))}">
+											<i class="fas fa-chevron-down"></i>
+										</th:block>
+									</th:block>
+								</th:block>
+							</th>
+							<!--/* 事件名 */-->
+							<th class="cell_fixed_175 sort_column saibanListSort" th:data-sort-key="${(T(jp.loioz.common.constant.SortConstant$SaibanListSortItem).JIKEN_NAME.cd)}">
+								事件名
+								<th:block th:if="*{saibanList.size() > 0}">
+									<!--/* ソートキーが事件名の場合は、ソート矢印のいずれかを表示する */-->
+									<th:block th:if="${(T(jp.loioz.common.constant.SortConstant$SaibanListSortItem).JIKEN_NAME.equalsByCode(viewForm.saibanListSortKey.cd))}">
+										<!--/* ソート順が昇順の場合、上矢印を表示 */-->
+										<th:block th:if="${(T(jp.loioz.common.constant.SortConstant$SortOrder).ASC.equalsByCode(viewForm.saibanListSortOrder.cd))}">
+											<i class="fas fa-chevron-up"></i>
+										</th:block>
+										<!--/* ソート順が降順の場合、下矢印を表示 */-->
+										<th:block th:if="${(T(jp.loioz.common.constant.SortConstant$SortOrder).DESC.equalsByCode(viewForm.saibanListSortOrder.cd))}">
+											<i class="fas fa-chevron-down"></i>
+										</th:block>
+									</th:block>
+								</th:block>
+							</th>
+							<!--/* 名前（被告人） */-->
+							<th class="cell_fixed_175 sort_column saibanListSort" th:data-sort-key="${(T(jp.loioz.common.constant.SortConstant$SaibanListSortItem).CUSTOMER_NAME_KANA.cd)}">
+								名前（被告人）
+								<th:block th:if="*{saibanList.size() > 0}">
+									<!--/* ソートキーが名前の場合は、ソート矢印のいずれかを表示する */-->
+									<th:block th:if="${(T(jp.loioz.common.constant.SortConstant$SaibanListSortItem).CUSTOMER_NAME_KANA.equalsByCode(viewForm.saibanListSortKey.cd))}">
+										<!--/* ソート順が昇順の場合、上矢印を表示 */-->
+										<th:block th:if="${(T(jp.loioz.common.constant.SortConstant$SortOrder).ASC.equalsByCode(viewForm.saibanListSortOrder.cd))}">
+											<i class="fas fa-chevron-up"></i>
+										</th:block>
+										<!--/* ソート順が降順の場合、下矢印を表示 */-->
+										<th:block th:if="${(T(jp.loioz.common.constant.SortConstant$SortOrder).DESC.equalsByCode(viewForm.saibanListSortOrder.cd))}">
+											<i class="fas fa-chevron-down"></i>
+										</th:block>
+									</th:block>
+								</th:block>
+							</th>
+							<!--/* 検察庁 */-->
+							<th class="cell_fixed_150 sort_column saibanListSort" th:data-sort-key="${(T(jp.loioz.common.constant.SortConstant$SaibanListSortItem).KENSATUCHO_NAME.cd)}">
+								検察庁
+								<th:block th:if="*{saibanList.size() > 0}">
+									<!--/* ソートキーが検察庁の場合は、ソート矢印のいずれかを表示する */-->
+									<th:block th:if="${(T(jp.loioz.common.constant.SortConstant$SaibanListSortItem).KENSATUCHO_NAME.equalsByCode(viewForm.saibanListSortKey.cd))}">
+										<!--/* ソート順が昇順の場合、上矢印を表示 */-->
+										<th:block th:if="${(T(jp.loioz.common.constant.SortConstant$SortOrder).ASC.equalsByCode(viewForm.saibanListSortOrder.cd))}">
+											<i class="fas fa-chevron-up"></i>
+										</th:block>
+										<!--/* ソート順が降順の場合、下矢印を表示 */-->
+										<th:block th:if="${(T(jp.loioz.common.constant.SortConstant$SortOrder).DESC.equalsByCode(viewForm.saibanListSortOrder.cd))}">
+											<i class="fas fa-chevron-down"></i>
+										</th:block>
+									</th:block>
+								</th:block>
+							</th>
+							<!--/* 裁判手続き */-->
+							<th class="cell_fixed_100 sort_column saibanListSort" th:data-sort-key="${(T(jp.loioz.common.constant.SortConstant$SaibanListSortItem).SAIBAN_STATUS_ID.cd)}">
+								裁判手続き
+								<th:block th:if="*{saibanList.size() > 0}">
+									<!--/* ソートキーが裁判手続きの場合は、ソート矢印のいずれかを表示する */-->
+									<th:block th:if="${(T(jp.loioz.common.constant.SortConstant$SaibanListSortItem).SAIBAN_STATUS_ID.equalsByCode(viewForm.saibanListSortKey.cd))}">
+										<!--/* ソート順が昇順の場合、上矢印を表示 */-->
+										<th:block th:if="${(T(jp.loioz.common.constant.SortConstant$SortOrder).ASC.equalsByCode(viewForm.saibanListSortOrder.cd))}">
+											<i class="fas fa-chevron-up"></i>
+										</th:block>
+										<!--/* ソート順が降順の場合、下矢印を表示 */-->
+										<th:block th:if="${(T(jp.loioz.common.constant.SortConstant$SortOrder).DESC.equalsByCode(viewForm.saibanListSortOrder.cd))}">
+											<i class="fas fa-chevron-down"></i>
+										</th:block>
+									</th:block>
+								</th:block>
+							</th>
+							<!--/* 担当弁護士 */-->
+							<th class="cell_fixed_100">担当弁護士</th>
+							<!--/* 担当事務 */-->
+							<th class="cell_fixed_100">担当事務</th>
+							<!--/* 起訴日/上訴日 */-->
+							<th class="cell_fixed_125 sort_column saibanListSort" th:data-sort-key="${(T(jp.loioz.common.constant.SortConstant$SaibanListSortItem).SAIBAN_START_DATE.cd)}">
+								起訴日/上訴日
+								<th:block th:if="*{saibanList.size() > 0}">
+									<!--/* ソートキーが起訴日/上訴日の場合は、ソート矢印のいずれかを表示する */-->
+									<th:block th:if="${(T(jp.loioz.common.constant.SortConstant$SaibanListSortItem).SAIBAN_START_DATE.equalsByCode(viewForm.saibanListSortKey.cd))}">
+										<!--/* ソート順が昇順の場合、上矢印を表示 */-->
+										<th:block th:if="${(T(jp.loioz.common.constant.SortConstant$SortOrder).ASC.equalsByCode(viewForm.saibanListSortOrder.cd))}">
+											<i class="fas fa-chevron-up"></i>
+										</th:block>
+										<!--/* ソート順が降順の場合、下矢印を表示 */-->
+										<th:block th:if="${(T(jp.loioz.common.constant.SortConstant$SortOrder).DESC.equalsByCode(viewForm.saibanListSortOrder.cd))}">
+											<i class="fas fa-chevron-down"></i>
+										</th:block>
+									</th:block>
+								</th:block>
+							</th>
+							<!--/* 判決日 */-->
+							<th class="cell_fixed_100 sort_column saibanListSort" th:data-sort-key="${(T(jp.loioz.common.constant.SortConstant$SaibanListSortItem).SAIBAN_END_DATE.cd)}">
+								判決日
+								<th:block th:if="*{saibanList.size() > 0}">
+									<!--/* ソートキーが判決日の場合は、ソート矢印のいずれかを表示する */-->
+									<th:block th:if="${(T(jp.loioz.common.constant.SortConstant$SaibanListSortItem).SAIBAN_END_DATE.equalsByCode(viewForm.saibanListSortKey.cd))}">
+										<!--/* ソート順が昇順の場合、上矢印を表示 */-->
+										<th:block th:if="${(T(jp.loioz.common.constant.SortConstant$SortOrder).ASC.equalsByCode(viewForm.saibanListSortOrder.cd))}">
+											<i class="fas fa-chevron-up"></i>
+										</th:block>
+										<!--/* ソート順が降順の場合、下矢印を表示 */-->
+										<th:block th:if="${(T(jp.loioz.common.constant.SortConstant$SortOrder).DESC.equalsByCode(viewForm.saibanListSortOrder.cd))}">
+											<i class="fas fa-chevron-down"></i>
+										</th:block>
+									</th:block>
+								</th:block>
+							</th>
+						</tr>
+					</thead>
+					
+					<tbody>
+						<th:block th:if="*{saibanList.size() == 0}">
+							<tr>
+								<td colspan="12" class="no_data"><span th:text="#{I00044('裁判情報')}">該当する裁判情報は見つかりませんでした。</span></td>
+							</tr>
+						</th:block>
+						<tr th:each="saiban : *{saibanList}" class="transitionSaiban" th:data-saiban-seq="${saiban.getSaibanSeq()}" th:data-anken-id="${saiban.getAnkenId().asLong()}">
+							<!--/* 案件ID */-->
+							<td class="cell_fixed_100">
+								<a href="javascript:void(0);" class="transitionAnken" th:data-anken-id="${saiban.getAnkenId().asLong()}"
+									data-boundary="window" data-container="body" data-toggle="tooltip" data-trigger="hover" title="案件情報へ"
+									th:text="${saiban.getAnkenId().asLong()}">1000</a>
+							</td>
+							<!--/* 分野 */-->
+							<td class="cell_fixed_100 char_ellipsis" th:text="${#strings.isEmpty(saiban.getBunyaName())} ? '-' : ${saiban.getBunyaName()}">労働</td>
+							<!--/* 裁判所 */-->
+							<td class="cell_fixed_150 char_ellipsis" th:text="${#strings.isEmpty(saiban.getSaibanshoNameMei())} ? '-' : ${saiban.getSaibanshoNameMei()}">裁判所</td>
+							<!--/* 事件番号 */-->
+							<td class="cell_fixed_200" th:text="${#strings.isEmpty(saiban.getJikenNumber())} ? '-' : ${saiban.getJikenNumber()}">事件番号</td>
+							<!--/* 事件名 */-->
+							<td class="cell_fixed_175 char_ellipsis" th:text="${#strings.isEmpty(saiban.getJikenName())} ? '(事件名未入力)' : ${saiban.getJikenName()}">事件名</td>
+							<!--/* 名前（被告人） */-->
+							<td class="cell_fixed_175 char_ellipsis">
+								<th:block th:if="${saiban.customerId != null}">
+									<a href="javascript:void(0);" class="transitionCustomer" th:data-person-id="${saiban.personId}" data-boundary="window" data-container="body" data-toggle="tooltip" data-trigger="hover" title="名簿詳細へ"
+										th:text="|${saiban.customerNameSei} ${saiban.customerNameMei}|">山田　太郎
+									</a>
+								</th:block>
+								<th:block th:if="${saiban.personId == null}">
+									-
+								</th:block>
+								<th:block th:if="${saiban.personId != null}">
+									<div th:if="${saiban.getNumberOfCustomer() > 1}" class="row_sub_data lh1 sub_text" th:text="|外${saiban.getNumberOfCustomer()-1}名|">外〇名</div>
+								</th:block>
+							</td>
+							<!--/* 検察庁 */-->
+							<td class="cell_fixed_150 char_ellipsis">
+								<span th:text="${#strings.isEmpty(saiban.getKensatsuchoNameMei())} ? '-' : ${saiban.getKensatsuchoNameMei()}">〇〇高等検察庁</span>
+							</td>
+							<!--/* 裁判手続き */-->
+							<td class="cell_fixed_100 char_ellipsis">
+								<i th:class="|fas fa-circle fa-xs saiban_status_${saiban.getSaibanStatus()}|"></i>
+								<span th:text="${#strings.isEmpty(saiban.getSaibanStatusName())} ? '-' : ${saiban.getSaibanStatusName()}">進行中</span>
+							</td>
+							<!--/* 担当者弁護士 */-->
+							<td class="cell_fixed_100 char_ellipsis" data-boundary="window" data-container="body" data-toggle="tooltip" data-trigger="hover" th:title="${#strings.isEmpty(saiban.tantoLaywerName)} ? '' : ${saiban.tantoLaywerName}" th:text="${#strings.isEmpty(saiban.tantoLaywerName)} ? '-' : ${saiban.tantoLaywerName}">
+								鈴木　二郎
+							</td>
+							<!--/* 担当事務 */-->
+							<td class="cell_fixed_100 char_ellipsis" data-boundary="window" data-container="body" data-toggle="tooltip" data-trigger="hover" th:title="${#strings.isEmpty(saiban.tantoJimuName)} ? '' : ${saiban.tantoJimuName}" th:text="${#strings.isEmpty(saiban.tantoJimuName)} ? '-' : ${saiban.tantoJimuName}">
+								鈴木　二郎
+							</td>
+							<!--/* 起訴日/上訴日 */-->
+							<td class="cell_fixed_100" th:text="${#strings.isEmpty(saiban.getSaibanStartDateFormat())} ? '-' : ${saiban.getSaibanStartDateFormat()}">2021/08/11</td>
+							<!--/* 終了日 */-->
+							<td class="cell_fixed_100" th:text="${#strings.isEmpty(saiban.getSaibanEndDateFormat())} ? '-' : ${saiban.getSaibanEndDateFormat()}">2021/08/25</td>
+						</tr>
+					</tbody>
+				</table>
+			</div>
+		</div>
+	</th:block>
+</div>
+
+
+
+<!--/* ページングフラグメント */-->
+<div th:fragment="ankenListPagerFragment(page)" id="ankenListPagerFragment">
+
+	<!--/* スクリプト */-->
+	<script th:inline="javascript">
+	$(function(){
+
+		<!--/* 共有の要素セットアップ処理 */-->
+		commonSetUpElement("#ankenListPagerFragment");
+
+	});
+
+	</script>
+
+	<th:block th:object="${page}">
+		<div id="ankenListPager" class="list_footer_pager">
+			<th:block th:if="${page}">
+				<div  class="list_footer_pager__no" th:insert="common/pagerAjax::pagerAjax(page=${page}, listFragmentId='ankenListPager')"></div>
+				<div class="list_footer_pager__data_cnt" th:with="firstPageNumber=${page.getNumber()} * ${page.getSize()} + 1, lastPageNumber=${page.getNumber()} * ${page.getSize()} + ${page.getNumberOfElements()}">
+					<span th:if="${lastPageNumber} > 0" th:text="|(${firstPageNumber} - ${lastPageNumber}/${page.getTotalElements()})|"></span>
+				</div>
+			</th:block>
+		</div>
+	</th:block>
+</div>
+
+
+
+<!--/* 案件一覧とページングのフラグメント */-->
+<div th:fragment="ankenListAndPagerWraperFragment(viewForm)" id="ankenListAndPagerWraperFragment">
+	<!--/* 一覧結果 */-->
+	<div id="ankenListViewFragmentWrap" th:insert="user/ankenList/ankenListFragment::ankenListViewFragment(${viewForm})"></div>
+
+	<!--/* ページング */-->
+	<div id="ankenListPagerWrap" th:insert="user/ankenList/ankenListFragment::ankenListPagerFragment(${viewForm.page})"></div>
+</div>
+
+
+<!--/* 民事裁判一覧とページングのフラグメント */-->
+<div th:fragment="minjiSaibanListAndPagerWraperFragment(viewForm)" id="minjiSaibanListAndPagerWraperFragment">
+	<!--/* 一覧結果 */-->
+	<div id="ankenListViewFragmentWrap" th:insert="user/ankenList/ankenListFragment::minjiSaibanListViewFragment(${viewForm})"></div>
+
+	<!--/* ページング */-->
+	<div id="ankenListPagerWrap" th:insert="user/ankenList/ankenListFragment::ankenListPagerFragment(${viewForm.page})"></div>
+</div>
+
+
+<!--/* 刑事裁判一覧とページングのフラグメント */-->
+<div th:fragment="keijiSaibanListAndPagerWraperFragment(viewForm)" id="keijiSaibanListAndPagerWraperFragment">
+	<!--/* 一覧結果 */-->
+	<div id="ankenListViewFragmentWrap" th:insert="user/ankenList/ankenListFragment::keijiSaibanListViewFragment(${viewForm})"></div>
+
+	<!--/* ページング */-->
+	<div id="ankenListPagerWrap" th:insert="user/ankenList/ankenListFragment::ankenListPagerFragment(${viewForm.page})"></div>
+</div>
+
+
+</body>
+</html>

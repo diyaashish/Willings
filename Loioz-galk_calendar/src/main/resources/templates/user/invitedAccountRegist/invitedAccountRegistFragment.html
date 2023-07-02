@@ -1,0 +1,353 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+	<meta charset="utf-8" />
+</head>
+<body>
+
+
+
+<!--/* 招待アカウント登録フォームブロック */-->
+<div th:fragment="invitedAccountRegistFormFragment(inputForm)" id="invitedAccountRegistFormFragment">
+
+	<!--/* スクリプト */-->
+	<script th:inline="javascript">
+	$(function() {
+		
+		<!--/* 共有の要素セットアップ処理 */-->
+		commonSetUpElement();
+		
+		$.fn.autoKana('input[id="accountNameSei"]','input[id="accountNameSeiKana"]',{});
+		$.fn.autoKana('input[id="accountNameMei"]','input[id="accountNameMeiKana"]',{});
+		
+		<!--/* 登録ボタン */-->
+		$('#invitedAccountRegistFormFragment #accountResit').on('click', function(e) {
+			
+			let fromData = $('#invitedAccountRegistForm').serializeArray();
+			
+			let registForm = $("#invitedAccountRegistForm");
+			let username = registForm.find("[name='accountId']").val();
+			let password = registForm.find("[name='password.password']").val();
+			
+			<!--/* 2重押下防止 */-->
+			if(ajaxRunning){
+				return false;
+			}
+			
+			ajaxRunning = true;
+			
+			$.ajax({
+				url : "/user/invitedAccountRegist/accountRegist",
+				type : "POST",
+				data : fromData
+			})
+			.done(function(data, status, jqXHR) {
+				if (isAjaxProcSuccess(jqXHR)) {
+					// 処理成功
+					
+					<!--/* 親HTMLに記載のID */-->
+					$('#invitedAccountRegistFormFragmentWrap').remove();
+					
+					<!--/* 親HTMLに記載のID */-->
+					$('#invitedAccountLoginFormFragmentWrap').html(data)
+					
+					<!--/* 上記の画面が表示されるので、少し時間を置いてからログインする */-->
+					setTimeout(function() {
+						$("#invitedAccountLoginFormFragmentWrap #loginForm").find("[name='username']").val(username);
+						$("#invitedAccountLoginFormFragmentWrap #loginForm").find("[name='password']").val(password);
+						$("#invitedAccountLoginFormFragmentWrap #loginForm").submit();
+					}, 3000);
+					
+				} else {
+					// 処理失敗
+					
+					if (data) {
+						// HTMLのコンテンツが返却されている場合
+						// 親HTMLのID
+						
+						const dataDomId = $(data).prop('id');
+						if (dataDomId == 'invitedAccountRegistVerificationError') {
+							<!--/* 認証エラーページの場合 */-->
+							$('#invitedAccountLoginForm').addClass('verification_error');
+							$('#invitedAccountLoginForm').html(data);
+						} else {
+							<!--/* 通常のフォーム画面の場合 */-->
+							$('#invitedAccountRegistFormFragmentWrap').html(data);
+						}
+					}
+					
+					const errorMsg = getAjaxProcResutlMessage(jqXHR);
+					if (errorMsg) {
+						showErrorMessage(errorMsg, $('#invitedAccountRegistFormFragmentWrap'), null)
+					}
+					
+					<!--/* 画面トップにスクロールを移動 */-->
+					scrollTop();
+				}
+			})
+			.fail(function(jqXHR, status, errorThrown) {
+				showErrorMessageForJs(/*[[#{E00007}]]*/ "登録に失敗しました。");
+			})
+			.always(function(){
+				ajaxRunning = false;
+			});
+			
+		})
+		
+		<!--/*
+		 * パスワード入力の切り替え
+		*/-->
+		$('.toggle-password-display').on("click", function() {
+			let passwordForm = $(this).closest(".password-container").find("input");
+			let toggleButton = $(this);
+			if (passwordForm.attr("type") == "password") {
+				passwordForm.attr("type", "text");
+				toggleButton
+					.find(".fa-eye").addClass("hidden").end()
+					.find(".fa-eye-slash").removeClass("hidden");
+			} else {
+				passwordForm.attr("type", "password");
+				toggleButton
+					.find(".fa-eye-slash").addClass("hidden").end()
+					.find(".fa-eye").removeClass("hidden");
+			}
+		});
+		
+		<!--/*
+		 * 画面スクロールを最上部に移動する
+		*/-->
+		function scrollTop() {
+			$('html').animate({scrollTop:0}, 'fast');
+		}
+		
+	})
+	</script>
+
+	<form id="invitedAccountRegistForm" class="fc_sub">
+	
+		<div class="card mb-5">
+			<div class="card-header d-flex">
+				<div class="card_title pt-2">初期アカウント設定</div>
+			</div>
+
+			<div class="card-body">
+			
+				<!--/* メッセージエリア */-->
+				<div th:replace="common/messageArea::jsMessageArea"></div>
+			
+				<!-- 入力エリア -->
+				<div class="detail_input_area" th:object="${inputForm}">
+					<div class="form-row">
+						<div class="form-group col-md-12 mb-3">
+							<span class="d-block">loiozのアカウント登録に招待されました。</span>
+							<span class="d-block">アカウント情報を入力し、手続きを完了してください。</span>
+							<span class="d-block">※リンクの有効期限はメール発行より24時間以内です。</span>
+						</div>
+					</div>
+					<div class="form-row">
+						<!--/* アカウントID */-->
+						<div class="form-group col-md-5 mb-0">
+							<label class="input_parts_label">アカウントID</label>
+							<input type="text" class="form-control input_half" th:field="*{accountId}" maxlength="50" th:autocomplete="off" placeholder="半角英数4桁以上">
+							<div th:if="${#fields.hasErrors('accountId')}" th:errors="*{accountId}" class="error_mag_point">error</div>
+						</div>
+						<div class="form-group col-md-12 mb-0">
+							<div class="input_nav">
+								<span class="d-block">loiozにログインするためのIDとして使用します。</span>
+								<span class="d-block">4桁以上の半角英数字で指定する必要があります。</span>
+							</div>
+						</div>
+						<!--/* アカウントID end */-->
+					</div>
+					<!--/* 氏名 */-->
+					<div class="form-row">
+						<div class="form-group col-md-12 mb-0">
+							<label class="input_parts_label">氏名</label>
+						</div>
+						<!-- 姓 -->
+						<div class="form-group col-md-3 mb-2">
+							<input type="text" class="form-control" th:field="*{accountNameSei}" id="accountNameSei" maxlength="24" th:autocomplete="off" placeholder="姓">
+							<div th:if="${#fields.hasErrors('accountNameSei')}" th:errors="*{accountNameSei}" class="error_mag_point">error</div>
+						</div>
+						<!-- 名 -->
+						<div class="form-group col-md-3 mb-2">
+							<input type="text" class="form-control" th:field="*{accountNameMei}" id="accountNameMei" maxlength="24" th:autocomplete="off" placeholder="名">
+							<div th:if="${#fields.hasErrors('accountNameMei')}" th:errors="*{accountNameMei}" class="error_mag_point">error</div>
+						</div>
+					</div>
+					<!--/* 氏名（かな） */-->
+					<div class="form-row">
+						<!-- せい -->
+						<div class="form-group col-md-3 mb-0">
+							<input type="text" class="form-control" th:field="*{accountNameSeiKana}" id="accountNameSeiKana"  maxlength="64" th:autocomplete="off" placeholder="せい">
+							<div th:if="${#fields.hasErrors('accountNameSeiKana')}" th:errors="*{accountNameSeiKana}" class="error_mag_point">error</div>
+						</div>
+						<!-- めい -->
+						<div class="form-group col-md-3 mb-0">
+							<input type="text" class="form-control" th:field="*{accountNameMeiKana}" id="accountNameMeiKana" maxlength="64" th:autocomplete="off" placeholder="めい">
+							<div th:if="${#fields.hasErrors('accountNameMeiKana')}" th:errors="*{accountNameMeiKana}" class="error_mag_point">error</div>
+						</div>
+						<div class="form-group col-md-12 mb-0">
+							<div class="input_nav">
+								<p>loioz内で利用するユーザーの表示名です。</p>
+							</div>
+						</div>
+					</div>
+					<!--/* メールアドレス */-->
+					<div class="form-row">
+						<div class="form-group col-md-6 mb-4">
+							<label class="input_parts_label">メールアドレス</label>
+							<input type="text" class="form-control" th:field="*{accountMailAddress}" maxlength="256" autocomplete="off">
+							<div th:if="${#fields.hasErrors('accountMailAddress')}" th:errors="*{accountMailAddress}" class="error_mag_point">error</div>
+						</div>
+					</div>
+					<!--/* アカウント種別 */-->
+					<div class="form-row">
+						<div class="form-group col-md-12 mb-1">
+							<label class="input_parts_label" id="accountTypePopoverTarget">
+								種別
+							</label>
+						</div>
+						<div class="form-group col-md-12">
+							<!--/* 弁護士、事務職員、その他 */-->
+							<label class="radio_btn" th:each="enum : ${T(jp.loioz.common.constant.CommonConstant$AccountType).values()}">
+								<input type="radio" class ="radio_input" th:field="*{accountType}" th:value="${enum.cd}">
+								<span class="radio_txt" th:text="${enum.val}">弁護士</span>
+							</label>
+							<div th:if="${#fields.hasErrors('accountType')}" th:errors="*{accountType}" class="error_mag_point">error</div>
+						</div>
+					</div>
+					<!-- ログインパスワード -->
+					<div class="form-row">
+						<div class="form-group col-md-12 mb-0">
+							<label class="input_parts_label">パスワード</label>
+						</div>
+						<div class="form-group col-md-4 mb-0">
+							<div class="password-container d-flex">
+								<input type="password" class="form-control input_half" th:field="*{password.password}" maxlength="30" th:autocomplete="new-password">
+								<div class="input-group-append">
+									<button class="toggle-password-display btn btn-light btn_icon_only btn-sm ml-2" type="button">
+										<i class="far fa-eye"></i>
+										<i class="far fa-eye-slash hidden"></i>
+									</button>
+								</div>
+							</div>
+							<div class="input_nav mb-1">
+								<p>※半角英数字8文字以上でご入力ください。</p>
+							</div>
+						</div>
+						<div class="form-group col-md-12">
+							<div th:if="${#fields.hasErrors('password')}" th:errors="*{password}" class="error_mag_point">error</div>
+							<div th:if="${#fields.hasErrors('password.password')}" th:errors="*{password.password}" class="error_mag_point">error</div>
+						</div>
+					</div>
+		
+					<!-- ログインパスワード（確認用） -->
+					<div class="form-row">
+						<div class="form-group col-md-12 mb-0">
+							<label class="input_parts_label">パスワード（確認用）</label>
+						</div>
+						<div class="form-group col-md-4 mb-0">
+							<div class="password-container d-flex">
+								<input type="password" class="form-control input_half" th:field="*{password.confirm}" maxlength="30" th:autocomplete="off">
+								<div class="input-group-append">
+									<button class="toggle-password-display btn btn-light btn_icon_only btn-sm ml-2" type="button">
+										<i class="far fa-eye"></i>
+										<i class="far fa-eye-slash hidden"></i>
+									</button>
+								</div>
+							</div>
+						</div>
+						<div class="form-group col-md-12">
+							<div th:if="${#fields.hasErrors('password')}" th:errors="*{password}" class="error_mag_point">error</div>
+							<div th:if="${#fields.hasErrors('password.confirm')}" th:errors="*{password.confirm}" class="error_mag_point">error</div>
+						</div>
+						<input type="hidden" class="form-control" th:field="*{key}">
+					</div>
+					
+					<!--/* ボタン */-->
+					<div class="form_action mt-5">
+						<button type="button" id="accountResit" class="btn btn-info">
+							<i class="fas fa-check"></i>登録する
+						</button>
+					</div>
+				</div>
+			</div>
+		</div>
+	</form>
+	
+</div>
+
+
+
+<!--/* 招待アカウントログインフォームブロック */-->
+<div th:fragment="invitedAccountLoginFormFragment()" id="invitedAccountLoginFormFragment">
+
+	<!--/* スクリプト */-->
+	<script th:inline="javascript">
+	$(function() {
+		
+		<!--/* 共有の要素セットアップ処理 */-->
+		commonSetUpElement();
+		
+	})
+	</script>
+
+	<div class="loioz_hp_contetns">
+		<div class="section">
+			<div class="section_inner">
+				<h2 class="section_title">
+					<span class="d-block">登録アカウントでログイン中...</span>
+				</h2>
+				<form id="loginForm" th:action="@{ ${contextPath} + '/spring_security_login'}" method="post">
+					<input type="hidden" name="tenantCreateFlg" value="1">
+					<input type="hidden" name="username" value="">
+					<input type="hidden" name="password" value="">
+				</form>
+			</div>
+		</div>
+	</div>
+
+</div>
+
+
+
+<!--/* 招待アカウント登録時の認証エラーブロック */-->
+<div th:fragment="invitedAccountRegistVerificationError()" id="invitedAccountRegistVerificationError">
+
+	<!--/* スクリプト */-->
+	<script th:inline="javascript">
+	$(function() {
+		
+		<!--/* 共有の要素セットアップ処理 */-->
+		commonSetUpElement();
+		
+	})
+	</script>
+
+	<div class="loioz_hp_contetns">
+		<!--/* タイトル帯 */-->
+		<div class="main_title">
+			<div class="title_inner">
+				<h1>認証エラー</h1>
+			</div>
+		</div>
+		<!--/* タイトル帯 end */-->
+
+		<!--/* section */-->
+		<div class="section">
+			<!--/* section_inner */-->
+			<div class="section_inner">
+				<h2 class="section_title" th:if="${errorMsg}!=null" myth:nl2br="${errorMsg}"></h2>
+			</div>
+			<!--/* section_inner end */-->
+		</div>
+		<!--/* section end */-->
+	</div>
+
+</div>
+
+
+
+</body>
+</html>

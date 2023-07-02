@@ -1,0 +1,1011 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+	xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+	layout:decorator="commonLayout">
+<head>
+	<meta charset="utf-8" />
+</head>
+<body>
+
+<!--/* 名簿-案件フラグメント start */-->
+<div th:fragment="personCaseAnkenListViewFragment(personCaseViewForm)" id="personCaseAnkenListViewFragment" th:object="${personCaseViewForm}">
+	
+	<!--/* 案件登録モーダルを扱うので共通JS定義 */-->
+	<script type="text/javascript" th:replace="common/mvc/ankenCustomer/ankenRegist::ankenRegistModalFragmentObjJs"></script>
+	
+	<!--/* スクリプト */-->
+	<script th:inline="javascript">
+	$(function() {
+
+		<!--/* 定数 */-->
+		const personCaseAnkenListViewFragment = $('#personCaseAnkenListViewFragment');
+		const ankenRegistModal = personCaseAnkenListViewFragment.find("#ankenRegistModal");
+		
+		<!--/* 共有の要素セットアップ処理 */-->
+		commonSetUpElement('#personCaseAnkenListViewFragment');
+		
+		ankenRegistModal.on("show.bs.modal", function() {
+			
+			<!--/* 案件の登録処理 */-->
+			benzo.global.fragment.ankenRegistModalFragmentObj.setUpObj.registAction = function(triggerBtn) {
+				let param = benzo.global.fragment.ankenRegistModalFragmentObj.paramObj.getRegistFormParams(ankenRegistModal);
+				let url = /*[[@{/common/mvc/ankencustomer/registAnken}]]*/"";
+				if (ajaxRunning) {
+					return false;
+				}
+				ajaxRunning = true;
+				$.ajax({
+					type : "POST",
+					url : url,
+					data : param,
+					dataType : "html",
+				})
+				.done(function(data, status, jqXHR) {
+					if (getAjaxProcResutl(jqXHR) == /*[[${T(jp.loioz.app.common.mvc.ankenCustomer.controller.AnkenRegistCommonController).HEADER_VALUE_OF_AJAX_PROC_RESULT_ANKEN_REGIST_REDIRECT}]]*/'100') {
+						alert(/*[[#{I00020('案件')}]]*/"error");
+						window.location.href = getAjaxProcResutlMessage(jqXHR);
+					} else {
+						if (data) {
+							ankenRegistModal.find(".ankenRegistModalFragmentWrap").html(data);
+						}
+						const errorMsg = getAjaxProcResutlMessage(jqXHR);
+						showErrorMessage(errorMsg, ankenRegistModal);
+					}
+				})
+				.fail(function(jqXHR, status, errorThrown) {
+					const errorMsg = /*[[#{E00091}]]*/"error";
+					showErrorMessage(errorMsg, ankenRegistModal);
+				})
+				.always(function(){
+					ajaxRunning = false;
+				});
+			};
+			
+			<!--/* 登録モーダルの初期レンダリング処理 */-->
+			benzo.global.fragment.ankenRegistModalFragmentObj.setUpObj.initRenderRegistViewAction = function(triggerBtn) {
+				if (ajaxRunning) {
+					return false;
+				}
+				ajaxRunning = true;
+				Promise.resolve()
+					.then(() => initRenderRegistViewAction())
+					.catch(() => { /*何もしない*/ })
+					.finally(() => ajaxRunning = false);
+			};
+			
+			<!--/* 検索モーダルの登録処理 */-->
+			benzo.global.fragment.ankenRegistModalFragmentObj.setUpObj.searchRegistAction = function(triggerBtn) {
+				if (ajaxRunning) {
+					return false;
+				}
+				
+				const params = benzo.global.fragment.ankenRegistModalFragmentObj.paramObj.getSearchResultFormParams(ankenRegistModal);
+				ajaxRunning = true;
+				Promise.resolve()
+					.then(() => _registFn(params))
+					.catch(() => { /*何もしない*/ })
+					.finally(() => ajaxRunning = false);
+				
+				function _registFn(registParams) {
+					return new Promise((resolve, reject) => {
+						const ankenId = registParams.find((v) => v.name === "ankenId")["value"];
+						if (!confirm("【案-" + ankenId +"】　を登録しますか？")) {
+							return resolve(); // 正常終了
+						}
+						const url = /*[[@{/common/mvc/ankencustomer/registSearchResultAnken}]]*/"";
+						$.ajax({
+							type : "POST",
+							url : url,
+							data : registParams,
+							dataType : "html"
+						})
+						.done(function(result, status, jqXHR) {
+							if (getAjaxProcResutl(jqXHR) == /*[[${T(jp.loioz.app.common.mvc.ankenCustomer.controller.AnkenRegistCommonController).HEADER_VALUE_OF_AJAX_PROC_RESULT_ANKEN_REGIST_REDIRECT}]]*/'100') {
+								alert(/*[[#{I00020('案件')}]]*/"error");
+								window.location.href = getAjaxProcResutlMessage(jqXHR);
+							} else {
+								const errorMsg = getAjaxProcResutlMessage(jqXHR);
+								showErrorMessage(errorMsg, ankenRegistModal);
+								return reject(errorMsg);
+							}
+						})
+						.fail(function(jqXHR, status, errorThrown) {
+							showErrorMessage(/*[[#{E00091}]]*/"error", ankenRegistModal);
+							return reject(jqXHR, status, errorThrown)
+						});
+					});
+				};
+				
+			};
+			
+			<!--/* 検索モーダルの検索処理 */-->
+			benzo.global.fragment.ankenRegistModalFragmentObj.setUpObj.searchRenderPromise = function(triggerBtn) {
+				return new Promise((resolve, reject) => {
+					const params = benzo.global.fragment.ankenRegistModalFragmentObj.paramObj.getSearchFormParams(ankenRegistModal);
+					const url = /*[[@{/common/mvc/ankencustomer/getAnkenSearchModalFragment}]]*/"";
+					$.ajax({
+						type : "GET",
+						url : url,
+						data : params,
+						dataType : "html"
+					})
+					.done(function(result, status, jqXHR) {
+						if (isAjaxProcSuccess(jqXHR)) {
+							<!--/* 処理成功 */-->
+							ankenRegistModal.find(".ankenRegistModalFragmentWrap").html(result);
+							return resolve();
+						} else {
+							const errorMsg = getAjaxProcResutlMessage(jqXHR);
+							showErrorMessageForJs(errorMsg);
+							return reject(errorMsg);
+						}
+					})
+					.fail(function(jqXHR, status, errorThrown) {
+						showErrorMessageForJs(/*[[#{E00091}]]*/ "error");
+						return reject(jqXHR, status, errorThrown)
+					});
+				});
+			};
+			
+			<!--/* 検索モーダルの初期レンダリング処理 */-->
+			benzo.global.fragment.ankenRegistModalFragmentObj.setUpObj.initRenderSearchViewAction = function(triggerBtn) {
+				if (ajaxRunning) {
+					return false;
+				}
+				ajaxRunning = true;
+				Promise.resolve()
+					.then(() => initRenderSearchViewAction())
+					.catch(() => { /*何もしない*/ })
+					.finally(() => ajaxRunning = false);
+			};
+			
+		});
+		
+		<!--/* 案件追加モーダルの初期レンダリング処理 */-->
+		function initRenderRegistViewAction() {
+			return new Promise((resolve, reject) => {
+				let initRenderRegistViewParams = Object.assign({}, benzo.global.fragment.ankenRegistModalFragmentObj.initRenderRegistViewParams);
+				const personId = initRenderRegistViewParams["personId"];
+				const url = /*[[@{/common/mvc/ankencustomer/getAnkenRegistModalFragment}]]*/"";
+				
+				const param = {
+						"personId": personId,
+				};
+				
+				$.ajax({
+					type : "GET",
+					url : url,
+					data : param,
+					dataType : "html"
+				})
+				.done(function(result, status, jqXHR) {
+					if (isAjaxProcSuccess(jqXHR)) {
+						<!--/* 処理成功 */-->
+						ankenRegistModal.find(".ankenRegistModalFragmentWrap").html(result);
+						return resolve();
+					} else {
+						const errorMsg = getAjaxProcResutlMessage(jqXHR);
+						showErrorMessageForJs(errorMsg);
+						return reject(errorMsg);
+					}
+				})
+				.fail(function(jqXHR, status, errorThrown) {
+					showErrorMessageForJs(/*[[#{E00091}]]*/ "error");
+					return reject([jqXHR, status, errorThrown]);
+				});
+			});
+		};
+		
+		<!--/* 案件検索モーダルの初期レンダリング処理 */-->
+		function initRenderSearchViewAction() {
+			return new Promise((resolve, reject) => {
+				let initRenderSearchViewParams = Object.assign({}, benzo.global.fragment.ankenRegistModalFragmentObj.initRenderSearchViewParams);
+				const personId = initRenderSearchViewParams["personId"];
+				const params = [
+					{"name": "personId", "value": personId},
+				];
+				
+				const url = /*[[@{/common/mvc/ankencustomer/getAnkenSearchModalFragment}]]*/"";
+				$.ajax({
+					type : "GET",
+					url : url,
+					data : params,
+					dataType : "html"
+				})
+				.done(function(result, status, jqXHR) {
+					if (isAjaxProcSuccess(jqXHR)) {
+						<!--/* 処理成功 */-->
+						ankenRegistModal.find(".ankenRegistModalFragmentWrap").html(result);
+						return resolve();
+					} else {
+						const errorMsg = getAjaxProcResutlMessage(jqXHR);
+						showErrorMessageForJs(errorMsg);
+						return reject(errorMsg);
+					}
+				})
+				.fail(function(jqXHR, status, errorThrown) {
+					showErrorMessageForJs(/*[[#{E00091}]]*/ "error");
+					return reject(jqXHR, status, errorThrown)
+				});
+			});
+		};
+		
+		<!--/* 案件登録モーダル表示 */-->
+		personCaseAnkenListViewFragment.find('.registAnken').on('click', function() {
+			
+			if (ajaxRunning) {
+				return false
+			}
+			const personId = /*[[*{personId}]]*/null;
+			
+			<!--/* 新規登録モーダル初期表示用のパラメータをメモリに保持しておく */-->
+			benzo.global.fragment.ankenRegistModalFragmentObj.initRenderRegistViewParams = {
+					"personId": personId,
+			};
+			
+			<!--/* 検索モーダル初期表示用のパラメータをメモリに保持しておく */-->
+			benzo.global.fragment.ankenRegistModalFragmentObj.initRenderSearchViewParams = {
+					"personId": personId,
+			};
+			
+			ajaxRunning = true;
+			Promise.resolve()
+				.then(() => initRenderRegistViewAction())
+				.then(() => ankenRegistModal.modal("show"))
+				.catch((errors) => console.log(errors))
+				.finally(() => ajaxRunning = false);
+		});
+		
+		<!--/* クリックした案件メニュー以外のpopoverを閉じる */-->
+		personCaseAnkenListViewFragment.on("click", ".clickCaseMenuAction", function(e) {
+			const id = '#' + $(this).attr('id');
+			personCaseAnkenListViewFragment.find('.outPutContainerClose').not(id).popover('hide');
+		});
+		
+	});
+	</script>
+	
+	<!--/* row */-->
+	<div class="row">
+		<!--/* 左エリア */-->
+		<div class="col-lg-8">
+			<!--/*  案件一覧 */-->
+			<section class="">
+				<div class="section_header">
+					<div class="section_header__title">案件一覧</div>
+					<div class="section_header__action">
+						<span class="align-middle">
+							<a href="javascript:void(0);" class="fs15 registAnken"><i class="fas fa-plus-square mr-2"></i>案件を追加</a>
+						</span>
+					</div>
+				</div>
+				<div class="section_body">
+					<div class="section_body__contents">
+				<th:block th:if="*{#lists.isEmpty(personAnkenListViewForm)}">
+						<!--/** 0件の場合 */-->
+						<div class="no_data_msg">
+							<span>案件情報がありません。</span>
+						</div>
+				</th:block>
+						<ul class="section_list py-0">
+				<th:block th:each="item : *{personAnkenListViewForm}">
+							<!--/* 案件1行 */-->
+							<li th:replace="::caseDataFragment(${item}, *{storageConnectedService})"></li>
+				</th:block>
+						</ul>
+					</div>
+				</div>
+			</section>
+			<!--/*  案件一覧 end */-->
+		
+		</div>
+		<div class="col-lg-4">
+	<!--/* 会計機能の利用判定 */-->
+	<th:block th:if="${T(jp.loioz.common.utility.SessionUtils).canUsePlanFunc(T(jp.loioz.common.constant.plan.PlanConstant$PlanFuncRestrict).PF0002)}">
+			<!--/*  会計情報 */-->
+			<section>
+				<div class="section_header">
+					<div class="section_header__title">案件合計</div>
+					<div class="section_header__action"></div>
+				</div>
+				<div class="section_body">
+					<div class="section_body__contents px-4 pb-3">
+						<div>
+							<div class="mt-2 mb-3"><span class="badge badge_square px-3 badge_gray">売上</span></div>
+							<div class="accg_case_sum">
+								<div class="accg_case_sum__left">
+									<div class="lh1_1">
+										<span class="fs25 fw600">[[*{#numbers.formatInteger(personTotalSalesAmountResult, 1, 'COMMA')}]]</span><span class="jp_yen">円</span>
+									</div>
+									<div class="fs13">入金済み</div>
+									<div class="lh1_1 mt-3">
+										<span class="fs25 fw600">[[*{#numbers.formatInteger(personTotalSalesAwaitingAmount, 1, 'COMMA')}]]</span><span class="jp_yen">円</span>
+									</div>
+									<div class="fs13">入金待ち</div>
+								</div>
+								<div class="accg_case_sum__right">
+									<div class="text-right lh1_1">
+										<span class="fs25 fw600">[[*{#numbers.formatInteger(personTotalSalesAmountExpect, 1, 'COMMA')}]]</span><span class="jp_yen">円</span>
+									</div>
+									<div class="text-right fs13">
+										<span>売上合計(①-②-③)</span>
+									</div>
+								</div>
+							</div>
+							<div class="accg_case_sum_label">内訳</div>
+							<div class="accg_case_sum_item">
+								<div class="accg_case_sum_item__left">
+									①報酬(税込)
+								</div>
+								<div class="accg_case_sum_item__right">
+									<span class="fs16">[[*{#numbers.formatInteger(personTotalSalesTaxIncludedAmount, 1, 'COMMA')}]]<span class="jp_yen">円</span></span>
+								</div>
+							</div>
+							<div class="accg_case_sum_item">
+								<div class="accg_case_sum_item__left">
+									②源泉徴収税
+								</div>
+								<div class="accg_case_sum_item__right">
+									<span class="fs16">[[*{#numbers.formatInteger(personTotalSalesWithholdingAmount, 1, 'COMMA')}]]<span class="jp_yen">円</span></span>
+								</div>
+							</div>
+							<div class="accg_case_sum_item">
+								<div class="accg_case_sum_item__left">
+									③値引き
+								</div>
+								<div class="accg_case_sum_item__right">
+									<span class="fs16">[[*{#numbers.formatInteger(personTotalSalesDiscountAmount, 1, 'COMMA')}]]<span class="jp_yen">円</span></span>
+								</div>
+							</div>
+						</div>
+						<hr class="my-3">
+						<div>
+							<div class="mt-2 mb-3"><span class="badge badge_square px-3 badge_blue">預り金</span></div>
+							<div class="accg_case_sum">
+								<div class="accg_case_sum__left">
+									<div class="lh1_1">
+										<span class="fs25 fw600" th:classappend="*{totalDepositBalanceAmount} < 0 ? 'text-danger' ">[[*{#numbers.formatInteger(totalDepositBalanceAmount, 1, 'COMMA')}]]</span><span class="jp_yen">円</span>
+									</div>
+									<div class="fs13">預り金残高</div>
+								</div>
+								<div class="accg_case_sum__right">
+									<div class="text-right lh1_1">
+										<span class="fs25 fw600">[[*{#numbers.formatInteger(totalTenantBearAmount, 1, 'COMMA')}]]</span><span class="jp_yen">円</span>
+									</div>
+									<div class="text-right fs13">
+										<span>事務所負担</span>
+									</div>
+								</div>
+							</div>
+							<div class="accg_case_sum_label">内訳</div>
+							<div class="accg_case_sum_item">
+								<div class="accg_case_sum_item__left">
+									入金額
+								</div>
+								<div class="accg_case_sum_item__right">
+									<span class="fs16">[[*{#numbers.formatInteger(totalDepositAmount, 1, 'COMMA')}]]<span class="jp_yen">円</span></span>
+								</div>
+							</div>
+							<div class="accg_case_sum_item">
+								<div class="accg_case_sum_item__left">
+									出金額
+								</div>
+								<div class="accg_case_sum_item__right">
+									<span class="fs16">[[*{#numbers.formatInteger(totalWithdrawalAmount, 1, 'COMMA')}]]<span class="jp_yen">円</span></span>
+								</div>
+							</div>
+						</div>
+					</div>
+				</div>
+			</section>
+	</th:block>
+		</div>
+	</div>
+	
+	<!--/* 案件検索モーダル テンプレート */-->
+	<div id="ankenRegistModal" class="modal fade" tabindex="-1" role="dialog" aria-hidden="true" data-backdrop="static">
+		<div class="modal-dialog modal-dialog-centered resizeToggleClassTarget" role="document">
+			<div class="modal-content">
+				<div class="ankenRegistModalFragmentWrap" style="display:contents;"></div>
+			</div>
+		</div>
+	</div>
+		
+</div>
+<!--/* 名簿-案件フラグメント end */-->
+
+<!--/* 案件画面 - 案件1行分のHTML */-->
+<li th:fragment="caseDataFragment(item, storageConnectedService)" class="list_contents case_list" id="caseDataFragment">
+	
+	<!--/* スクリプト */-->
+	<script th:inline="javascript">
+	$(function() {
+		
+		let caseId = [[${item.ankenId}]];
+		
+		<!--/* 案件のメニューを差し込む（popoverのdata-content） */-->
+		$('#caseDataFragment #addCaseMenu' + caseId)
+			.attr('data-content', $('#caseDataFragment #addCaseMenuContent' + caseId).html());
+		
+	});
+	</script>
+
+	<!--/* 案件データ */-->
+	<div class="case_data">
+		
+		<!--/* 画像 */-->
+		<div class="case_data__img">
+			<!--/* 案件属性ラベル */-->
+			<div th:class="|case_image_wrapper${item.ankenType?.cd}|">
+				<img class="img-thumbnail case_img_mid" th:src="@{/img/case_type{typeCd}.svg(typeCd=${item.ankenType?.cd})}">
+			</div>
+		</div>
+		
+		<!--/* 詳細 */-->
+		<div class="case_data__detail">
+			
+			<div class="case_data__row1">
+				<div class="case_data__row1__col1">
+					<div class="case_name">
+						<div class="fc_sub fs12">
+							<span>
+	<!--/* 案件区分 */-->
+	<!--/* 事務所 */-->
+	<th:block th:if="${T(jp.loioz.common.constant.CommonConstant$AnkenType).JIMUSHO.equals(item.ankenType)}">
+								<i class="far fa-building"></i>
+	</th:block>
+	<!--/* 個人 */-->
+	<th:block th:if="${T(jp.loioz.common.constant.CommonConstant$AnkenType).KOJIN.equals(item.ankenType)}">
+								<i class="fas fa-briefcase"></i>
+	</th:block>
+								<!--/* 案件種別 */-->
+								<span th:text="${item.ankenType?.val}"></span>
+							</span>
+							<span>／</span>
+							<span th:text="${item.bunyaName}"></span>
+						</div>
+						<!--/* 案件名 */-->
+						<th:block th:if="${T(jp.loioz.common.constant.CommonConstant$AnkenStatus).KANRYO.equalsByCode(item.ankenStatus?.cd)}">
+							<div class="fs25 fc_disabled fw0" th:text="${#strings.isEmpty(item.ankenName) ? '(案件名未入力)' : item.ankenName}"></div>
+						</th:block>
+						<th:block th:unless="${T(jp.loioz.common.constant.CommonConstant$AnkenStatus).KANRYO.equalsByCode(item.ankenStatus?.cd)}">
+							<div class="fs25 fw600"
+								th:classAppend="${T(jp.loioz.common.constant.CommonConstant$AnkenStatus).FUJUNIN.equalsByCode(item.ankenStatus?.cd)} ? 'fc_disabled fw0 td_line_through' : 'fw600' "
+								th:text="${#strings.isEmpty(item.ankenName) ? '(案件名未入力)' : item.ankenName}"></div>
+						</th:block>
+						<div>
+							<!--/* 案件ID */-->
+							<a th:href="@{/user/ankenManagement/edit/{ankenId}/(ankenId=${item.ankenId})}" class="app_id_link case_link fs12 mr-3"
+								data-boundary="window" data-container="body" data-toggle="tooltip" data-trigger="hover" title="案件情報へ"
+								th:text="|案件ID：${item.ankenId}|">
+							</a>
+							<!--/* 登録日 */-->
+							<span class="mr-4 badge badge_square badge_tag">
+								<i class="far fa-calendar-check fc_title mr-2"></i>登録日：<span th:text="${item.ankenCreateDate}"></span>
+							</span>
+							<i class="fas fa-circle fa-xs" th:classappend="${item.ankenStatus} ? |anken_status_${item.ankenStatus?.cd}| :_"></i>
+							<span th:classAppend="${T(jp.loioz.common.constant.CommonConstant$AnkenStatus).FUJUNIN.equalsByCode(item.ankenStatus?.cd)} ? 'fc_sub' : '' "
+								th:text="${item.ankenStatus?.val}">
+						</span>
+						</div>
+					</div>
+				</div>
+				<div class="case_data__row1__col2">
+					<!--/* 案件メニュー */-->
+					<div th:id="|addCaseMenu${item.ankenId}|" class="d-inline-block stop-events outPutContainerClose clickCaseMenuAction"
+						th:data-case-id="${item.ankenId}" data-offset="-80,0" data-boundary="window"
+						data-container="#personCaseAnkenListViewFragment" data-toggle="popover" data-placement="bottom" data-html="true"
+						data-content="">
+						<button type="button" class="btn btn-light text-info config pt-1">
+							<i class="fas fa-bars mt-2 mr-2"></i><span>案件メニュー</span>
+						</button>
+					</div>
+					
+					<!--/* ※popoverのdata-content部分に差し込まれるデータ */-->
+					<div th:id="|addCaseMenuContent${item.ankenId}|" class="hidden">
+						<ul class="output_nav_list case_menu">
+							<li class="title_block">案件管理</li>
+							<li>
+								<a th:href="@{/user/ankenManagement/edit/{ankenId}/(ankenId=${item.ankenId})}" class="btn btn-light">
+									<i class="far fa-file-alt mr-3 ml-1"></i><span>案件情報</span>
+								</a>
+							</li>
+							<li th:if="${item.firstSaibanBranchNo}">
+								<a th:href="@{/user/saibanManagement/{ankenId}/{branchNo}/(ankenId=${item.ankenId}, branchNo=${item.firstSaibanBranchNo})}" class="btn btn-light">
+									<i class="fas fa-gavel mr-3"></i>裁判管理
+								</a>
+							</li>
+							<li>
+								<a th:href="@{/user/ankenDashboard/{ankenId}/(ankenId=${item.ankenId})}" class="btn btn-light">
+									<i class="fas fa-tachometer-alt mr-3"></i>案件ダッシュボード
+								</a>
+							</li>
+							<li>
+								<a th:href="@{/user/kanyosha/list?transitionAnkenId={ankenId}&transitionCustomerId={personId}(ankenId=${item.ankenId},personId=*{personId})}" class="btn btn-light">
+									<i class="fas fa-users mr-2"></i><span>当事者・関与者</span>
+								</a>
+							</li>
+							<li>
+								<a th:href="@{/user/gyomuHistory/anken/list?transitionAnkenId={ankenId}&transitionCustomerId={personId}(ankenId=${item.ankenId},personId=*{personId})}" class="btn btn-light">
+									<i class="fas fa-history mr-3"></i>業務履歴
+								</a>
+							</li>
+							<li>
+								<a th:href="@{/user/azukariItem/list?transitionAnkenId={ankenId}&transitionCustomerId={personId}(ankenId=${item.ankenId},personId=*{personId})}" class="btn btn-light">
+									<i class="fas fa-cube mr-3"></i>預り品
+								</a>
+							</li>
+							<th:block th:switch="${storageConnectedService}">
+								<th:block th:case="${T(jp.loioz.common.constant.CommonConstant$ExternalService).GOOGLE}">
+									<li>
+										<script type="text/javascript" th:inline="javascript">
+										$(function() {
+											let createFolderAjaxRunning = false;
+											$('.personCaseGoogleLink').on('click', function(e) {
+												if(createFolderAjaxRunning) {
+													return false;
+												}
+												createFolderAjaxRunning = true;
+												Promise.resolve()
+													.then(getAnkenGoogleFolder)
+													.then(resultFnc)
+													.catch((error) => {console.log(error)})
+													.finally(() => {createFolderAjaxRunning = false;});
+											});
+											
+											function getAnkenGoogleFolder() {
+												return new Promise((resolve, reject) => {
+													$.ajax({
+														url : /*[[@{/common/api/google/getAnkenFolderUrl}]]*/'',
+														type : "GET",
+														data : {"ankenId" : /*[[${item.ankenId}]]*/''}
+													}).done(function(data, status, jqXHR) {
+														<!--/* なにもしない */-->
+														return resolve(data);
+													}).fail(function(jqXHR, status, errorThrown) {
+														showErrorMessageForJs(/*[[#{E00091}]]*/ "error");
+														return reject();
+													});
+												});
+											};
+											
+											async function resultFnc(data) {
+												<!--/* なにもしない */-->
+												if (data.successed) {
+													// 別タブで
+													let childWindow = window.open(data.url, 'rel=noopener');
+													return Promise.resolve();
+												} else {
+													// 作成完了したら
+													if (data.needCreate) {
+														if(confirm('この案件のフォルダはまだ作成されていません。 作成してもよろしいですか？')) {
+															await createGoogleAnkenFoloder(false, false);
+														}
+														return Promise.resolve();
+													} else if (data.needReCreate) {
+														if(confirm(data.message)) {
+															await createGoogleAnkenFoloder(false, true);
+														}
+														return Promise.resolve();
+													} else if (data.needReCreateAnkenRoot) {
+														if(confirm(data.message)) {
+															await createGoogleAnkenFoloder(true, false);
+														}
+														return Promise.resolve();
+													} else {
+														showErrorMessageForJs(data.message);
+														return Promise.reject();
+													}
+												}
+											};
+											
+											<!--/* 案件フォルダの作成 */-->
+											function createGoogleAnkenFoloder(reCreateAnkenRootFlg, reCreateFlg) {
+												return new Promise((resolve, reject) => {
+													$.ajax({
+														url : /*[[@{/common/api/google/createGoogleAnkenFolder}]]*/,
+														type : "POST",
+														data : {
+															"ankenId" : /*[[${item.ankenId}]]*/'',
+															"reCreateAnkenRootFlg" : reCreateAnkenRootFlg,
+															"reCreateFlg" : reCreateFlg
+														}
+													})
+													.done(function(data, status, jqXHR) {
+														if (data.successed) {
+															if(confirm(data.message + '\n作成したフォルダを表示しますか？')){
+																let childWindow = window.open(data.url, 'rel=noopener');
+															}
+															return resolve();
+														} else {
+															showErrorMessageForJs(data.message);
+															return reject();
+														}
+													})
+													.fail(function(jqXHR, status, errorThrown) {
+														<!--/* なにもしない */-->
+														showErrorMessageForJs(/*[[#{E00091}]]*/ "error");
+														return reject();
+													});
+												});
+											};
+										});
+										</script>
+										<a href="javascript:void(0);" class="btn btn-light personCaseGoogleLink">
+											<i class="far fa-folder-open menu_svg mr-3"></i>Google
+										</a>
+									</li>
+								</th:block>
+								<th:block th:case="${T(jp.loioz.common.constant.CommonConstant$ExternalService).BOX}">
+									<li>
+										<script type="text/javascript" th:inline="javascript">
+										$(function() {
+											let createFolderAjaxRunning = false;
+											$('.personCaseBoxLink').on('click', function(e) {
+												if(createFolderAjaxRunning) {
+													return false;
+												}
+												createFolderAjaxRunning = true;
+												Promise.resolve()
+													.then(getAnkenBoxFolder)
+													.then(resultFnc)
+													.catch((error) => {console.log(error)})
+													.finally(() => {createFolderAjaxRunning = false;});
+											});
+											
+											function getAnkenBoxFolder() {
+												return new Promise((resolve, reject) => {
+													$.ajax({
+														url : /*[[@{/common/api/box/getAnkenFolderUrl}]]*/'',
+														type : "GET",
+														data : {"ankenId" : /*[[${item.ankenId}]]*/''}
+													}).done(function(data, status, jqXHR) {
+														<!--/* なにもしない */-->
+														return resolve(data);
+													}).fail(function(jqXHR, status, errorThrown) {
+														showErrorMessageForJs(/*[[#{E00091}]]*/ "error");
+														return reject();
+													});
+												});
+											};
+											
+											async function resultFnc(data) {
+												<!--/* なにもしない */-->
+												if (data.successed) {
+													// 別タブで
+													let childWindow = window.open(data.url, 'rel=noopener');
+													return Promise.resolve();
+												} else {
+													// 作成完了したら
+													if (data.needCreate) {
+														if(confirm('この案件のフォルダはまだ作成されていません。 作成してもよろしいですか？')) {
+															await createBoxAnkenFoloder(false, false);
+														}
+														return Promise.resolve();
+													} else if (data.needReCreate) {
+														if(confirm(data.message)) {
+															await createBoxAnkenFoloder(false, true);
+														}
+														return Promise.resolve();
+													} else if (data.needReCreateAnkenRoot) {
+														if(confirm(data.message)) {
+															await createBoxAnkenFoloder(true, false);
+														}
+														return Promise.resolve();
+													} else {
+														showErrorMessageForJs(data.message);
+														return Promise.reject();
+													}
+												}
+											};
+											
+											<!--/* 案件フォルダの作成 */-->
+											function createBoxAnkenFoloder(reCreateAnkenRootFlg, reCreateFlg) {
+												return new Promise((resolve, reject) => {
+													$.ajax({
+														url : /*[[@{/common/api/box/createBoxAnkenFolder}]]*/,
+														type : "POST",
+														data : {
+															"ankenId" : /*[[${item.ankenId}]]*/'',
+															"reCreateAnkenRootFlg" : reCreateAnkenRootFlg,
+															"reCreateFlg" : reCreateFlg
+														}
+													})
+													.done(function(data, status, jqXHR) {
+														if (data.successed) {
+															if(confirm(data.message + '\n作成したフォルダを表示しますか？')){
+																let childWindow = window.open(data.url, 'rel=noopener');
+															}
+															return resolve();
+														} else {
+															showErrorMessageForJs(data.message);
+															return reject();
+														}
+													})
+													.fail(function(jqXHR, status, errorThrown) {
+														<!--/* なにもしない */-->
+														showErrorMessageForJs(/*[[#{E00091}]]*/ "error");
+														return reject();
+													});
+												});
+											};
+											
+										});
+										</script>
+										<a href="javascript:void(0);" class="btn btn-light personCaseBoxLink">
+											<i class="far fa-folder-open menu_svg mr-3"></i>Box
+										</a>
+									</li>
+								</th:block>
+								<th:block th:case="${T(jp.loioz.common.constant.CommonConstant$ExternalService).DROPBOX}">
+									<li>
+										<script type="text/javascript" th:inline="javascript">
+										$(function() {
+											let createFolderAjaxRunning = false;
+											$('.personCaseDropboxLink').on('click', function(e) {
+												if(createFolderAjaxRunning) {
+													return false;
+												}
+												createFolderAjaxRunning = true;
+												Promise.resolve()
+													.then(getAnkenDropboxFolder)
+													.then(resultFnc)
+													.catch((error) => {console.log(error)})
+													.finally(() => {createFolderAjaxRunning = false;});
+											});
+											
+											function getAnkenDropboxFolder() {
+												return new Promise((resolve, reject) => {
+													$.ajax({
+														url : /*[[@{/common/api/dropbox/getAnkenFolderUrl}]]*/'',
+														type : "GET",
+														data : {"ankenId" : /*[[${item.ankenId}]]*/''}
+													}).done(function(data, status, jqXHR) {
+														<!--/* なにもしない */-->
+														return resolve(data);
+													}).fail(function(jqXHR, status, errorThrown) {
+														showErrorMessageForJs(/*[[#{E00091}]]*/ "error");
+														return reject();
+													});
+												});
+											};
+											
+											async function resultFnc(data) {
+												<!--/* なにもしない */-->
+												if (data.successed) {
+													// 別タブで
+													let childWindow = window.open(data.url, 'rel=noopener');
+													return Promise.resolve();
+												} else {
+													// 作成完了したら
+													if (data.needCreate) {
+														if(confirm('この案件のフォルダはまだ作成されていません。 作成してもよろしいですか？')) {
+															await createDropboxAnkenFoloder(false, false);
+														}
+														return Promise.resolve();
+													} else if (data.needReCreate) {
+														if(confirm(data.message)) {
+															await createDropboxAnkenFoloder(false, true);
+														}
+														return Promise.resolve();
+													} else if (data.needReCreateAnkenRoot) {
+														if(confirm(data.message)) {
+															await createDropboxAnkenFoloder(true, false);
+														}
+														return Promise.resolve();
+													} else {
+														showErrorMessageForJs(data.message);
+														return Promise.reject();
+													}
+												}
+											};
+											
+											<!--/* 案件フォルダの作成 */-->
+											function createDropboxAnkenFoloder(reCreateAnkenRootFlg, reCreateFlg) {
+												return new Promise((resolve, reject) => {
+													$.ajax({
+														url : /*[[@{/common/api/dropbox/createDropboxAnkenFolder}]]*/,
+														type : "POST",
+														data : {
+															"ankenId" : /*[[${item.ankenId}]]*/'',
+															"reCreateAnkenRootFlg" : reCreateAnkenRootFlg,
+															"reCreateFlg" : reCreateFlg
+														}
+													})
+													.done(function(data, status, jqXHR) {
+														if (data.successed) {
+															if(confirm(data.message + '\n作成したフォルダを表示しますか？')){
+																let childWindow = window.open(data.url, 'rel=noopener');
+															}
+															return resolve();
+														} else {
+															showErrorMessageForJs(data.message);
+															return reject();
+														}
+													})
+													.fail(function(jqXHR, status, errorThrown) {
+														<!--/* なにもしない */-->
+														showErrorMessageForJs(/*[[#{E00091}]]*/ "error");
+														return reject();
+													});
+												});
+											};
+										});
+										</script>
+										<a href="javascript:void(0);" class="btn btn-light personCaseDropboxLink">
+											<i class="far fa-folder-open menu_svg mr-3"></i>Dropbox
+										</a>
+									</li>
+								</th:block>
+								<th:block th:case=*>
+									<li>
+										<a th:href="@{/user/fileManagement/list(transitionAnkenId=${item.ankenId})}" class="btn btn-light">
+											<i class="far fa-folder-open menu_svg mr-3"></i>ファイル
+										</a>
+									</li>
+								</th:block>
+							</th:block>
+<!--/*/ 	</th:block> /*/-->
+<!--/* 会計機能の利用判定 */-->
+<th:block th:if="${T(jp.loioz.common.utility.SessionUtils).canUsePlanFunc(T(jp.loioz.common.constant.plan.PlanConstant$PlanFuncRestrict).PF0002)}">
+							<li class="title_block">会計管理</li>
+							<li>
+								<a th:href="@{/user/feeDetail/{personId}/{ankenId}/?isAccgAnkenSide=true(ankenId=${item.ankenId}, personId=${item.personId})}" class="btn btn-light">
+									<i class="fas fa-yen-sign mr-3 ml-1"></i>報酬
+								</a>
+							</li>
+							<li>
+								<a th:href="@{/user/depositRecvDetail/{personId}/{ankenId}/?isAccgAnkenSide=true(ankenId=${item.ankenId}, personId=${item.personId})}" class="btn btn-light">
+									<i class="fas fa-coins mr-3"></i>預り金／実費
+								</a>
+							</li>
+							<li>
+								<a th:href="@{/user/caseInvoiceStatementList/{personId}/{ankenId}/(ankenId=${item.ankenId}, personId=${item.personId})}" class="btn btn-light">
+									<i class="fas fa-file-invoice mr-3"></i>請求書／精算書
+								</a>
+							</li>
+</th:block>
+						</ul>
+					</div>
+				</div>
+			</div>
+			
+			<!--/* 案件2行目 */-->
+			<div class="case_data__row2">
+				
+				<!--/* 案件2行目-列１ */-->
+				<div class="row2__col1">
+					<!-- /* 契約ステータス */ -->
+					<span class="badge badge-pill data_label badge_gray badge_square px-2">
+						進行状況
+					</span>
+					<ul class="list-inline time_line_list">
+						<li class="list-inline-item" 
+						th:with="isCheckedCircle=!${#strings.isEmpty(item.acceptDate)}">
+							<div class="action_title">
+								<i th:if="${isCheckedCircle}" class="fas fa-check-circle status_comp"></i>
+								<i th:if="!${isCheckedCircle}" class="fas fa-circle status_standby"></i>
+								<span>受任日</span>
+								<hr>
+							</div>
+							<div class="action_data" th:classappend="${isCheckedCircle} ? 'fs16' : 'fs14' ">
+								<div th:text="${isCheckedCircle} ? ${item.acceptDate} : '(未入力)' "></div>
+							</div>
+						</li>
+						<li class="list-inline-item" 
+						th:with="isCheckedCircle=!${#strings.isEmpty(item.caseCompleteDate)}">
+							<div class="action_title">
+								<i th:if="${isCheckedCircle}" class="fas fa-check-circle status_comp"></i>
+								<i th:if="!${isCheckedCircle}" class="fas fa-circle status_standby"></i>
+								<span>事件処理日</span>
+								<hr>
+							</div>
+							<div class="action_data" th:classappend="${#strings.isEmpty(item.caseCompleteDate)} ? 'fs14' : 'fs16' ">
+								<div th:text="${#strings.isEmpty(item.caseCompleteDate)} ? '(未入力)' : ${item.caseCompleteDate} "></div>
+							</div>
+						</li>
+						<li class="list-inline-item" 
+						th:with="isCheckedCircle=!${#strings.isEmpty(item.completeDate)}">
+							<div class="action_title">
+								<i th:if="${isCheckedCircle}" class="fas fa-check-circle status_comp"></i>
+								<i th:if="!${isCheckedCircle}" class="fas fa-circle status_standby"></i>
+								<span>精算完了日</span>
+							</div>
+							<div class="action_data" th:classappend="${#strings.isEmpty(item.completeDate)} ? 'fs14' : 'fs16' ">
+								<div th:text="${#strings.isEmpty(item.completeDate)} ? '(未入力)' : ${item.completeDate} "></div>
+							</div>
+						</li>
+					</ul>
+					<!-- /* 契約ステータス end */ -->
+				</div>
+				<!--/* 案件2行目-列１ end */-->
+				
+				<!--/* 案件2行目-列２ */-->
+				<div class="row2__col2">
+					<!-- /* 担当 */ -->
+					<div class="case_person_contact flex-wrap mt-0 mx-0">
+						<div class="case_person_contact__lawyer">
+							<span class="badge badge-pill data_label badge_gray badge_square">弁護士</span>
+							<div class="data_label_value">
+		<!--/* 案件担当者未設定 */-->
+		<th:block th:if="${item.tantoLawyer.size() == 0}">
+								<span class="fc_sub">(未設定)</span>
+		</th:block>
+								<div class="case_person_contact__data">
+		<!--/* 弁護士 */-->
+		<th:block th:each="lawyer : ${item.tantoLawyer}">
+									<div class="case_account">
+										<i class="fas fa-user-circle" th:style="|color : ${lawyer.accountColor};|"></i>
+										<div class="person_contact_wrapper mr-3">
+											<div class="person_contact__name fs15">
+												<span th:if="${lawyer.Main}" class="mr-1 fs12 fc_sub">(主担当)</span>
+												<span th:text="${lawyer.accountName}"></span>
+											</div>
+										</div>
+									</div>
+		</th:block>
+								</div>
+							</div>
+						</div>
+						<div class="case_person_contact__jimu">
+							<span class="badge badge-pill data_label badge_gray badge_square">事務職員</span>
+							<div class="data_label_value">
+		<!--/* 案件担当者未設定 */-->
+		<th:block th:if="${item.tantoJimu.size() == 0}">
+								<span class="fc_sub">(未設定)</span>
+		</th:block>
+								<div class="case_person_contact__data">
+		<!--/* 事務 */-->
+		<th:block th:each="jimu : ${item.tantoJimu}">
+									<div class="case_account">
+										<i class="fas fa-user-circle" th:style="|color : ${jimu.accountColor};|"></i>
+										<div class="person_contact_wrapper mr-3">
+											<div class="person_contact__name fs15">
+												<span th:if="${jimu.Main}" class="mr-1 fs12 fc_sub">(主担当)</span>
+												<span th:text="${jimu.accountName}"></span>
+											</div>
+										</div>
+									</div>
+		</th:block>
+								</div>
+							</div>
+						</div>
+						
+						<!--/* 相手方 */-->
+						<div>
+			<!--/* 民事分野か判定 */-->
+			<th:block th:if="${T(jp.loioz.common.constant.CommonConstant$BunyaType).MINJI.equalsByCode(item.bunyaTypeCd)}">
+							<span class="badge badge-pill badge_square list_attr badge_green px-2">
+								<i class="fas fa-user mr-2"></i>相手方情報
+							</span>
+							<div class="data_content mt-2 fs14 fc_sub"
+								th:text="${#strings.isEmpty(item.aitegataNameDisp)} ? '(未設定)' : ${item.aitegataNameDisp}"></div>
+			</th:block>
+			<!--/* 民事分野か判定 end */-->
+						</div>
+						<!--/* 相手方 end */-->
+					</div>
+					<!-- /* 担当 end */ -->
+					
+				</div>
+				<!--/* 案件2行目-列２ end */-->
+			</div>
+			<!--/* 案件2行目 end */-->
+			
+	<!--/* 会計機能の利用判定 */-->
+	<th:block th:if="${T(jp.loioz.common.utility.SessionUtils).canUsePlanFunc(T(jp.loioz.common.constant.plan.PlanConstant$PlanFuncRestrict).PF0002)}">
+			<div th:id="accgPersonSummaryFragmentWrap"
+				th:insert="common/accg/accgPersonSummary::accgPersonSummaryFragment(${item.accgPersonSummaryForm})"></div>
+	</th:block>
+		
+		</div>
+		<!--/* 詳細 end */-->
+		
+	</div>
+	<!--/* 案件データ end */-->
+	
+</li>
+
+
+</body>
+</html>

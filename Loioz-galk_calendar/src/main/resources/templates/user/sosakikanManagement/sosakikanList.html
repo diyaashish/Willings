@@ -1,0 +1,269 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+	xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+	layout:decorator="commonLayout">
+<head>
+<meta charset="UTF-8">
+<title layout:fragment="title-contents">
+	[[${T(jp.loioz.common.utility.LoiozUtils).getHtmlTitle(T(jp.loioz.common.constant.CommonConstant$SystemSettingMenu).DATA_SOSAKIKAN.getVal(), T(jp.loioz.common.utility.SessionUtils).getTenantName())}]]
+</title>
+<script type="text/javascript">
+
+$(function() {
+
+	<!--/* 都道府県を変更したら検索実行 */-->
+	$("#sosakikanSearchForm").on("change", "[name='todofukenId'],[name='sosakikanType']", function() {
+		$("#sosakikanSearchForm").submit();
+	});
+
+	// -----------------------------------------
+	// ダイアログ表示(登録／更新)
+	// -----------------------------------------
+	$(document).on("click", '.saveModal', function() {
+		let action = "create";
+		let sosakikanId = $(this).attr('data-id');
+		if (sosakikanId) {
+			action = "edit";
+		}
+		$.ajax({
+				url : action,
+				type : "POST",
+				data :{ 'sosakikanEditData.sosakikanId' : sosakikanId},
+			}).done(function(val) {
+				// モーダルの表示
+				$('.targetModalBody').html(val);
+			}).fail(function(jqXHR, textStatus, errorThrown) {
+			}).always(function() {
+		});
+	});
+	// モーダル閉じる処理
+	$('#sosakikanEditModal').on('hidden.bs.modal', function (e) {
+		// 初期化する
+		$('.targetModalBody').html('');
+	})
+
+	<!--/* 登録・更新・削除ボタン */-->
+	let ajaxRunning = false;
+	$('.targetModalBody').on("click", '#regist, #update', function() {
+		// 2重押下防止
+		if(ajaxRunning){
+			return false;
+		}
+		// 押下したボタンのIDをアクションとして取得し実行する
+		let action = $(this).attr('id');
+		let modal = $(this).closest('.modal');
+		var params = $('form#editForm').serializeArray();
+		ajaxRunning = true;
+		$.ajax({
+			type : "POST",
+			url : action,
+			data : params,
+		})
+		.done(function(result) {
+			if(result.succeeded){
+				alert(result.message);
+				modal.modal("hide");
+				location.reload();
+			} else {
+				showErrorMessage(result.message, modal, result.errors);
+			}
+		})
+		.fail(function() {
+			window.location.href = "/systemError";// システムエラー
+		})
+		.always(function(){
+			ajaxRunning = false;
+		});
+	});
+
+	// 削除処理
+	$('.targetModalBody').on("click", '#delete', function() {
+		if (!confirm('削除します。よろしいですか?')){
+			return false;
+		}
+		// 2重押下防止
+		if(ajaxRunning){
+			return false;
+		}
+		let modal = $(this).closest('.modal');
+		var params = $('form#editForm').serializeArray();
+		ajaxRunning = true;
+		$.ajax({
+			url : "delete",
+			type : "POST",
+			data : params,
+		})
+		.done(function(result) {
+			if(result.succeeded){
+				alert(result.message);
+				modal.modal("hide");
+				location.reload();
+			} else {
+				showErrorMessage(result.message, modal, result.errors);
+			}
+		})
+		.fail(function() {
+			window.location.href = "/systemError";// システムエラー
+		})
+		.always(function(){
+			ajaxRunning = false;
+		});
+	});
+});
+</script>
+</head>
+<body>
+	<div class="contents_sidebar_wrapper_setting" layout:fragment="main-contents">
+
+		<!-- サイドメニュー -->
+		<div th:replace="common/systemSettingMenu::selectMenu(${T(jp.loioz.common.constant.CommonConstant$SystemSettingMenu).DATA_SOSAKIKAN.getCd()})"></div>
+
+		<!-- コンテンツ -->
+		<div class="contents_wrapper" th:object="${viewForm}">
+
+			<!-- メッセージ表示領域 -->
+			<div th:replace="common/messageArea::messageArea"></div>
+
+			<!-- contents_limited_width_setting サイズ幅(maxサイズ）start -->
+			<div class="container-fluid contents_limited_width_setting">
+
+				<!-- パンくず-->
+				<div class="breadcrumb_area">
+					<ul>
+						<li><span>データ設定</span></li>
+						<li><i class="fas fa-angle-right"></i></li>
+						<li th:text="${T(jp.loioz.common.constant.CommonConstant$SystemSettingMenu).DATA_SOSAKIKAN.getVal()}">捜査機関の設定</li>
+					</ul>
+				</div>
+
+				<!-- ブロック start -->
+				<div class="contents_block">
+
+					<!--/* 画面タイトル */-->
+					<div class="block_title">捜査機関マスタ</div>
+
+					<!--/* 画面詳細エリア */-->
+					<div class="block_detail">
+						<p>捜査機関マスタで登録したデータは、案件、裁判情報の捜査機関として選択することができます。</p>
+
+						<!--/* 検索 start */-->
+						<div class="search_conditions">
+							<form th:action="@{/user/sosakikanManagement/search}" id="sosakikanSearchForm" method="get" autocomplete="off" th:object="${sosakikanSearchForm}">
+								<div class="form-row">
+									<!--/* 検索条件部 start */-->
+									<div class="col-sm-2">
+										<label for="search-sosakikanType" class="input_parts_label">区分</label>
+										<select th:field="*{sosakikanType}" class="form-control col-8" id="search-sosakikanType">
+											<option value="">-</option>
+											<option th:each="enum : ${T(jp.loioz.common.constant.CommonConstant$SosakikanType).values()}"
+												th:value="${enum.cd}" th:text="${enum.val}">
+											</option>
+										</select>
+									</div>
+									<div class="col-sm-2">
+										<label for="search-todofukenId" class="input_parts_label">都道府県</label>
+										<select th:field="*{todofukenId}" class="form-control col-8" id="search-todofukenId">
+											<option value="">-</option>
+											<option th:each="enum : ${T(jp.loioz.common.constant.CommonConstant$CompanyTodofuken).values()}"
+												th:value="${enum.cd}" th:text="${enum.val}">
+											</option>
+										</select>
+									</div>
+									<div class="col-sm">
+										<label for="search-sosakikanName" class="input_parts_label">捜査機関名</label>
+										<div class="input-group mb-3">
+											<input type="text" class="form-control fcAddTextClear" id="search-sosakikanName" 
+												th:field="*{sosakikanName}" maxlength="30">
+											<div class="input-group-append">
+											 	<button class="btn btn-dark pt-1 pb-0 px-3" type="submit" onclick="submit();"><i class="fas fa-search fa-lg mr-0"></i></button>
+											</div>
+										</div>
+									</div>
+									<!--/* アクションボタン */-->
+									<div class="block_action mb-2">
+										<button type="button" class="btn btn-primary saveModal" data-toggle="modal" data-target="#sosakikanEditModal">
+											<i class="fas fa-plus"></i>新規登録
+										</button>
+									</div>
+								</div>
+							</form>
+						</div>
+						<!--/* 検索 end */-->
+					</div>
+
+					<!-- 一覧表示 -->
+					<div class="list_area">
+						<table class="table table_standard table-sm table_fixed table-striped">
+							<thead>
+								<tr>
+									<th class="col_10">区分</th>
+									<th class="col_10">都道府県</th>
+									<th class="col_20">捜査機関名</th>
+									<th class="col_30">住所</th>
+									<th class="col_20">連絡先</th>
+									<th class="col_10">操作</th>
+								</tr>
+							</thead>
+							<tbody>
+<!--/*/ 					<th:block th:if="${viewForm.sosakikanList.size() == 0}"> /*/-->
+								<tr>
+									<td colspan="6" class="no_data_table_list">
+										<span th:text="#{I00021}">MSG_I00021</span>
+									</td>
+								</tr>
+<!--/*/ 					</th:block> /*/-->
+								<tr th:each="sosakikan : *{sosakikanList}" th:object="${sosakikan}">
+									<td th:text="${T(jp.loioz.common.constant.CommonConstant$SosakikanType).of(sosakikan.sosakikanType).getVal()}"></td>
+									<td th:text="${T(jp.loioz.common.constant.CommonConstant$CompanyTodofuken).of(sosakikan.todofukenId).getVal()}"></td>
+									<td th:text="*{sosakikanName}"></td>
+									<td >
+										<div class="data_zip_address">
+											<div th:if="!*{#strings.isEmpty(sosakikanZip)}">
+												<span th:text="|〒*{sosakikanZip}|"></span>
+											</div>
+											<span th:if="!*{#strings.isEmpty(sosakikanAddress1)}" th:text="*{sosakikanAddress1}"></span>
+											<span th:if="!*{#strings.isEmpty(sosakikanAddress2)}" th:text="*{sosakikanAddress2}"></span>
+										</div>
+									</td>
+									<td>
+										<div>
+											<span class="h_tel">TEL：</span>
+											<span th:text="*{sosakikanTelNo}"></span>
+										</div>
+										<div>
+											<span class="h_fax">FAX：</span>
+											<span th:text="*{sosakikanFaxNo}"></span>
+										</div>
+									</td>
+									<td>
+										<span class="d-inline-block" data-toggle="tooltip" title="捜査機関を編集" data-trigger="hover">
+											<button class="btn btn-light btn-sm saveModal" data-toggle="modal" data-target="#sosakikanEditModal" th:data-id="*{sosakikanId}">
+												<i class="fas fa-edit mr-1"></i>
+												<span>編集</span>
+											</button>
+										</span>
+									</td>
+								</tr>
+							</tbody>
+						</table>
+					</div>
+					<th:block th:if="*{page.hasPrevious() || page.hasNext()}">
+						<div th:replace="common/pager::pager(page=*{page}, url=@{/user/sosakikanManagement/pageList})"></div>
+					</th:block>
+				</div>
+			</div>
+		</div>
+		<div th:replace="::modalTemplate(target='targetModalBody')"></div>
+	</div>
+
+	<!-- モーダルテンプレート -->
+	<div th:fragment="modalTemplate(target)" id="sosakikanEditModal" class="modal fade" tabindex="-1" role="dialog" aria-hidden="true" data-backdrop="static">
+		<div class="modal-dialog modal-dialog-centered" role="document">
+			<div class="modal-content">
+				<div th:class="${target}"></div>
+			</div>
+		</div>
+	</div>
+
+</body>
+</html>

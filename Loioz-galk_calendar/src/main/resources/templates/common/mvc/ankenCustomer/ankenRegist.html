@@ -1,0 +1,362 @@
+ <!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+<meta charset="utf-8" />
+</head>
+<body>
+
+<th:block>
+
+<!--/* 本処理は、モーダルを扱うFragment領域で定義する */-->
+<script type="text/javascript" th:fragment="ankenRegistModalFragmentObjJs" th:inline="javascript">
+	benzo.global.fragment.ankenRegistModalFragmentObj = {
+		<!--/* 呼び出し元で定義が可能な処理 */-->
+		setUpObj : {
+			
+			// 登録側
+			registAction: () => {
+				throw new Error('registActionのセットアップ処理がされていません');
+			},
+			initRenderRegistViewAction: () => {
+				throw new Error('編集エリアの初期レンダリング処理がセットアップされていません');
+			},
+			
+			// 検索側
+			searchRegistAction: () => {
+				throw new Error('searchRegistActionのセットアップ処理がされていません');
+			},
+			searchRenderPromise: () => {
+				throw new Error('searchRenderPromiseのセットアップ処理がされていません');
+			},
+			initRenderSearchViewAction: () => {
+				throw new Error('検索エリアの初期レンダリング処理がセットアップされていません');
+			},
+
+		},
+		
+		<!--/* フラグメントのパラメータに関連する処理 */-->
+		paramObj : {
+			
+			<!--/* モーダルの表示名 ※default値は顧客追加*/-->
+			modalNameLabel : '案件追加',
+
+			<!--/* フォームパラメータの取得処理 */-->
+			getRegistFormParams: (modal) => {
+				let formParams = modal.find("#ankenRegistModalForm").serializeArray();
+				return formParams;
+			},
+			
+			<!--/* 検索フォームパラメータの取得処理 */-->
+			getSearchFormParams: (modal) => {
+				let formParams = modal.find("#ankenSearchFragmentSearchForm").serializeArray();
+				return formParams;
+			} ,
+
+			<!--/* 検索結果フォームパラメータの取得処理 */-->
+			getSearchResultFormParams: (modal) => {
+				let formParams = modal.find("#ankenSearchFragmentResultForm").serializeArray();
+				return formParams;
+			},
+
+		},
+		
+		<!--/* 
+			本フラグメント以外でも扱う処理
+			基本的には書き換えを行わない。
+		*/-->
+		commonFn : {
+			
+			<!--/* モーダルが閉じたときに発火する処理 */-->
+			modalHiddenAction:(modal) => {
+				const $ankenRegistModalFragmentWrap = $(modal).find(".ankenRegistModalFragmentWrap");
+				$ankenRegistModalFragmentWrap.html("");
+			},
+		},
+	};
+</script>
+
+<!--/* 案件登録モーダル */-->
+<div id="ankenRegistModalFragment" th:fragment="ankenRegistModalFragment" th:object="${registFragmentInputForm}">
+	<script type="text/javascript" th:inline="javascript">
+		$(function() {
+			<!--/* 複数モーダルを表示するということはしない */-->
+			const $ankenRegistModalFragment = $("#ankenRegistModalFragment");
+			const $ankenRegistModal = $ankenRegistModalFragment.closest(".modal");
+			const $ankenRegistModalFragmentWrap = $ankenRegistModal.find(".ankenRegistModalFragmentWrap");
+			
+			commonSetUpElement();
+			let ajaxRunning = false;
+			
+			<!--/* 可変することでモーダルのサイズ変更クラスを外す */-->
+			$ankenRegistModal.find(".resizeToggleClassTarget").removeClass("modal_ankenSearch");
+			
+			<!--/* 
+				モーダルのラベル名を設定する 
+				※基本的に表示する内容等はレンダリング処理後は操作しない方針だが、モーダルの表示名は特別扱いする
+			*/-->
+			$ankenRegistModalFragment.find(".modalNameLabel").text(benzo.global.fragment.ankenRegistModalFragmentObj.paramObj.modalNameLabel);
+			
+			<!--/* 案件検索フラグメントの切り替え */-->
+			$ankenRegistModalFragment.on("click", ".renderSearchFragment", function() {
+				benzo.global.fragment.ankenRegistModalFragmentObj.setUpObj.initRenderSearchViewAction($(this));
+			});
+			
+			<!--/* 顧客の登録処理*/-->
+			$ankenRegistModalFragment.on("click", ".ankenRegist", function() {
+				benzo.global.fragment.ankenRegistModalFragmentObj.setUpObj.registAction($(this));
+			});
+			
+			<!--/* モーダルを閉じたときの処理 */-->
+			$ankenRegistModal.off("hidden.bs.modal.commonHiddenAction");
+			$ankenRegistModal.one("hidden.bs.modal.commonHiddenAction", function(){
+				benzo.global.fragment.ankenRegistModalFragmentObj.commonFn.modalHiddenAction($ankenRegistModal);
+			});
+		});
+	</script>
+	<!--/* ヘッダー */-->
+	<div class="modal-header">
+		<h2 class="modalheader_title modalNameLabel"></h2>
+	</div>
+	
+	<!--/* ボディ */-->
+	<div class="modal-body">
+		<div class="modal_description">
+			<p>新たに「案件情報を登録」し、対象顧客の「案件」に設定します。</p>
+			<p><a class="renderSearchFragment" href="javascript:void(0);">登録済みの案件から選択する<i class="far fa-arrow-alt-circle-right ml-2"></i></a></p>
+		</div>
+		<div th:replace="common/messageArea::jsMessageArea"></div>
+		<div class="modal_input_area">
+			<form id="ankenRegistModalForm" autocomplete="off"></form>
+			
+			<!--/* フォームオブジェクト */-->
+			<input type="hidden" form="ankenRegistModalForm" th:field="*{personId}">
+			<!-- 入力エリア -->
+			<div class="modal_input_area pb-0">
+				
+				<div class="form-row">
+					<div class="form-group col-md-12 mb-0">
+						<label class="input_parts_label">分野</label>
+						<span class="mark_equired">必須</span>
+					</div>
+					<div class="form-group col-md-12 mb-2">
+						<select class="form-control" form="ankenRegistModalForm" th:field="*{bunyaId}">
+							<option value="">-</option>
+							<option th:each="option: *{bunyaIdSelectOption}" th:value="${option.bunyaId}" th:label="${option.bunyaName}"></option>
+						</select>
+						<div th:if="*{#fields.hasErrors('bunyaId')}" th:errors="*{bunyaId}" class="error_mag_point">error</div>
+					</div>
+				</div>
+				
+			</div>
+			<!--/* フォームオブジェクト end */-->
+		</div>
+	</div>
+	
+	<!--/* フッター */-->
+	<div class="modal-footer">
+		<button type="button" class="btn btn-info ankenRegist"><i class="fas fa-check"></i><span>登録</span></button>
+		<button type="button" class="btn btn-light" data-dismiss="modal"><i class="fas fa-times"></i>閉じる</button>
+	</div>
+</div>
+
+<!--/* 案件検索モーダル */-->
+<div id="ankenSearchModalFragment" th:fragment="ankenSearchModalFragment" th:object="${searchFragmentViewForm}">
+		<script type="text/javascript" th:inline="javascript">
+		$(function() {
+			const $ankenSearchModalFragment = $("#ankenSearchModalFragment");
+			const $ankenSearchModal= $ankenSearchModalFragment.closest(".modal");
+			const $ankenSearchModalFragmentWrap = $ankenSearchModal.find(".ankenSearchModalFragmentWrap");
+			
+			commonSetUpElement();
+			let ajaxRunning = false;
+			
+			<!--/* 可変することでモーダルのサイズ変更クラスを付ける */-->
+			$ankenSearchModal.find(".resizeToggleClassTarget").addClass("modal_ankenSearch");
+			
+			<!--/* 
+				モーダルのラベル名を設定する 
+				※基本的に表示する内容等はレンダリング処理後は操作しない方針だが、モーダルの表示名は特別扱いする
+			*/-->
+			$ankenSearchModalFragment.find(".modalNameLabel").text(benzo.global.fragment.ankenRegistModalFragmentObj.paramObj.modalNameLabel);
+			
+			<!--/* 案件追加フラグメントの切り替え */-->
+			$ankenSearchModalFragment.on("click", ".renderRegistFragment", function() {
+				benzo.global.fragment.ankenRegistModalFragmentObj.setUpObj.initRenderRegistViewAction($(this));
+			});
+			
+			<!-- クリアボタン -->
+			$ankenSearchModalFragment.find(".clearButton").on('click',  function(){
+				$ankenSearchModalFragment.find('#ankenSearchFragmentSearchForm')
+					.find("input[type='text']").val('')
+					.end()
+					.find("select").val(":eq(0)");
+				searchFn();
+			});
+			
+			$ankenSearchModalFragment.find("#ankenSearchFragmentSearchForm select").on("change", function() {
+				searchFn();
+			});
+			
+			<!--/* 案件の検索ボタン */-->
+			$ankenSearchModalFragment.on("click", ".ankenCustomerSearch", function() {
+				searchFn();
+			});
+			
+			<!--/* ラジオボタン押下時に登録ボタンの有効化 */-->
+			$ankenSearchModalFragment.find(".ankenRadio").on("change", function() {
+				if($ankenSearchModalFragment.find(".ankenRadio:checked").length) {
+					$ankenSearchModalFragment.find(".searchResultRegist").attr("disabled", false);
+				}
+			});
+			
+			<!--/* 案件結果の登録ボタン */-->
+			$ankenSearchModalFragment.on("click", ".searchResultRegist", function() {
+				benzo.global.fragment.ankenRegistModalFragmentObj.setUpObj.searchRegistAction($(this));
+			});
+			
+			<!--/* モーダルを閉じたときの処理 */-->
+			$ankenSearchModal.off("hidden.bs.modal.commonHiddenAction");
+			$ankenSearchModal.one("hidden.bs.modal.commonHiddenAction", function(){
+				benzo.global.fragment.ankenRegistModalFragmentObj.commonFn.modalHiddenAction($ankenSearchModal);
+			});
+			
+			function searchFn() {
+				if (ajaxRunning) {
+					return false;
+				}
+				ajaxRunning = true;
+				Promise.resolve()
+					.then(() => benzo.global.fragment.ankenRegistModalFragmentObj.setUpObj.searchRenderPromise())
+					.catch((errors) => console.log(errors))
+					.finally(() => ajaxRunning = false);
+			}
+
+		});
+		</script>
+		<div>
+			<!--/* ヘッダー */-->
+			<div class="modal-header">
+				<h2 class="modalheader_title modalNameLabel"></h2>
+			</div>
+			<!--/* ボディ */-->
+			<div class="modal-body">
+				<div class="modal_description">
+					<p>「登録済みの案件」を対象顧客の「案件」に設定します。</p>
+					<p><a class="renderRegistFragment" href="javascript:void(0);"><i class="far fa-arrow-alt-circle-left mr-2"></i>新規追加に戻る</a></p>
+				</div>
+				<div th:replace="common/messageArea::jsMessageArea"></div>
+				<form id="ankenSearchFragmentSearchForm" autocomplete="off">
+					
+					<input type="hidden" th:name="OpenSearchResult" th:value="true" />
+					<input type="hidden" th:field="${searchFragmentSearchForm.personId}" />
+					<!-- メッセージ -->
+					<div class="list_filters_container mb-3 pb-1">
+						<!--/* 検索条件部 */-->
+						<fieldset>
+							<legend>検索条件</legend>
+							<div class="form-row">
+								<div class="form-group col-md-auto">
+									<label class="input_parts_label">名前</label>
+									<input type="text" class="form-control fcAddTextClear digit11" th:field="${searchFragmentSearchForm.name}" maxlength="30" placeholder="顧客名、相手方名...">
+								</div>
+								<div class="form-group col-md-auto">
+									<label class="input_parts_label">分野</label>
+									<select class="form-control digit8" th:field="${searchFragmentSearchForm.bunyaId}">
+										<option value="">-</option>
+										<option th:each="option: *{bunyaIdSelectOption}" th:value="${option.bunyaId}" th:label="${option.bunyaName}"></option>
+									</select>
+								</div>
+								<div class="form-group col-md-auto">
+									<label class="input_parts_label">案件ID</label>
+									<input type="text" class="form-control digit6 fcAddTextClear inputNumberOnly" th:field="${searchFragmentSearchForm.ankenId}" maxlength="10">
+								</div>
+								<div class="form-group col-md-auto">
+									<label class="input_parts_label">案件名</label>
+									<input type="text" class="form-control fcAddTextClear digit30" th:field="${searchFragmentSearchForm.ankenName}" maxlength="300">
+								</div>
+							</div>
+							<div class="form-row">
+								<div class="form-group col-md-12 text-center">
+									<button type="button" class="btn btn-dark ankenCustomerSearch">
+										<i class="fas fa-search"></i>検索
+									</button>
+									<button type="button" class="btn btn-light ml-3 clearButton">キャンセル</button>
+								</div>
+							</div>
+						</fieldset>
+					</div>
+				</form>
+				<!-- 検索条件領域 end -->
+				
+				<form id="ankenSearchFragmentResultForm" th:if="${searchFragmentSearchForm.OpenSearchResult}">
+					<input type="hidden" th:field="*{personId}">
+					<th:block th:if="*{overViewCntFlg}">
+						<div class="pl-2">
+							<div>最大表示件数は[[${T(jp.loioz.common.constant.CommonConstant).OVER_VIEW_LIMIT}]]件までです。</div>
+							該当データが見つからない場合は、再度条件を指定し検索してください。
+						</div>
+					</th:block>
+					<!-- 検索結果 -->
+					<div class="header_fixed_table_wrapper custeomerAnkenDialog mt-4">
+						<table class="table table_standard table-sm table_fixed table-hover">
+							<thead>
+								<tr>
+									<th class="col_5">選択</th>
+									<th class="col_5">案件ID</th>
+									<th class="col_10">分野</th>
+									<th class="col_20">案件名</th>
+									<th class="col_15">顧客名</th>
+									<th class="col_15">相手方</th>
+								</tr>
+							</thead>
+							<tbody>
+	<!--/*/ 			<th:block th:if="*{searchResultList.size() == 0}"> /*/-->
+								<tr>
+									<td colspan="6" class="no_data col_no_data" th:text="#{I00022}">MSG_I00022</td>
+								</tr>
+	<!--/*/ 			</th:block> /*/-->
+								<tr th:each=" anken : *{searchResultList}" data-click-sync-for-descendants=".ankenRadio">
+									<!-- 選択ラジオボタン -->
+									<td>
+										<label class="radio_btn no_text">
+											<input type="radio" class="radio_input ankenRadio" name="ankenId" th:value="${anken.ankenId.asLong()}">
+											<span class="radio_txt"></span>
+										</label>
+									</td>
+									<!--/* 案件ID */-->
+									<td th:text="${anken.ankenId.asLong()}"/>
+									<!--/* 分野 */-->
+									<td class="char_ellipsis" th:text="${anken.bunya}"/>
+									<!--/* 案件名 */-->
+									<td data-boundary="window" data-container="#ankenSearchModalFragment" data-toggle="tooltip" data-trigger="hover" th:data-original-title="${anken.ankenName}">
+										<div class="char_ellipsis" th:text="${#strings.isEmpty(anken.ankenName)} ? '(案件名未入力)' : ${anken.ankenName}">案件名</div>
+									</td>
+									<!-- 顧客名 -->
+									<td class="char_ellipsis" data-boundary="window" data-container="#ankenSearchModalFragment" data-toggle="tooltip" data-trigger="hover" th:data-original-title="${anken.customerName}">
+										<span th:text="${anken.customerName}"></span>
+									</td>
+									<!-- 相手方 -->
+									<td class="char_ellipsis" data-boundary="window" data-container="#ankenSearchModalFragment" data-toggle="tooltip" data-trigger="hover" th:data-original-title="${anken.getAitegataDispName()}">
+										<span th:text="${anken.getAitegataDispName()}"></span>
+									</td>
+								</tr>
+							</tbody>
+						</table>
+					</div>
+					<!-- 検索結果 end -->
+				</form>
+				
+			</div>
+			
+			<!--/* フッター */-->
+			<div class="modal-footer">
+				<button type="button" class="btn btn-info searchResultRegist" disabled><i class="fas fa-check"></i><span>登録</span></button>
+				<button type="button" class="btn btn-light" data-dismiss="modal"><i class="fas fa-times"></i>閉じる</button>
+			</div>
+		</div>
+	</div>
+	
+</th:block>
+
+</body>
+</html>

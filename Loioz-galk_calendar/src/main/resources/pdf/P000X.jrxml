@@ -1,0 +1,205 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Created with Jaspersoft Studio version 6.19.1.final using JasperReports Library version 6.19.1-867c00bf88cd4d784d404379d6c05e1b419e8a4c  -->
+<jasperReport xmlns="http://jasperreports.sourceforge.net/jasperreports" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://jasperreports.sourceforge.net/jasperreports http://jasperreports.sourceforge.net/xsd/jasperreport.xsd" name="P0001" pageWidth="595" pageHeight="842" columnWidth="555" leftMargin="20" rightMargin="20" topMargin="20" bottomMargin="20" uuid="c69df9b9-b29b-46a8-981c-4eb33ad794d4">
+	<property name="com.jaspersoft.studio.data.defaultdataadapter" value="One Empty Record"/>
+	<style name="nomalText" fontSize="12"/>
+	<style name="titleStyle" hTextAlign="Center" vTextAlign="Middle" fontSize="16" isBold="true"/>
+	<style name="defaultStype" isDefault="true" fontName="BIZUDP明朝"/>
+	<subDataset name="soufuList" uuid="1780d131-db34-416d-b176-3195617f7221">
+		<property name="com.jaspersoft.studio.data.defaultdataadapter" value="New Data Adapter"/>
+		<queryString>
+			<![CDATA[]]>
+		</queryString>
+		<field name="fileName" class="java.lang.String"/>
+		<field name="fileCount" class="java.lang.String"/>
+		<group name="Group1" isReprintHeaderOnEachPage="true"/>
+	</subDataset>
+	<parameter name="zipCode" class="java.lang.String"/>
+	<parameter name="address1" class="java.lang.String"/>
+	<parameter name="address2" class="java.lang.String"/>
+	<parameter name="name1" class="java.lang.String"/>
+	<parameter name="name2" class="java.lang.String"/>
+	<parameter name="outputDate" class="java.lang.String"/>
+	<parameter name="tenantZipCode" class="java.lang.String"/>
+	<parameter name="tenantAddress1" class="java.lang.String"/>
+	<parameter name="tenantAddress2" class="java.lang.String"/>
+	<parameter name="tenantName" class="java.lang.String"/>
+	<parameter name="tenantTelNo" class="java.lang.String"/>
+	<parameter name="tenantFaxNo" class="java.lang.String"/>
+	<parameter name="soufushoList" class="java.util.List"/>
+	<variable name="tabSet" class="java.lang.String">
+		<variableExpression><![CDATA["&#09;&#09;&#09;&#09;&#09;"]]></variableExpression>
+		<initialValueExpression><![CDATA["&#09;&#09;&#09;&#09;&#09;"]]></initialValueExpression>
+	</variable>
+	<title>
+		<band height="40">
+			<staticText>
+				<reportElement x="0" y="0" width="555" height="40" uuid="bef0ca3d-2ff3-4cdc-871f-1c3a97a9e94d"/>
+				<textElement textAlignment="Center" verticalAlignment="Middle">
+					<font size="20" isBold="true"/>
+				</textElement>
+				<text><![CDATA[請求書]]></text>
+			</staticText>
+		</band>
+	</title>
+	<detail>
+		<band height="280" splitType="Stretch">
+			<textField textAdjust="StretchHeight" isBlankWhenNull="true">
+				<reportElement style="nomalText" positionType="Float" x="0" y="0" width="280" height="20" uuid="6f07afee-c97f-47d0-8ec7-9e0923e58158"/>
+				<textFieldExpression><![CDATA[$P{zipCode}]]></textFieldExpression>
+			</textField>
+			<textField textAdjust="StretchHeight" isBlankWhenNull="true">
+				<reportElement style="nomalText" positionType="Float" x="0" y="20" width="280" height="20" uuid="6bb39eb9-dc92-432b-be5a-2c85d31aa4e6"/>
+				<textFieldExpression><![CDATA[$P{address1}]]></textFieldExpression>
+			</textField>
+			<textField textAdjust="StretchHeight" isBlankWhenNull="true">
+				<reportElement style="nomalText" positionType="Float" x="0" y="40" width="280" height="20" uuid="11e54be3-ee11-4898-8dbc-2c9bb9233782"/>
+				<textFieldExpression><![CDATA[$P{address2}]]></textFieldExpression>
+			</textField>
+			<textField textAdjust="StretchHeight" isBlankWhenNull="true">
+				<reportElement style="nomalText" positionType="Float" x="0" y="60" width="280" height="20" uuid="2f4f6043-81f5-4949-a7d0-535fbfd4dbdf"/>
+				<textFieldExpression><![CDATA[$P{name1}]]></textFieldExpression>
+			</textField>
+			<textField textAdjust="StretchHeight" isBlankWhenNull="true">
+				<reportElement style="nomalText" positionType="Float" x="0" y="80" width="280" height="20" uuid="f4aa17b1-dc42-4e46-98e6-3a13e6a38fcc"/>
+				<textFieldExpression><![CDATA[$P{name2}]]></textFieldExpression>
+			</textField>
+		</band>
+		<band height="283">
+			<staticText>
+				<reportElement style="titleStyle" x="0" y="0" width="555" height="40" uuid="a02a9a37-80ff-48d7-a9a1-722e9a2b213b"/>
+				<text><![CDATA[書類送付の件]]></text>
+			</staticText>
+			<textField isBlankWhenNull="true">
+				<reportElement style="nomalText" x="275" y="40" width="280" height="20" uuid="43dcb961-194b-4522-817c-5a4418929bfd"/>
+				<textElement textAlignment="Right"/>
+				<textFieldExpression><![CDATA[$P{outputDate}]]></textFieldExpression>
+			</textField>
+			<textField isBlankWhenNull="true">
+				<reportElement style="nomalText" x="275" y="60" width="280" height="20" uuid="7c4d91b0-5b8b-4ce8-8735-4c1b53936549"/>
+				<textFieldExpression><![CDATA[$P{tenantZipCode}]]></textFieldExpression>
+			</textField>
+			<textField isBlankWhenNull="true">
+				<reportElement style="nomalText" x="275" y="80" width="280" height="20" uuid="eff1130b-d8f8-4603-8817-91f4dd63167f"/>
+				<textFieldExpression><![CDATA[$P{tenantAddress1}]]></textFieldExpression>
+			</textField>
+			<textField isBlankWhenNull="true">
+				<reportElement style="nomalText" x="275" y="100" width="280" height="20" uuid="4ca12b37-8698-4685-adc9-a576a1736167"/>
+				<textFieldExpression><![CDATA[$P{tenantAddress2}]]></textFieldExpression>
+			</textField>
+			<textField isBlankWhenNull="true">
+				<reportElement style="nomalText" x="275" y="120" width="280" height="20" uuid="05bf52d5-41a9-474a-b348-5bcb914fc0bc"/>
+				<textFieldExpression><![CDATA[$P{tenantName}]]></textFieldExpression>
+			</textField>
+			<textField isBlankWhenNull="true">
+				<reportElement style="nomalText" x="330" y="140" width="225" height="20" uuid="2938b4d9-7357-4886-a2fc-05ac6c9b000e"/>
+				<textFieldExpression><![CDATA[$P{tenantTelNo}]]></textFieldExpression>
+			</textField>
+			<textField isBlankWhenNull="true">
+				<reportElement style="nomalText" x="330" y="160" width="225" height="20" uuid="a3524b42-6963-49f7-8d5a-1d3f48cb0d3c"/>
+				<textFieldExpression><![CDATA[$P{tenantFaxNo}]]></textFieldExpression>
+			</textField>
+			<textField>
+				<reportElement style="nomalText" x="275" y="140" width="55" height="20" uuid="a03cb460-93d7-414c-bb05-cbfc2ce258a6"/>
+				<box rightPadding="10"/>
+				<textElement textAlignment="Justified" markup="html"/>
+				<textFieldExpression><![CDATA["電 話"+$V{tabSet}]]></textFieldExpression>
+			</textField>
+			<textField>
+				<reportElement style="nomalText" x="275" y="160" width="55" height="20" uuid="0a6b131f-2e2e-4eae-be09-ef6f54a25524"/>
+				<box rightPadding="10"/>
+				<textElement textAlignment="Justified" markup="html"/>
+				<textFieldExpression><![CDATA["F A X"+$V{tabSet}]]></textFieldExpression>
+			</textField>
+			<staticText>
+				<reportElement style="nomalText" x="0" y="200" width="555" height="20" uuid="146158a3-48ab-49da-afb7-6f9ff81196c2"/>
+				<text><![CDATA[　拝啓　時下ますますご清栄のこととお喜び申し上げます。]]></text>
+			</staticText>
+			<staticText>
+				<reportElement style="nomalText" x="0" y="220" width="555" height="20" uuid="f86abdfa-6c89-4efc-ad89-9bca059bdc87"/>
+				<text><![CDATA[　 さて,次の書類を送付いたしますので,ご査収くださいますようお願い申し上げます。]]></text>
+			</staticText>
+			<staticText>
+				<reportElement style="nomalText" x="0" y="240" width="555" height="20" uuid="3f0e8bbb-3bff-4661-b114-476eda43efcb"/>
+				<textElement textAlignment="Right"/>
+				<text><![CDATA[敬具]]></text>
+			</staticText>
+		</band>
+		<band height="50">
+			<componentElement>
+				<reportElement x="77" y="0" width="400" height="50" isPrintWhenDetailOverflows="true" uuid="ce7e8bc8-9914-4380-9423-0394214aa543">
+					<property name="com.jaspersoft.studio.layout" value="com.jaspersoft.studio.editor.layout.VerticalRowLayout"/>
+					<property name="com.jaspersoft.studio.table.style.table_header" value="Table_TH"/>
+					<property name="com.jaspersoft.studio.table.style.column_header" value="Table_CH"/>
+					<property name="com.jaspersoft.studio.table.style.detail" value="Table_TD"/>
+				</reportElement>
+				<jr:table xmlns:jr="http://jasperreports.sourceforge.net/jasperreports/components" xsi:schemaLocation="http://jasperreports.sourceforge.net/jasperreports/components http://jasperreports.sourceforge.net/xsd/components.xsd">
+					<datasetRun subDataset="soufuList" uuid="534b2974-ef12-4dc5-8949-6f7d06734255">
+						<dataSourceExpression><![CDATA[new net.sf.jasperreports.engine.data.JRBeanCollectionDataSource($P{soufushoList})]]></dataSourceExpression>
+					</datasetRun>
+					<jr:column width="40" uuid="23bb01ba-adc7-4377-9ffc-4ff378086494">
+						<property name="com.jaspersoft.studio.components.table.model.column.name" value="Column1"/>
+						<jr:groupHeader groupName="Group1">
+							<jr:cell height="30" rowSpan="1">
+								<staticText>
+									<reportElement x="0" y="0" width="40" height="30" uuid="cc135fd1-350b-41ac-9597-8dc907735b9b"/>
+									<text><![CDATA[No]]></text>
+								</staticText>
+							</jr:cell>
+						</jr:groupHeader>
+						<jr:detailCell height="20">
+							<property name="com.jaspersoft.studio.unit.height" value="px"/>
+							<textField>
+								<reportElement style="nomalText" x="0" y="0" width="40" height="20" uuid="5396b078-b356-49de-88b6-912edbb62993"/>
+								<textFieldExpression><![CDATA[$V{REPORT_COUNT}+"."]]></textFieldExpression>
+							</textField>
+						</jr:detailCell>
+					</jr:column>
+					<jr:column width="260" uuid="fe2d52b8-23af-4ffc-9204-f3718fdacba2">
+						<property name="com.jaspersoft.studio.components.table.model.column.name" value="Column2"/>
+						<jr:groupHeader groupName="Group1">
+							<jr:cell height="30" rowSpan="1">
+								<staticText>
+									<reportElement x="0" y="0" width="260" height="30" uuid="a2de36de-7541-42e1-9b6b-cdf7bd30a9fa"/>
+									<text><![CDATA[あいうえお]]></text>
+								</staticText>
+							</jr:cell>
+						</jr:groupHeader>
+						<jr:detailCell height="20">
+							<textField>
+								<reportElement style="nomalText" x="0" y="0" width="260" height="20" uuid="0364124e-70e8-495a-90ab-de45ef830c2f"/>
+								<textFieldExpression><![CDATA[$F{fileName}]]></textFieldExpression>
+							</textField>
+						</jr:detailCell>
+					</jr:column>
+					<jr:column width="100" uuid="147ec8cb-584d-4d19-a5b9-141729af3761">
+						<property name="com.jaspersoft.studio.components.table.model.column.name" value="Column3"/>
+						<jr:groupHeader groupName="Group1">
+							<jr:cell height="30" rowSpan="1">
+								<staticText>
+									<reportElement x="0" y="0" width="100" height="30" uuid="23269868-c517-4cf0-b15e-e40dcd55b4ae"/>
+									<text><![CDATA[Count]]></text>
+								</staticText>
+							</jr:cell>
+						</jr:groupHeader>
+						<jr:detailCell height="20">
+							<textField>
+								<reportElement style="nomalText" x="0" y="0" width="100" height="20" uuid="3f2cce9d-c4ef-479c-a7dc-a9f6b6991354"/>
+								<textFieldExpression><![CDATA[$F{fileCount}]]></textFieldExpression>
+							</textField>
+						</jr:detailCell>
+					</jr:column>
+				</jr:table>
+			</componentElement>
+		</band>
+	</detail>
+	<lastPageFooter>
+		<band height="21">
+			<staticText>
+				<reportElement style="nomalText" x="0" y="0" width="555" height="21" uuid="35b74c87-efd8-49b2-9089-eb81c9ac7e20"/>
+				<textElement textAlignment="Right"/>
+				<text><![CDATA[以上]]></text>
+			</staticText>
+		</band>
+	</lastPageFooter>
+</jasperReport>

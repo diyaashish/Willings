@@ -1,0 +1,160 @@
+ <!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+<meta charset="utf-8" />
+</head>
+<body>
+<!--/* 本処理は、モーダルを扱うFragment領域で定義する */-->
+<script type="text/javascript" th:inline="javascript" th:fragment="confirmModalFragmentJs">
+	benzo.global.fragment.confirmModalFragmentObj = {
+		<!--/* 呼び出し元で定義が可能な処理 */-->
+		setUpObj : {
+			<!--/* はいボタン押下 */-->
+			okAction: () => {
+				throw new Error('okActionのセットアップ処理がされていません');
+			},
+			
+			<!--/* いいえボタン押下 */-->
+			noAction: () => {
+				throw new Error('noActionのセットアップ処理がされていません');
+			},
+			
+			<!--/* キャンセルボタン押下 */-->
+			cancelAction: () => {
+			},
+		},
+		
+		<!--/* フラグメントのパラメータに関連する処理 */-->
+		paramObj : {
+			confirmTitle : "確認",
+			message : "",
+			okBtnName : "はい",
+			noBtnName : "いいえ",
+			cancelBtnName : "キャンセル",
+			okBtnDispFlg : true,
+			noBtnDispFlg : true,
+			cancelBtnDispFlg : true,
+		},
+		
+		<!--/* 
+			本フラグメント以外でも扱う処理
+			基本的には書き換えを行わない。
+		*/-->
+		commonFn : {
+			
+			<!--/* モーダル閉じる処理をPromise化 */-->
+			closeModalPromise: function(modal) {
+				return new Promise((resolve) => {
+					$(modal).one('hidden.bs.modal', function() {
+						resolve();
+					});
+					$(modal).modal("hide");
+				});
+			},
+			
+		},
+	};
+</script>
+<!--/* 本処理は、モーダルを扱うFragment領域で定義する end */-->
+
+<!--/* 確認モーダル */-->
+<div th:id="${uuid}" class="confirmModalFragment" th:fragment="confirmModalFragment" th:with="uuid=${T(java.util.UUID).randomUUID().toString()}">
+	<script type="text/javascript" th:inline="javascript">
+		$(function() {
+			
+			<!--/* モーダル閉じる時設定 */-->
+			const confirmModalFragment = $("#" + /*[[${uuid}]]*/"id");
+			const confirmModal = confirmModalFragment.closest(".modal");
+			const confirmModalFragmentWrap = confirmModal.find(".confirmModalFragmentWrap");
+			
+			<!--/* モーダルを表示するときの処理 */-->
+			confirmModal.on('show.bs.modal', function (e) {
+				<!--/* タイトルの設定 */-->
+				confirmModalFragment.find(".confirmTitle").text(benzo.global.fragment.confirmModalFragmentObj.paramObj.confirmTitle);
+				<!--/* メッセージの設定 */-->
+				confirmModalFragment.find(".message").text(benzo.global.fragment.confirmModalFragmentObj.paramObj.message);
+				<!--/* okボタンの設定 */-->
+				confirmModalFragment.find(".okBtnLabel").text(benzo.global.fragment.confirmModalFragmentObj.paramObj.okBtnName);
+				if (benzo.global.fragment.confirmModalFragmentObj.paramObj.okBtnDispFlg === false) {
+					confirmModalFragment.find(".okBtn").addClass('hidden');
+				}
+				<!--/* noボタンの設定 */-->
+				confirmModalFragment.find(".noBtnLabel").text(benzo.global.fragment.confirmModalFragmentObj.paramObj.noBtnName);
+				if (benzo.global.fragment.confirmModalFragmentObj.paramObj.noBtnDispFlg === false) {
+					confirmModalFragment.find(".noBtn").addClass('hidden');
+				}
+				<!--/* キャンセルボタンの設定 */-->
+				confirmModalFragment.find(".cancelBtnLabel").text(benzo.global.fragment.confirmModalFragmentObj.paramObj.cancelBtnName);
+				if (benzo.global.fragment.confirmModalFragmentObj.paramObj.cancelBtnDispFlg === false) {
+					confirmModalFragment.find(".cancelBtn").addClass('hidden');
+				}
+			});
+			
+			<!--/* 「はい」ボタン押下処理 */-->
+			confirmModalFragment.on("click", ".ok", function(e) {
+				benzo.global.fragment.confirmModalFragmentObj.setUpObj.okAction(e);
+			});
+			
+			<!--/* 「いいえ」ボタン押下処理 */-->
+			confirmModalFragment.on("click", ".no", function(e) {
+				benzo.global.fragment.confirmModalFragmentObj.setUpObj.noAction(e);
+			});
+			
+			<!--/* 「キャンセル」ボタン押下処理 */-->
+			confirmModalFragment.on("click", ".cancel", function(e) {
+				benzo.global.fragment.confirmModalFragmentObj.setUpObj.cancelAction(e);
+			});
+			
+			<!--/* モーダルを閉じたときの処理 */-->
+			confirmModal.on("hide.bs.modal", function(){
+				benzo.global.fragment.confirmModalFragmentObj.paramObj.confirmTitle = "確認"
+				benzo.global.fragment.confirmModalFragmentObj.paramObj.message = ""
+				benzo.global.fragment.confirmModalFragmentObj.paramObj.okBtnDispFlg = true;
+				benzo.global.fragment.confirmModalFragmentObj.paramObj.noBtnDispFlg = true;
+				benzo.global.fragment.confirmModalFragmentObj.paramObj.cancelBtnDispFlg = true;
+				confirmModalFragment.find(".okBtn").removeClass('hidden');
+				confirmModalFragment.find(".noBtn").removeClass('hidden');
+				confirmModalFragment.find(".cancelBtn").removeClass('hidden');
+				benzo.global.fragment.confirmModalFragmentObj.paramObj.okBtnName = "はい";
+				benzo.global.fragment.confirmModalFragmentObj.paramObj.noBtnName = "いいえ";
+				benzo.global.fragment.confirmModalFragmentObj.paramObj.cancelBtnName = "キャンセル";
+				benzo.global.fragment.confirmModalFragmentObj.setUpObj.okAction = (e) => {
+					throw new Error('okActionのセットアップ処理がされていません');
+				};
+				
+				benzo.global.fragment.confirmModalFragmentObj.setUpObj.noAction = (e) => {
+					throw new Error('noActionのセットアップ処理がされていません');
+				};
+				
+				benzo.global.fragment.confirmModalFragmentObj.setUpObj.cancelAction = (e) => {
+					<!--/* 処理無し */-->
+				};
+			});
+		});
+	</script>
+	
+	<div class="modal-header">
+		<div class="confirm_title" id="confirmTitle">
+			<i class="fas fa-exclamation-circle mr-2 fc_title"></i><span class="fc_title confirmTitle">確認</span>
+		</div>
+	</div>
+	<div class="modal-body">
+		<div th:replace="common/messageArea::jsMessageArea"></div>
+		<div class="confirm_msg">
+			<span class="message"></span>
+		</div>
+	</div>
+	<div class="modal-footer">
+		<div class="confirm_btn_left">
+			<button type="button" class="btn btn-info okBtn ok"><span class="okBtnLabel">はい</span></button>
+			<button type="button" class="btn btn-info noBtn no mt-3"><span class="noBtnLabel">いいえ</span></button>
+		</div>
+		<div class="confirm_btn_right cancelBtn">
+			<button type="button" class="btn btn-light icon_btn_close cancel" data-dismiss="modal" name="cancel"><span class="cancelBtnLabel">キャンセル</span></button>
+		</div>
+	</div>
+	
+</div>
+
+</body>
+</html>

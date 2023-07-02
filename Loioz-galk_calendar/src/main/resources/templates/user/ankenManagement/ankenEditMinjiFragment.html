@@ -1,0 +1,2896 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+	<meta charset="utf-8" />
+</head>
+<body>
+
+<!--/* 案件（民事）-基本情報表示ブロック */-->
+<div th:fragment="ankenBasicViewFragment(ankenBasicViewForm)" id="ankenBasicViewFragment">
+
+	<!--/* Script */-->
+	<script th:inline="javascript">
+	$(function() {
+			
+		// 共有の要素セットアップ処理
+		commonSetUpElement();
+		
+		const ankenBasicViewFragment = $("#ankenBasicViewFragment");
+		let ajaxRunning = false;
+		
+		<!--/* 案件編集エリアの取得 */-->
+		ankenBasicViewFragment.find('.ankenEdit').on("click", function() {
+				
+			// 2重押下防止
+			if(ajaxRunning){
+				return false;
+			}
+			
+			ajaxRunning = true;
+			$.ajax({
+				url : /*[[@{/user/ankenMinjiManagement/{ankenId}/getAnkenBasicInputForm(ankenId=${ankenBasicViewForm.ankenId.asLong()})}]]*/"",
+				type : "GET",
+				dataType: 'html',
+			})
+			.done(function(data, status, jqXHR) {
+				if (isAjaxProcSuccess(jqXHR)) {
+					// 親HTMLのID
+					$('#ankenBasicFragmentWrap').html(data);
+					
+				} else {
+					// 処理失敗
+					const errorMsg = getAjaxProcResutlMessage(jqXHR);
+					showErrorMessageForJs(errorMsg);
+				}
+			})
+			.fail(function(jqXHR, status, errorThrown) {
+				showErrorMessageForJs(/*[[#{E00091}]]*/ "error");
+			})
+			.always(function(){
+				ajaxRunning = false;
+			});
+		});
+		
+		ankenBasicViewFragment.find('#openDeleteAnkenModal').on("click", function() {
+			// 2重押下防止
+			if(ajaxRunning){
+				return false;
+			}
+			ajaxRunning = true;
+			$.ajax({
+				url : /*[[@{/user/ankenManagement/openAnkenDeleteModal}]]*/"",
+				type : "GET",
+				data : {"ankenId" : /*[[${ankenBasicViewForm.ankenId.asLong()}]]*/""},
+				dataType: 'html',
+			})
+			.done(function(data, status, jqXHR) {
+				if (isAjaxProcSuccess(jqXHR)) {
+					// 親HTMLのID
+					$('#ankenDeleteModalBody').html(data);
+					$("#ankenDeleteModal").modal("show");
+				} else {
+					// 処理失敗
+					const errorMsg = getAjaxProcResutlMessage(jqXHR);
+					showErrorMessageForJs(errorMsg);
+				}
+			})
+			.fail(function(jqXHR, status, errorThrown) {
+				showErrorMessageForJs(/*[[#{E00091}]]*/ "error");
+			})
+			.always(function(){
+				ajaxRunning = false;
+			});
+		});
+		
+	});
+	</script>
+
+	<div class="case_edit_top">
+		<div class="case_edit_top__info">
+			<span class="main_view_title">案件情報</span>
+		</div>
+		<div class="case_edit_top__btn">
+			<!--/* 編集ボタン */-->
+			<span>
+				<button type="button" class="btn btn-primary btn_icon_only ankenEdit"
+					data-boundary="window" data-container="#ankenBasicViewFragment" data-toggle="tooltip" data-trigger="hover" title="案件情報を編集">
+					<i class="fas fa-edit mr-2"></i>編集
+				</button>
+			</span>
+			<!--/* 案件削除ボタン */-->
+			<span>
+				<button type="button" id="openDeleteAnkenModal" class="btn btn-light btn_icon_only"
+					data-boundary="window" data-container="#ankenBasicViewFragment" data-toggle="tooltip" data-trigger="hover" title="案件削除">
+					<i class="far fa-trash-alt"></i>
+				</button>
+			</span>
+			
+		<th:block th:with="saibanAddable = ${ankenBasicViewForm.saibanCount < T(jp.loioz.common.constant.CommonConstant).SAIBAN_ADD_LIMIT}">
+			<th:block th:if="${saibanAddable}">
+				<a href="javascript:void(0);" class="btn btn-sm btn-primary pr-3 ml-5" th:href="@{/user/saibanManagement/{ankenId}/new/(ankenId=${ankenBasicViewForm.ankenId.asLong()})}">
+					<i class="fas fa-plus"></i>裁判（民事）追加</a>
+			</th:block>
+			<span class="warning_label" th:if="${!saibanAddable}">
+				<i class="fas fa-exclamation-triangle mr-2"></i>裁判は登録上限に達したため、追加できません。
+			</span>
+		</th:block>
+		</div>
+	</div>
+		
+	<div class="case_edit_split">
+		<div class="case_edit_split__left">
+			<!--/* 案件名 */-->
+			<div class="case_detail">
+				<div class="case_detail__image">
+					<div th:class="|case_image_wrapper${ankenBasicViewForm.ankenType?.cd}|">
+						<!--/* 案件区分 */-->
+						<img class="img-thumbnail person_case_img"
+							th:src="@{/img/case_type{typeCd}.svg?{ver}(typeCd=${ankenBasicViewForm.ankenType?.cd}, ver=${@environment.getProperty('app.version')})}">
+					</div>
+				</div>
+				<div class="case_detail__case_name">
+					<!--/* 分野 */-->
+					<div class="fs13">
+	<!--/* 案件区分 */-->
+	<!--/* 事務所 */-->
+	<th:block th:if="${T(jp.loioz.common.constant.CommonConstant$AnkenType).JIMUSHO.equals(ankenBasicViewForm.ankenType)}">
+						<i class="far fa-building"></i>
+	</th:block>
+	<!--/* 個人 */-->
+	<th:block th:if="${T(jp.loioz.common.constant.CommonConstant$AnkenType).KOJIN.equals(ankenBasicViewForm.ankenType)}">
+						<i class="fas fa-briefcase"></i>
+	</th:block>
+						<!--/* 案件種別 */-->
+						<span th:text="${ankenBasicViewForm.ankenType?.val}"></span>
+						<span>／</span>
+						<span th:text="${ankenBasicViewForm.getBunya().getVal()}">分野</span>
+					</div>
+					<!--/* 案件名 */-->
+					<span class="fs30 fw600 lh1_4" th:text="${#strings.isEmpty(ankenBasicViewForm.ankenName)} ? '(案件名未入力)' : ${ankenBasicViewForm.ankenName}">案件名</span>
+					<div>
+						<!--/* 案件ID */-->
+						<span class="app_id_link case_link mr-3" th:text="|案件ID：${ankenBasicViewForm.ankenId.asLong()}|">案件ID</span>
+						<!--/* 登録日 */-->
+						<span class="mr-3 badge badge_square badge_tag">
+							<i class="far fa-calendar-check fc_title mr-2"></i>登録日：<span th:text ="*{ankenBasicViewForm.ankenCreatedDate == null ? '' : ankenBasicViewForm.ankenCreatedDate}"></span>
+						</span>
+						
+					</div>
+				</div>
+			</div>
+			<!--/* 案件名 end */-->
+			
+			<!--/* 売上計上先、担当弁護士、担当事務 */-->
+			<div class="case_person_contact">
+				<!--/* 売上計上先 */-->
+				<div class="case_person_contact__col1">
+					<span class="badge badge-pill data_label badge_gray badge_square px-3">売上計上先</span>
+					<div class="data_label_value">
+						<div th:if="*{ankenBasicViewForm.salesOwner.size() == 0}">
+							(未設定)
+						</div>
+						<div class="case_person_contact__data">
+<!--/*/				<th:block th:each="salesOwner : ${ankenBasicViewForm.salesOwner}"> /*/-->
+							<div class="case_account">
+								<i class="fas fa-user-circle" th:style="|color : ${salesOwner.accountColor};|"></i>
+								<div class="person_contact_wrapper mr-3">
+									<div class="person_contact__name char_ellipsis">
+										<span th:text="${salesOwner.accountName}"></span>
+									</div>
+								</div>
+							</div>
+<!--/*/				</th:block> /*/-->
+						</div>
+					</div>
+				</div>
+				<!--/* 売上計上先 end */-->
+				
+				<!--/* 担当者 */-->
+				<div class="case_person_contact__col2">
+					<span class="badge badge-pill data_label badge_gray badge_square">弁護士</span>
+					<div class="data_label_value">
+						<div th:if="*{ankenBasicViewForm.tantoLaywer.size() == 0}">
+							(未設定)
+						</div>
+						<div class="case_person_contact__data">
+							<!--/* 弁護士 */-->
+<!--/*/					<th:block th:each="tantoLaywer : ${ankenBasicViewForm.tantoLaywer}"> /*/-->
+							<div class="case_account">
+								<i class="fas fa-user-circle" th:style="|color : ${tantoLaywer.accountColor};|"></i>
+								<div class="person_contact_wrapper mr-3">
+									<div class="person_contact__name char_ellipsis">
+										<span th:if="${tantoLaywer.Main}" class="mr-1 fs12 fc_sub">(主担当)</span>
+										<span th:text="${tantoLaywer.accountName}"></span>
+									</div>
+								</div>
+							</div>
+<!--/*/					</th:block> /*/-->
+							<!--/* 弁護士 end */-->
+						</div>
+					</div>
+				</div>
+				<div class="case_person_contact__col2">
+					<span class="badge badge-pill data_label badge_gray badge_square">事務職員</span>
+					<div class="data_label_value">
+						<div th:if="*{ankenBasicViewForm.tantoJimu.size() == 0}">
+							(未設定)
+						</div>
+						<div class="case_person_contact__data">
+							<!--/* 事務 */-->
+<!--/*/					<th:block th:each="tantoJimu : ${ankenBasicViewForm.tantoJimu}"> /*/-->
+							<div class="case_account">
+								<i class="fas fa-user-circle" th:style="|color : ${tantoJimu.accountColor};|"></i>
+								<div class="person_contact_wrapper mr-3">
+									<div class="person_contact__name char_ellipsis">
+										<span th:if="${tantoJimu.Main}" class="mr-1 fs12 fc_sub">(主担当)</span>
+										<span th:text="${tantoJimu.accountName}"></span>
+									</div>
+								</div>
+							</div>
+<!--/*/					</th:block> /*/-->
+							<!--/* 事務 end */-->
+						</div>
+					</div>
+					<!--/* 担当者 end */-->
+					
+				</div>
+			</div>
+			<!--/* 売上計上先、担当弁護士、担当事務 end */-->
+			
+		</div>
+		<div class="case_edit_split__right">
+			<!--/* 事案概要・方針 */-->
+			<div class="pt-3">
+				<span class="badge badge-pill data_label badge_gray badge_square px-3">事案概要・方針</span>
+				<div class="biko_detail data_label_value mt-0"
+					myth:nl2br="${#strings.isEmpty(ankenBasicViewForm.jianSummary)} ? '(記載なし)' : ${ankenBasicViewForm.jianSummary}">
+				</div>
+			</div>
+		</div>
+	</div>
+	
+	<!--/* 案件削除モーダル */-->
+	<div id="ankenDeleteModal" class="modal fade" tabindex="-1" role="dialog" aria-hidden="true" data-backdrop="static">
+		<div class="modal-dialog modal-dialog-centered modal_deleteSelect_simple" role="document">
+			<div class="modal-content">
+				<div id="ankenDeleteModalBody"></div>
+			</div>
+		</div>
+	</div>
+	
+</div>
+
+<!--/* 案件画面基本情報編集入力部品 */-->
+<div th:fragment="ankenBasicInputFragment(ankenBasicInputForm)" id="ankenBasicInputFragment">
+
+	<!--/* Script */-->
+	<script th:inline="javascript">
+	$(function() {
+		
+		// 共有の要素セットアップ処理
+		commonSetUpElement();
+		gropingSelectOptions("salesOwner-select", "tantoLawyer-select", "tantoJimu-select");
+		$(".addInputItem").each(function() {
+			hideIfNoTarget(this);
+			showMainTanto(this);
+		});
+		
+		const ankenBasicInputFragment = $('#ankenBasicInputFragment');
+		let ajaxRunning = false;
+		
+		<!--/* 案件編集エリアの取得ロジック */-->
+		function getAnkenBasicView() {
+			return new Promise((resolve,reject) => {
+				$.ajax({
+					url : /*[[@{/user/ankenMinjiManagement/{ankenId}/getAnkenBasicView(ankenId=${ankenBasicInputForm.ankenId})}]]*/"",
+					type : "GET",
+					dataType: 'html',
+				})
+				.done(function(data, status, jqXHR) {
+					if (isAjaxProcSuccess(jqXHR)) {
+						// 親HTMLのID
+						$('#ankenBasicFragmentWrap').html(data);
+						return resolve();
+					} else {
+						// 処理失敗
+						const errorMsg = getAjaxProcResutlMessage(jqXHR);
+						showErrorMessageForJs(errorMsg);
+						return reject();
+					}
+				})
+				.fail(function(jqXHR, status, errorThrown) {
+					showErrorMessageForJs(/*[[#{E00091}]]*/ "error");
+					return reject();
+				});
+			
+			});
+		}
+		
+		<!--/* 案件編集エリアの取得 */-->
+		ankenBasicInputFragment.on('click', '.ankenClose', function() {
+			
+			// 2重押下防止
+			if (ajaxRunning) {
+				return false;
+			}
+			ajaxRunning = true;
+			getAnkenBasicView().finally(() => ajaxRunning = false)
+		});
+		
+		<!--/* 案件更新処理の取得 */-->
+		ankenBasicInputFragment.on('click', '.ankenUpdate', function() {
+			const formParam = $('#ankenBasicInputForm').serializeArray();
+			
+			let dataObj = {
+				sideMenuPersonId : null,
+				sideMenuAnkenId : /*[[${ankenBasicInputForm.ankenId}]]*/null,
+				selectedTabClass : 'is_anken'
+			}
+			
+			// 2重押下防止
+			if (ajaxRunning) {
+				return false;
+			}
+			ajaxRunning = true;
+			
+			// Promiseによる同期処理
+			Promise.resolve()
+				.then(() => saveBeforeAjax(formParam)) //最初に行う処理は「内部関数：更新前チェック」
+				.then(() => saveAjax(formParam)) // 更新前チェック通信：正常終了時処理
+				.then(() => wrapHeaderRefresh(dataObj)) // ヘッダー（パンくず）部分の更新
+				.catch((errors) => console.log(errors))
+				.finally(() => ajaxRunning = false);
+			
+			<!--/* 内部関数：更新前チェック */-->
+			function saveBeforeAjax(params) {
+				return new Promise((resolve, reject) => {
+					$.ajax({
+						url : /*[[@{/user/ankenMinjiManagement/{ankenId}/beforeSaveAnkenBasicCheck(ankenId=${ankenBasicInputForm.ankenId})}]]*/"",
+						type : "POST",
+						data : params,
+						dataType: 'json',
+					})
+					.done(function(result) {
+						if (!result.succeed) {
+							// 更新不可の場合
+							showErrorMessageForJs(result.message);
+							return reject([result.message]);
+						} else {
+							if (result.confirm && !confirm(result.message)) {
+								// 更新可能だがユーザーへの確認が必要
+								// 確認の結果、更新を行わない場合
+								return reject(["confirmed:false"]);
+							}
+							return resolve()
+						}
+					})
+					.fail(function(jqXHR, status, errorThrown) {
+						const message = /*[[#{E00091}]]*/ "error";
+						showErrorMessageForJs(message);
+						return reject([jqXHR, status, errorThrown]);
+					});
+				});
+			};
+			
+			<!--/* 内部関数：更新 */-->
+			function saveAjax(params) {
+				return new Promise((resolve, reject) => {
+					$.ajax({
+						url : /*[[@{/user/ankenMinjiManagement/{ankenId}/saveAnkenBasic(ankenId=${ankenBasicInputForm.ankenId})}]]*/"",
+						type : "POST",
+						data : params,
+						dataType: 'html',
+					})
+					.done(function(data, status, jqXHR) {
+						const redirectCode = /*[[${T(jp.loioz.app.user.ankenManagement.form.AnkenEditMinjiInputForm.AnkenBasicInputForm).HEADER_VALUE_OF_AJAX_PROC_RESULT_REDIRECT}]]*/"100";
+						if (getAjaxProcResutl(jqXHR) == redirectCode) {
+							// 画面全体をリダイレクトする特殊ケース
+							window.location.href = /*[[@{/user/ankenManagement/edit/{ankenId}/(ankenId=${ankenBasicInputForm.ankenId})}]]*/"";
+							
+						} else if (isAjaxProcSuccess(jqXHR)) {
+							const infoMsg = getAjaxProcResutlMessage(jqXHR);
+							showInfoMessageForJs(infoMsg);
+							
+							// 親HTMLのID
+							$('#ankenBasicFragmentWrap').html(data);
+							resolve();
+						} else {
+							if (data) {
+								// ajaxProcがFailureだがHTMLが帰って来た場合は、validationエラー
+								$('#ankenBasicFragmentWrap').html(data);
+							}
+							
+							// 処理失敗
+							const errorMsg = getAjaxProcResutlMessage(jqXHR);
+							showErrorMessageForJs(errorMsg);
+							reject([errorMsg, status, jqXHR])
+						}
+
+					})
+					.fail(function(jqXHR, status, errorThrown) {
+						const message = /*[[#{E00091}]]*/ "error";
+						showErrorMessageForJs(message);
+						reject([jqXHR, status, errorThrown]);
+					});
+				});
+			};
+		});
+		
+		<!--/* 案件区分の変更（事務所案件⇔個人案件）で売上計上先の再取得 */-->
+		ankenBasicInputFragment.on("change", "[name='ankenType']", function() {
+
+			if (ajaxRunning) {
+				return false;
+			}
+
+			let alertFlg = false;
+			// 売上計上先の弁護士が選択されているかチェックする
+			if(ankenBasicInputFragment.find(".salesOwner").length !== ankenBasicInputFragment.find(".salesOwner.pl-0.hidden").length) {
+				alertFlg = true;
+			}
+
+			if (alertFlg) {
+				if (!confirm("区分を変更した場合、売上計上先がリセットされます。")) {
+					ankenBasicInputFragment.find("[name='ankenType']:not(:checked)").prop("checked", true);
+					return false;
+				}
+			}
+
+			ajaxRunning = true;
+			// 売上計上先を取得し、再設定する
+			_setSalesOwner().finally(() => {
+				$("[data-toggle=popover]").popover();
+				ajaxRunning = false;
+			});
+		});
+
+		<!--/** 売上計上先取得 */-->
+		function _setSalesOwner() {
+			return new Promise((resolve, reject) => {
+				let ankenType = ankenBasicInputFragment.find("[name='ankenType']:checked").val();
+				$.ajax({
+					url : /*[[@{/user/ankenMinjiManagement/{ankenId}/changeType(ankenId=${ankenBasicInputForm.ankenId})}]]*/"",
+					type :"GET",
+					data : {'ankenType' : ankenType},
+					dataType: 'html',
+				}).done(function(data, status, jqXHR) {
+					if (isAjaxProcSuccess(jqXHR)) {
+						ankenBasicInputFragment.find(".lawyerOptionList").replaceWith(data);
+						
+						return resolve();
+					} else {
+						// 処理失敗
+						const errorMsg = getAjaxProcResutlMessage(jqXHR);
+						showErrorMessageForJs(errorMsg);
+						
+						return reject();
+					}
+
+				}).fail(function(jqXHR, status, errorThrown) {
+					showErrorMessageForJs(/*[[#{E00091}]]*/ "error");
+					return reject();
+				});
+			});
+		}
+		
+	});
+	</script>
+
+	<!--/* 案件情報入力ブロック */-->
+	<div class="main_edit">
+
+		<form id="ankenBasicInputForm" th:object="${ankenBasicInputForm}" th:autocomplete="off">
+
+			<!--/* 入力 */-->
+			<div class="row">
+
+				<!--/* 左側 */-->
+				<div class="col-md-6">
+
+					<!--/* 左側の入力エリア */-->
+					<div class="detail_input_area">
+						<!--/* 区分・登録日 */-->
+						<div class="form-row">
+							<!--/* 区分 */-->
+							<div class="form-group col-md-8">
+								<label class="input_parts_label">受任区分</label>
+								<div class=" pt-2">
+									<label class="radio_btn mb-0" th:each="option : *{ankenTypeOptions}">
+										<input type="radio" class="radio_input" th:field="*{ankenType}" th:value="${option.value}">
+										<span class="radio_txt" th:text="${option.label}"></span>
+									</label>
+								</div>
+								<div th:if="*{#fields.hasErrors('ankenType')}" th:errors="*{ankenType}" class="error_mag_point">error</div>
+							</div>
+							<!--/*  登録日 */-->
+							<div class="form-group col-md-4">
+								<label class="input_parts_label">登録日</label>
+								<input type="text" class="form-control digit7 inputDateSlash" data-click-sync="[data-target-name='ankenCreatedDate']"
+									th:field="*{ankenCreatedDate}" maxlength="10">
+								<button type="button" class="btn btn_popcal hidden" data-target-name="ankenCreatedDate"
+									data-toggle="datepicker" data-target="#ankenCreatedDate">カレンダー</button>
+								<div th:if="*{#fields.hasErrors('ankenCreatedDate')}" th:errors="*{ankenCreatedDate}" class="error_mag_point">error</div>
+							</div>
+						</div>
+
+						<!--/* 案件名・分野 */-->
+						<div class="form-row">
+							<!--/* 案件名 */-->
+							<div class="form-group col-md-8">
+								<label class="input_parts_label">案件名</label>
+								<input type="text" class="form-control" th:field="*{ankenName}" maxlength="150">
+								<div th:if="*{#fields.hasErrors('ankenName')}" th:errors="*{ankenName}" class="error_mag_point">error</div>
+							</div>
+
+							<!--/* 分野 */-->
+							<div class="form-group col-md-4">
+								<label class="input_parts_label">分野</label>
+								<select class="form-control" th:field="*{bunya}">
+									<option
+										th:each="bunyaDto : ${ankenBasicInputForm.bunyaList}"
+										th:value="${bunyaDto.cd}" th:text="${bunyaDto.val}"></option>
+								</select>
+								<div th:if="*{#fields.hasErrors('bunya')}" th:errors="*{bunya}" class="error_mag_point">error</div>
+							</div>
+						</div>
+						<!--/* 案件名・分野 end */-->
+
+						<!--/* 弁護士・事務選択 */-->
+						<div class="form-row">
+							<div class="form-group col-sm-6">
+								<div class="lawyerOptionList" th:fragment="lawyerOptionList">
+									<div
+										th:replace="::tantoTemplate(
+										itemName='salesOwner',
+										itemLabel='売上計上先',
+										optionList=${ankenBasicInputForm.salesOwnerOptions},
+										salesOwnerHelpNavi=true)">
+									</div>
+								</div>
+							</div>
+						</div>
+						<div class="form-row">
+							<div class="form-group col-sm-6">
+								<div
+									th:replace="::tantoTemplate(
+									itemName='tantoLawyer',
+									itemLabel='担当弁護士',
+									optionList=${ankenBasicInputForm.tantoLawyerOptions},
+									dispMainTanto=true,
+									salesOwnerHelpNavi=false)">
+								</div>
+							</div>
+							<div class="form-group col-sm-6">
+								<div
+									th:replace="::tantoTemplate(
+									itemName='tantoJimu',
+									itemLabel='担当事務',
+									optionList=${ankenBasicInputForm.tantoJimuOptions},
+									dispMainTanto=true,
+									salesOwnerHelpNavi=false)">
+								</div>
+							</div>
+						</div>
+						<!--/* 弁護士・事務選択 end */-->
+					</div>
+					<!--/* 左側の入力エリア end */-->
+
+				</div>
+				<!--/* 左側 end */-->
+
+				<!--/* 右側 */-->
+				<div class="col-md-6">
+					<div class="detail_input_area">
+						<div class="form-row">
+							<div class="form-group col-md-12">
+								<label class="input_parts_label">事案概要・方針</label>
+								<textarea rows="10" class="form-control" th:field="*{jianSummary}" maxlength="5000"></textarea>
+								<div th:if="*{#fields.hasErrors('jianSummary')}" th:errors="*{jianSummary}" class="error_mag_point">error</div>
+							</div>
+						</div>
+					</div>
+					
+					<!--/* ボタン */-->
+					<div class="text-right mt-4">
+						<!--/* 保存ボタン */-->
+						<button type="button" class="btn btn-info mr-3 ankenUpdate">
+							<i class="fas fa-check"></i>保存
+						</button>
+						<!--/* 閉じるボタン */-->
+						<button type="button" class="btn btn-light ankenClose"
+							data-boundary="window" data-container="#ankenBasicInputFragment" data-toggle="tooltip" data-trigger="hover" title="編集モードを閉じる">
+							<i class="fas fa-times"></i>閉じる
+						</button>
+					</div>
+					
+				</div>
+				<!--/* 右側 end */-->
+
+			</div>
+			<!--/* 入力 row end */-->
+			
+		</form>
+
+	</div>
+
+</div>
+	
+<!--/* 売上帰属・担当弁護士・担当事務 入力項目 */-->
+<div th:id="|${itemName}Container|" th:fragment="tantoTemplate(itemName, itemLabel, optionList, salesOwnerHelpNavi)" th:with="dispMainTanto=${dispMainTanto}?: false">
+
+	<!--/* Script */-->
+	<script th:inline="javascript">
+	$(function() {
+		const $container = $(/*[[|#${itemName}Container|]]*/"");
+		
+		// レンダリング時に選択アカウントの表示非表示切り替えを発火
+		hiddenIfSelect();
+		
+		<!--/* 選択アカウントの表示非表示設定を最新化 */-->
+		function hiddenIfSelect() {
+			const seletedAccount = getSelectedAccountSeq();
+			$container.find(".selectArea button").removeClass("hidden");
+			$container.find(".selectArea button").filter((idx, elem) => {
+				return seletedAccount.includes($(elem).data("seq"));
+			}).addClass("hidden");
+			if (canAddUser()) {
+				$container.find(".showSelectArea").removeClass("hidden");
+			}
+		};
+		
+		<!--/* 選択中のアカウントSEQをArray型で取得 */-->
+		function getSelectedAccountSeq() {
+			return $.map($container.find("input[name*='accountSeq']"), (elem, idx) => {
+				if (elem.value) {
+					return Number(elem.value);
+				}
+			});
+		};
+		
+		<!--/* アカウントが追加可能かどうか */-->
+		function canAddUser() {
+			return  $container.find("."+ [[${itemName}]] + ".hidden").length > 0;
+		}
+		
+		<!--/* removeした際にパラメータの中抜けが発生するため、パラメータを詰める */-->
+		function sortParam() {
+			const paramContents = $container.find("."+ [[${itemName}]]);
+			const paramJson = $.map(paramContents, (elem, ids) => {
+				if($(elem).find("input[name*='accountSeq']").val()) {
+					return {
+						"seq": $(elem).find("input[name*='accountSeq']").val(),
+						"mainTanto": $(elem).find("input[name*='mainTanto']").val() === "true",
+						"name":$(elem).find(".accountName").text(),
+					};
+				} 
+			});
+			
+			paramContents.addClass("hidden")
+			paramContents.each((idx, elem) => {
+				const params = paramJson[idx];
+				if (params) {
+					$(elem).find("input[name*='accountSeq']").val(params.seq);
+					$(elem).find(".accountName").text(params.name);
+					$(elem).removeClass("hidden");
+
+					if (params.mainTanto) {
+						$(elem).find(".star_btn_main").addClass("btn_checked");
+						$(elem).find("input[name*='mainTanto']").val(true);
+					} else {
+						$(elem).find(".star_btn_main").removeClass("btn_checked");
+						$(elem).find("input[name*='mainTanto']").val(false);
+					}
+				} else {
+					$(elem).find("input[name*='accountSeq']").val("");
+					$(elem).find(".star_btn_main").removeClass("btn_checked");
+					$(elem).find("input[name*='mainTanto']").val(false);
+					$(elem).find(".accountName").text("");
+				}
+			});
+		}
+		
+		<!--/* 独自popperの表示処理 */-->
+		$container.on("click", ".showSelectArea", function() {
+			$(".selectArea").addClass("hidden");
+			$container.find(".selectArea").removeClass("hidden");
+		});
+		
+		<!--/* 独自popperの閉じる処理 */-->
+		$container.on("click", ".closeSelectArea", function() {
+			$container.find(".selectArea").addClass("hidden");
+		});
+		
+		<!--/* ここだけdocumentにアクションを追加する*/-->
+		const itemName = /*[[${itemName}]]*/"";
+		$(document).off("click."+itemName);
+		$(document).on("click."+itemName, function(e) {
+			if ($(e.target).is(".showSelectArea")) {
+				return false;
+			}
+			if (!$(e.target).closest('.tanto_select').length && !$container.find(".selectArea").hasClass("hidden")) {
+				$container.find(".selectArea").toggleClass("hidden");
+			}
+		});
+		
+		<!--/* ユーザーの選択処理 */-->
+		$container.on("click",".addInputUser", function() {
+			const accountSeq = $(this).data("seq");
+			const accountName = $(this).text();
+			
+			const nextContent = $container.find("."+ [[${itemName}]] + ".hidden:first");
+			if (!nextContent.length) {
+				alert("追加できる上限追加できません")
+			}
+			
+			nextContent.removeClass("hidden");
+			nextContent.find("input[name*='accountSeq']").val(accountSeq);
+			nextContent.find(".accountName").text(accountName);
+			
+			// 選択肢の表示非表示切り替え
+			hiddenIfSelect();
+			
+			if(!canAddUser()) {
+				$container.find(".selectArea").addClass("hidden");
+				$container.find(".showSelectArea").addClass("hidden");
+			}
+		});
+		
+		<!--/* ユーザーの選択解除処理 */-->
+		$container.on("click",".removeInputUser", function() {
+			const refleshContent = $(this).closest("."+ [[${itemName}]]);
+			refleshContent.addClass("hidden");
+			refleshContent.find(".star_btn_main").removeClass("btn_checked");
+			refleshContent.find("input[name*='mainTanto']").val(false);
+			refleshContent.find("input[name*='accountSeq']").val("");
+			refleshContent.find(".accountName").text("");
+			
+			hiddenIfSelect();
+			sortParam();
+			
+			// 追加可能の場合
+			if(canAddUser()) {
+				$container.find(".showSelectArea").removeClass("hidden");
+			}
+		});
+		
+	});
+	</script>
+
+	<div class="hoverTooltip tanto_block">
+		<div class="d-flex align-items-center">
+			<div th:unless="${itemLabel} == '売上計上先'">
+				<label class="input_parts_label" th:text="${itemLabel}">担当弁護士</label>
+			</div>
+			<div th:if="${itemLabel} == '売上計上先'" class="stop-events outPutContainerClose" data-toggle="popover" data-html="true" 
+							data-content='
+							<div class="popover_anken_msg">
+								<div class="pt-2 pb-2 px-3">
+									弁護士アカウントの種別、区分によって選択できるアカウントが変わります。
+									<ul>
+										<li>事務所案件：経営者種別を持つ弁護士アカウントのみ選択できます。</li>
+										<li>個人案件　：すべての弁護士アカウントから選択できます。</li>
+									</ul>
+								</div>
+							</div>
+							'>
+				<label class="input_parts_label">売上計上先 <i class="far fa-question-circle cursor_pointer"></i></label>
+			</div>
+			<div class="ml-auto pt-1 mr-3">
+				<a href="javascript:void(0);" class="showSelectArea hidden"><i class="fas fa-user-plus mr-2"></i>選択</a>
+				
+				<!--/* 選択候補のアカウントエリア */-->
+				<div class="position-relative">
+					<div class="position-absolute tanto_select selectArea hidden">
+					
+					<!--/* 選択候補が存在する */-->
+<!--/*/			<th:block th:if="${!optionList.isEmpty()}"> /*/-->
+						<div class="tanto_select_title">担当を選択してください。</div>
+						<ul>
+							<!--/* 選択候補のアカウント */-->
+							<li th:each="option : ${optionList}">
+								<button type="button" class="btn btn-light addInputUser" th:data-seq="${option.value}">
+									<i class="fas fa-user-check"></i><span class="tanto_select__account_label" th:text="${option.label}"></span>
+								</button>
+							</li>
+						</ul>
+						<div class="tanto_select_footer">
+							<button type="button" class="btn btn-light btn_icon_only closeSelectArea" title="閉じる">
+								<i class="fas fa-times"></i>
+							</button>
+						</div>
+<!--/*/			</th:block> /*/-->
+					<!--/* 選択候補が存在する end */-->
+					
+					</div>
+				</div>
+				<!--/* 選択候補のアカウントエリア end */-->
+				
+			</div>
+		</div>
+		
+		<!--/* 選択済みのアカウントエリア */-->
+		<div class="row row_list">
+			<!--/* 選択候補が存在しない場合 */-->
+			<div class="tanto_select_no_data" th:if="${optionList.isEmpty()}">
+				<div>
+					<p><i class="fas fa-exclamation-triangle mr-2"></i>選択できるアカウント</p>
+					<p>（<span th:text="${itemLabel}"></span>）が存在しません。</p>
+				</div>
+				<th:block th:if="${salesOwnerHelpNavi}">
+					<!--/* 売上計上先のみのエラーメッセージ */-->
+					<div class="sub_text">
+						<p><i class="far fa-question-circle mr-2"></i>売上計上先のアカウントとは：</p>
+						<p class="ml-3">「弁護士」「経営者」チェックあり</p>
+					</div>
+				</th:block>
+			</div>
+			<!--/* 選択候補が存在しない場合 end */-->
+			
+<!--/*/		<th:block th:if="${!optionList.isEmpty()}" th:each="i : ${#numbers.sequence(0, T(java.lang.Math).min(optionList.size(), T(jp.loioz.common.constant.CommonConstant).ANKEN_TANTO_ADD_LIMIT) - 1)}"> /*/-->
+			<div th:class="|col-auto mw-100 ${itemName} pl-0|" th:object="${ankenBasicInputForm.__${itemName}__[__${i}__]}"
+				th:classappend="*{isEmpty()} ? 'hidden'">
+				<div class="d-flex align-items-center" th:id="|${itemName}${i}|">
+					<input type="button" th:if="${dispMainTanto}" class="star_btn_main" th:classappend="*{mainTanto} ? 'btn_checked': ''"
+						data-boundary="window" th:data-container="|#${itemName}${i}|" data-toggle="tooltip" data-trigger="hover" title="主担当">
+					<input type="hidden" th:if="${dispMainTanto}" th:field="*{mainTanto}" th:value="*{mainTanto}">
+					<input type="hidden" th:field="*{accountSeq}" th:value="*{accountSeq}">
+					<th:block th:with="accountSeq=*{accountSeq}">
+						<button type="button" class="btn tanto_selected_btn accountName removeInputUser"
+							th:text="${ankenBasicInputForm.getAccountName(accountSeq)}"></button>
+					</th:block>
+				</div>
+				<div th:if="${#fields.hasErrors('${ankenBasicInputForm.__${itemName}__[__${i}__]}')}" class="error_mag_point m-2"
+					th:errors="${ankenBasicInputForm.__${itemName}__[__${i}__]}">
+				</div>
+			</div>
+<!--/*/		</th:block> /*/-->
+		</div>
+		<div th:if="${#fields.hasErrors('${ankenBasicInputForm.__${itemName}__}')}" class="error_mag_point m-2" th:errors="${ankenBasicInputForm.__${itemName}__}"></div>
+		<!--/* 選択済みのアカウントエリア end */-->
+		
+	</div>
+</div>
+	
+<!--/* 案件-顧客一覧 */-->
+<div th:fragment="ankenCustomerListViewFragment(ankenCustomerListViewForm)" id="ankenCustomerListViewFragment">
+	
+	<!--/* 顧客モーダルを扱うので共通JS定義 */-->
+	<script type="text/javascript" th:replace="common/mvc/ankenCustomer/customerRegist::customerRegistModalFragmentObjJs"></script>
+	
+	<!--/* Script */-->
+	<script th:inline="javascript">
+		$(function() {
+
+			// 共有の要素セットアップ処理
+			commonSetUpElement();
+			
+			const ankenCustomerListViewFragment = $("#ankenCustomerListViewFragment");
+			let ajaxRunning = false;
+			
+			<!--/* 名簿ポップオーバー */-->
+			benzo.global.fragment.setUpPersonPopover(ankenCustomerListViewFragment.find(".personPopoverLabel"));
+			
+			<!--/* 案件顧客の編集 */-->
+			ankenCustomerListViewFragment.on("click", ".ankenCustomerEdit", function() {
+				if (ajaxRunning) {
+					return false;
+				}
+				
+				const customerId = $(this).data("customerId");	
+				ajaxRunning = true;
+				Promise.resolve()
+					.then(() => getAnkenCustomerListView())
+					.then(() => getAnkenCustomerInputView(customerId))
+					.catch((errorObj) => console.log(errorObj))
+					.finally(() => ajaxRunning = false);
+			});
+			
+			<!--/* 案件顧客の紐付け削除 */-->
+			ankenCustomerListViewFragment.on("click",".deleteAnkenCustomer", function(){
+				// 確認メッセージ
+				if (!confirm("対象の顧客をこの案件から外します。よろしいですか？")){
+					return false;
+				}
+				if(ajaxRunning){
+					return false;
+				}
+				const customerId = $(this).data('customerId');
+				ajaxRunning = true;
+				$.ajax({
+					type : "POST",
+					url : "deleteCustomer",
+					data : {
+						"customerId" : customerId
+					},
+					dataType: 'json',
+				}).done(function(result) {
+					if(result.succeeded){
+						showInfoMessageForJs(result.message);
+						<!--/* 案件顧客と、サイドメニューを再描画 */-->
+						Promise.resolve()
+							.then(getAnkenCustomerListView)
+							.then(renderCustomerAnkenMenuView);<!--/* 親HTMLで定義している関数 */-->
+					} else {
+						showErrorMessageForJs(result.message);
+					}
+				}).fail(function() {
+					showErrorMessageForJs(/*[[#{E00091}]]*/ "error");
+				}).always(function(){
+					ajaxRunning = false;
+				});
+			});
+			
+			<!--/* 顧客登録モーダル */-->
+			const $customerRegistModal = ankenCustomerListViewFragment.find("#customerRegistModal");
+			$customerRegistModal.on("show.bs.modal", function() {
+				
+				<!--/* 顧客の登録処理 */-->
+				benzo.global.fragment.customerRegistModalFragmentObj.setUpObj.registAction = function(triggerBtn) {
+					let param = benzo.global.fragment.customerRegistModalFragmentObj.paramObj.getRegistFormParams($customerRegistModal);
+					let url = /*[[@{/common/mvc/ankencustomer/registCustomer}]]*/"";
+					if (ajaxRunning) {
+						return false;
+					}
+					ajaxRunning = true;
+					$.ajax({
+						type : "POST",
+						url : url,
+						data : param,
+						dataType : "html",
+					})
+					.done(function(data, status, jqXHR) {
+						if (isAjaxProcSuccess(jqXHR)) {
+							<!--/* 処理成功 */-->
+							Promise.resolve()
+								.then(() => modalHidePromise($customerRegistModal))
+								.then(() => getAnkenCustomerListView())
+								.then(() => renderCustomerAnkenMenuView()) <!--/* 親HTMLで定義している関数 */-->
+								.then(() => showInfoMessageForJs(getAjaxProcResutlMessage(jqXHR)))
+						} else {
+							if (data) {
+								$customerRegistModal.find(".customerRegistModalFragmentWrap").html(data);
+							}
+							const errorMsg = getAjaxProcResutlMessage(jqXHR);
+							showErrorMessage(errorMsg, $customerRegistModal);
+						}
+					})
+					.fail(function(jqXHR, status, errorThrown) {
+						const errorMsg = /*[[#{E00091}]]*/ "error";
+						showErrorMessage(errorMsg, $customerRegistModal);
+					})
+					.always(function(){
+						ajaxRunning = false;
+					});
+				};
+				
+				<!--/* 登録モーダルの初期レンダリング処理 */-->
+				benzo.global.fragment.customerRegistModalFragmentObj.setUpObj.initRenderRegistViewAction = function(triggerBtn) {
+					if (ajaxRunning) {
+						return false;
+					}
+					ajaxRunning = true;
+					Promise.resolve()
+						.then(() => initRenderRegistViewAction())
+						.catch((errors) => console.log(errors))
+						.finally(() => ajaxRunning = false);
+				};
+				
+				<!--/* 検索モーダルの登録処理 */-->
+				benzo.global.fragment.customerRegistModalFragmentObj.setUpObj.searchRegistAction = function(triggerBtn) {
+					if (ajaxRunning) {
+						return false;
+					}
+					
+					const params = benzo.global.fragment.customerRegistModalFragmentObj.paramObj.getSearchResultFormParams($customerRegistModal);
+					ajaxRunning = true;
+					Promise.resolve()
+						.then(() => preCheckInnerFn(params))
+						.then((preCheckResult) => registInnerFn(params, preCheckResult))
+						.catch((errors) => console.log(errors))
+						.finally(() => ajaxRunning = false);
+					
+					function preCheckInnerFn(preCheckParams) {
+						return new Promise((resolve, reject) => {
+							const url = /*[[@{/common/mvc/ankencustomer/registSearchResultCustomerPreCheck}]]*/"";
+							$.ajax({
+								type : "GET",
+								url : url,
+								data : preCheckParams,
+								dataType : "json"
+							})
+							.done(function(result, status, jqXHR) {
+								if (result.succeeded) {
+									return resolve(result);
+								} else {
+									const errorMsg = result.message;
+									showErrorMessage(errorMsg, $customerRegistModal);
+									return reject(errorMsg);
+								}
+							})
+							.fail(function(jqXHR, status, errorThrown) {
+								showErrorMessage(/*[[#{E00091}]]*/ "error", $customerRegistModal);
+								return reject(jqXHR, status, errorThrown)
+							});
+						});
+					};
+					
+					function registInnerFn(registParams, preCheckResult) {
+						return new Promise((resolve, reject) => {
+							if (!confirm(preCheckResult.confirmMsg)) {
+								return resolve();
+							}
+							const url = /*[[@{/common/mvc/ankencustomer/registSearchResultCustomer}]]*/"";
+							$.ajax({
+								type : "POST",
+								url : url,
+								data : registParams,
+								dataType : "html"
+							})
+							.done(function(result, status, jqXHR) {
+								if (isAjaxProcSuccess(jqXHR)) {
+									<!--/* 処理成功 */-->
+									return Promise.resolve()
+										.then(() => modalHidePromise($customerRegistModal))
+										.then(() => getAnkenCustomerListView())
+										.then(() => renderCustomerAnkenMenuView()) <!--/* 親HTMLで定義している関数 */-->
+										.then(() => showInfoMessageForJs(getAjaxProcResutlMessage(jqXHR)))
+								} else {
+									const errorMsg = getAjaxProcResutlMessage(jqXHR);
+									showErrorMessage(errorMsg, $customerRegistModal);
+									return reject(errorMsg);
+								}
+							})
+							.fail(function(jqXHR, status, errorThrown) {
+								showErrorMessage(/*[[#{E00091}]]*/ "error", $customerRegistModal);
+								return reject(jqXHR, status, errorThrown)
+							});
+						});
+					};
+					
+				};
+				
+				<!--/* 検索モーダルの検索処理 */-->
+				benzo.global.fragment.customerRegistModalFragmentObj.setUpObj.searchRenderPromise = function(triggerBtn) {
+					return new Promise((resolve, reject) => {
+						const params = benzo.global.fragment.customerRegistModalFragmentObj.paramObj.getSearchFormParams($customerRegistModal);
+						const url = /*[[@{/common/mvc/ankencustomer/getCustomerSearchModalFragment}]]*/"";
+						$.ajax({
+							type : "GET",
+							url : url,
+							data : params,
+							dataType : "html"
+						})
+						.done(function(result, status, jqXHR) {
+							if (isAjaxProcSuccess(jqXHR)) {
+								<!--/* 処理成功 */-->
+								$customerRegistModal.find(".customerRegistModalFragmentWrap").html(result);
+								return resolve();
+							} else {
+								const errorMsg = getAjaxProcResutlMessage(jqXHR);
+								showErrorMessageForJs(errorMsg);
+								return reject(errorMsg);
+							}
+						})
+						.fail(function(jqXHR, status, errorThrown) {
+							showErrorMessageForJs(/*[[#{E00091}]]*/ "error");
+							return reject(jqXHR, status, errorThrown)
+						});
+					});
+				};
+				
+				<!--/* 検索モーダルの初期レンダリング処理 */-->
+				benzo.global.fragment.customerRegistModalFragmentObj.setUpObj.initRenderSearchViewAction = function(triggerBtn) {
+					if (ajaxRunning) {
+						return false;
+					}
+					ajaxRunning = true;
+					Promise.resolve()
+						.then(() => initRenderSearchViewAction())
+						.catch((errors) => console.log(errors))
+						.finally(() => ajaxRunning = false);
+				};
+				
+			});
+			
+			<!--/* 顧客追加モーダルの初期レンダリング処理 */-->
+			function initRenderRegistViewAction() {
+				return new Promise((resolve, reject) => {
+					let initRenderRegistViewParams = Object.assign({}, benzo.global.fragment.customerRegistModalFragmentObj.initRenderRegistViewParams);
+					const ankenId = initRenderRegistViewParams["ankenId"];
+					const url = /*[[@{/common/mvc/ankencustomer/getCustomeRegistModalFragment}]]*/"";
+					
+					const param = {
+							"ankenId": ankenId,
+					};
+					
+					$.ajax({
+						type : "GET",
+						url : url,
+						data : param,
+						dataType : "html"
+					})
+					.done(function(result, status, jqXHR) {
+						if (isAjaxProcSuccess(jqXHR)) {
+							<!--/* 処理成功 */-->
+							$customerRegistModal.find(".customerRegistModalFragmentWrap").html(result);
+							return resolve();
+						} else {
+							const errorMsg = getAjaxProcResutlMessage(jqXHR);
+							showErrorMessageForJs(errorMsg);
+							return reject(errorMsg);
+						}
+					})
+					.fail(function(jqXHR, status, errorThrown) {
+						showErrorMessageForJs(/*[[#{E00091}]]*/ "error");
+						return reject([jqXHR, status, errorThrown]);
+					});
+				});
+			};
+			
+			<!--/* 顧客検索モーダルの初期レンダリング処理 */-->
+			function initRenderSearchViewAction() {
+				return new Promise((resolve, reject) => {
+					let initRenderSearchViewParams = Object.assign({}, benzo.global.fragment.customerRegistModalFragmentObj.initRenderSearchViewParams);
+					const ankenId = initRenderSearchViewParams["ankenId"];
+					const params = [
+						{"name": "ankenId", "value": ankenId},
+					];
+					
+					const url = /*[[@{/common/mvc/ankencustomer/getCustomerSearchModalFragment}]]*/"";
+					$.ajax({
+						type : "GET",
+						url : url,
+						data : params,
+						dataType : "html"
+					})
+					.done(function(result, status, jqXHR) {
+						if (isAjaxProcSuccess(jqXHR)) {
+							<!--/* 処理成功 */-->
+							$customerRegistModal.find(".customerRegistModalFragmentWrap").html(result);
+							return resolve();
+						} else {
+							const errorMsg = getAjaxProcResutlMessage(jqXHR);
+							showErrorMessageForJs(errorMsg);
+							return reject(errorMsg);
+						}
+					})
+					.fail(function(jqXHR, status, errorThrown) {
+						showErrorMessageForJs(/*[[#{E00091}]]*/ "error");
+						return reject(jqXHR, status, errorThrown)
+					});
+				});
+			};
+			
+			<!--/* 「顧客を追加する」処理 */-->
+			ankenCustomerListViewFragment.find(".openRegistCustomer").on("click", function(e) {
+				if (ajaxRunning) {
+					return false
+				}
+				const ankenId = /*[[${ankenCustomerListViewForm.ankenId.asLong()}]]*/"";
+				
+				<!--/* 新規登録モーダル初期表示用のパラメータをメモリに保持しておく */-->
+				benzo.global.fragment.customerRegistModalFragmentObj.initRenderRegistViewParams = {
+						"ankenId": ankenId,
+				};
+				
+				<!--/* 検索モーダル初期表示用のパラメータをメモリに保持しておく */-->
+				benzo.global.fragment.customerRegistModalFragmentObj.initRenderSearchViewParams = {
+						"ankenId": ankenId,
+				};
+				
+				ajaxRunning = true;
+				Promise.resolve()
+					.then(() => initRenderRegistViewAction())
+					.then(() => $customerRegistModal.modal("show"))
+					.catch((errors) => console.log(errors))
+					.finally(() => ajaxRunning = false);
+			});
+			
+			<!--/* モーダル閉じる処理をPromise化 */-->
+			function modalHidePromise(modal){
+				return new Promise((resolve) => {
+					$(modal).one('hidden.bs.modal', function() {
+						resolve();
+					});
+					$(modal).modal("hide");
+				});
+			};
+			
+			<!--/* 案件顧客情報エリアの取得ロジック */-->
+			function getAnkenCustomerListView() {
+				return new Promise((resolve, reject) => {
+					$.ajax({
+						url : /*[[@{/user/ankenMinjiManagement/{ankenId}/getAnkenCustomerListView(ankenId=${ankenCustomerListViewForm.ankenId.asLong()})}]]*/"",
+						type : "GET",
+						dataType: 'html',
+					})
+					.done(function(data, status, jqXHR) {
+						if (isAjaxProcSuccess(jqXHR)) {
+							// 親HTMLのID
+							$('#ankenCustomerFragmentWrap').html(data);
+
+							return resolve();
+						} else {
+							// 処理失敗
+							const errorMsg = getAjaxProcResutlMessage(jqXHR);
+							showErrorMessageForJs(errorMsg);
+							
+							return reject();
+						}
+					})
+					.fail(function(jqXHR, status, errorThrown) {
+						showErrorMessageForJs(/*[[#{E00091}]]*/ "error");
+						
+						return reject();
+					});
+				});
+			}
+			
+			<!--/* 案件顧客情報入力エリアの取得ロジック */-->
+			function getAnkenCustomerInputView(customerId) {
+				return new Promise((resolve, reject) => {
+					const ankenCustomerInputWrap = $("#ankenCustomerInputWrap" + customerId);
+					$.ajax({
+						url : /*[[@{/user/ankenMinjiManagement/{ankenId}/getAnkenCustomerInputView(ankenId=${ankenCustomerListViewForm.ankenId.asLong()})}]]*/"",
+						type : "GET",
+						data : {"customerId" : customerId},
+						dataType: 'html',
+					})
+					.done(function(data, status, jqXHR) {
+						if (isAjaxProcSuccess(jqXHR)) {
+							// 親HTMLのID
+							$(ankenCustomerInputWrap).html(data);
+
+							return resolve();
+						} else {
+							// 処理失敗
+							const errorMsg = getAjaxProcResutlMessage(jqXHR);
+							showErrorMessageForJs(errorMsg);
+							
+							return reject(errorMsg);
+						}
+					})
+					.fail(function(jqXHR, status, errorThrown) {
+						showErrorMessageForJs(/*[[#{E00091}]]*/ "error");
+						const errorObj = {
+							"jqXHR": jqXHR,
+							"status": status,
+							"errorThrown": errorThrown,
+						}
+						return reject(errorObj);
+					});
+				});
+			}
+		});
+		</script>
+		
+		<section class="section_client_side">
+			<div class="section_header">
+				<div class="section_header__title">顧客情報</div>
+				<div class="section_header__action">
+					<!--/* 新規追加 */-->
+					<a th:if="${ankenCustomerListViewForm.ankenCustomerDto.size() < T(jp.loioz.common.constant.CommonConstant).CUSTOMER_ADD_LIMIT}"
+						href="javascript:void(0);" class="openRegistCustomer fs15">
+						<i class="fas fa-plus-square mr-2"></i>顧客を追加
+					</a>
+				</div>
+			</div>
+			<div class="section_body">
+				<div class="section_body__contents p-0">
+<!--/*/		<th:block th:if="${ankenCustomerListViewForm.ankenCustomerDto.size() == 0}"> /*/-->
+					<div class="no_data_msg px-4">
+						<span th:text="#{I00035('顧客情報の登録')}">MSG_I00035</span>
+					</div>
+<!--/*/		</th:block> /*/-->
+
+<!--/*/		<th:block th:if="${ankenCustomerListViewForm.ankenCustomerDto.size() > 0}"> /*/-->
+					<ul class="section_list p-2">
+						<!--/* 顧客一覧表示 */-->
+						<li class="customerListRow list_contents" th:each="ankenCustomerDto : ${ankenCustomerListViewForm.ankenCustomerDto}"
+							th:object="${ankenCustomerDto}" th:data-customerId="*{customerId.asLong()}">
+							<div class="section_list_item_wrap">
+								<div class="section_list_item">
+									<!--/* 名簿 */-->
+									<div class="img_info_xs mb-2">
+										<!--/* 名簿画像 */-->
+										<div class="img_info_xs__image">
+											<!--/* 名簿属性ラベル */-->
+											<div th:class="|person_image_wrapper*{personAttribute?.cd.getCd()}|">
+												<!--/* 個人アイコン */-->
+												<img th:if="*{T(jp.loioz.common.constant.CommonConstant$CustomerType).KOJIN.equals(customerType)}" 
+													class="img-thumbnail person_image_xs" th:src="@{/img/person_kojin.svg}"
+													data-boundary="window" data-container="body" data-toggle="tooltip" data-trigger="hover" th:title="個人">
+													
+												<!--/* 企業・団体アイコン */-->
+												<img th:if="*{T(jp.loioz.common.constant.CommonConstant$CustomerType).HOJIN.equals(customerType)}"
+													class="img-thumbnail person_image_xs" th:src="@{/img/person_hojin.svg}"
+													data-boundary="window" data-container="body" data-toggle="tooltip" data-trigger="hover" th:title="企業・団体">
+													
+												<!--/* 弁護士アイコン */-->
+												<img th:if="*{T(jp.loioz.common.constant.CommonConstant$CustomerType).LAWYER.equals(customerType)}"
+													class="img-thumbnail person_image_xs" th:src="@{/img/person_bengoshi.svg}"
+													data-boundary="window" data-container="body" data-toggle="tooltip" data-trigger="hover" th:title="弁護士">
+											</div>
+										</div>
+										<!--/* 名簿画像 end */-->
+										
+										<!--/* 名前 */-->
+										<div class="img_info_xs__info">
+											<div class="fw600 fs20 lh1_3 pt-1" th:text="*{customerName}">山田　太郎 </div>
+											<div>
+												<!-- /* 顧客ID */ -->
+												<a class="customerIdLabel app_id_link mr-3 p-1 personPopoverLabel" data-boundary="window" data-container="#ankenCustomerListViewFragment"
+													th:data-person-id="*{customerId.asLong()}"
+													href="javascript:void(0);" th:text="|名簿ID：*{customerId.asLong()}|">
+												</a>
+												<!-- /* 契約ステータス */ -->
+												<i th:class="|fas fa-circle fa-xs anken_status_*{status?.cd}|"></i>
+												<span th:text="*{status?.val}" th:id="'customerStatus_' + *{customerId.asLong()}">進捗</span>
+											</div>
+										</div>
+										<!-- /* ボタンエリア */ -->
+										<div class="img_info_xs__btn">
+											<button type="button" class="btn btn-light btn_icon_only btn_icon_user_minus deleteAnkenCustomer" th:data-customer-id="*{customerId.asLong()}"
+												data-boundary="window" data-container="#ankenCustomerListViewFragment" data-toggle="tooltip" data-trigger="hover" title="案件から外す">
+												<i class="fas fa-user-minus"></i>
+											</button>
+										</div>
+										<!--/* 名前 end */-->
+									</div>
+									<!--/* データブロック */-->
+									<div class="item_content_block">
+										
+										<!--/* 表示 */-->
+										<div th:id="|ankenCustomerInputWrap*{customerId.asLong()}|">
+											<div th:id="|ankenCustomerInputView*{customerId.asLong()}|">
+												<div class="anken_status_view ankenCustomerEdit" data-boundary="window"
+													th:data-container="|#ankenCustomerInputView*{customerId.asLong()}|"
+													data-toggle="tooltip" data-trigger="hover" title="編集する" th:data-customer-id="*{customerId.asLong()}">
+													<!--/* 受任日 */-->
+													<div>
+														<label class="view_label">受任日</label>
+														<div class="view_value">
+	<!--/* 入力あり */-->
+	<th:block th:unless="${#strings.isEmpty(ankenCustomerDto.juninDate)}">
+															<span th:text="*{juninDate}"></span>
+	</th:block>
+	<!--/* 入力なし */-->
+	<th:block th:if="${#strings.isEmpty(ankenCustomerDto.juninDate)}">
+															<span th:classappend="*{completed} ? '' : 'sub_text'" th:text="*{completed} ? '-' : '(未入力)'"></span>
+	</th:block>
+														</div>
+													</div>
+													
+													<!-- /* 事件処理完了日 */ -->
+													<div>
+														<label class="view_label">事件処理完了日</label>
+														<div class="view_value">
+	<!--/* 入力あり */-->
+	<th:block th:unless="${#strings.isEmpty(ankenCustomerDto.jikenshoriKanryoDate)}">
+															<span th:text="*{jikenshoriKanryoDate}"></span>
+	</th:block>
+	<!--/* 入力なし */-->
+	<th:block th:if="${#strings.isEmpty(ankenCustomerDto.jikenshoriKanryoDate)}">
+															<span th:classappend="*{completed} ? '' : 'sub_text'" th:text="*{completed} ? '-' : '(未入力)'"></span>
+	</th:block>
+														</div>
+													</div>
+													
+													<!-- /* 精算完了日 */ -->
+													<div>
+														<label class="view_label">精算完了日</label>
+														<div class="view_value">
+	<!--/* 入力あり */-->
+	<th:block th:unless="${#strings.isEmpty(ankenCustomerDto.seisanKanryoDate)}">
+															<span th:text="*{seisanKanryoDate}"></span>
+	</th:block>
+	<!--/* 入力なし */-->
+	<th:block th:if="${#strings.isEmpty(ankenCustomerDto.seisanKanryoDate)}">
+															<span th:classappend="*{completed} ? '' : 'sub_text'" th:text="*{completed} ? '-' : '(未入力)'"></span>
+	</th:block>
+														</div>
+													</div>
+													
+													<!-- /* 完了チェック */ -->
+													<div>
+														<label class="view_label" th:text="*{SodanFujyunin} ? '不受任' : '完了' ">完了／不受任</label>
+														<div class="view_value">
+															<span th:if="*{completed}" class="text-info">
+																<i class="fas fa-check-square fs19"></i>
+															</span>
+															<span class="fc_disabled" th:unless="*{completed}" >
+																<i class="far fa-square fs19"></i>
+															</span>
+														</div>
+													</div>
+												</div>
+											</div>
+										</div>
+										<!--/* 表示 end */-->
+									</div>
+								</div>
+							</div>
+						</li>
+					</ul>
+				</div>
+			</div>
+		</section>
+		
+		<!--/* 顧客検索モーダル テンプレート */-->
+		<div id="customerRegistModal" class="modal fade" tabindex="-1" role="dialog" aria-hidden="true" data-backdrop="static">
+			<div class="modal-dialog modal-dialog-centered resizeToggleClassTarget" role="document">
+				<div class="modal-content">
+					<div class="customerRegistModalFragmentWrap" style="display:contents;"></div>
+				</div>
+			</div>
+		</div>
+		
+	</div>
+	
+<!--/* ネストされるフラグメント */-->
+<div th:fragment="ankenCustomerListInputFragment" th:object="${ankenCustomerListInputForm}" th:id="|ankenCustomerListInputFragment*{customerId.asLong()}|">
+
+	<!--/* Script */-->
+	<script th:inline="javascript">
+		$(function() {
+			
+			// 共有の要素セットアップ処理
+			commonSetUpElement();
+			
+			let ajaxRunning = false;
+			const ankenCustomerListInputFragment = $("#ankenCustomerListInputFragment"+/*[[*{customerId.asLong()}]]*/"");
+			
+			<!--/* 案件顧客情報の保存処理 */-->
+			ankenCustomerListInputFragment.on("click", ".ankenCustomerUpdate", function() {
+				if (ajaxRunning) {
+					return false;
+				}
+				
+				const ankenId = $(this).data("ankenId");
+				const customerId = $(this).data("customerId");
+				const form = $("#ankenCustomerListInputForm"+ customerId);
+
+				let param = form.serializeArray();
+				param.push({"name" : "customerId", "value" : customerId});
+				
+				ajaxRunning = true;
+				$.ajax({
+					url : /*[[@{/user/ankenMinjiManagement/{ankenId}/saveAnkenCustomer(ankenId=*{ankenId.asLong()})}]]*/"",
+					type : "POST",
+					data : param,
+					dataType: 'html',
+				}).done(function(data, status, jqXHR) {
+					if (isAjaxProcSuccess(jqXHR)) {
+						// 正常終了は一覧を最新化
+						$('#ankenCustomerFragmentWrap').html(data);
+						showInfoMessageForJs(getAjaxProcResutlMessage(jqXHR));
+						
+						<!--/* サイドメニューを再描画（顧客の進捗ステータスの変更を反映するため） */-->
+						renderCustomerAnkenMenuView();<!--/* 親HTMLで定義している関数 */-->
+					} else {
+						// 処理失敗
+						if (data) {
+							// バリデーションエラーによる失敗の場合
+							const ankenCustomerInputWrap = $("#ankenCustomerInputWrap" + customerId);
+							$(ankenCustomerInputWrap).html(data);
+						}
+						const errorMsg = getAjaxProcResutlMessage(jqXHR);
+						showErrorMessageForJs(errorMsg);
+					}
+				}).fail(function(jqXHR, status, errorThrown) {
+					showErrorMessageForJs(/*[[#{E00091}]]*/ "error");
+					
+				}).always(function() {
+					ajaxRunning = false;
+				});
+			});
+			
+			<!--/* 案件顧客編集を閉じる */-->
+			ankenCustomerListInputFragment.on("click", ".ankenCustomerClose", function() {
+				if (ajaxRunning) {
+					return false;
+				}
+				
+				const ankenId = $(this).data("ankenId");
+				const customerId = $(this).data("customerId");
+				const ankenCustomerRowWrap = $("#ankenCustomerRowWrap" + customerId);
+
+				ajaxRunning = true;
+				$.ajax({
+					url : /*[[@{/user/ankenMinjiManagement/{ankenId}/getAnkenCustomerListView(ankenId=*{ankenId.asLong()})}]]*/"",
+					type : "GET",
+					dataType: 'html',
+				})
+				.done(function(data, status, jqXHR) {
+					if (isAjaxProcSuccess(jqXHR)) {
+						// 親HTMLのID
+						$('#ankenCustomerFragmentWrap').html(data);
+						
+					} else {
+						// 処理失敗
+						const errorMsg = getAjaxProcResutlMessage(jqXHR);
+						showErrorMessageForJs(errorMsg);
+					}
+				})
+				.fail(function(jqXHR, status, errorThrown) {
+					showErrorMessageForJs(/*[[#{E00091}]]*/ "error");
+				})
+				.always(function() {
+					ajaxRunning = false;
+				});
+
+			});
+		});
+		</script>
+		<form th:id="|ankenCustomerListInputForm*{customerId.asLong()}|">
+			
+			<div class="anken_status_edit">
+				
+				<!-- /* 案件・顧客入力ブロック */ -->
+				<div class="row">
+					
+					<!-- /* 受任日 */ -->
+					<div class="col-md-auto">
+						<label class="input_parts_label">受任日</label>
+						<input type="text" class="form-control digit8 inputDateSlash" maxlength="10" th:id="|juninDate*{customerId.asLong()}|"
+							th:field="*{juninDate}" th:data-click-sync="|[data-target='#juninDate*{customerId.asLong()}']|" />
+						<button type="button" class="btn btn_popcal_ls hidden" data-toggle="datepicker"
+							th:data-target="|#juninDate*{customerId.asLong()}|">カレンダー
+						</button>
+					</div>
+					<!-- /* 受任日 end */ -->
+					
+					<!-- /* 事件処理完了日 */ -->
+					<div class="col-md-auto">
+						<label class="input_parts_label">事件処理完了日</label>
+						<input type="text" class="form-control digit8 inputDateSlash" maxlength="10" th:id="|jikenshoriKanryoDate*{customerId.asLong()}|"
+							th:field="*{jikenshoriKanryoDate}" th:data-click-sync="|[data-target='#jikenshoriKanryoDate*{customerId.asLong()}']|" />
+						<button type="button" class="btn btn_popcal_ls m-0 hidden"
+							data-toggle="datepicker"
+							th:data-target="|#jikenshoriKanryoDate*{customerId.asLong()}|">カレンダー
+						</button>
+					</div>
+					<!-- /* 事件処理完了日 end */ -->
+					
+					<!-- /* 精算完了日 */ -->
+					<div class="col-md-auto">
+						<label class="input_parts_label">精算完了日</label>
+						<input type="text" class="form-control digit8 inputDateSlash" maxlength="10" th:id="|seisanKanryoDate*{customerId.asLong()}|"
+							th:field="*{seisanKanryoDate}" th:data-click-sync="|[data-target='#seisanKanryoDate*{customerId.asLong()}']|" />
+						<button type="button" class="btn btn_popcal_ls m-0 hidden"
+							data-toggle="datepicker"
+							th:data-target="|#seisanKanryoDate*{customerId.asLong()}|">カレンダー
+						</button>
+					</div>
+					<!-- /* 精算完了日 end */ -->
+					
+					<!-- /* 完了チェック */ -->
+					<div class="col-md-auto">
+						<label class="input_parts_label" th:text="*{SodanFujyunin} ? '不受任' : '完了' ">完了／不受任</label>
+						<div>
+							<label class="checkbox_btn no_text">
+								<input type="checkbox" class="checkbox_input completedCheck" th:field="*{Completed}">
+								<span class="checkbox_txt"></span>
+							</label>
+						</div>
+						<input type="hidden" th:field="*{versionNo}" />
+					</div>
+					<!-- /* 完了チェック end */ -->
+				</div>
+				<div class="pl-3">
+					<div th:if="*{#fields.hasErrors('juninDate')}" th:errors="*{juninDate}" class="error_mag_point">error</div>
+					<div th:if="*{#fields.hasErrors('jikenshoriKanryoDate')}" th:errors="*{jikenshoriKanryoDate}" class="error_mag_point">error</div>
+					<div th:if="*{#fields.hasErrors('seisanKanryoDate')}" th:errors="*{seisanKanryoDate}" class="error_mag_point">error</div>
+				</div>
+				<!-- /* 案件・顧客入力ブロック end */ -->
+				
+				<!-- /* ボタンブロック */ -->
+				<div class="anken_status_edit__btn">
+					<!-- /* 保存ボタン */ -->
+					<button type="button" class="btn btn-info btn-sm ankenCustomerUpdate mr-3"
+						data-boundary="window" th:data-container="|#ankenCustomerListInputForm*{customerId.asLong()}|"
+						data-toggle="tooltip" data-trigger="hover" title="" data-original-title="保存する"
+						th:data-anken-id="*{ankenId.asLong()}" th:data-customer-id="*{customerId.asLong()}">
+						<i class="fas fa-check"></i>保存
+					</button>
+					<!-- /* 閉じるボタン */ -->
+					<button type="button" class="btn btn-light btn-sm ankenCustomerClose"
+						data-boundary="window" th:data-container="|#ankenCustomerListInputForm*{customerId.asLong()}|"
+						data-toggle="tooltip" data-trigger="hover" title="" data-original-title="編集モードを閉じる"
+						th:data-anken-id="*{ankenId.asLong()}" th:data-customer-id="*{customerId.asLong()}">
+						<i class="fas fa-times"></i>閉じる
+					</button>
+				</div>
+				<!-- /* ボタンブロック end */ -->
+			</div>
+		</form>
+	</div>
+	
+</th:block>
+	
+<!-- /* 相手方一覧 */ -->
+<div th:fragment="ankenAitegataListViewFragment(ankenAitegataListViewForm)" id="ankenAitegataListViewFragment">
+	
+	<!--/* 関与者モーダルを扱うので共通JS定義 */-->
+	<script type="text/javascript" th:replace="common/mvc/kanyosha/kanyoshaEditModal::kanyoshaEditModalFragmentObjJs"></script>
+	
+	<!--/* Script */-->
+	<script th:inline="javascript">
+	$(function() {
+		// 共有の要素セットアップ処理
+		commonSetUpElement();
+		
+		let ajaxRunning = false;
+		const ankenAitegataListFragment = $("#ankenAitegataListViewFragment");
+		
+		<!--/* 名簿ポップオーバー */-->
+		benzo.global.fragment.setUpPersonPopover(ankenAitegataListFragment.find(".personPopoverLabel"));
+		
+		<!--/* 相手方の削除処理 */-->
+		$(ankenAitegataListFragment).on("click", ".aitegataDelete", function() {
+			const aitegataContainer = $($(this).data("target"));
+			const aitegataKanyoshaSeq = aitegataContainer.data('aitegata-kanyosha-seq');
+			
+			if (!confirm("相手方から外します。よろしいですか？")) {
+				return false;
+			}
+
+			if (!aitegataKanyoshaSeq) {
+				return;
+			}
+
+			if(ajaxRunning) {
+				return false;
+			}
+			ajaxRunning = true;
+			$.ajax({
+				url : /*[[@{/user/ankenMinjiManagement/{ankenId}/deleteAitegata(ankenId=${ankenId})}]]*/"",
+				type : "POST",
+				data : {
+					"aitegataKanyoshaSeq" : aitegataKanyoshaSeq,
+				},
+				dataType: 'json',
+			})
+			.done(function(result) {
+				if (result.succeed) {
+					showInfoMessageForJs(result.message);
+					getAnkenKanyoshaListView();
+				} else {
+					showErrorMessageForJs(result.message);
+				}
+			})
+			.fail(function(jqXHR, status, errorThrown) {
+				showErrorMessageForJs(/*[[#{E00091}]]*/ "error");
+			})
+			.always(function() {
+				ajaxRunning = false;
+			});
+		});
+
+		<!--/* 案件からはずすボタン（相手方削除処理） */-->
+		$(ankenAitegataListFragment).on("click", ".aitegataDeleteFromAnken", function() {
+			
+			const aitegataContainer = $($(this).data("target"));
+			const aitegataKanyoshaSeq = aitegataContainer.data('aitegata-kanyosha-seq');
+			
+			if (!confirm("案件から外します。よろしいですか？")) {
+				return false;
+			}
+			if (!aitegataKanyoshaSeq) {
+				return;
+			}
+			
+			<!--/* リクエストパラメータ */-->
+			const param = {
+				"kanyoshaSeq": aitegataKanyoshaSeq
+			}
+
+			if (ajaxRunning) {
+				return false;
+			}
+			ajaxRunning = true;
+			
+			Promise.resolve()
+				.then(() => beforeCheck(param))
+				.then(() => deleteAction(param))
+				.then(() => getAnkenKanyoshaListView())
+				.catch((errorObj) => console.log(errorObj))
+				.finally(() => ajaxRunning = false);
+			
+			function beforeCheck(param) {
+				return new Promise((resolve, reject) => {
+					$.ajax({
+						type : "POST",
+						url : /*[[@{/user/ankenMinjiManagement/{ankenId}/deleteKanyoshaFromAnkenBeforeCheck(ankenId=${ankenId})}]]*/"",
+						data : param,
+						dataType : "json",
+					}).done(function(data) {
+						if (data.needConfirm && !confirm(data.message)) {
+							return reject();
+						} else {
+							return resolve();
+						}
+					}).fail(function(jqXHR, status, errorThrown) {
+						const errorMsg = /*[[#{E00091}]]*/ "error";
+						showErrorMessageForJs(errorMsg);
+						return reject();
+					});
+				});
+			}
+			
+			function deleteAction(param) {
+				return new Promise((resolve, reject) => {
+					$.ajax({
+						type : "POST",
+						url : /*[[@{/user/ankenMinjiManagement/{ankenId}/deleteKanyoshaFromAnken(ankenId=${ankenId})}]]*/"",
+						data : param,
+						dataType : "html",
+					})
+					.done(function(data, status, jqXHR) {
+						if (isAjaxProcSuccess(jqXHR)) {
+							<!--/* 処理成功 */-->
+							showInfoMessageForJs(/*[[#{I00028('相手方情報')}]]*/'');
+							return resolve();
+						} else {
+							const errorMsg = getAjaxProcResutlMessage(jqXHR);
+							showErrorMessageForJs(errorMsg);
+							return reject();
+						}
+					})
+					.fail(function(jqXHR, status, errorThrown) {
+						const errorMsg = /*[[#{E00091}]]*/ "error";
+						showErrorMessageForJs(errorMsg);
+						return reject();
+					});
+				});
+			}
+		});
+		<!--/* 代理人の削除処理 */-->
+		$(ankenAitegataListFragment).on("click", ".dairininDelete", function() {
+			
+			const dairininContainer = $($(this).data("target"));
+			const aitegataKanyoshaSeq = dairininContainer.data('aitegata-kanyosha-seq');
+			const dairininKanyoshaSeq = dairininContainer.data('dairinin-kanyosha-seq');
+			
+			if(!confirm("代理人から外します。よろしいですか？")) {
+				return false;
+			}
+
+			if(!aitegataKanyoshaSeq || !dairininKanyoshaSeq){
+				return;
+			}
+			
+			
+			if(ajaxRunning) {
+				return false;
+			}
+			ajaxRunning = true;
+			$.ajax({
+				url : /*[[@{/user/ankenMinjiManagement/{ankenId}/deleteDairinin(ankenId=${ankenId})}]]*/"",
+				type : "POST",
+				data : {
+					"aitegataKanyoshaSeq" : aitegataKanyoshaSeq,
+					"dairininKanyoshaSeq" : dairininKanyoshaSeq,
+				},
+				dataType: 'json',
+			})
+			.done(function(result) {
+				if (result.succeed) {
+					showInfoMessageForJs(result.message);
+					getAnkenKanyoshaListView();
+				} else {
+					showErrorMessageForJs(result.message);
+				}
+			})
+			.fail(function(jqXHR, status, errorThrown) {
+				showErrorMessageForJs(/*[[#{E00091}]]*/ "error");
+			})
+			.always(function() {
+				ajaxRunning = false;
+			});
+		});
+
+		<!--/* 案件からはずすボタン（相手方代理人削除処理） */-->
+		$(ankenAitegataListFragment).on("click", ".dairininDeleteFromAnken", function() {
+			
+			const dairininContainer = $($(this).data("target"));
+			const dairininKanyoshaSeq = dairininContainer.data('dairinin-kanyosha-seq');
+			
+			if (!confirm("案件から外します。よろしいですか？")) {
+				return false;
+			}
+			if (!dairininKanyoshaSeq) {
+				return;
+			}
+			
+			<!--/* リクエストパラメータ */-->
+			const param = {
+				"kanyoshaSeq": dairininKanyoshaSeq
+			}
+
+			if (ajaxRunning) {
+				return false;
+			}
+			ajaxRunning = true;
+			
+			Promise.resolve()
+				.then(() => beforeCheck(param))
+				.then(() => deleteAction(param))
+				.then(() => getAnkenKanyoshaListView())
+				.catch((errorObj) => console.log(errorObj))
+				.finally(() => ajaxRunning = false);
+			
+			function beforeCheck(param) {
+				return new Promise((resolve, reject) => {
+					$.ajax({
+						type : "POST",
+						url : /*[[@{/user/ankenMinjiManagement/{ankenId}/deleteKanyoshaFromAnkenBeforeCheck(ankenId=${ankenId})}]]*/"",
+						data : param,
+						dataType : "json",
+					}).done(function(data) {
+						if (data.needConfirm && !confirm(data.message)) {
+							return reject();
+						} else {
+							return resolve();
+						}
+					}).fail(function(jqXHR, status, errorThrown) {
+						const errorMsg = /*[[#{E00091}]]*/ "error";
+						showErrorMessageForJs(errorMsg);
+						return reject();
+					});
+				});
+			}
+			
+			function deleteAction(param) {
+				return new Promise((resolve, reject) => {
+					$.ajax({
+						type : "POST",
+						url : /*[[@{/user/ankenMinjiManagement/{ankenId}/deleteKanyoshaFromAnken(ankenId=${ankenId})}]]*/"",
+						data : param,
+						dataType : "html",
+					})
+					.done(function(data, status, jqXHR) {
+						if (isAjaxProcSuccess(jqXHR)) {
+							<!--/* 処理成功 */-->
+							showInfoMessageForJs(/*[[#{I00028('相手方代理人情報')}]]*/'');
+							return resolve();
+						} else {
+							const errorMsg = getAjaxProcResutlMessage(jqXHR);
+							showErrorMessageForJs(errorMsg);
+							return reject();
+						}
+					})
+					.fail(function(jqXHR, status, errorThrown) {
+						const errorMsg = /*[[#{E00091}]]*/ "error";
+						showErrorMessageForJs(errorMsg);
+						return reject();
+					});
+				});
+			}
+		});
+
+		const $aitegataModal = $(ankenAitegataListFragment).find("#kanyoshaAitegataModal");
+		<!--/* 相手方モーダル表示時にアクションを設定 */-->
+		$aitegataModal.on("show.bs.modal", function(e) {
+			
+			// モーダル表示名
+			benzo.global.fragment.kanyoshaEditModalFragmentObj.paramObj.modalNameLabel = '相手方';
+			
+			// 選択できない顧客種別
+			benzo.global.fragment.kanyoshaEditModalFragmentObj.paramObj.excludeCustomerType = ["2"];
+			
+			// 登録処理
+			benzo.global.fragment.kanyoshaEditModalFragmentObj.setUpObj.registAction = function(triggerBtn) {
+				let param = benzo.global.fragment.kanyoshaEditModalFragmentObj.paramObj.getFormParams($aitegataModal);
+				let url = /*[[@{/common/mvc/kanyosha/registKanyoshaForAnkenAitegata}]]*/"";
+				if (ajaxRunning) {
+					return false;
+				}
+				ajaxRunning = true;
+				$.ajax({
+					type : "POST",
+					url : url,
+					data : param,
+					dataType : "html",
+				})
+				.done(function(data, status, jqXHR) {
+					if (isAjaxProcSuccess(jqXHR)) {
+						// 処理成功
+						Promise.resolve()
+							.then(() => modalHidePromise($aitegataModal))
+							.then(getAnkenKanyoshaListView)
+							.then(() => showInfoMessageForJs(getAjaxProcResutlMessage(jqXHR)))
+					} else {
+						if (data) {
+							$aitegataModal.find(".kanyoshaEditModalFragmentWrap").html(data);
+						}
+						const errorMsg = getAjaxProcResutlMessage(jqXHR);
+						showErrorMessage(errorMsg, $aitegataModal);
+					}
+				})
+				.fail(function(jqXHR, status, errorThrown) {
+					const errorMsg = /*[[#{E00091}]]*/ "error";
+					showErrorMessage(errorMsg, $aitegataModal);
+				})
+				.always(function(){
+					ajaxRunning = false;
+				});
+			};
+			
+			// 更新処理
+			benzo.global.fragment.kanyoshaEditModalFragmentObj.setUpObj.updateAction = function(triggerBtn) {
+				let param = benzo.global.fragment.kanyoshaEditModalFragmentObj.paramObj.getFormParams($aitegataModal);
+				let url = /*[[@{/common/mvc/kanyosha/updateKanyosha}]]*/"";
+				
+				if (ajaxRunning) {
+					return false;
+				}
+				ajaxRunning = true;
+
+				$.ajax({
+					type : "POST",
+					url : url,
+					data : param,
+					dataType : "html",
+				})
+				.done(function(data, status, jqXHR) {
+					if (isAjaxProcSuccess(jqXHR)) {
+						// 処理成功
+						Promise.resolve()
+							.then(() => modalHidePromise($aitegataModal))
+							.then(() => getAnkenKanyoshaListView())
+							.then(() => showInfoMessageForJs(/*[[#{I00023('相手方情報')}]]*/''))
+					} else {
+						if (data) {
+							$aitegataModal.find(".kanyoshaEditModalFragmentWrap").html(data);
+						}
+						const errorMsg = getAjaxProcResutlMessage(jqXHR);
+						showErrorMessage(errorMsg, $aitegataModal);
+					}
+				})
+				.fail(function(jqXHR, status, errorThrown) {
+					const errorMsg = /*[[#{E00091}]]*/ "error";
+					showErrorMessage(errorMsg, $aitegataModal);
+				})
+				.always(function(){
+					ajaxRunning = false;
+				});
+			};
+			
+			// 削除処理
+			benzo.global.fragment.kanyoshaEditModalFragmentObj.setUpObj.deleteAction = function(triggerBtn) {
+				
+				let param = benzo.global.fragment.kanyoshaEditModalFragmentObj.paramObj.getFormParams($aitegataModal);
+
+				if (ajaxRunning) {
+					return false;
+				}
+				ajaxRunning = true;
+
+				Promise.resolve()
+					.then(() => beforeCheck(param))
+					.then(() => deleteAction(param))
+					.then(() => modalHidePromise($aitegataModal))
+					.then(() => getAnkenKanyoshaListView())
+					.catch((errorObj) => console.log(errorObj))
+					.finally(() => ajaxRunning = false);
+				
+				function beforeCheck(param) {
+					return new Promise((resolve, reject) => {
+						$.ajax({
+							type : "POST",
+							url : /*[[@{/common/mvc/kanyosha/deleteKanyoshaBeforeCheck}]]*/,
+							data : param,
+							dataType : "json",
+						}).done(function(data) {
+							if (data.needConfirm && !confirm(data.message)) {
+								return reject();
+							} else {
+								return resolve([data]);
+							}
+						}).fail(function(jqXHR, status, errorThrown) {
+							const errorMsg = /*[[#{E00091}]]*/ "error";
+							showErrorMessage(errorMsg, $aitegataModal);
+							return reject(jqXHR, status, errorThrown);
+						});
+					});
+				}
+				
+				function deleteAction(param) {
+					return new Promise((resolve, reject) => {
+						$.ajax({
+							type : "POST",
+							url : /*[[@{/common/mvc/kanyosha/deleteKanyosha}]]*/,
+							data : param,
+							dataType : "html",
+						})
+						.done(function(data, status, jqXHR) {
+							if (isAjaxProcSuccess(jqXHR)) {
+								// 処理成功
+								showInfoMessageForJs(/*[[#{I00028('相手方情報')}]]*/'')
+								return resolve()
+							} else {
+								const errorMsg = getAjaxProcResutlMessage(jqXHR);
+								showErrorMessage(errorMsg, $aitegataModal);
+								return reject([errorMsg]);
+							}
+						})
+						.fail(function(jqXHR, status, errorThrown) {
+							const errorMsg = /*[[#{E00091}]]*/ "error";
+							showErrorMessage(errorMsg, $aitegataModal);
+							return reject([jqXHR, status, errorThrown]);
+						});
+					});
+				}
+			};
+			
+			// 登録・編集エリアの初期レンダリング（再レンダリングも含む）
+			benzo.global.fragment.kanyoshaEditModalFragmentObj.setUpObj.initRenderEditViewAction = function(triggerBtn) {
+				if (ajaxRunning) {
+					return false;
+				}
+				ajaxRunning = true;
+				Promise.resolve()
+					.then(() => initRenderAitegataEditViewAction())
+					.catch((errors) => console.log(errors))
+					.finally(() => ajaxRunning = false);
+			};
+			
+			// 検索エリアの登録処理
+			benzo.global.fragment.kanyoshaEditModalFragmentObj.setUpObj.searchRegistAction = function(triggerBtn) {
+				let param = benzo.global.fragment.kanyoshaEditModalFragmentObj.paramObj.getSearchResultFormParams($aitegataModal);
+				const url = /*[[@{/common/mvc/kanyosha/searchResultRegistKanyoshaForAnkenAitegata}]]*/"";
+				
+				if (ajaxRunning) {
+					return false;
+				}
+				ajaxRunning = true;
+				$.ajax({
+					type : "POST",
+					url : url,
+					data : param,
+					dataType : "html",
+				})
+				.done(function(data, status, jqXHR) {
+					if (isAjaxProcSuccess(jqXHR)) {
+						// 処理成功
+						Promise.resolve()
+							.then(() => modalHidePromise($aitegataModal))
+							.then(() => getAnkenKanyoshaListView())
+							.then(() => showInfoMessageForJs(getAjaxProcResutlMessage(jqXHR)))
+					} else {
+						const errorMsg = getAjaxProcResutlMessage(jqXHR);
+						showErrorMessage(errorMsg, $aitegataModal);
+					}
+				})
+				.fail(function(jqXHR, status, errorThrown) {
+					const errorMsg = /*[[#{E00091}]]*/ "error";
+					showErrorMessage(errorMsg, $aitegataModal);
+				})
+				.always(function(){
+					ajaxRunning = false;
+				});
+			};
+			
+			// 検索エリアの検索処理
+			benzo.global.fragment.kanyoshaEditModalFragmentObj.setUpObj.searchRenderPromise = function() {
+				return new Promise((resolve, reject) => {
+					const url = /*[[@{/common/mvc/kanyosha/getKanyoshaSearchModalFragment/anken/aitegata}]]*/"";
+					let optionParam = benzo.global.fragment.kanyoshaEditModalFragmentObj.paramObj.getSearchFormParams($aitegataModal);
+					$.ajax({
+						type : "GET",
+						url : url,
+						data : optionParam,
+						dataType : "html"
+					})
+					.done(function(result, status, jqXHR) {
+						if (isAjaxProcSuccess(jqXHR)) {
+							// 処理成功
+							$aitegataModal.find(".kanyoshaEditModalFragmentWrap").html(result);
+							return resolve();
+						} else {
+							const errorMsg = getAjaxProcResutlMessage(jqXHR);
+							showErrorMessage(errorMsg, $aitegataModal);
+							return reject(errorMsg)
+						}
+					})
+					.fail(function(jqXHR, status, errorThrown) {
+						showErrorMessageForJs(/*[[#{E00091}]]*/ "error");
+						return reject([jqXHR, status, errorThrown]);
+					});
+				});
+			};
+			
+			// 検索エリアの初期表示処理
+			benzo.global.fragment.kanyoshaEditModalFragmentObj.setUpObj.initRenderSearchViewAction = function() {
+				if (ajaxRunning) {
+					return false;
+				}
+				ajaxRunning = true;
+				Promise.resolve()
+					.then(() => initRenderAitegataSearchViewAction())
+					.catch((errors) => console.log(errors))
+					.finally(() => ajaxRunning = false);
+			};
+			
+		});
+		
+		<!--/* 相手方編集モーダルの初期レンダリング関数 */-->
+		function initRenderAitegataEditViewAction() {
+			return new Promise((resolve, reject) => {
+				let initRenderAitegataEditViewParams = Object.assign({}, benzo.global.fragment.kanyoshaEditModalFragmentObj.initRenderAitegataEditViewParams);
+				const ankenId = initRenderAitegataEditViewParams["ankenId"];
+				const kanyoshaSeq = initRenderAitegataEditViewParams["kanyoshaSeq"];
+				
+				let url = /*[[@{/common/mvc/kanyosha/getKanyoshaEditModalFragment}]]*/"";
+				let param = {} ;
+				if (kanyoshaSeq) {
+					url += `/${kanyoshaSeq}`;
+				} else {
+					url += "/create";
+					param = {
+						"ankenId" : ankenId,
+						"initCustomerType" : "0",
+					};
+				};
+
+				$.ajax({
+					type : "GET",
+					url : url,
+					data : param,
+					dataType : "html"
+				})
+				.done(function(result, status, jqXHR) {
+					if (isAjaxProcSuccess(jqXHR)) {
+						// 処理成功
+						$aitegataModal.find(".kanyoshaEditModalFragmentWrap").html(result);
+						return resolve();
+					} else {
+						const errorMsg = getAjaxProcResutlMessage(jqXHR);
+						showErrorMessageForJs(errorMsg);
+						return reject(errorMsg);
+					}
+				})
+				.fail(function(jqXHR, status, errorThrown) {
+					showErrorMessageForJs(/*[[#{E00091}]]*/ "error");
+					return reject([jqXHR, status, errorThrown]);
+				});
+			});
+		};
+		
+		<!--/* 相手方検索モーダルの初期レンダリング関数 */-->
+		function initRenderAitegataSearchViewAction() {
+			return new Promise((resolve, reject) => {
+				let initRenderAitegataSearchViewParams = Object.assign({}, benzo.global.fragment.kanyoshaEditModalFragmentObj.initRenderAitegataSearchViewParams);
+				const ankenId = initRenderAitegataSearchViewParams["ankenId"];
+				let param = [{name:"ankenId", value: ankenId}];
+				
+				const url = /*[[@{/common/mvc/kanyosha/getKanyoshaSearchModalFragment/anken/aitegata}]]*/"";
+				$.ajax({
+					type : "GET",
+					url : url,
+					data : param,
+					dataType : "html"
+				})
+				.done(function(result, status, jqXHR) {
+					if (isAjaxProcSuccess(jqXHR)) {
+						// 処理成功
+						$aitegataModal.find(".kanyoshaEditModalFragmentWrap").html(result);
+						return resolve();
+					} else {
+						const errorMsg = getAjaxProcResutlMessage(jqXHR);
+						showErrorMessageForJs(errorMsg);
+						return reject(errorMsg);
+					}
+				})
+				.fail(function(jqXHR, status, errorThrown) {
+					showErrorMessageForJs(/*[[#{E00091}]]*/ "error");
+					return reject(jqXHR, status, errorThrown);
+				});
+			});
+		};
+		
+		<!--/* 相手方のモーダル表示処理 */-->
+		$(ankenAitegataListFragment).on("click", ".openKanyoshaAitegataModal", function() {
+			if (ajaxRunning) {
+				return false;
+			}
+			
+			const ankenId = /*[[${ankenId}]]*/"";
+			const kanyoshaSeq =$(this).data("kanyoshaSeq");
+			
+			// 登録・編集初期表示で必要なパラメータをメモリに保持しておく
+			benzo.global.fragment.kanyoshaEditModalFragmentObj.initRenderAitegataEditViewParams = {
+					"ankenId": ankenId,
+					"kanyoshaSeq": kanyoshaSeq,
+			};
+			
+			// 検索初期表示で必要なパラメータをメモリに保持しておく
+			benzo.global.fragment.kanyoshaEditModalFragmentObj.initRenderAitegataSearchViewParams = {
+					"ankenId": ankenId,
+			}
+			
+			ajaxRunning = true;
+			Promise.resolve()
+				.then(() => initRenderAitegataEditViewAction())
+				.then(() => $aitegataModal.modal("show"))
+				.catch((errors) => console.log(errors))
+				.finally(() => ajaxRunning = false);
+		});
+		
+		const $aitegataDairininModal = $(ankenAitegataListFragment).find("#kanyoshaAitegataDairininModal");
+		$aitegataDairininModal.on("show.bs.modal", function(e) {
+			
+			// モーダル表示名
+			benzo.global.fragment.kanyoshaEditModalFragmentObj.paramObj.modalNameLabel = '相手方代理人';
+			
+			benzo.global.fragment.kanyoshaEditModalFragmentObj.paramObj.excludeCustomerType =[];
+			
+			// 登録処理
+			benzo.global.fragment.kanyoshaEditModalFragmentObj.setUpObj.registAction = function(triggerBtn) {
+				let param = benzo.global.fragment.kanyoshaEditModalFragmentObj.paramObj.getFormParams($aitegataDairininModal);
+				let aitegataDairininWithInParam = Object.assign({}, benzo.global.fragment.kanyoshaEditModalFragmentObj.aitegataDairininWithInParam);
+				
+				param.push({
+					name : "aitegataKanyoshaSeq",
+					value : aitegataDairininWithInParam.aitegataKanyoshaSeq
+				});
+				
+				let url = /*[[@{/common/mvc/kanyosha/registKanyoshaForAnkenAitegataDairinin}]]*/"";
+				if (ajaxRunning) {
+					return false;
+				}
+				ajaxRunning = true;
+				$.ajax({
+					type : "POST",
+					url : url,
+					data : param,
+					dataType : "html",
+				})
+				.done(function(data, status, jqXHR) {
+					if (isAjaxProcSuccess(jqXHR)) {
+						// 処理成功
+						Promise.resolve()
+							.then(() => modalHidePromise($aitegataDairininModal))
+							.then(getAnkenKanyoshaListView)
+							.then(() => showInfoMessageForJs(getAjaxProcResutlMessage(jqXHR)))
+					} else {
+						if (data) {
+							$aitegataDairininModal.find(".kanyoshaEditModalFragmentWrap").html(data);
+						}
+						const errorMsg = getAjaxProcResutlMessage(jqXHR);
+						showErrorMessage(errorMsg, $aitegataDairininModal);
+					}
+				})
+				.fail(function(jqXHR, status, errorThrown) {
+					const errorMsg = /*[[#{E00091}]]*/ "error";
+					showErrorMessage(errorMsg, $aitegataModal);
+				})
+				.always(function(){
+					ajaxRunning = false;
+				});
+			};
+			
+			// 更新処理
+			benzo.global.fragment.kanyoshaEditModalFragmentObj.setUpObj.updateAction = function(triggerBtn) {
+				let param = benzo.global.fragment.kanyoshaEditModalFragmentObj.paramObj.getFormParams($aitegataDairininModal);
+				let url = /*[[@{/common/mvc/kanyosha/updateKanyosha}]]*/"";
+				
+				if (ajaxRunning) {
+					return false;
+				}
+				ajaxRunning = true;
+
+				$.ajax({
+					type : "POST",
+					url : url,
+					data : param,
+					dataType : "html",
+				})
+				.done(function(data, status, jqXHR) {
+					if (isAjaxProcSuccess(jqXHR)) {
+						// 処理成功
+						Promise.resolve()
+							.then(() => modalHidePromise($aitegataDairininModal))
+							.then(getAnkenKanyoshaListView)
+							.then(() => showInfoMessageForJs(/*[[#{I00023('相手方代理人情報')}]]*/''))
+					} else {
+						if (data) {
+							$aitegataDairininModal.find(".kanyoshaEditModalFragmentWrap").html(data);
+						}
+						const errorMsg = getAjaxProcResutlMessage(jqXHR);
+						showErrorMessage(errorMsg, $aitegataDairininModal);
+					}
+				})
+				.fail(function(jqXHR, status, errorThrown) {
+					const errorMsg = /*[[#{E00091}]]*/ "error";
+					showErrorMessage(errorMsg, $aitegataDairininModal);
+				})
+				.always(function(){
+					ajaxRunning = false;
+				});
+			};
+			
+			// 削除処理
+			benzo.global.fragment.kanyoshaEditModalFragmentObj.setUpObj.deleteAction = function(triggerBtn) {
+				let param = benzo.global.fragment.kanyoshaEditModalFragmentObj.paramObj.getFormParams($aitegataDairininModal);
+
+				if (ajaxRunning) {
+					return false;
+				}
+				ajaxRunning = true;
+
+				Promise.resolve()
+					.then(() => beforeCheck(param))
+					.then(() => deleteAction(param))
+					.then(() => modalHidePromise($aitegataDairininModal))
+					.then(() => getAnkenKanyoshaListView())
+					.catch((errorObj) => console.log(errorObj))
+					.finally(() => ajaxRunning = false);
+				
+				function beforeCheck(param) {
+					return new Promise((resolve, reject) => {
+						$.ajax({
+							type : "POST",
+							url : /*[[@{/common/mvc/kanyosha/deleteKanyoshaBeforeCheck}]]*/,
+							data : param,
+							dataType : "json",
+						}).done(function(data) {
+							if (data.needConfirm && !confirm(data.message)) {
+								return reject();
+							} else {
+								return resolve([data]);
+							}
+						}).fail(function(jqXHR, status, errorThrown) {
+							const errorMsg = /*[[#{E00091}]]*/ "error";
+							showErrorMessage(errorMsg, $aitegataDairininModal);
+							return reject(jqXHR, status, errorThrown);
+						});
+					});
+				}
+				
+				function deleteAction(param) {
+					return new Promise((resolve, reject) => {
+						$.ajax({
+							type : "POST",
+							url : /*[[@{/common/mvc/kanyosha/deleteKanyosha}]]*/,
+							data : param,
+							dataType : "html",
+						})
+						.done(function(data, status, jqXHR) {
+							if (isAjaxProcSuccess(jqXHR)) {
+								// 処理成功
+								showInfoMessageForJs(/*[[#{I00028('相手方代理人情報')}]]*/'')
+								return resolve()
+							} else {
+								const errorMsg = getAjaxProcResutlMessage(jqXHR);
+								showErrorMessage(errorMsg, $aitegataDairininModal);
+								return reject([errorMsg]);
+							}
+						})
+						.fail(function(jqXHR, status, errorThrown) {
+							const errorMsg = /*[[#{E00091}]]*/ "error";
+							showErrorMessage(errorMsg, $aitegataDairininModal);
+							return reject([jqXHR, status, errorThrown]);
+						});
+					});
+				}
+			};
+			
+			// 登録・編集エリアの初期レンダリング（再レンダリングも含む）
+			benzo.global.fragment.kanyoshaEditModalFragmentObj.setUpObj.initRenderEditViewAction = function(triggerBtn) {
+				if (ajaxRunning) {
+					return false;
+				}
+				ajaxRunning = true;
+				Promise.resolve()
+					.then(() => initRenderAitegataDairininEditViewAction())
+					.catch((errors) => console.log(errors))
+					.finally(() => ajaxRunning = false);
+			};
+			
+			// 検索エリアの登録処理
+			benzo.global.fragment.kanyoshaEditModalFragmentObj.setUpObj.searchRegistAction = function(triggerBtn) {
+				if (ajaxRunning) {
+					return false;
+				}
+				
+				let param = benzo.global.fragment.kanyoshaEditModalFragmentObj.paramObj.getSearchResultFormParams($aitegataDairininModal);
+				let aitegataDairininWithInParam = Object.assign({}, benzo.global.fragment.kanyoshaEditModalFragmentObj.aitegataDairininWithInParam);
+				
+				param.push({
+					name : "aitegataKanyoshaSeq",
+					value : aitegataDairininWithInParam.aitegataKanyoshaSeq
+				});
+				
+				const url = /*[[@{/common/mvc/kanyosha/searchResultRegistKanyoshaForAnkenAitegataDairinin}]]*/"";
+				ajaxRunning = true;
+				$.ajax({
+					type : "POST",
+					url : url,
+					data : param,
+					dataType : "html",
+				})
+				.done(function(data, status, jqXHR) {
+					if (isAjaxProcSuccess(jqXHR)) {
+						// 処理成功
+						Promise.resolve()
+							.then(() => modalHidePromise($aitegataDairininModal))
+							.then(() => getAnkenKanyoshaListView())
+							.then(() => showInfoMessageForJs(getAjaxProcResutlMessage(jqXHR)))
+					} else {
+						const errorMsg = getAjaxProcResutlMessage(jqXHR);
+						showErrorMessage(errorMsg, $aitegataDairininModal);
+					}
+				})
+				.fail(function(jqXHR, status, errorThrown) {
+					const errorMsg = /*[[#{E00091}]]*/ "error";
+					showErrorMessage(errorMsg, $aitegataDairininModal);
+				})
+				.always(function(){
+					ajaxRunning = false;
+				});
+			};
+			
+			// 検索エリアの検索処理
+			benzo.global.fragment.kanyoshaEditModalFragmentObj.setUpObj.searchRenderPromise = function() {
+				return new Promise((resolve, reject) => {
+					const url = /*[[@{/common/mvc/kanyosha/getKanyoshaSearchModalFragment/anken/aitegataDairinin}]]*/"";
+					let optionParam = benzo.global.fragment.kanyoshaEditModalFragmentObj.paramObj.getSearchFormParams($aitegataDairininModal);
+					$.ajax({
+						type : "GET",
+						url : url,
+						data : optionParam,
+						dataType : "html"
+					})
+					.done(function(result, status, jqXHR) {
+						if (isAjaxProcSuccess(jqXHR)) {
+							// 処理成功
+							$aitegataDairininModal.find(".kanyoshaEditModalFragmentWrap").html(result);
+							return resolve();
+						} else {
+							const errorMsg = getAjaxProcResutlMessage(jqXHR);
+							showErrorMessage(errorMsg, $aitegataDairininModal);
+							return reject(errorMsg);
+						}
+					})
+					.fail(function(jqXHR, status, errorThrown) {
+						showErrorMessageForJs(/*[[#{E00091}]]*/ "error");
+						return reject([jqXHR, status, errorThrown]);
+					});
+				});
+			};
+			
+			// 検索エリアの初期表示処理
+			benzo.global.fragment.kanyoshaEditModalFragmentObj.setUpObj.initRenderSearchViewAction = function() {
+				if (ajaxRunning) {
+					return false;
+				}
+				ajaxRunning = true;
+				Promise.resolve()
+					.then(() => initRenderAitegataDairininSearchViewAction())
+					.catch((errors) => console.log(errors))
+					.finally(() => ajaxRunning = false);
+			};
+			
+		});
+		
+		<!--/* 相手方代理人編集モーダルの初期レンダリング関数 */-->
+		function initRenderAitegataDairininEditViewAction() {
+			return new Promise((resolve, reject) => {
+				
+				let initRenderAitegataDairininEditViewParams = Object.assign({}, benzo.global.fragment.kanyoshaEditModalFragmentObj.initRenderAitegataDairininEditViewParams);
+				const ankenId = initRenderAitegataDairininEditViewParams["ankenId"];
+				const kanyoshaSeq = initRenderAitegataDairininEditViewParams["kanyoshaSeq"];
+				
+				let url = /*[[@{/common/mvc/kanyosha/getKanyoshaEditModalFragment}]]*/"";
+				let param = {} ;
+				if (kanyoshaSeq) {
+					url += `/${kanyoshaSeq}`;
+				} else {
+					url += "/create";
+					param = {
+						"ankenId" : ankenId,
+						"initCustomerType" : "2",
+					};
+				};
+
+				$.ajax({
+					type : "GET",
+					url : url,
+					data : param,
+					dataType : "html"
+				})
+				.done(function(result, status, jqXHR) {
+					if (isAjaxProcSuccess(jqXHR)) {
+						// 処理成功
+						$aitegataDairininModal.find(".kanyoshaEditModalFragmentWrap").html(result);
+						return resolve();
+					} else {
+						const errorMsg = getAjaxProcResutlMessage(jqXHR);
+						showErrorMessageForJs(errorMsg);
+						return reject(errorMsg);
+					}
+				})
+				.fail(function(jqXHR, status, errorThrown) {
+					showErrorMessageForJs(/*[[#{E00091}]]*/ "error");
+					return reject([jqXHR, status, errorThrown]);
+				});
+			});
+		};
+		
+		<!--/* 相手方代理人検索モーダルの初期レンダリング関数 */-->
+		function initRenderAitegataDairininSearchViewAction() {
+			return new Promise((resolve, reject) => {
+				let initRenderAitegataDairininSearchViewParams = Object.assign({}, benzo.global.fragment.kanyoshaEditModalFragmentObj.initRenderAitegataDairininSearchViewParams);
+				const ankenId = initRenderAitegataDairininSearchViewParams["ankenId"];
+				let param = [
+					{name:"ankenId", value: ankenId},
+					{name:"customerType", value: "2"},
+				];
+				
+				const url = /*[[@{/common/mvc/kanyosha/getKanyoshaSearchModalFragment/anken/aitegataDairinin}]]*/"";
+				$.ajax({
+					type : "GET",
+					url : url,
+					data : param,
+					dataType : "html"
+				})
+				.done(function(result, status, jqXHR) {
+					if (isAjaxProcSuccess(jqXHR)) {
+						// 処理成功
+						$aitegataDairininModal.find(".kanyoshaEditModalFragmentWrap").html(result);
+						return resolve();
+					} else {
+						const errorMsg = getAjaxProcResutlMessage(jqXHR);
+						showErrorMessageForJs(errorMsg);
+						return reject(errorMsg);
+					}
+				})
+				.fail(function(jqXHR, status, errorThrown) {
+					showErrorMessageForJs(/*[[#{E00091}]]*/ "error");
+					return reject(jqXHR, status, errorThrown)
+				});
+			});
+		};
+		
+		<!--/* 代理人モーダルの表示処理 */-->
+		$(ankenAitegataListFragment).on("click", ".openKanyoshaAitegataDairininModal", function() {
+			if (ajaxRunning) {
+				return false;
+			}
+			
+			const ankenId = /*[[${ankenId}]]*/"";
+			const kanyoshaSeq =$(this).data("kanyoshaSeq");
+			
+			// 登録・編集初期表示で必要なパラメータをメモリに保持しておく
+			benzo.global.fragment.kanyoshaEditModalFragmentObj.initRenderAitegataDairininEditViewParams = {
+					"ankenId": ankenId,
+					"kanyoshaSeq": kanyoshaSeq,
+			}
+			
+			// 検索初期表示で必要なパラメータをメモリに保持しておく
+			benzo.global.fragment.kanyoshaEditModalFragmentObj.initRenderAitegataDairininSearchViewParams = {
+					"ankenId": ankenId,
+			};
+			
+			<!--/* モーダルの保存処理等で使用するパラメータをGlobal領域に保持させておく */-->
+			const aitegataKanyoshaSeq = $(this).data("aitegataKanyoshaSeq");
+			benzo.global.fragment.kanyoshaEditModalFragmentObj.aitegataDairininWithInParam = {
+				"aitegataKanyoshaSeq": aitegataKanyoshaSeq,
+			}
+			
+			ajaxRunning = true;
+			Promise.resolve()
+				.then(() => initRenderAitegataDairininEditViewAction())
+				.then(() => $aitegataDairininModal.modal("show"))
+				.catch((errors) => console.log(errors))
+				.finally(() => ajaxRunning = false);
+		});
+		
+		<!--/* モーダル閉じる処理をPromise化 */-->
+		function modalHidePromise(modal){
+			return new Promise((resolve) => {
+				$(modal).one('hidden.bs.modal', function() {
+					resolve();
+				});
+				$(modal).modal("hide");
+			});
+		};
+		
+		<!--/* 案件関与者情報の再取得 */-->
+		function getAnkenKanyoshaListView() {
+			return new Promise((resolve, reject) => {
+				$.ajax({
+					url : /*[[@{/user/ankenMinjiManagement/{ankenId}/getAnkenKanyoshaListView(ankenId=${ankenId})}]]*/"",
+					type : "GET",
+					dataType: 'html',
+				})
+				.done(function(data, status, jqXHR) {
+					if (isAjaxProcSuccess(jqXHR)) {
+						// 親HTMLのID
+						$('#ankenKanyoshaFragmentWrap').html(data);
+						return resolve();
+					} else {
+						// 処理失敗
+						const errorMsg = getAjaxProcResutlMessage(jqXHR);
+						showErrorMessageForJs(errorMsg);
+						return reject();
+					}
+					
+				})
+				.fail(function(jqXHR, status, errorThrown) {
+					showErrorMessageForJs(/*[[#{E00091}]]*/ "error");
+					return reject();
+				});
+			});
+		};
+	});
+	</script>
+
+	<section class="section_aitegata section_person">
+		<div class="section_header">
+			<div class="section_header__title">相手方情報</div>
+			<div class="section_header__action">
+				<!--/* 新規追加 */-->
+				<a href="javascript:void(0);" class="openKanyoshaAitegataModal fs15">
+					<i class="fas fa-plus-square mr-2"></i>相手方を追加
+				</a>
+			</div>
+		</div>
+		<div class="section_body">
+			<div class="section_body__contents p-0">
+			
+	<!--/* 相手方が0件の場合 */-->
+	<th:block th:if="${ankenAitegataListViewForm.ankenKanyoshaViewDtoList.size() == 0}">
+				<div class="py-3 px-4">
+					<span th:text="#{I00035('相手方情報の登録')}">MSG_I00035</span>
+				</div>
+	</th:block>
+	
+	<!--/* 相手方が存在する場合 */-->
+	<th:block th:if="${ankenAitegataListViewForm.ankenKanyoshaViewDtoList.size() > 0}">
+				<div class="section_split_wrapper pb-0">
+					<div class="section_split">
+						<div class="section_split__left">
+							<span class="badge badge-pill badge_square mnw70 badge_green px-1"><i class="fas fa-user mr-2"></i>相手方</span>
+							<hr class="mt-3 m-0">
+						</div>
+						<div class="section_split__right">
+							<span class="badge badge-pill badge_square mnw70 badge_purple px-1"><i class="fas fa-user-tie mr-2"></i>代理人</span>
+							<hr class="mt-3 m-0">
+						</div>
+					</div>
+				</div>
+				<ul class="section_list px-3">
+					<li class="list_contents" th:each="aitegataKanyosha, i : ${ankenAitegataListViewForm.ankenKanyoshaViewDtoList}" th:object="${aitegataKanyosha}">
+						<div class="section_list_item_wrap section_split_wrapper">
+							<div class="section_split">
+								<!--/* 相手方エリア */-->
+								<div class="section_split__left">
+									<div class="section_list_item pl-1" th:id="|aitegataKanyosha*{personId}|">
+										<!--/* 名簿 */-->
+										<div class="img_info_xs mb-2">
+											<!--/* 名簿画像 */-->
+											<div class="img_info_xs__image">
+												<!--/* 名簿属性ラベル */-->
+												<div th:class="|person_image_wrapper*{personAttribute?.cd.getCd()}|">
+													<!--/* 個人アイコン */-->
+													<img th:if="*{T(jp.loioz.common.constant.CommonConstant$CustomerType).KOJIN.equals(customerType)}" 
+														class="img-thumbnail person_image_xs" th:src="@{/img/person_kojin.svg}"
+														data-boundary="window" data-container="body" data-toggle="tooltip" data-trigger="hover" th:title="個人">
+														
+													<!--/* 企業・団体アイコン */-->
+													<img th:if="*{T(jp.loioz.common.constant.CommonConstant$CustomerType).HOJIN.equals(customerType)}"
+														class="img-thumbnail person_image_xs" th:src="@{/img/person_hojin.svg}"
+														data-boundary="window" data-container="body" data-toggle="tooltip" data-trigger="hover" th:title="企業・団体">
+														
+													<!--/* 弁護士アイコン */-->
+													<img th:if="*{T(jp.loioz.common.constant.CommonConstant$CustomerType).LAWYER.equals(customerType)}"
+														class="img-thumbnail person_image_xs" th:src="@{/img/person_bengoshi.svg}"
+														data-boundary="window" data-container="body" data-toggle="tooltip" data-trigger="hover" th:title="弁護士">
+												</div>
+											</div>
+											<!--/* 名簿画像 end */-->
+	
+											<!--/* 名前 */-->
+											<div class="img_info_xs__info">
+												<div class="fw600 fs20 lh1_3 pt-1" th:text="*{kanyoshaName}">山田　太郎 </div>
+												<div>
+													<!-- /* 名簿ID */ -->
+													<a href="javascript:void(0);" class="app_id_link p-1 personPopoverLabel"
+														data-boundary="window" data-container="#ankenAitegataListViewFragment" data-toggle="tooltip" th:data-person-id="*{personId}"
+														th:text="|名簿ID：*{personId}|">名簿ID：100
+													</a>
+												</div>
+											</div>
+											<!-- /* ボタンエリア */ -->
+											<div class="img_info_xs__btn">
+												<div class="item_sub px-0">
+													<!--/* 相手方から外す選択 */-->
+													<div th:id="|aitegataContainer${i.index}|" class="d-inline-block stop-events outPutContainerClose" data-offset="-80,0" data-boundary="window" data-container="#ankenAitegataListViewFragment" th:data-aitegata-kanyosha-seq="*{kanyoshaSeq}" data-toggle="popover" data-placement="bottom" data-html="true" th:data-content=
+															'|<ul class="output_nav_list">
+																<li><button class="btn btn-light aitegataDelete" data-target="#aitegataContainer${i.index}"><i class="fas fa-minus-circle"></i>相手方から外す</button></li>
+																<li><button class="btn btn-light aitegataDeleteFromAnken" data-target="#aitegataContainer${i.index}"><i class="fas fa-user-minus"></i>案件から外す</button></li>
+															</ul>|'>
+														<button type="button" class="btn btn-light btn_icon_only btn_icon_ellipsis_v" data-boundary="window" data-container="#ankenAitegataListViewFragment">
+															<i class="fas fa-ellipsis-v"></i>
+														</button>
+													</div>
+												</div>
+											</div>
+											<!--/* １行目 end */-->
+										</div>
+										
+										<!--/* データブロック */-->
+										<div class="item_content_block">
+											<div class="kankei_remarks_view openKanyoshaAitegataModal" data-boundary="window"
+												th:data-kanyosha-seq="*{kanyoshaSeq}" data-container="#ankenAitegataListViewFragment"
+												data-toggle="tooltip" data-trigger="hover" title="編集する">
+												<div class="mb-3">
+													<label class="view_label">関係</label>
+													<div class="view_value fs15">
+														<div th:classappend="${#strings.isEmpty(aitegataKanyosha.kankei)} ? 'sub_text'"
+															myth:nl2br="${#strings.isEmpty(aitegataKanyosha.kankei)} ? '-' : *{kankei}">関係
+														</div>
+													</div>
+												</div> 
+												<div>
+													<label class="view_label">備考</label>
+													<div class="view_value fs15">
+														<div th:classappend="${#strings.isEmpty(aitegataKanyosha.remarks)} ? 'sub_text'"
+															myth:nl2br="${#strings.isEmpty(aitegataKanyosha.remarks)} ? '-' : *{remarks}">備考
+														</div>
+													</div>
+												</div> 
+											</div>
+										</div>
+									</div>
+								</div>
+								<!--/* 相手方エリア end */-->
+								
+								<!--/* 代理人エリア */-->
+								<div class="section_split__right">
+								
+		<!--/* 代理人が存在する場合 */-->
+		<th:block th:if="${aitegataKanyosha.ankenKanyoshaDairininViewDto != null}"
+									th:with="dairininPersonId=${aitegataKanyosha.ankenKanyoshaDairininViewDto.personId}">
+									
+									<div class="section_list_item pl-1">
+										<!--/* 名簿 */-->
+										<div class="img_info_xs mb-2">
+											<!--/* 名簿画像 */-->
+											<div class="img_info_xs__image">
+												<!--/* 名簿属性ラベル */-->
+												<div th:class="|person_image_wrapper${aitegataKanyosha.ankenKanyoshaDairininViewDto.personAttribute?.cd.getCd()}|">
+													<!--/* 個人アイコン */-->
+													<img th:if="${T(jp.loioz.common.constant.CommonConstant$CustomerType).KOJIN.equals(aitegataKanyosha.ankenKanyoshaDairininViewDto.customerType)}" 
+														class="img-thumbnail person_image_xs" th:src="@{/img/person_kojin.svg}"
+														data-boundary="window" data-container="body" data-toggle="tooltip" data-trigger="hover" th:title="個人">
+														
+													<!--/* 企業・団体アイコン */-->
+													<img th:if="${T(jp.loioz.common.constant.CommonConstant$CustomerType).HOJIN.equals(aitegataKanyosha.ankenKanyoshaDairininViewDto.customerType)}"
+														class="img-thumbnail person_image_xs" th:src="@{/img/person_hojin.svg}"
+														data-boundary="window" data-container="body" data-toggle="tooltip" data-trigger="hover" th:title="企業・団体">
+														
+													<!--/* 弁護士アイコン */-->
+													<img th:if="${T(jp.loioz.common.constant.CommonConstant$CustomerType).LAWYER.equals(aitegataKanyosha.ankenKanyoshaDairininViewDto.customerType)}"
+														class="img-thumbnail person_image_xs" th:src="@{/img/person_bengoshi.svg}"
+														data-boundary="window" data-container="body" data-toggle="tooltip" data-trigger="hover" th:title="弁護士">
+												</div>
+											</div>
+											<!--/* 名簿画像 end */-->
+	
+											<!--/* 名前 */-->
+											<div class="img_info_xs__info">
+												<div class="fw600 fs20 lh1_3 pt-1" th:text="${aitegataKanyosha.ankenKanyoshaDairininViewDto.kanyoshaName}">山田　太郎 </div>
+												<div class="d-flex flex-wrap cg10 rg5">
+													<!-- /* 名簿ID */ -->
+													<div>
+														<a href="javascript:void(0);" class="app_id_link p-1 personPopoverLabel" th:text="|名簿ID：${dairininPersonId.asLong()}|" 
+															data-boundary="window" data-container="#ankenAitegataListViewFragment" th:data-person-id="${dairininPersonId.asLong()}">
+															名簿ID：100
+														</a>
+													</div>
+			<th:block th:if="${!#strings.isEmpty(aitegataKanyosha.ankenKanyoshaDairininViewDto.jimushoName)}">
+													<div class="jimusho_name fc_sub fs13">
+														<i class="far fa-building fs12"></i>
+														<span th:text="${aitegataKanyosha.ankenKanyoshaDairininViewDto.jimushoName}"></span>
+													</div>
+			</th:block>
+												</div>
+											</div>
+											<!-- /* ボタンエリア */ -->
+											<div class="img_info_xs__btn">
+												<!-- /* ボタンエリア */ -->
+												<div class="item_sub px-0">
+													<!--/* 相手方代理人から外す選択 */-->
+													<div th:id="|dairininContainer${i.index}|" class="d-inline-block stop-events outPutContainerClose" data-offset="-80,0" data-boundary="window" data-container="#ankenAitegataListViewFragment" th:data-aitegata-kanyosha-seq="*{kanyoshaSeq}" th:data-dairinin-kanyosha-seq="${aitegataKanyosha.ankenKanyoshaDairininViewDto.kanyoshaSeq}" data-toggle="popover" data-placement="bottom" data-html="true" th:data-content=
+															'|<ul class="output_nav_list">
+																<li><button class="btn btn-light dairininDelete" data-target="#dairininContainer${i.index}"><i class="fas fa-minus-circle"></i>代理人から外す</button></li>
+																<li><button class="btn btn-light dairininDeleteFromAnken" data-target="#dairininContainer${i.index}"><i class="fas fa-user-minus"></i>案件から外す</button></li>
+															</ul>|'>
+														<button type="button" class="btn btn-light btn_icon_only btn_icon_ellipsis_v" data-boundary="window" data-container="#ankenAitegataListViewFragment">
+															<i class="fas fa-ellipsis-v"></i>
+														</button>
+													</div>
+												</div>
+											</div>
+										</div>
+										<!--/* １行目 end */-->
+										
+										<!--/* データブロック */-->
+										<div class="item_content_block">
+											<div class="kankei_remarks_view openKanyoshaAitegataDairininModal" data-boundary="window"
+												th:data-kanyosha-seq="${aitegataKanyosha.ankenKanyoshaDairininViewDto.kanyoshaSeq}"
+												data-container="#ankenAitegataListViewFragment" data-toggle="tooltip" data-trigger="hover" title="編集する">
+												<div class="mb-3">
+													<label class="view_label">関係</label>
+													<div class="view_value fs15">
+														<div th:classappend="${#strings.isEmpty(aitegataKanyosha.ankenKanyoshaDairininViewDto.kankei)} ? 'sub_text'"
+															myth:nl2br="${#strings.isEmpty(aitegataKanyosha.ankenKanyoshaDairininViewDto.kankei)} ? '-' : ${aitegataKanyosha.ankenKanyoshaDairininViewDto.kankei}">関係
+														</div>
+													</div>
+												</div> 
+												<div>
+													<label class="view_label">備考</label>
+													<div class="view_value fs15">
+														<div th:classappend="${#strings.isEmpty(aitegataKanyosha.ankenKanyoshaDairininViewDto.remarks)} ? 'sub_text'"
+															myth:nl2br="${#strings.isEmpty(aitegataKanyosha.ankenKanyoshaDairininViewDto.remarks)} ? '-' : ${aitegataKanyosha.ankenKanyoshaDairininViewDto.remarks}">備考
+														</div>
+													</div>
+												</div> 
+											</div>
+										</div>
+									</div>
+		</th:block>
+		<!--/* 代理人が存在する場合 end */-->
+		
+		<!--/* 代理人未設定の場合 */-->
+		<th:block th:if="${aitegataKanyosha.ankenKanyoshaDairininViewDto == null}">
+									<div class="select_dairinin">
+										<div>
+											<a href="javascript:void(0);" class="openKanyoshaAitegataDairininModal" th:data-aitegata-kanyosha-seq="*{kanyoshaSeq}">
+												<i class="fas fa-plus-square mr-2"></i>代理人を追加
+											</a>
+										</div>
+									</div>
+		</th:block>
+		<!--/* 代理人未設定の場合 end */-->
+								</div>
+								<!--/* 代理人エリア end */-->
+							</div>
+						</div>
+					</li>
+				</ul>
+	</th:block>
+	<!--/* 相手方が存在する場合 */-->
+			</div>
+		</div>
+	</section>
+	
+	<!--/* 相手方モーダル */-->
+	<div id="kanyoshaAitegataModal" class="modal fade" tabindex="-1" role="dialog" aria-hidden="true" data-backdrop="static">
+		<div class="modal-dialog modal-dialog-centered modal_kanyosha_customer_select" role="document">
+			<div class="modal-content">
+				<div class="kanyoshaEditModalFragmentWrap">
+					<!--/* 関与者情報 */-->
+				</div>
+			</div>
+		</div>
+	</div>
+	
+	<!--/* 相手方代理人モーダル */-->
+	<div id="kanyoshaAitegataDairininModal" class="modal fade" tabindex="-1" role="dialog" aria-hidden="true" data-backdrop="static">
+		<div class="modal-dialog modal-dialog-centered modal_kanyosha_customer_select" role="document">
+			<div class="modal-content">
+				<div class="kanyoshaEditModalFragmentWrap">
+					<!--/* 関与者情報 */-->
+				</div>
+			</div>
+		</div>
+	</div>
+	
+</div>
+</body>
+</html>

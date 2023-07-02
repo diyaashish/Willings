@@ -1,0 +1,312 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Created with Jaspersoft Studio version 6.19.1.final using JasperReports Library version 6.19.1-867c00bf88cd4d784d404379d6c05e1b419e8a4c  -->
+<jasperReport xmlns="http://jasperreports.sourceforge.net/jasperreports" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://jasperreports.sourceforge.net/jasperreports http://jasperreports.sourceforge.net/xsd/jasperreport.xsd" name="P0004" pageWidth="595" pageHeight="842" columnWidth="525" leftMargin="35" rightMargin="35" topMargin="48" bottomMargin="48" uuid="a74ebf30-dba2-4a6d-b4d1-65fcc3b1f1d9">
+	<property name="com.jaspersoft.studio.data.defaultdataadapter" value="One Empty Record"/>
+	<style name="defaultStype" isDefault="true" forecolor="#333333" fontName="BIZUDP明朝"/>
+	<style name="moneyStyle" fontName="IPAex明朝"/>
+	<style name="tableColumnHeader" mode="Opaque" forecolor="#002060" backcolor="#FFFFFF" isBold="true">
+		<box>
+			<pen lineWidth="2.5" lineColor="#FFFFFF"/>
+			<topPen lineWidth="2.5" lineColor="#FFFFFF"/>
+			<leftPen lineWidth="2.5" lineColor="#FFFFFF"/>
+			<bottomPen lineWidth="2.5" lineColor="#FFFFFF"/>
+			<rightPen lineWidth="2.5" lineColor="#FFFFFF"/>
+		</box>
+	</style>
+	<style name="tableBody" mode="Opaque" backcolor="#FFFFFF">
+		<box>
+			<pen lineWidth="2.5" lineColor="#FFFFFF"/>
+			<topPen lineWidth="2.5" lineColor="#FFFFFF"/>
+			<leftPen lineWidth="2.5" lineColor="#FFFFFF"/>
+			<bottomPen lineWidth="2.5" lineColor="#FFFFFF"/>
+			<rightPen lineWidth="2.5" lineColor="#FFFFFF"/>
+		</box>
+		<conditionalStyle>
+			<conditionExpression><![CDATA[$V{REPORT_COUNT} % 2 != 0]]></conditionExpression>
+			<style backcolor="#F2F2F2"/>
+		</conditionalStyle>
+	</style>
+	<style name="tableFooterLabel" mode="Opaque" backcolor="#FFFFFF">
+		<box>
+			<pen lineWidth="2.5" lineColor="#FFFFFF"/>
+			<topPen lineWidth="2.5" lineColor="#FFFFFF"/>
+			<leftPen lineWidth="2.5" lineColor="#FFFFFF"/>
+			<bottomPen lineWidth="2.5" lineColor="#FFFFFF"/>
+			<rightPen lineWidth="2.5" lineColor="#FFFFFF"/>
+		</box>
+	</style>
+	<style name="tableFooterValue" style="moneyStyle" mode="Opaque" backcolor="#F2F2F2">
+		<box>
+			<pen lineWidth="2.5" lineColor="#FFFFFF"/>
+			<topPen lineWidth="2.5" lineColor="#FFFFFF"/>
+			<leftPen lineWidth="2.5" lineColor="#FFFFFF"/>
+			<bottomPen lineWidth="2.5" lineColor="#FFFFFF"/>
+			<rightPen lineWidth="2.5" lineColor="#FFFFFF"/>
+		</box>
+	</style>
+	<subDataset name="timeChargeDataset" uuid="c6cd6dc8-a129-4ac1-a287-217347957bc9">
+		<queryString>
+			<![CDATA[]]>
+		</queryString>
+		<field name="timeChargeDate" class="java.lang.String"/>
+		<field name="detail" class="java.lang.String"/>
+		<field name="workMinutes" class="java.lang.String"/>
+		<field name="hourlyWage" class="java.lang.String"/>
+		<field name="subTotal" class="java.lang.String"/>
+	</subDataset>
+	<parameter name="outputDate" class="java.lang.String"/>
+	<parameter name="ankenName" class="java.lang.String"/>
+	<parameter name="timeChargeList" class="java.util.List"/>
+	<parameter name="timeChargeTotalMinutes" class="java.lang.String"/>
+	<parameter name="timeChargeTotalAmount" class="java.lang.String"/>
+	<variable name="tabSet" class="java.lang.String">
+		<variableExpression><![CDATA["&#09;&#09;&#09;&#09;&#09;"]]></variableExpression>
+		<initialValueExpression><![CDATA["&#09;&#09;&#09;&#09;&#09;"]]></initialValueExpression>
+	</variable>
+	<title>
+		<band height="50">
+			<staticText>
+				<reportElement x="0" y="0" width="525" height="20" forecolor="#002060" uuid="bef0ca3d-2ff3-4cdc-871f-1c3a97a9e94d"/>
+				<textElement textAlignment="Center" verticalAlignment="Middle">
+					<font size="20" isBold="true"/>
+				</textElement>
+				<text><![CDATA[タイムチャージ計算書]]></text>
+			</staticText>
+		</band>
+	</title>
+	<detail>
+		<band height="17">
+			<property name="com.jaspersoft.studio.unit.height" value="px"/>
+			<textField textAdjust="StretchHeight" isBlankWhenNull="true">
+				<reportElement positionType="Float" x="0" y="0" width="270" height="9" uuid="eff7dceb-1788-4578-80dc-33069ee10422">
+					<property name="com.jaspersoft.studio.unit.height" value="px"/>
+				</reportElement>
+				<box leftPadding="2"/>
+				<textElement>
+					<font size="9"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$P{ankenName}]]></textFieldExpression>
+			</textField>
+			<staticText>
+				<reportElement x="397" y="0" width="40" height="9" uuid="b7b04224-d17e-4304-8756-8afecdfe559c"/>
+				<textElement textAlignment="Right">
+					<font size="9"/>
+				</textElement>
+				<text><![CDATA[日付]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="437" y="0" width="8" height="9" uuid="ceec022c-89b3-41b8-bdf9-db8e7d6da166"/>
+				<textElement textAlignment="Center">
+					<font size="9"/>
+				</textElement>
+				<text><![CDATA[：]]></text>
+			</staticText>
+			<textField textAdjust="StretchHeight" isBlankWhenNull="true">
+				<reportElement x="445" y="0" width="80" height="9" uuid="0d09d4b0-2583-4c74-ae76-a5d11bb3503e">
+					<property name="com.jaspersoft.studio.unit.width" value="px"/>
+				</reportElement>
+				<box rightPadding="2"/>
+				<textElement textAlignment="Right">
+					<font size="9"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$P{outputDate}]]></textFieldExpression>
+			</textField>
+		</band>
+		<band height="80">
+			<componentElement>
+				<reportElement x="0" y="0" width="525" height="40" uuid="e8264037-9ee2-476a-bf2c-1dffc5b7ed38">
+					<property name="com.jaspersoft.studio.layout" value="com.jaspersoft.studio.editor.layout.VerticalRowLayout"/>
+					<property name="com.jaspersoft.studio.unit.height" value="px"/>
+				</reportElement>
+				<jr:table xmlns:jr="http://jasperreports.sourceforge.net/jasperreports/components" xsi:schemaLocation="http://jasperreports.sourceforge.net/jasperreports/components http://jasperreports.sourceforge.net/xsd/components.xsd" whenNoDataType="NoDataCell">
+					<datasetRun subDataset="timeChargeDataset" uuid="afd4eb78-bf7a-406a-8ce0-73fbbf72f861">
+						<dataSourceExpression><![CDATA[new net.sf.jasperreports.engine.data.JRBeanCollectionDataSource($P{timeChargeList})]]></dataSourceExpression>
+					</datasetRun>
+					<jr:column width="95" uuid="7771af1e-5d7c-438d-a486-aaaec5b9a663">
+						<property name="com.jaspersoft.studio.components.table.model.column.name" value="Column1"/>
+						<jr:columnHeader style="tableColumnHeader" height="20" rowSpan="1">
+							<property name="com.jaspersoft.studio.unit.height" value="px"/>
+							<property name="com.jaspersoft.studio.unit.width" value="px"/>
+							<staticText>
+								<reportElement x="0" y="0" width="95" height="20" forecolor="#002060" uuid="86201121-796a-4cdd-acb2-2b689d63302e"/>
+								<box leftPadding="10"/>
+								<textElement textAlignment="Left" verticalAlignment="Middle">
+									<font size="8" isBold="true"/>
+								</textElement>
+								<text><![CDATA[日付]]></text>
+							</staticText>
+						</jr:columnHeader>
+						<jr:detailCell style="tableBody" height="20">
+							<property name="com.jaspersoft.studio.unit.height" value="px"/>
+							<property name="com.jaspersoft.studio.unit.width" value="px"/>
+							<textField textAdjust="StretchHeight" isBlankWhenNull="true">
+								<reportElement stretchType="RelativeToBandHeight" x="0" y="0" width="95" height="20" uuid="16c1acc5-8f38-4a19-97ae-bc9eaaa643d5"/>
+								<box leftPadding="10"/>
+								<textElement verticalAlignment="Middle">
+									<font size="9"/>
+								</textElement>
+								<textFieldExpression><![CDATA[$F{timeChargeDate}]]></textFieldExpression>
+							</textField>
+						</jr:detailCell>
+					</jr:column>
+					<jr:column width="240" uuid="276b0cbe-0360-4263-92d8-e9d955182e5d">
+						<property name="com.jaspersoft.studio.components.table.model.column.name" value="Column2"/>
+						<jr:columnHeader style="tableColumnHeader" height="20" rowSpan="1">
+							<property name="com.jaspersoft.studio.unit.width" value="px"/>
+							<staticText>
+								<reportElement x="0" y="0" width="240" height="20" forecolor="#002060" uuid="5227b65a-92c6-4984-9a31-289fe8bf1010"/>
+								<box leftPadding="10"/>
+								<textElement textAlignment="Left" verticalAlignment="Middle">
+									<font size="8" isBold="true"/>
+								</textElement>
+								<text><![CDATA[活動内容]]></text>
+							</staticText>
+						</jr:columnHeader>
+						<jr:detailCell style="tableBody" height="20">
+							<property name="com.jaspersoft.studio.unit.width" value="px"/>
+							<textField textAdjust="StretchHeight" isBlankWhenNull="true">
+								<reportElement stretchType="RelativeToBandHeight" x="0" y="0" width="240" height="20" uuid="34a5ddc4-1c05-4428-8c95-5417d0f6bb56"/>
+								<box topPadding="5" leftPadding="10" bottomPadding="5" rightPadding="5"/>
+								<textElement verticalAlignment="Middle" markup="html">
+									<font size="9"/>
+									<paragraph lineSpacing="Proportional" lineSpacingSize="1.5"/>
+								</textElement>
+								<textFieldExpression><![CDATA[$F{detail}]]></textFieldExpression>
+							</textField>
+						</jr:detailCell>
+					</jr:column>
+					<jr:column width="50" uuid="f92118ee-73ed-4214-971b-e6a465388c7b">
+						<property name="com.jaspersoft.studio.components.table.model.column.name" value="Column3"/>
+						<jr:columnHeader style="tableColumnHeader" height="20" rowSpan="1">
+							<property name="com.jaspersoft.studio.unit.width" value="px"/>
+							<staticText>
+								<reportElement x="0" y="0" width="50" height="20" forecolor="#002060" uuid="4448a7ec-fbe1-4ee0-a993-a3d7972bc29d"/>
+								<box leftPadding="10"/>
+								<textElement verticalAlignment="Middle">
+									<font size="8" isBold="true"/>
+								</textElement>
+								<text><![CDATA[時間（分）]]></text>
+							</staticText>
+						</jr:columnHeader>
+						<jr:detailCell style="tableBody" height="20">
+							<property name="com.jaspersoft.studio.unit.width" value="px"/>
+							<textField textAdjust="ScaleFont" isBlankWhenNull="true">
+								<reportElement stretchType="RelativeToBandHeight" x="0" y="0" width="50" height="20" uuid="d75a163e-b83d-4891-a739-4bc01de3e7f7"/>
+								<textElement textAlignment="Center" verticalAlignment="Middle">
+									<font size="9"/>
+								</textElement>
+								<textFieldExpression><![CDATA[$F{workMinutes}]]></textFieldExpression>
+							</textField>
+						</jr:detailCell>
+					</jr:column>
+					<jr:column width="70" uuid="4eedd2c2-47c2-4c61-b270-59642b7a89aa">
+						<property name="com.jaspersoft.studio.components.table.model.column.name" value="Column4"/>
+						<jr:columnHeader style="tableColumnHeader" height="20" rowSpan="1">
+							<property name="com.jaspersoft.studio.unit.width" value="px"/>
+							<staticText>
+								<reportElement x="0" y="0" width="70" height="20" forecolor="#002060" uuid="9d95aef8-4273-4412-ba5b-fe4418d981dd"/>
+								<box rightPadding="10"/>
+								<textElement textAlignment="Right" verticalAlignment="Middle">
+									<font size="8" isBold="true"/>
+								</textElement>
+								<text><![CDATA[時間単価]]></text>
+							</staticText>
+						</jr:columnHeader>
+						<jr:detailCell style="tableBody" height="20">
+							<property name="com.jaspersoft.studio.unit.width" value="px"/>
+							<textField textAdjust="ScaleFont" isBlankWhenNull="true">
+								<reportElement style="moneyStyle" stretchType="RelativeToBandHeight" x="0" y="0" width="70" height="20" uuid="0529cf72-187b-469f-ab08-34e0d6a3779b"/>
+								<box rightPadding="10"/>
+								<textElement textAlignment="Right" verticalAlignment="Middle">
+									<font size="9"/>
+								</textElement>
+								<textFieldExpression><![CDATA[$F{hourlyWage}]]></textFieldExpression>
+							</textField>
+						</jr:detailCell>
+					</jr:column>
+					<jr:column width="70" uuid="6e5eaf49-823f-451c-b37c-dfd2d73f6f77">
+						<property name="com.jaspersoft.studio.components.table.model.column.name" value="Column5"/>
+						<jr:columnHeader style="tableColumnHeader" height="20" rowSpan="1">
+							<property name="com.jaspersoft.studio.unit.width" value="px"/>
+							<staticText>
+								<reportElement x="0" y="0" width="70" height="20" forecolor="#002060" uuid="e99239cc-0eae-470d-8ba2-25134813fc50"/>
+								<box rightPadding="10"/>
+								<textElement textAlignment="Right" verticalAlignment="Middle">
+									<font size="8" isBold="true"/>
+								</textElement>
+								<text><![CDATA[小計]]></text>
+							</staticText>
+						</jr:columnHeader>
+						<jr:detailCell style="tableBody" height="20">
+							<textField textAdjust="ScaleFont" isBlankWhenNull="true">
+								<reportElement style="moneyStyle" stretchType="RelativeToBandHeight" x="0" y="0" width="70" height="20" uuid="00ee7587-e5df-4ac8-85d8-5e3c030f8293"/>
+								<box rightPadding="10"/>
+								<textElement textAlignment="Right" verticalAlignment="Middle">
+									<font size="9"/>
+								</textElement>
+								<textFieldExpression><![CDATA[$F{subTotal}]]></textFieldExpression>
+							</textField>
+						</jr:detailCell>
+					</jr:column>
+				</jr:table>
+			</componentElement>
+			<staticText>
+				<reportElement style="tableFooterLabel" positionType="Float" x="390" y="40" width="50" height="20" uuid="c4c1acb2-e27d-478c-8f84-58f7d733a4b0">
+					<property name="com.jaspersoft.studio.unit.width" value="px"/>
+					<property name="com.jaspersoft.studio.unit.height" value="px"/>
+				</reportElement>
+				<box rightPadding="5"/>
+				<textElement textAlignment="Right" verticalAlignment="Middle">
+					<font size="8"/>
+				</textElement>
+				<text><![CDATA[合計時間]]></text>
+			</staticText>
+			<textField textAdjust="ScaleFont" isBlankWhenNull="true">
+				<reportElement style="tableFooterValue" positionType="Float" x="440" y="40" width="85" height="20" uuid="161bf8f9-f656-4c2c-93d6-51f53ea7ab1b">
+					<property name="com.jaspersoft.studio.unit.width" value="px"/>
+				</reportElement>
+				<box rightPadding="10"/>
+				<textElement textAlignment="Right" verticalAlignment="Middle">
+					<font size="9"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$P{timeChargeTotalMinutes}]]></textFieldExpression>
+			</textField>
+			<staticText>
+				<reportElement style="tableFooterLabel" positionType="Float" x="390" y="60" width="50" height="20" uuid="925f1ef5-7531-4dce-a504-e1ba549851cb">
+					<property name="com.jaspersoft.studio.unit.width" value="px"/>
+					<property name="com.jaspersoft.studio.unit.height" value="px"/>
+				</reportElement>
+				<box rightPadding="5"/>
+				<textElement textAlignment="Right" verticalAlignment="Middle">
+					<font size="8"/>
+				</textElement>
+				<text><![CDATA[報酬額]]></text>
+			</staticText>
+			<textField textAdjust="ScaleFont" isBlankWhenNull="true">
+				<reportElement style="tableFooterValue" positionType="Float" x="440" y="60" width="85" height="20" uuid="767a5214-5bf3-468d-921b-8d77f09fa0ec">
+					<property name="com.jaspersoft.studio.unit.width" value="px"/>
+					<property name="com.jaspersoft.studio.unit.x" value="px"/>
+				</reportElement>
+				<box rightPadding="10"/>
+				<textElement textAlignment="Right" verticalAlignment="Middle">
+					<font size="9"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$P{timeChargeTotalAmount}]]></textFieldExpression>
+			</textField>
+		</band>
+	</detail>
+	<pageFooter>
+		<band height="8">
+			<textField>
+				<reportElement x="0" y="0" width="525" height="8" uuid="3a81046e-95a4-43fc-ab5f-56fc385993e7">
+					<property name="com.jaspersoft.studio.unit.height" value="px"/>
+					<printWhenExpression><![CDATA[1 != 1]]></printWhenExpression>
+				</reportElement>
+				<textElement textAlignment="Center" verticalAlignment="Middle">
+					<font size="8"/>
+				</textElement>
+				<textFieldExpression><![CDATA["PAGE_NUMBER"]]></textFieldExpression>
+			</textField>
+		</band>
+	</pageFooter>
+</jasperReport>

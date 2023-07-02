@@ -1,0 +1,254 @@
+ <!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+<meta charset="utf-8" />
+</head>
+<body>
+
+<!--/* 関与者検索モーダル */-->
+<div id="taskAnkenAddModalFragment" th:fragment="taskAnkenAddModalFragment" th:object="${taskAnkenAddModalViewForm}">
+		<script type="text/javascript" th:inline="javascript">
+		$(function() {
+			
+			commonSetUpElement();
+			
+			<!--/* テキスト検索 */-->
+			let searchText;
+			let inputText;
+			
+			<!--/* 入力項目のクリア処理 */-->
+			$("#taskAnkenAddModalFragment").find('.add-clear-span > a').on('click', function() {
+				inputText = '';
+			});
+			
+			<!--/* 入力項目削除で検索 */-->
+			$("#taskAnkenAddModalFragment").find('.filtersContainer input[type="text"]').on('blur', function() {
+				if (searchText !== inputText) {
+					searchFn();
+				}
+			});
+			
+			<!--/* 入力項目のEnterで検索 */-->
+			$("#taskAnkenAddModalFragment").find('.filtersContainer input[type="text"]').on('keydown', function(e) {
+				if (e.keyCode == 13) {
+					searchText = $(this).val();
+					searchFn();
+				};
+				inputText = $(this).val();
+			});
+			
+			<!--/* 日付の変更で検索 */-->
+			$("#taskAnkenAddModalFragment").find('.filtersContainer .inputDate').on('change', function(e) {
+				searchFn();
+			});
+			
+			<!--/* セレクトボックスの変更で検索 */-->
+			$("#taskAnkenAddModalFragment").find('.filtersContainer select').on('change', function(e) {
+				searchFn();
+			});
+			
+			<!--/* 検索処理 */-->
+			function searchFn() {
+				const optionParam = $("#taskAnkenAddModalFragment").find('#taskAnkenAddModalSearchForm').serializeArray();
+				searchTaskAnkenAddList(optionParam);
+			};
+			
+			<!--/* 一覧行クリックでラジオボタンをチェックする */-->
+			$("#taskAnkenAddModalFragment").find('.ankenRadio').on('change', function() {
+				if($("#taskAnkenAddModalFragment").find(".ankenRadio:checked").length) {
+					$("#taskAnkenAddModalFragment").find(".taskAnkenAddRegist").attr("disabled", false);
+				}
+			});
+			
+			<!--/* 登録処理 */-->
+			$("#taskAnkenAddModalFragment").on("click", ".taskAnkenAddRegist", function() {
+				if (ajaxRunning) {
+					return false;
+				}
+				ajaxRunning = true;
+				
+				const taskAnkenCd = /*[[${T(jp.loioz.common.constant.CommonConstant$TaskMenu).TASK_ANKEN.cd}]]*/ '';
+				const ankenId = $("input[name='selectedAnken']:checked").val();
+				<!--/* タスク詳細を閉じる */-->
+				$('#taskDetailFragmentWrap').addClass("hidden");
+
+				Promise.resolve()
+					<!--/* 案件タスク登録 */-->
+					.then(() => registAnkenTaskAdd(ankenId))
+					<!--/* サイドメニュー更新 */-->
+					.then(() => renderTaskMenu(taskAnkenCd, ankenId))
+					<!--/* 一覧画面更新 */-->
+					.then(() => renderTaskListInputForm(taskAnkenCd, null, null, null, ankenId))
+					.catch((errorObj) => {console.log(errorObj)})
+					.finally(() => {
+						ajaxRunning = false;
+					})
+			});
+			
+		});
+		</script>
+		<div>
+			<!--/* ヘッダー */-->
+			<div class="modal-header">
+				<h2 class="modalheader_title modalNameLabel">追加する案件を選択</h2>
+			</div>
+			<!--/* ボディ */-->
+			<div class="modal-body">
+				<div th:replace="common/messageArea::jsMessageArea"></div>
+				<form id="taskAnkenAddModalSearchForm" autocomplete="off">
+					<!--/* 検索条件 */-->
+					<div class="list_filters_container filtersContainer">
+						<fieldset>
+							<div class="list_filters_header">
+								<div class="filters_title">検索条件</div>
+							</div>
+							<div class="form-row">
+								<!--/* 名前 */-->
+								<div class="form-group col-md-auto">
+									<label class="input_parts_label">名前</label>
+									<input type="text" class="form-control digit10 fcAddTextClear" placeholder="顧客名、相手方..." maxlength="300" th:field="${taskAnkenAddModalSearchForm.name}">
+								</div>
+								<!--/* 案件ID */-->
+								<div class="form-group col-md-auto">
+									<label class="input_parts_label">案件ID</label>
+									<input type="text" class="form-control digit8 inputNumberOnly fcAddTextClear" placeholder="" maxlength="10" th:field="${taskAnkenAddModalSearchForm.ankenId}">
+								</div>
+								<!--/* 分野 */-->
+								<div class="form-group col-md-auto">
+									<label class="input_parts_label">分野</label>
+									<select class="form-control digit8 changeBunya" th:field="${taskAnkenAddModalSearchForm.bunyaId}">
+										<option value="">-</option>
+										<option th:each="bunyaDto : ${taskAnkenAddModalSearchForm.bunyaList}" th:value="${bunyaDto.cd}" th:text="${bunyaDto.val}"></option>
+									</select>
+								</div>
+								<!--/* 案件名 */-->
+								<div class="form-group col-md-auto">
+									<label class="input_parts_label">案件名</label>
+									<input type="text" class="form-control digit12 fcAddTextClear" placeholder="" maxlength="300" th:field="${taskAnkenAddModalSearchForm.ankenName}">
+								</div>
+								<!--/* 担当弁護士 */-->
+								<div class="form-group col-md-auto">
+									<label class="input_parts_label">担当弁護士</label>
+									<select class="form-control digit8 changeTantoLawyer" th:field="${taskAnkenAddModalSearchForm.tantoLaywer}">
+										<option value="">-</option>
+										<option th:each="lawyer : ${taskAnkenAddModalSearchForm.tantoLawyerList}" th:value="${lawyer.accountSeq}" th:text="|${lawyer.accountNameSei} ${lawyer.accountNameMei}|" th:selected="${lawyer.accountSeq} == ${taskAnkenAddModalSearchForm.tantoLaywer}"></option>
+									</select>
+								</div>
+								<!--/* 担当事務 */-->
+								<div class="form-group col-md-auto">
+									<label class="input_parts_label">担当事務</label>
+									<select class="form-control digit8 changeTantoJimu" th:field="${taskAnkenAddModalSearchForm.tantoJimu}">
+										<option value="">-</option>
+										<option th:each="jimu : ${taskAnkenAddModalSearchForm.tantoJimuList}" th:value="${jimu.accountSeq}" th:text="|${jimu.accountNameSei} ${jimu.accountNameMei}|"></option>
+									</select>
+								</div>
+								<!--/* 登録日 */-->
+								<div class="form-group col-md-auto">
+									<label class="input_parts_label">登録日</label>
+									<div class="d-flex align-items-start">
+										<div>
+											<div class="d-flex ankenCreateDateFrom">
+												<input type="text" class="form-control digit8 inputDateSlash fcAddTextClear inputDate" maxlength="10"
+													th:field="${taskAnkenAddModalSearchForm.ankenCreateDateFrom}"
+													data-click-sync="[data-target-name='ankenCreateDateFrom']">
+												<button type="button" class="btn btn_popcal hidden" data-toggle="datepicker" data-target-name="ankenCreateDateFrom">カレンダー</button>
+												<div class="fs15 mt-2 mx-2">〜</div>
+											</div>
+										</div>
+										<div>
+											<div class="ankenCreateDateTo">
+												<input type="text" class="form-control digit8 inputDateSlash fcAddTextClear inputDate" maxlength="10"
+													th:field="${taskAnkenAddModalSearchForm.ankenCreateDateTo}"
+													data-click-sync="[data-target-name='ankenCreateDateTo']">
+												<button type="button" class="btn btn_popcal hidden" data-toggle="datepicker" data-target-name="ankenCreateDateTo">カレンダー</button>
+											</div>
+										</div>
+									</div>
+								</div>
+							</div>
+						</fieldset>
+					</div>
+					<!--/* 検索条件 end */-->
+				</form>
+
+				<form id="taskAnkenAddModalViewForm">
+					<th:block th:if="*{overViewCntFlg}">
+						<div class="pl-2">
+							<div>最大表示件数は[[${T(jp.loioz.common.constant.CommonConstant).OVER_VIEW_LIMIT}]]件までです。</div>
+							該当データが見つからない場合は、再度条件を指定し検索してください。
+						</div>
+					</th:block>
+					
+					<div class="header_fixed_table_wrapper mt-4 table_task_anken_add">
+						<table class="table table_standard table-hover">
+							<thead>
+								<tr>
+									<th class="cell_fixed_75">選択</th>
+									<th class="cell_fixed_75">案件ID</th>
+									<th class="cell_fixed_100">分野</th>
+									<th class="cell_fixed_200">案件名</th>
+									<th class="cell_fixed_150">顧客名</th>
+									<th class="cell_fixed_150">相手方</th>
+									<th class="cell_fixed_100">担当弁護士</th>
+									<th class="cell_fixed_100">担当事務</th>
+									<th class="cell_fixed_100">登録日</th>
+								</tr>
+							</thead>
+							
+							<tbody>
+								<th:block th:if="*{taskAnkenAddList.size() == 0}">
+									<tr>
+										<td colspan="10" class="no_data"><span th:text="#{I00044('案件情報')}">該当する案件情報は見つかりませんでした。</span></td>
+									</tr>
+								</th:block>
+								<tr th:each="anken : *{taskAnkenAddList}" data-click-sync-for-descendants=".ankenRadio">
+									<!--/* 選択 */-->
+									<td class="cell_fixed_75">
+										<label class="radio_btn">
+											<input type="radio" name="selectedAnken" class="radio_input ankenRadio" th:value="${anken.ankenId.asLong()}">
+											<span class="radio_txt"></span>
+										</label>
+									</td>
+									<!--/* 案件ID */-->
+									<td class="cell_fixed_75" th:text="${anken.ankenId.asLong()}"></td>
+									<!--/* 分野 */-->
+									<td class="cell_fixed_100 char_ellipsis" th:text="${#strings.isEmpty(anken.getBunyaName())} ? '-' : ${anken.getBunyaName()}">労働</td>
+									<!--/* 案件名 */-->
+									<td class="cell_fixed_200 char_ellipsis" th:text="${#strings.isEmpty(anken.ankenName)} ? '(案件名未入力)' : ${anken.ankenName}">残業代請求事件</td>
+									<!--/* 顧客名 */-->
+									<td class="cell_fixed_150 char_ellipsis">
+										<span th:text="${#strings.isEmpty(anken.customerName)} ? '-' : ${anken.customerName}">株式会社〇〇商事</span>
+										<div class="row_sub_data lh1 sub_text" th:if="${anken.numberOfCustomer > 1}" th:text="|外${anken.numberOfCustomer-1}名|">外4名</div>
+									</td>
+									<!--/* 相手方 */-->
+									<td class="cell_fixed_150 char_ellipsis">
+										<span th:text="${#strings.isEmpty(anken.aitegataName)} ? '-' : ${anken.aitegataName}">株式会社〇〇商事</span>
+										<div class="row_sub_data lh1 sub_text" th:if="${anken.numberOfAitegata > 1}" th:text="|外${anken.numberOfAitegata-1}名|">外4名</div>
+									</td>
+									<!--/* 担当者弁護士 */-->
+									<td class="cell_fixed_100 char_ellipsis" data-boundary="window" data-container="body" data-toggle="tooltip" data-trigger="hover" th:title="${#strings.isEmpty(anken.tantoLaywerName)} ? '' : ${anken.tantoLaywerName}" th:text="${#strings.isEmpty(anken.tantoLaywerName)} ? '-' : ${anken.tantoLaywerName}">
+										弁護士 太郎, 弁護士 二郎, 弁護士 三郎
+									</td>
+									<!--/* 担当事務 */-->
+									<td class="cell_fixed_100 char_ellipsis" data-boundary="window" data-container="body" data-toggle="tooltip" data-trigger="hover" th:title="${#strings.isEmpty(anken.tantoJimuName)} ? '' : ${anken.tantoJimuName}" th:text="${#strings.isEmpty(anken.tantoJimuName)} ? '-' : ${anken.tantoJimuName}">
+										事務員 太郎, 事務員 二郎
+									</td>
+									<!--/* 登録日 */-->
+									<td class="cell_fixed_100" th:text="${#strings.isEmpty(anken.getCreatedAtFormat())} ? '-' : ${anken.getCreatedAtFormat()}">2022/02/22</td>
+								</tr>
+							</tbody>
+						</table>
+					</div>
+				</form>
+			</div>
+			
+			<!--/* フッター */-->
+			<div class="modal-footer">
+				<button type="button" class="btn btn-info taskAnkenAddRegist" disabled><i class="fas fa-check"></i><span>登録</span></button>
+				<button type="button" class="btn btn-light" data-dismiss="modal"><i class="fas fa-times"></i>閉じる</button>
+			</div>
+			
+		</div>
+	</div>
+</body>
+</html>

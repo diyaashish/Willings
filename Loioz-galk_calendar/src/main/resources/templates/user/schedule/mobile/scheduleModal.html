@@ -1,0 +1,1228 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+<meta charset="utf-8" />
+<th:block th:fragment="css"
+	th:with="
+		id='scheduleEdit',
+		sankashaViewId='scheduleEditSankasha'">
+<style th:replace="user/schedule/mobile/scheduleCalendar::css"></style>
+<style th:inline="css">
+<!--/* モーダル属性毎の表示制御 */-->
+#[[${id}]].isCreate .hideIfCreate {
+	display: none;
+}
+#[[${id}]].isUpdate .hideIfUpdate {
+	display: none;
+}
+#[[${id}]].isUnmodifiable .hideIfUnmodifiable {
+	display: none;
+}
+
+#[[${id}]].isCustomer .hideIfCustomer {
+	display: none;
+}
+#[[${id}]]:not(.isCustomer) .hideIfNotCustomer {
+	display: none;
+}
+#[[${id}]].isAnken .hideIfAnken {
+	display: none;
+}
+#[[${id}]]:not(.isAnken) .hideIfNotAnken {
+	display: none;
+}
+#[[${id}]].isSaiban .hideIfSaiban {
+	display: none;
+}
+#[[${id}]]:not(.isSaiban) .hideIfNotSaiban {
+	display: none;
+}
+
+#[[${id}]].isShokaiMendan .hideIfShokaiMendan {
+	display: none;
+}
+#[[${id}]]:not(.isShokaiMendan) .hideIfNotShokaiMendan {
+	display: none;
+}
+#[[${id}]].isSaibanLimit .hideIfSaibanLimit {
+	display: none;
+}
+#[[${id}]]:not(.isSaibanLimit) .hideIfNotSaibanLimit {
+	display: none;
+}
+
+#[[${id}]].isShutteiNotRequired .hideIfShutteiNotRequired {
+	display: none;
+}
+#[[${id}]]:not(.isShutteiNotRequired) .hideIfShutteiRequired {
+	display: none;
+}
+#[[${id}]].isShutteiNotRequired .modal_subtitle {
+	margin-top: 0;
+}
+
+#[[${id}]].isCopyMode .modalheader_title {
+	background-color: #ff8f00;
+}
+#[[${id}]].isCopyMode .hideIfCopyMode {
+	display: none;
+}
+#[[${id}]]:not(.isCopyMode) .hideIfNotCopyMode {
+	display: none;
+}
+
+<!--/* 参加者の表示制御 部署 */-->
+/*[# th:each="busho : ${scheduleCommonViewForm.bushoList}"]*/
+#[[${sankashaViewId}]] .scheduleBushoShozoku[data-type="[[${busho.bushoId}]]"] .shozokuUser:not([data-type~="[[${busho.bushoId}]]"]) {
+	display: none;
+}
+/*[/]*/
+<!--/* 参加者の表示制御 未所属 */-->
+#[[${sankashaViewId}]] .scheduleBushoShozoku[data-type="0"] .shozokuUser:not([data-type~="0"]) {
+	display: none;
+}
+<!--/* 参加者の表示制御 ALL */-->
+#[[${sankashaViewId}]] .scheduleBushoShozoku[data-type="[[${T(jp.loioz.common.constant.CommonConstant).SANKASHA_SELECT_OPTION_ALL}]]"] .shozokuUser:not([data-type~="[[${T(jp.loioz.common.constant.CommonConstant).SANKASHA_SELECT_OPTION_ALL}]]"]) {
+	display: none;
+}
+</style>
+</th:block><!--/* モーダル用スタイル end */-->
+
+<th:block th:fragment="scripts"
+	th:with="
+		id='scheduleEdit',
+		sankashaViewId='scheduleEditSankasha'">
+<script th:replace="user/schedule/mobile/scheduleCalendar::scripts"></script>
+<!--/* 予定登録モーダル */-->
+<script type="text/javascript" th:inline="javascript">
+benzo.global.smartSchedule = {};
+
+<!--/* 予定表初期データ */-->
+benzo.global.smartSchedule.emptyScheduleData = {
+	"scheduleSeq": null,
+	"subject": null,
+	"dateFrom": null,
+	"dateTo": null,
+	"timeFrom": null,
+	"timeTo": null,
+	"hourFrom": 0,
+	"minFrom": 0,
+	"hourTo": 0,
+	"minTo": 0,
+	"allday": false,
+	"roomSelected": false,
+	"roomId": null,
+	"place": null,
+	"memo": null,
+	"openRange": /*[[${T(jp.loioz.common.constant.CommonConstant$SchedulePermission).ALL.cd}]]*/ 0,
+	"editRange": /*[[${T(jp.loioz.common.constant.CommonConstant$SchedulePermission).ALL.cd}]]*/ 0,
+	"member": [],
+	"createUserName": null,
+	"createdAt": null,
+	"updateUserName": null,
+	"updatedAt": null,
+	"placeDisp": null,
+	"customerId": null,
+	"customerIdDisp": null,
+	"customerName": null,
+	"ankenId": null,
+	"ankenIdDisp": null,
+	"ankenName": null,
+	"bunyaName": null,
+	"keiji":false,
+	"shokaiMendan": false,
+	"saibanSeq": null,
+	"saibanId": null,
+	"caseNumber": null,
+	"jikenName": null,
+	"tojishaNameTitleLabel": null,
+	"tojishaNameLabel": null,
+	"aitegataNameTitleLabel": null,
+	"aitegataNameLabel": null,
+	"saibanLimit": false,
+	"saibanLimitSeq": null,
+	"shutteiType": null,
+	"forbidden": false,
+	"weekViewCnt": 0,
+	"weekViewDate": null,
+	"holiday":false,
+};
+
+<!--/* 編集画面を開く */-->
+benzo.global.smartSchedule.openEditContainer = function(scheduleData, config){
+	let editContainer = benzo.global.smartSchedule.editContainer;
+	let editContainerSankasha = benzo.global.smartSchedule.editContainerSankasha;
+
+	<!--/* 編集画面の状態を初期化 */-->
+	clearAllMessages(editContainer);
+	editContainer.removeClass("isCreate");
+	editContainer.removeClass("isUpdate");
+	editContainer.removeClass("isUnmodifiable");
+	editContainer.removeClass("isCustomer");
+	editContainer.removeClass("isAnken");
+	editContainer.removeClass("isSaiban");
+	editContainer.removeClass("isShokaiMendan");
+	editContainer.removeClass("isSaibanLimit");
+	editContainer.removeClass("isCopyMode");
+	editContainer.find(".scheduleEditContainerForm").find("input, textarea, select, button").prop("disabled", false);
+	editContainer.find(".scheduleEditContainerForm").find(".openScheduleSankashaModal").removeClass("hidden");
+	editContainer.find('[name="roomId"] option').removeClass("hidden");
+	editContainer.find(".member").removeClass("isMain");
+
+	<!--/* 予定表データを反映 */-->
+	benzo.global.smartSchedule.populateScheduleDataToEditContainer(scheduleData, editContainer, editContainerSankasha);
+
+	if(config.isCreate){
+		<!--/* 新規 */-->
+		editContainer.addClass("isCreate");
+	} else {
+		<!--/* 編集 */-->
+		editContainer.addClass("isUpdate");
+	}
+
+	<!--/* 編集権限制御 */-->
+	if(config.isUnmodifiable
+			|| (
+				scheduleData.editRange == /*[[${T(jp.loioz.common.constant.CommonConstant$SchedulePermission).MEMBER.cd}]]*/ 1
+				&& !scheduleData.member.includes(/*[[${T(jp.loioz.common.utility.SessionUtils).getLoginAccountSeq()}]]*/ 1)
+			)){
+		<!--/* この予定に対して編集権限がない場合 */-->
+		editContainer.addClass("isUnmodifiable");
+		editContainer.find(".scheduleEditContainerForm").find("input, textarea, select, button").prop("disabled", true);
+		editContainer.find(".scheduleEditContainerForm").find(".openScheduleSankashaModal").addClass("hidden");
+	}
+
+	<!--/* 顧客表示制御 */-->
+	if(scheduleData.customerId){
+		editContainer.addClass("isCustomer");
+	}
+	<!--/* 案件表示制御 */-->
+	if(scheduleData.ankenId){
+		editContainer.addClass("isAnken");
+	}
+	<!--/* 裁判表示制御 */-->
+	if(scheduleData.saibanId){
+		editContainer.addClass("isSaiban");
+	}
+	<!--/* 初回面談表示制御 */-->
+	if(scheduleData.shokaiMendan){
+		editContainer.addClass("isShokaiMendan");
+	}
+	<!--/* 裁判期日表示制御 */-->
+	if(scheduleData.saibanLimit){
+		editContainer.addClass("isSaibanLimit");
+	}
+
+	<!--/* モーダルを表示 */-->
+	editContainer.show("slide", {direction: "down" }, 500);
+	
+	return editContainer;
+}
+
+<!--/** 編集画面を閉じる処理 */-->
+benzo.global.smartSchedule.closeEditContainer = function() {
+	const editContainer = benzo.global.smartSchedule.editContainer;
+	editContainer.hide("slide", {direction: "down" }, 500);
+	// エラーメッセージを削除
+	clearAllMessages(editContainer);
+	clearAllItemMsg();
+}
+
+<!--/** 参加者画面を開く処理 */-->
+benzo.global.smartSchedule.openEditSankashaContainer = function(){
+	const sankashaContainer = benzo.global.smartSchedule.editContainerSankasha
+	sankashaContainer.show("slide", {direction: "right" }, 500);
+	return sankashaContainer;
+}
+
+<!--/** 参加者画面を閉じる処理 */-->
+benzo.global.smartSchedule.closeEditSankashaContainer = function() {
+	const sankashaContainer = benzo.global.smartSchedule.editContainerSankasha
+	sankashaContainer.hide("slide", {direction: "right" }, 500);
+	return sankashaContainer;
+}
+
+<!--/* 予定表データを編集画面に反映 */-->
+benzo.global.smartSchedule.populateScheduleDataToEditContainer = function(data, editContainer, editContainerSankasha){
+	<!--/* 項目値を反映 */-->
+	populateObjectToHtml(data, editContainer);
+	
+	<!--/* 日時選択時の自動設定に必要な属性値を設定 */-->
+	const timeFrom = editContainer.find("[name='timeFrom']");
+	const timeTo = editContainer.find("[name='timeTo']");
+	timeFrom.val(formatHHMMSS(data.hourFrom, data.minFrom, 0));
+	timeTo.val(formatHHMMSS(data.hourTo, data.minTo, 0));
+	timeFrom.attr("data-before", formatHHMMSS(data.hourFrom, data.minFrom, 0));
+	timeTo.attr("data-before", formatHHMMSS(data.hourTo, data.minTo, 0));
+	
+	<!--/* hidden値にして送るものは、ユーザーが操作する項目にデータを設定する */-->
+	editContainer.find(".dateFromUserInput").val($.datepicker.formatDate("yy-mm-dd", new Date(data.dateFrom)))
+	editContainer.find(".dateToUserInput").val($.datepicker.formatDate("yy-mm-dd", new Date(data.dateTo)))
+	editContainer.find(".hourFromUserInput").val(lpad(data.hourFrom, 2 ,"0"))
+	editContainer.find(".minFromUserInput").val(lpad(data.minFrom, 2 ,"0"))
+	editContainer.find(".hourToUserInput").val(lpad(data.hourTo, 2 ,"0"))
+	editContainer.find(".minToUserInput").val(lpad(data.minTo, 2 ,"0"))
+	
+	<!--/* 参加者選択状態を反映 */-->
+	editContainerSankasha.find("input[type='checkbox']").prop("checked", false);
+	editContainerSankasha.find(".scheduleBushoShozoku .shozokuUser[data-enabled=false]").addClass("hidden");
+	$.each(data["member"], function(key, value){
+		editContainerSankasha.find(".scheduleBushoShozoku .shozokuUser[data-account-seq='" + value + "']").removeClass("hidden");
+		editContainerSankasha.find(".scheduleBushoShozoku .shozokuUser .userCheck[data-account-seq='" + value + "']").prop("checked", true);
+	});
+	
+	benzo.global.smartSchedule.setEditContainerSankasha(editContainer, editContainerSankasha);
+	
+	<!--/* 登録者・更新者の表示制御 */-->
+	if(!data.createUserName && !data.createdAt){
+		editContainer.find('[data-contains="createUser"]').addClass("hidden");
+	} else {
+		editContainer.find('[data-contains="createUser"]').removeClass("hidden");
+	}
+	if(!data.updateUserName && !data.updatedAt){
+		editContainer.find('[data-contains="updateUser"]').addClass("hidden");
+	} else {
+		editContainer.find('[data-contains="updateUser"]').removeClass("hidden");
+	}
+	
+	<!--/* 選択状態に連動した必須アイコン変更 */-->
+	if(data.roomSelected) {
+		editContainer.find(".placeRquiredIcon").removeClass("hidden");
+	} else {
+		editContainer.find(".placeRquiredIcon").addClass("hidden");
+	}
+
+	<!--/* 選択状態に連動したイベントを発火 */-->
+	editContainer.find('[name="allday"]').trigger("change", {suppressGetRoomAvailability: true});
+	editContainer.find('[data-contains="date"]').trigger("change");
+	editContainer.find('.memberGroup').trigger("change");
+	editContainer.find('[name="shutteiType"]').trigger("change");
+
+	<!--/* 出廷不要の場合、詳細を表示 */-->
+	const optionContents = editContainer.find(".otherOpenCloseAct");
+	if(data["shutteiType"] == /*[[${T(jp.loioz.common.constant.CommonConstant$ShutteiType).NOT_REQUIRED.cd}]]*/ 2){
+		if (optionContents.hasClass("otherClose")){
+			// 出廷不要かつ詳細が閉じられているとき -> 切り替え処理
+			optionContents.trigger("click");
+		}
+	} else {
+		if (!optionContents.hasClass("otherClose")){
+			// 出廷不要以外、詳細が開かれているとき -> 切り替え処理
+			optionContents.trigger("click");
+		}
+	}
+}
+
+<!--/** 選択されている参加者を予定画面に表示 */-->
+benzo.global.smartSchedule.setEditContainerSankasha = function(editContainer, editContainerSankasha){
+	
+	const dispArea = editContainer.find("#sankashaDispArea");
+	dispArea.empty();// 一度空にする
+	
+	let user = {};
+	$.each(editContainerSankasha.find(".userCheck:checked"), ((index, obj) => {
+			let userOption = $(obj).closest(".shozokuUser");
+			let userSeq = userOption.data("accountSeq");
+			let userName = userOption.find(".checkbox_txt").text();
+			user[userSeq] = $("<div class='user_label user" + userSeq + "' data-account-seq='" + userSeq + "'></div>").text(userName);
+		})
+	);
+	for (const item in user) {
+		dispArea.append(user[item]);
+	}
+}
+
+<!--/* モーダルのフォームパラメータを取得 */-->
+benzo.global.smartSchedule.getEditFormParams = function(){
+	let editContainer = benzo.global.smartSchedule.editContainer;
+
+	<!--/* 一時的に非活性を解除 */-->
+	let disabledItems = editContainer.find(".scheduleEditContainerForm *:disabled");
+	disabledItems.prop("disabled", false);
+
+	<!--/* パラメータを取得 */-->
+	let params = editContainer.find(".scheduleEditContainerForm")
+		.serializeArray()
+		.reduce(function(map, param){
+			map[param.name] = param.value;
+			return map;
+		}, {});
+
+	<!--/* 解除した非活性を元に戻す */-->
+	disabledItems.prop("disabled", true);
+
+	<!--/* 参加者をリクエストパラメータに設定 */-->
+	let csvMemberSeq = editContainer.find("#sankashaDispArea [data-account-seq]").map(function(){
+		return $(this).data("accountSeq");
+	})
+	.get()
+	.join(",");
+	params["member"] = csvMemberSeq;
+
+	return params;
+}
+
+$(function() {
+	
+	let editContainer = $("#" + /*[[${id}]]*/"");
+	let editContainerSankasha = $("#" + /*[[${sankashaViewId}]]*/"");
+	
+	benzo.global.smartSchedule.editContainer = editContainer;
+	benzo.global.smartSchedule.editContainerSankasha = editContainerSankasha;
+	
+	// 編集画面を閉じる処理
+	editContainer.find("[data-dismiss]").on("click", function() {
+		benzo.global.smartSchedule.closeEditContainer();
+	});
+	
+	// 参加者選択画面を表示
+	$(editContainer).find(".openScheduleSankashaModal").on("click", function(){
+		benzo.global.smartSchedule.openEditSankashaContainer();
+	});
+	
+	// 参加者選択画面を閉じる
+	editContainerSankasha.find("[data-dismiss]").on("click", function() {
+		benzo.global.smartSchedule.closeEditSankashaContainer(editContainerSankasha);
+	});
+	
+	<!--/** 日付入力項目変更処理 */-->
+	editContainer.on("change", ".dateFromUserInput", function() {
+		const target = editContainer.find("[name='dateFrom']");
+		fullYearValidate($(this));
+		if($(this).val() == "") {
+			target.val("");
+			return;
+		}
+		target.val($.datepicker.formatDate("yy/mm/dd", new Date($(this).val())))
+		inputDateSlashFunc(target); // 日付フォーマットのチェック
+	});
+	editContainer.on("change", ".dateToUserInput", function() {
+		const target = editContainer.find("[name='dateTo']");
+		fullYearValidate($(this));
+		if($(this).val() == "") {
+			target.val("");
+			return;
+		}
+		target.val($.datepicker.formatDate("yy/mm/dd", new Date($(this).val())))
+		inputDateSlashFunc(target); // 日付フォーマットのチェック
+	});
+	editContainer.on("change", ".hourFromUserInput", function() {
+		const target = editContainer.find("[name='timeFrom']");
+		timeSetStream(target, $(this).val(), (dateObj, val) => dateObj.setHours(val));
+		timeaAuxiliary(target,editContainer.find("[name='timeTo']"));
+	});
+	editContainer.on("change", ".minFromUserInput", function() {
+		const target = editContainer.find("[name='timeFrom']");
+		timeSetStream(target, $(this).val(), (dateObj, val) => dateObj.setMinutes(val));
+		timeaAuxiliary(target,editContainer.find("[name='timeTo']"));
+	});
+	editContainer.on("change", ".hourToUserInput", function() {
+		const target = editContainer.find("[name='timeTo']");
+		timeSetStream(target, $(this).val(), (dateObj, val) => dateObj.setHours(val));
+		timeaAuxiliary(target,editContainer.find("[name='timeFrom']"));
+	});
+	editContainer.on("change", ".minToUserInput", function() {
+		const target = editContainer.find("[name='timeTo']");
+		timeSetStream(target, $(this).val(), (dateObj, val) => dateObj.setMinutes(val));
+		timeaAuxiliary(target,editContainer.find("[name='timeFrom']"));
+	});
+	
+	<!--/** type = date の年数制御 IOSではHTMLバリデートが効かないため*/-->
+	const fullYearValidate= (target) => {
+		const changedDate = new Date($(target).val());
+		// 5桁以上は許容しない
+		if(changedDate.getFullYear() > 9999) {
+			changedDate.setFullYear(9999);
+			$(target).val($.datepicker.formatDate("yy-mm-dd", changedDate))
+		}
+	}
+	
+	<!--/** 時間セレクトボックス変更の共通関数 */-->
+	const timeSetStream = (target, value, settingTime) => {
+		let date = new Date("2020/01/01 " + target.val()); // 時間の設定なので、日付はなんでも良い
+		settingTime(date, value); // この処理は呼び出し元ごとに変更する
+		target.val(formatHHMMSS(date.getHours(), date.getMinutes(), date.getSeconds()));
+	}
+	
+	<!--/** 時間の整合性補助機能 */-->
+	const timeaAuxiliary = (baseObj, targetObj) => {
+		const timeFrom = editContainer.find("[name='timeFrom']")
+		const timeTo = editContainer.find("[name='timeTo']");
+		
+		// HH:mm:ss → hhmmssの数値に変換
+		const timeFromInt = Number(timeFrom.val().replace(/:/g,''));
+		const timeToInt = Number(timeTo.val().replace(/:/g,''));
+
+		if (timeFromInt > timeToInt) {
+			//date型使用したいだけなので、インスタンス化時の日付は何日でも問題ない
+			const beforeDateObj = new Date("2020/01/01 " + baseObj.attr("data-before"));
+			const nowDateObj = new Date("2020/01/01 " + baseObj.val());
+			const duration = nowDateObj.getTime() - beforeDateObj.getTime();
+			const targetDateObj = new Date("2020/01/01 " + targetObj.val())
+			const resulDate = new Date(targetDateObj.getTime() + duration);
+			
+			let hours;
+			let minutes;
+			if (targetDateObj.getDate() != resulDate.getDate()) {
+				if (resulDate.getTime() > targetDateObj.getTime()) {
+					hours = editContainer.find(targetObj.data("hourTarget")+" option:last").val();
+					minutes =editContainer.find(targetObj.data("minTarget")+" option:last").val();
+				} else {
+					hours = editContainer.find(targetObj.data("hourTarget")+" option:first").val();
+					minutes =editContainer.find(targetObj.data("minTarget")+" option:first").val();
+				}
+			} else {
+				hours =lpad(resulDate.getHours(),2,"0");
+				minutes =lpad(resulDate.getMinutes(),2,"0");
+			}
+			targetObj
+				.val(formatHHMMSS(hours, minutes, 0))
+				.attr("data-before", formatHHMMSS(hours, minutes, 0))
+
+			editContainer.find(targetObj.data("hourTarget"))
+				.val(hours);
+			editContainer.find(targetObj.data("minTarget"))
+				.val(minutes);
+		}
+		
+		baseObj.attr("data-before", baseObj.val());
+	}
+	
+	<!--/* 日時項目の表示制御 */-->
+	editContainer.on("change", '[name="allday"]', function(){
+		let isAllday = editContainer.find('[name="allday"]').prop("checked");
+
+		<!--/* 繰り返し期間指定なしの場合 */-->
+		editContainer.find(".scheduleDateFrom").removeClass("hidden");
+
+		<!--/* 「終日」「繰り返し」が両方チェックされた場合の表示制御 */-->
+		editContainer.find(".scheduleDate").removeClass("hidden");
+		editContainer.find(".scheduleDateToItems").removeClass("hidden");
+
+	});
+	<!--/* 終日チェック */-->
+	editContainer.on("change", '[name="allday"]', function(){
+		if($(this).prop("checked")){
+			editContainer.find(".alldayShowItem").removeClass("hidden");
+			editContainer.find(".alldayHideItem").addClass("hidden");
+		} else {
+			editContainer.find(".alldayShowItem").addClass("hidden");
+			editContainer.find(".alldayHideItem").removeClass("hidden");
+		}
+	});
+	<!--/* 場所変更 */-->
+	editContainer.on("change", '[name="roomId"]', function(){
+		editContainer.find(".placeRquiredIcon").removeClass("hidden");
+		editContainer.find('[name="roomSelected"][value="true"]').prop("checked", true);
+	});
+	editContainer.on("change", '[name="place"]', function(){
+		editContainer.find(".placeRquiredIcon").addClass("hidden");
+		editContainer.find('[name="roomSelected"][value="false"]').prop("checked", true);
+	});
+	editContainer.on("change", '[name="roomSelected"]', function() {
+		if("true" === $(this).val()) {
+			editContainer.find(".placeRquiredIcon").removeClass("hidden");
+		} else {
+			editContainer.find(".placeRquiredIcon").addClass("hidden");
+		}
+	})
+	<!--/* 参加者グループの表示・非表示切り替え */-->
+	editContainerSankasha.find(".smart_user_list_accordion > dt").click(function () {
+		if ($("+dd", this).css("display") === "none") {
+			$(this).addClass("selected");
+			$("+dd", this).slideDown("fast");
+			return false;
+		} else {
+			$(this).removeClass("selected");
+			$("+dd", this).slideUp("fast");
+		}
+	});
+	<!--/* 参加者クリック */-->
+	editContainerSankasha.find(".scheduleUserSelect").on("click", ".userCheck", function(){
+		// 同じ項目は連動する 
+		editContainerSankasha.find(".scheduleUserSelect .userCheck[data-account-seq='"+ $(this).data("accountSeq") +"']").prop("checked", $(this).prop("checked"));
+		// 親画面に反映
+		benzo.global.smartSchedule.setEditContainerSankasha(editContainer, editContainerSankasha)
+	});
+	<!--/* その他オプションクリック */-->
+	editContainer.find(".otherOpenCloseAct").on("click", function(){
+		if ($(this).hasClass("otherClose")){
+			// その他オプションを開く
+			$(this).text("その他オプションを閉じる");
+			$(this).addClass("otherOpen");
+			$(this).removeClass("otherClose");
+			editContainer.find("#otherOptionArea").removeClass("hidden");
+			$(".modalbody_schedule").animate({scrollTop:500});
+
+		} else {
+			// その他オプションを閉じる
+			$(this).text("その他オプションを表示");
+			$(this).removeClass("otherOpen");
+			$(this).addClass("otherClose");
+			editContainer.find("#otherOptionArea").addClass("hidden");
+		}
+	});
+
+	<!--/* 出廷不要の場合は予定に関する項目を非表示 */-->
+	editContainer.on("change", '[name="shutteiType"]', function(){
+		let shutteiType = $(this).val();
+		if(shutteiType == /*[[${T(jp.loioz.common.constant.CommonConstant$ShutteiType).NOT_REQUIRED.cd}]]*/ 2){
+			editContainer.addClass("isShutteiNotRequired");
+			editContainer.find('[name="roomSelected"][value="false"]').prop("checked", true);
+		} else {
+			editContainer.removeClass("isShutteiNotRequired");
+		}
+	});
+
+	<!--/* 日時が変更されたら、その条件で会議室予約状況を取得する */-->
+	editContainer.on("change", '[data-contains="date"]', function(event, extraParams){
+
+		if(extraParams && extraParams.suppressGetRoomAvailability){
+			return;
+		}
+
+		<!--/* モーダル全体のフォームパラメータ */-->
+		let editContainerFormParams = benzo.global.smartSchedule.getEditFormParams();
+
+		<!--/* 予約条件項目のパラメータ名 */-->
+		let inputNames = uniqueArray(
+				editContainer.find('[data-contains="date"] [name]').map(function(){
+					return $(this).attr("name");
+				}).get()
+			);
+		inputNames.push("scheduleSeq");
+
+		<!--/* モーダル全体のパラメータから予約条件パラメータを抽出 */-->
+		let params = {};
+		inputNames.forEach(function(name){
+			if(editContainerFormParams.hasOwnProperty(name)){
+				params[name] = editContainerFormParams[name];
+			}
+		});
+
+		<!--/* 予約状況を取得 */-->
+		let roomSelect = editContainer.find('[name="roomId"]');
+		$.ajax({
+			type : "POST",
+			url : /*[[(@{/user/schedule/getRoomAvailability})]]*/ "/",
+			data : params,
+			dataType : "json"
+		})
+		.done(function(result) {
+			// safariではoptionをhiddenにできないので、spanタグでラップする
+			const wrapTag = "<span class='hidden'>";
+			<!--/* 予約できない会議室を非表示 */-->
+			roomSelect.find("span [data-room-id]").unwrap();
+			roomSelect.find("[data-room-id]").removeClass("hidden");
+			result.unavailableRoomId.forEach(function(roomId){
+				roomSelect.find(`[data-room-id='${roomId}']`)
+					.addClass("hidden")
+					.wrap(wrapTag);
+			});
+			<!--/* 現在選択中の会議室が予約できない場合は未選択状態にする */-->
+			if(roomSelect.find("option:selected").is(".hidden")){
+				roomSelect.val(null);
+			}
+		})
+		.fail(function() {
+			roomSelect.find("[data-room-id]").addClass("hidden");
+			roomSelect.val(null);
+		});
+	});
+
+	<!--/* コピーボタン */-->
+	let modalCopyOrgContext = {"modal": null, "select": {}};
+	editContainer.on("click", ".copyButton", function(){
+		<!--/* 現在のモーダルをイベントごとclone */-->
+		modalCopyOrgContext.modal = editContainer.clone(true);
+
+		<!--/* select選択状態はcloneできないので別途取得 */-->
+		let selectParams = {};
+		editContainer.find("select[name]").each(function(){
+			selectParams[$(this).attr("name")] = $(this).val();
+		});
+		modalCopyOrgContext.select = selectParams;
+
+		<!--/* コピーモードON */-->
+		editContainer.addClass("isCopyMode");
+		editContainer.addClass("isCreate");
+		editContainer.removeClass("isUpdate");
+		editContainer.removeClass("isUnmodifiable");
+		editContainer.find(".scheduleEditContainerForm").find("input, textarea, select, button").prop("disabled", false);
+		editContainer.find('.scheduleEditContainerForm').find(".select").attr("disabled", false);
+
+		<!--/* コピーした予定は無効アカウントは選択肢から外し、hidden化 */-->
+		editContainer.find(".memberList .member[data-enabled=false]").addClass("hidden");
+		editContainer.find(".memberList .member[data-enabled=false]").trigger("click");
+
+		<!--/* コピーした予定は新規登録するため、予定SEQをクリア */-->
+		editContainer.find('[name="scheduleSeq"]').val("");
+
+		<!--/* 会議室予約状況を再取得 */-->
+		editContainer.find('[data-contains="date"]').trigger("change");
+	});
+
+	<!--/* コピーキャンセルボタン */-->
+	editContainer.on("click", ".cancelCopy", function(){
+		<!--/* コピーボタン押下時点のモーダル状態を復元 */-->
+		editContainer.html(modalCopyOrgContext.modal.children());
+		editContainer.attr("class", modalCopyOrgContext.modal.attr("class"));
+		editContainer.find("select[name]").each(function(){
+			if(typeof modalCopyOrgContext.select[$(this).attr("name")] !== "undefined"){
+				$(this).val(modalCopyOrgContext.select[$(this).attr("name")]);
+			}
+		});
+	});
+
+	<!--/* 閉じるボタン */-->
+	editContainer.on("click", ".closeButton", function(){
+		clearAllMessages(modal);
+		clearAllItemMsg();
+	});
+
+});
+</script>
+</th:block><!--/* モーダル用スクリプト end */-->
+</head>
+<body>
+	<th:block th:fragment="mobileEditView">
+		<div th:replace="common/mobileEditContainer::mobileEditContainer(
+			id='scheduleEditView',
+			absolute=true,
+			headerContents=${headerContents}?: ~{::scheduleEditViewHeaderContents},
+			bodyContents=${bodyContents}?: ~{::scheduleEditViewBodyContents},
+			footerContents=${footerContents}?: ~{::scheduleEditViewFooterContents})">
+		</div>
+	</th:block>
+	<th:block th:fragment="mobileEditContainer">
+		<div th:replace="common/mobileEditContainer::mobileEditContainer(
+			id='scheduleEdit',
+			headerContents=${headerContents}?: ~{::scheduleEditHeaderContents},
+			bodyContents=${bodyContents}?: ~{::scheduleEditBodyContents},
+			footerContents=${footerContents}?: ~{::scheduleEditFooterContents})">
+		</div>
+		<div th:replace="common/mobileEditContainer::mobileEditContainer(
+			id='scheduleEditSankasha',
+			direction='right',
+			headerContents=${headerContents}?: ~{::sankashaEditHeaderContents},
+			bodyContents=${bodyContents}?: ~{::sankashaEditBodyContents})">
+		</div>
+	</th:block>
+
+	<th:block th:fragment="scheduleEditViewHeaderContents">
+		<div class="edit_view_header cal_view_header">
+			<div class="edit_header_left_contents">
+			</div>
+			<div class="edit_header_center_contents">
+			</div>
+			<div class="edit_header_right_contents">
+				<button type="button" class="close" data-dismiss="mobileEdit" aria-label="閉じる">
+					<span aria-hidden="true">&times;</span>
+				</button>
+			</div>
+		</div>
+	</th:block>
+	<th:block th:fragment="scheduleEditViewBodyContents">
+		<div class="edit_body cal_view_body">
+			<h3 class="cal_subject" data-text-name="subject"></h3>
+			<dl class="cal_detail_dl">
+				<dd>
+					<div class="cal_date" data-text-name="date"></div>
+				</dd>
+			</dl>
+			<dl class="cal_detail_dl hideHolidayContents">
+				<dd>
+					<div class="cal_place" data-text-name="place"></div>
+				</dd>
+			</dl>
+			<dl class="cal_detail_dl hideHolidayContents">
+				<dd>
+					<div class="cal_schedule_memo">
+						<span id="scheduleMemo" data-text-name="viewMemo"></span>
+					</div>
+				</dd>
+			</dl>
+			<dl class="cal_detail_dl hideHolidayContents">
+				<dd class="customerItem">
+					<div class="d-flex">
+						<div class="mr-4">
+							<i class="far fa-user"></i>
+						</div>
+						<div>
+							<a href="javascript:void(0);" class="title_link">
+								<span class="mr-2" data-text-name="customerName"></span>
+							</a>
+							<div class="infoname sub_text" data-text-name="customerIdDisp"></div>
+						</div>
+					</div>
+				</dd>
+				<dd class="ankenItem">
+					<div class="d-flex">
+						<div class="mr-4 icon_anken_svg">
+							<i class="far fa-file-alt"></i>
+						</div>
+						<div>
+							<a href="javascript:void(0);" class="title_link">
+								<span class="mr-3" data-text-name="ankenName"></span>
+							</a>
+							<div class="infoname sub_text" data-text-name="ankenIdDisp"></div>
+						</div>
+					</div>
+				</dd>
+				<dd class="saibanItem">
+					<div class="d-flex">
+						<div class="mr-3 mt-2">
+							<i class="fas fa-gavel reverses_text"></i>
+						</div>
+						<div class="mt-1">
+							<a href="javascript:void(0);" class="title_link">
+								<span class="mr-3" data-text-name="jikenName"></span>
+							</a>
+							<div class="infoname sub_text" data-text-name="caseNumber"></div>
+							<div class="d-flex flex-column sub_text mt-3">
+								<div>
+									<div class="small font-weight-bold mb-1" data-text-name="tojishaNameTitleLabel"></div>
+									<span data-text-name="tojishaNameLabel"></span>
+								</div>
+								<div class="mt-3">
+									<div class="small font-weight-bold mb-1" data-text-name="aitegataNameTitleLabel"></div>
+									<span data-text-name="aitegataNameLabel"></span>
+								</div>
+							</div>
+						</div>
+					</div>
+				</dd>
+			</dl>
+			<div class="border_gray hideHolidayContents"></div>
+			<dl class="cal_detail_dl hideHolidayContents">
+				<dd class="">
+					<div class="cal_schedule_sankasha">
+						<ul class="cal_participant_list" data-child-temp="<li class='participant'></li>">
+						</ul>
+					</div>
+				</dd>
+			</dl>
+		</div>
+	</th:block>
+	<th:block th:fragment="scheduleEditViewFooterContents">
+		<div class="edit_view_footer cal_view_footer">
+			<div class="m-auto hideHolidayContents hideForbiddenContents">
+				<button type="button" class="btn btn-primary btn-sm openScheduleEditContainer"><i class="fas fa-edit mr-2"></i>編集</button>
+			</div>
+		</div>
+	</th:block>
+
+	<th:block th:fragment="scheduleEditHeaderContents"
+		th:with="
+			createUrl=${createUrl}?: @{/user/schedule/create},
+			updateUrl=${updateUrl}?: @{/user/schedule/update},
+			deleteUrl=${deleteUrl}?: @{/user/schedule/delete}">
+			<!--/** 登録 */-->
+			<div class="edit_header hideIfUpdate hideIfCopyMode">
+				<div class="edit_header_left_contents">
+					<button class="btn btn-sm btn-outline-light border-0" th:data-dismiss="mobileEdit">キャンセル</button>
+				</div>
+				<div class="edit_header_center_contents">
+					<span class="title">予定の登録</span>
+				</div>
+				<div class="edit_header_right_contents">
+					<div data-contains="createButton">
+						<button type="button" class="btn btn-sm btn-outline-light border-0 saveSchedule createButton" th:data-url="${createUrl}"><i class="fas fa-check"></i>登録</button>
+					</div>
+				</div>
+			</div>
+			<!--/** 編集 */-->
+			<div class="edit_header hideIfCreate hideIfCopyMode">
+				<div class="edit_header_left_contents">
+					<button class="btn btn-sm btn-outline-light border-0" th:data-dismiss="mobileEdit">キャンセル</button>
+				</div>
+				<div class="edit_header_center_contents">
+					<span class="title">予定の編集</span>
+				</div>
+				<div class="edit_header_right_contents">
+					<div class="hideIfUnmodifiable" data-contains="updateButton">
+						<button type="button" class="btn btn-sm btn-outline-light border-0 saveSchedule updateButton" th:data-url="${updateUrl}"><i class="fas fa-check"></i>保存</button>
+					</div>
+				</div>
+			</div>
+			
+<th:block th:remove="all">
+<!-- 現行の仕様では不要-->
+			<!--/** 予定のコピー */-->
+			<div class="edit_header hideIfNotCopyMode">
+				<div class="edit_header_left_contents"></div>
+				<div class="edit_header_center_contents">
+					<span class="title">予定コピー</span>
+				</div>
+				<div class="edit_header_right_contents">
+					<div data-contains="createButton">
+						<button type="button" class="btn btn-sm btn-outline-light border-0 saveSchedule createButton" th:data-url="${createUrl}"><i class="fas fa-check"></i>登録</button>
+					</div>
+				</div>
+			</div>
+</th:block>
+
+	</th:block>
+
+	<th:block th:fragment="scheduleEditBodyContents">
+		<div class="edit_body">
+			<div class="smart_schedule_edit_body">
+				<div th:replace="common/messageArea::jsMessageArea"></div>
+				<form class="scheduleEditContainerForm" th:action="@{/}" method="post" th:autocomplete="off">
+					<input type="hidden" name="scheduleSeq">
+					<div class="smart_form_block">
+						<div class="smart_form_row hideIfShutteiNotRequired" data-contains="subject">
+							<div class="smart_form_col_data">
+								<label class="txt_label">件名</label>
+								<input type="text" class="form_txt w-100" name="subject" maxlength="30">
+								<div class="error_mag_point hidden" id="itemMsg_subject"></div>
+							</div>
+						</div>
+						<div class="smart_form_row" data-contains="date">
+							<div class="smart_form_col_data">
+								<table class="smart_form_t_sub">
+									<tr>
+										<th><label class="txt_label">開始日時</label></th>
+										<td class="pr-2 d-flex justify-content-end">
+											<div>
+												<input type="date" class="form_txt dateFromUserInput" max="9999-12-31" />
+												<input type="hidden" name="dateFrom">
+											</div>
+											<div class="pl-2 d-flex align-items-center alldayHideItem">
+												<input type="hidden" name="timeFrom" data-hour-target=".hourFromUserInput" data-min-target=".minFromUserInput" />
+												<select class="form_select hourFromUserInput">
+													<optgroup><!--/* IOSバグ対応 */--></optgroup>
+													<th:block th:each="hour : ${#numbers.sequence(0,23)}" th:fragment="hourSelectOptions">
+														<option th:value="${#numbers.formatInteger(hour, 2)}" th:text="${#numbers.formatInteger(hour, 2)}">
+													</th:block>
+												</select>
+												<span class="mx-1">:</span>
+												<select class="form_select minFromUserInput">
+													<optgroup><!--/* IOSバグ対応 */--></optgroup>
+													<th:block th:each="min : ${#numbers.sequence(0,59,5)}" th:fragment="minSelectOptions">
+														<option th:value="${#numbers.formatInteger(min,2)}" th:text="${#numbers.formatInteger(min,2)}"></option>
+													</th:block>
+												</select>
+											</div>
+										</td>
+									</tr>
+									<tr>
+										<th></th>
+										<td class="d-flex flex-column align-items-end" colspan="2">
+											<div class="error_mag_point hidden" id="itemMsg_dateFrom"></div>
+											<div class="error_mag_point hidden" id="itemMsg_timeFrom"></div>
+										</td>
+									</tr>
+									<tr class="hideIfShutteiNotRequired">
+										<th><label class="txt_label">終了日時</label></th>
+										<td class="pr-2 d-flex justify-content-end">
+											<div class="alldayShowItem">
+												<input type="date" class="form_txt dateToUserInput" max="9999-12-31" />
+												<input type="hidden" name="dateTo">
+											</div>
+											<div class="d-table alldayHideItem">
+												<input type="hidden" name="timeTo" data-hour-target=".hourToUserInput" data-min-target=".minToUserInput" />
+												<select class="form_select hourToUserInput">
+													<optgroup><!--/* IOSバグ対応 */--></optgroup>
+													<th:block th:replace="::hourSelectOptions"></th:block>
+												</select>
+												<span class="mx-1">:</span>
+												<select class="form_select minToUserInput">
+													<optgroup><!--/* IOSバグ対応 */--></optgroup>
+													<th:block th:replace="::minSelectOptions"></th:block>
+												</select>
+											</div>
+										</td>
+									</tr>
+									<tr>
+										<th></th>
+										<td class="d-flex flex-column align-items-end" colspan="2">
+											<div class="error_mag_point hidden" id="itemMsg_dateTo"></div>
+											<div class="error_mag_point hidden" id="itemMsg_timeTo"></div>
+										</td>
+									</tr>
+									<tr class="hideIfShokaiMendan hideIfSaibanLimit">
+										<th><label class="txt_label">終日</label></th>
+										<td class="d-flex">
+											<div class="switch_area ml-auto">
+												<input type="checkbox" id="allday" name="allday">
+												<label for="allday"><span></span></label>
+												<div class="switch_btn"></div>
+											</div>
+										</td>
+									</tr>
+								</table>
+							</div>
+						</div>
+						<div class="smart_form_row" data-contains="place">
+							<div class="smart_form_col_title">
+								<!-- <div class="is_icon_place"></div> -->
+								<label class="txt_label">場所</label>
+							</div>
+							<div class="smart_form_col_data">
+								<div class="mt-2 d-flex hideIfShutteiNotRequired" style="align-items: center;">
+									<label class="radio_btn digit4 text-left mb-0">
+										<input type="radio" class="radio_input" name="roomSelected" value="true">
+										<span class="radio_txt">施設</span>
+									</label>
+									<div class="smpflex_f1 smpflex">
+										<select class="form_select w-100" name="roomId">
+											<optgroup><!--/* IOSバグ対応 */--></optgroup>
+											<option value="">-</option>
+											<option th:each="room : ${scheduleCommonViewForm.roomList}"
+												th:data-room-id="${room.roomId}"
+												th:value="${room.roomId}" th:text="${room.roomName}"></option>
+										</select>
+									</div>
+								</div>
+								<div class="mt-2 d-flex" style="align-items: center;">
+									<label class="radio_btn digit4 text-left hideIfShutteiNotRequired mb-0">
+										<input type="radio" class="radio_input" name="roomSelected" value="false">
+										<span class="radio_txt">その他</span>
+									</label>
+									<div class="smpflex_f1 smpflex">
+										<input type="text" class="form_txt w-100" name="place" maxlength="100">
+									</div>
+								</div>
+								<div class="error_mag_point hidden" id="itemMsg_roomId"></div>
+							</div>
+						</div>
+						<div class="smart_form_row hideIfShutteiNotRequired " data-contains="member">
+							<div class="smart_form_col_title">
+								<!-- <div class="is_icon_team"></div> -->
+								<label class="txt_label">参加者</label>
+							</div>
+							<div class="smart_form_col_data px-0">
+								<div id="sankashaDispArea" class="sankasha_area"></div>
+								<div class="error_mag_point hidden" id="itemMsg_member"></div>
+							</div>
+							<div class="is_next mr-2 openScheduleSankashaModal" role="button"></div>
+						</div>
+						<div class="smart_form_row hideIfShutteiNotRequired" data-contains="memo">
+							<div class="smart_form_col_data">
+								<label class="txt_label hideIfSaibanLimit">メモ</label>
+								<label class="txt_label hideIfNotSaibanLimit">手続き</label>
+								<textarea class="form_txt w-100" rows="5" name="memo" maxlength="3000"></textarea>
+								<div class="error_mag_point hidden" id="itemMsg_memo"></div>
+							</div>
+						</div>
+					</div>
+					<div class="smart_form_block form_block_option_area hidden" id="otherOptionArea">
+						<div class="smart_form_row hideIfNotCustomer" data-contains="customer">
+							<div class="smart_form_col_title">
+								<label class="txt_label">顧客情報者</label>
+							</div>
+							<div class=smart_form_col_data>
+								<p class="userdatap">
+									<span class="" data-text-name="customerIdDisp"></span>
+									<span class="infoname disp_kokyaku_name" data-text-name="customerName"></span>
+								</p>
+								<input type="hidden" name="customerId">
+							</div>
+						</div>
+						<!-- /.smart_form_row -->
+						<div class="smart_form_row hideIfNotAnken hideIfNotCustomer hideIfSaiban" data-contains="shokaiMendan">
+							<div class="smart_form_col_title">
+								<label class="txt_label">初回面談</label>
+							</div>
+							<div class=smart_form_col_data>
+								<label class="checkbox_btn_box">
+									<input type="checkbox" name="shokaiMendan" class="checkbox_input">
+									<span class="checkbox_txt">初回面談</span>
+								</label>
+							</div>
+						</div>
+						<!-- /.smart_form_row -->
+						<div class="smart_form_row hideIfNotAnken" data-contains="anken">
+							<div class="smart_form_col_title">
+								<label class="txt_label">案件面談</label>
+							</div>
+							<div class=smart_form_col_data>
+								<p class="userdatap">
+									<span class="" data-text-name="ankenIdDisp"></span>
+									<span class="disp_text disp_bunya_name" data-text-name="bunyaName"></span>
+									<span class="infoname" data-text-name="ankenName"></span>
+								</p>
+								<input type="hidden" name="ankenId">
+							</div>
+						</div>
+						<!-- /.smart_form_row -->
+						<div class="smart_form_row hideIfNotSaiban" data-contains="saiban">
+							<div class="smart_form_col_title">
+								<label class="txt_label">裁判情報</label>
+							</div>
+							<div class=smart_form_col_data>
+								<p class="userdatap">
+									<span class=" is_saiban" data-text-name="saibanId"></span>
+									<span class="disp_text disp_saiban_num saiban_text" data-text-name="caseNumber"></span>
+								</p>
+								<input type="hidden" name="saibanSeq">
+							</div>
+						</div>
+						<!-- /.form_row_cl2 -->
+						<div class="smart_form_row hideIfNotSaibanLimit" data-contains="saibanLimit">
+							<input type="hidden" name="saibanLimitSeq">
+							<div class="smart_form_col_title w_narrow" data-contains="shutteiType">
+								<label class="txt_label">出廷要否</label>
+							</div>
+							<div class=smart_form_col_data data-contains="shutteiType">
+								<select class="form_select" name="shutteiType">
+									<optgroup><!--/* IOSバグ対応 */--></optgroup>
+									<option th:each="enum : ${T(jp.loioz.common.constant.CommonConstant$ShutteiType).values()}"
+											th:value="${enum.cd}" th:text="${enum.val}"></option>
+								</select>
+							</div>
+						</div>
+						<!-- /.form_row_cl2 -->
+						<div class="smart_form_row" data-contains="openRange editRange">
+							<div class="smart_form_col_title">
+								<label class="txt_label">プライバシー</label>
+							</div>
+							<div class=smart_form_col_data>
+								<div class="mt-1 mb-2">
+									<span class="mr-4 loioz_font_color">公開範囲</span>
+									<label class="radio_btn">
+										<input type="radio" name="openRange" class="radio_input"
+											th:value="${T(jp.loioz.common.constant.CommonConstant$SchedulePermission).ALL.cd}" checked>
+										<span class="radio_txt">全員</span>
+									</label>
+									<label class="radio_btn">
+										<input type="radio" name="openRange" class="radio_input"
+											th:value="${T(jp.loioz.common.constant.CommonConstant$SchedulePermission).MEMBER.cd}">
+										<span class="radio_txt">参加者</span>
+									</label>
+								</div>
+								<div class="mb-2 hideIfShutteiNotRequired">
+									<span class="mr-4 loioz_font_color">編集権限</span>
+									<label class="radio_btn">
+										<input type="radio" name="editRange" class="radio_input"
+											th:value="${T(jp.loioz.common.constant.CommonConstant$SchedulePermission).ALL.cd}" checked>
+										<span class="radio_txt">全員</span>
+									</label>
+									<label class="radio_btn">
+										<input type="radio" name="editRange" class="radio_input"
+											th:value="${T(jp.loioz.common.constant.CommonConstant$SchedulePermission).MEMBER.cd}">
+										<span class="radio_txt">参加者</span>
+									</label>
+								</div>
+							</div>
+						</div>
+						<!-- /.smart_form_row -->
+						<div class="hideIfCreate" data-contains="createUser updateUser">
+							<div class="smart_form_row">
+								<div class="smart_form_col_title">
+									<label class="txt_label">登録者情報</label>
+								</div>
+								<div class=smart_form_col_data>
+									<p class="fd_p">
+										<span class="mr-5">登録者</span>
+										<span class="mr-4" data-text-name="createUserName"></span>
+										<span data-text-name="createdAt"></span>
+									</p>
+									<p class="fd_p">
+										<span class="mr-5">更新者</span>
+										<span class="mr-4" data-text-name="updateUserName"></span>
+										<span data-text-name="updatedAt"></span>
+									</p>
+								</div>
+							</div>
+						</div>
+						<!-- /.form_row -->
+					</div>
+				</form>
+			</div>
+		</div>
+	</th:block>
+	
+	<th:block th:fragment="scheduleEditFooterContents">
+		<!--/** 登録 */-->
+		<div class="edit_footer hideIfUpdate hideIfCopyMode" th:remove="all">
+		
+<th:block th:remove="all">
+<!-- 現行の仕様では不要 -->
+			<div class="other_opption_area">
+				<a href="javascript:void(0);" class="otherOpenCloseAct otherClose">その他オプションを表示</a>
+			</div>
+</th:block>
+
+		</div>
+		<!--/** 編集 */-->
+		<div class="edit_footer hideIfCreate hideIfCopyMode">
+			<div class="hideIfUnmodifiable mr-auto" data-contains="deleteButton">
+				<button type="button" class="btn btn-light btn-sm hideHolidayContents saveSchedule deleteButton" th:data-url="${deleteUrl}"><i class="far fa-trash-alt"></i>削除</button>
+			</div>
+			
+<th:block th:remove="all">
+<!-- 現行の仕様では不要-->
+			<div class="hideIfShokaiMendan hideIfSaibanLimit mr-5" data-contains="copyButton">
+				<button type="button" class="btn btn-sm btn-primary copyButton"><i class="fas fa-copy"></i>予定をコピー</button>
+			</div>
+			<div class="other_opption_area">
+				<a href="javascript:void(0);" class="otherOpenCloseAct otherClose">その他オプションを表示</a>
+			</div>
+</th:block>
+
+		</div>
+
+		
+<th:block th:remove="all">
+<!-- 現行の仕様では不要-->
+		<!--/* 予定登録コピーモード */-->
+		<div class="edit_footer hideIfNotCopyMode">
+			<div class="other_opption_area">
+				<a href="javascript:void(0);" class="btn-sm btn otherOpenCloseAct otherClose">その他オプションを表示</a>
+			</div>
+			<div data-contains="cancelButton">
+				<button type="button" class="btn btn-sm btn-light cancelCopy"><i class="fas fa-undo"></i>戻る</button>
+			</div>
+		</div>
+</th:block>
+
+	</th:block>
+	
+	<th:block th:fragment="sankashaEditHeaderContents">
+			<div class="edit_header">
+				<div class="edit_header_left_contents">
+					<button class="return_btn" th:data-dismiss="mobileEdit"></button>
+				</div>
+				<div class="edit_header_center_contents">
+					<span class="title">参加者の選択</span>
+				</div>
+				<div class="edit_header_right_contents">
+				</div>
+			</div>
+	</th:block>
+	<th:block th:fragment="sankashaEditBodyContents">
+		<div class="edit_body">
+				<div class="smart_schedule_edit_body">
+					<div class="smart_sankasha_user_select">
+						<div class="scheduleUserSelect">
+							<dl class="schedule_userselect_tab">
+								<dd class="">
+									<div class="schedule_userselect_scroll">
+										<dl class="smart_user_list_accordion">
+											<!--/*/ <th:block th:each="busho : ${scheduleCommonViewForm.bushoList}"> /*/-->
+											<dt class="selected" th:data-id="${busho.bushoId}" th:text="${busho.bushoName}">loiozグループ</dt>
+											<dd class="scheduleBushoShozoku" th:data-type="${busho.bushoId}">
+												<ul class="user_check_list">
+													<li class="shozokuUser" th:each="account : ${scheduleCommonViewForm.accountList}" th:classappend="${!account.Enabled} ? 'hidden'"
+														th:data-type="${account.shozokuBushoIdStr}" th:data-enabled="${account.Enabled}" th:data-account-seq="${account.accountSeq}">
+														<label class="checkbox_btn_box">
+															<input type="checkbox" class="checkbox_input userCheck" th:data-account-seq="${account.accountSeq}">
+															<span class="checkbox_txt" th:text="${account.accountName}"></span>
+														</label>
+													</li>
+												</ul>
+											</dd>
+											<!--/*/ </th:block> /*/-->
+										</dl>
+									</div>
+								</dd>
+							</dl>
+						</div>
+					</div>
+				</div>
+			</div>
+	</th:block>
+</body>
+</html>

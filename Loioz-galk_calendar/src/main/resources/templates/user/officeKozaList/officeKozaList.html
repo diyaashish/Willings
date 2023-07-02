@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html  xmlns:th="http://www.thymeleaf.org"
+	xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+	layout:decorator="commonLayout">
+<head>
+<meta charset="UTF-8">
+<title layout:fragment="title-contents">
+	[[${T(jp.loioz.common.utility.LoiozUtils).getHtmlTitle(T(jp.loioz.common.constant.CommonConstant$SystemSettingMenu).OFFICE_KOZA.getVal(), T(jp.loioz.common.utility.SessionUtils).getTenantName())}]]
+</title>
+<script type="text/javascript" th:inline="javascript">
+$(function() {
+	
+	const modal = $("#ginkoKozaModal");
+
+	<!--*/ 口座情報モーダル表示（新規） */ -->
+	let ajaxRunning = false;
+	$(document).on('click', '.registGinkoKoza', function() {
+		// 2重押下防止
+		if (ajaxRunning) {
+			return false;
+		}
+		ajaxRunning = true;
+		$.ajax({
+				url : "/common/openGinkoKozaCreateModal",
+				type : "POST",
+		}).done(function(data, status, jqXHR) {
+			if (isAjaxProcSuccess(jqXHR)) {
+				<!--/* 処理成功 */-->
+				modal.find('.targetModalBody').html(data);
+				modal.modal('show');
+				$.fn.autoKana('[name="kozaDto.kozaName"]', '[name="kozaDto.kozaNameKana"]', {katakana:true});
+			} else {
+				<!--/* 処理失敗 */-->
+				const errorMsg = getAjaxProcResutlMessage(jqXHR);
+				showErrorMessageForJs(errorMsg);
+			}
+		}).fail(function(jqXHR, textStatus, errorThrown) {
+			showErrorMessageForJs(/*[[#{E00091}]]*/ "error");
+		}).always(function() {
+			ajaxRunning = false;
+		});
+	});
+
+	<!--*/ 口座情報モーダル表示（更新） */ -->
+	$(document).on('click', '.editGinkoKoza', function() {
+		let kozaSeq = $(this).attr('data-koza-seq');
+		// 2重押下防止
+		if (ajaxRunning) {
+			return false;
+		}
+		ajaxRunning = true;
+		$.ajax({
+				url : "/common/openGinkoKozaEditModal",
+				type : "POST",
+				data :{ 'kozaSeq' : kozaSeq},
+		}).done(function(data, status, jqXHR) {
+			if (isAjaxProcSuccess(jqXHR)) {
+				<!--/* 処理成功 */-->
+				modal.find('.targetModalBody').html(data);
+				modal.modal('show');
+				$.fn.autoKana('[name="kozaDto.kozaName"]', '[name="kozaDto.kozaNameKana"]', {katakana:true});
+			} else {
+				<!--/* 処理失敗 */-->
+				const errorMsg = getAjaxProcResutlMessage(jqXHR);
+				showErrorMessageForJs(errorMsg);
+			}
+		}).fail(function(jqXHR, textStatus, errorThrown) {
+			showErrorMessageForJs(/*[[#{E00091}]]*/ "error");
+		}).always(function() {
+			ajaxRunning = false;
+		});
+	});
+
+	//新規登録・更新・削除処理
+	$(document).on('click', "#ginkoKozaModal [name=regist],#ginkoKozaModal [name=update],#ginkoKozaModal [name=delete],#ginkoKozaModal [name=restart]", function() {
+		let modal = $(this).closest('.modal');
+		let name =$(this).prop("name");
+		let formData = modal.find("[name^='kozaDto.']").serializeArray();
+		let defaultUse = $('#ginkoKozaModal [name="kozaDto.DefaultUse"]');
+		let url = "";
+		if(name == "delete") {
+			let confirmResult = confirm("削除してもよろしいですか？");
+			if (!confirmResult) {
+				return false;
+			}
+			url = "/common/deleteGinkokoza";
+		} else if (name == "update") {
+			if(!defaultUse.data("current") && defaultUse.prop('checked')) {
+				// 新たに既定利用を設定する場合のみ、確認confirmを表示
+				if(!confirm(/*[[#{I00135('口座情報')}]]*/"")) {
+					return false;
+				}
+			}
+			url = "/common/updateGinkokoza";
+		} else if (name == "regist") {
+			if(defaultUse.prop('checked')) {
+				// 新たに既定利用を設定する場合のみ、確認confirmを表示
+				if(!confirm(/*[[#{I00135('口座情報')}]]*/"")) {
+					return false;
+				}
+			}
+			url = "/common/registOfficeGinkokoza";
+		} else if (name == "restart") {
+			url = "/common/reastartGinkokoza";
+		} else {
+			return false;
+		}
+		// 2重押下防止
+		if (ajaxRunning) {
+			return false;
+		}
+		ajaxRunning = true;
+		$.ajax({
+			url : url,
+			type : "POST",
+			data : formData,
+		}).done(function(result) {
+			if (result.succeeded) {
+				showInfoMessageForJs(result.message);
+				modal.modal("hide");
+				renderOfficeKozaListViewFragment();
+			} else {
+				// エラー
+				showErrorMessage(result.message,modal,result.errors);
+			}
+		}).fail(function(jqXHR, textStatus, errorThrown) {
+			showErrorMessage(/*[[#{E00013}]]*/ "error", modal);
+		}).always(function() {
+			ajaxRunning = false;
+		});
+	});
+	
+	<!--*/ 事務所口座一覧表示フラグメント再表示 */ -->
+	function renderOfficeKozaListViewFragment() {
+		$.ajax({
+			url : '/user/officeKozaList/renderOfficeKozaListViewFragment',
+			type : "GET",
+		}).done(function(data, status, jqXHR) {
+			if (isAjaxProcSuccess(jqXHR)) {
+				<!--/* 成功 */-->
+				$('#officeKozaListFragmentWrap').html(data)
+			} else {
+				<!--/* 失敗 */-->
+				const errorMsg = getAjaxProcResutlMessage(jqXHR);
+				showErrorMessageForJs(errorMsg);
+			}
+		}).fail(function(jqXHR, textStatus, errorThrown) {
+			<!--/* 失敗 */-->
+			const errorMsg = /*[[#{E00091}]]*/ "error";
+			showErrorMessageForJs(errorMsg);
+		}).always(function() {
+		});
+	}
+});
+</script>
+</head>
+<body>
+	<div class="contents_sidebar_wrapper_setting" layout:fragment="main-contents">
+		<!-- サイドメニュー -->
+		<div th:replace="common/systemSettingMenu::selectMenu(${T(jp.loioz.common.constant.CommonConstant$SystemSettingMenu).OFFICE_KOZA.getCd()})"></div>
+
+		<!-- コンテンツ -->
+		<div class="contents_wrapper isOnboardingReload" th:object="${viewForm}">
+			<!--/* メッセージエリア */-->
+			<div th:replace="common/messageArea::messageArea"></div>
+
+			<!-- contents_limited_width_setting サイズ幅(maxサイズ）start -->
+			<div class="container-fluid contents_limited_width_setting">
+
+				<!-- パンくず-->
+				<div class="breadcrumb_area">
+					<ul>
+						<li><span>会計管理の設定</span></li>
+						<li><i class="fas fa-angle-right"></i></li>
+						<li>事務所口座の設定</li>
+					</ul>
+				</div>
+
+				<!-- コンテンツブロック  -->
+				<div id="officeKozaListFragmentWrap" th:insert="user/officeKozaList/officeKozaListFragment::officeKozaListFragment(${viewForm})"></div>
+				
+			</div>
+
+		</div>
+
+		<!--/* 事務所口座モーダル */-->
+		<div id="ginkoKozaModal" class="modal fade" tabindex="-1" role="dialog" aria-hidden="true" data-backdrop="static">
+			<div class="modal-dialog modal-dialog-centered modal_ginko_koza" role="document">
+				<div class="modal-content">
+					<div class="targetModalBody"></div>
+				</div>
+			</div>
+		</div>
+		
+	</div>
+
+</body>
+</html>

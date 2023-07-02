@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="15" height="16" viewBox="0 0 15 16">
+  <g id="icon_task_date_gr" transform="translate(2 3.579)">
+    <g id="楕円形_117" data-name="楕円形 117" transform="translate(0 -0.564)" fill="#bababa" stroke="#bababa" stroke-miterlimit="10" stroke-width="2">
+      <ellipse cx="5.35" cy="5.35" rx="5.35" ry="5.35" stroke="none"/>
+      <ellipse cx="5.35" cy="5.35" rx="6.35" ry="6.35" fill="none"/>
+    </g>
+    <path id="パス_221" data-name="パス 221" d="M.506,0h.668l.477,4.861H0Z" transform="matrix(0.695, -0.719, 0.719, 0.695, 1.069, 2.165)" fill="#f2f2f2"/>
+    <path id="パス_222" data-name="パス 222" d="M.506,0h.668l.477,5.984H0Z" transform="matrix(0.719, 0.695, -0.695, 0.719, 9.141, 0.062)" fill="#f2f2f2"/>
+    <ellipse id="楕円形_118" data-name="楕円形 118" cx="1.651" cy="1.651" rx="1.651" ry="1.651" transform="translate(3.79 3.225)" fill="#f2f2f2"/>
+    <rect id="長方形_986" data-name="長方形 986" width="4" height="3" rx="1" transform="translate(3.23 -3.579)" fill="#bababa"/>
+  </g>
+</svg>

@@ -1,0 +1,498 @@
+ <!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+<meta charset="utf-8" />
+</head>
+<body>
+
+<!--/* 本処理は、モーダルを扱うFragment領域で定義する */-->
+<script type="text/javascript" th:inline="javascript" th:fragment="calendarEditModalFragmentJs">
+	benzo.global.fragment.calendarEditModalFragmentObj = {
+		<!--/* 呼び出し元で定義が可能な処理 */-->
+		setUpObj : {
+			<!--/* 登録 */-->
+			registAction: () => {
+				throw new Error('registActionのセットアップ処理がされていません');
+			},
+		},
+		
+		<!--/* フラグメントのパラメータに関連する処理 */-->
+		paramObj : {
+			<!--/* フォームパラメータの取得処理 */-->
+			getFormParams: (modal) => {
+				let formParam = $(modal).find('#calendarEditModalInputForm').serializeArray();
+				return formParam;
+			} ,
+		},
+		
+		<!--/* 
+			本フラグメント以外でも扱う処理
+			基本的には書き換えを行わない。
+		*/-->
+		commonFn : {
+		},
+	};
+</script>
+<!--/* 本処理は、モーダルを扱うFragment領域で定義する end */-->
+
+<!--/* モーダル */-->
+<div id="calendarEditModalFragment" th:fragment="calendarEditModalFragment">
+	<script type="text/javascript" th:inline="javascript">
+	$(function() {
+		let ajaxRunning = false;
+		
+		<!--/* 共有の要素セットアップ処理 */-->
+		commonSetUpElement("#calendarEditModalFragment");
+		
+		const calendarEditModalFragment = $('#calendarEditModalFragment');
+		
+		<!--/* モーダル閉じる時設定 */-->
+		const $calendarEditModalFragment = $("#calendarEditModalFragment");
+		const $calendarEditModal = $calendarEditModalFragment.closest(".modal");
+		const $calendarEditModalFragmentWrap = $calendarEditModal.find(".calendarEditModalFragmentWrap");
+		
+		<!--/* モーダルを閉じたときの処理 */-->
+		$calendarEditModal.off("hidden.bs.modal.commonHiddenAction");
+		$calendarEditModal.one("hidden.bs.modal.commonHiddenAction", function(){
+			$calendarEditModalFragmentWrap.html("");
+		});
+		
+		<!--/* 予定登録処理 */-->
+		calendarEditModalFragment.on('click', '.registSchedule', function(){
+			if (ajaxRunning) {
+				return false;
+			}
+			
+			const formData = calendarEditModalFragment.find('#calendarEditModalInputForm').serializeArray();
+			
+			ajaxRunning = true;
+			$.ajax({
+				url : '/common/mvc/calendarEdit/registSchedule',
+				type : "POST" ,
+				data : formData,
+			})
+			.done(function(result) {
+				if(result.succeeded){
+					$calendarEditModal.modal("hide");
+					showInfoMessageForJs(result.message);
+				} else {
+					// エラーメッセージ表示
+					showErrorMessage(result.message, $calendarEditModal, result.errors);
+				}
+			})
+			.fail(function() {
+				showErrorMessage(/*[[#{E00013}]]*/ "error", $calendarEditModal);
+			})
+			.always(function(){
+				ajaxRunning = false;
+			});
+		});
+		
+		<!--/* 色選択 */-->
+		calendarEditModalFragment.on('click', '.colorSelect', function(){
+			const val = $(this).data('color-type-cd');
+			const bgColor = $(this).css('background-color'); 
+			$('#scheduleColorTypeCd').val(val);
+			$('#calendarScheduleColorBtn').css('background-color', bgColor);
+			$('#calendarScheduleColorBtn').popover('hide');
+		});
+			
+		<!--/* モードレス用のスタイルを有効にする */-->
+		$calendarEditModal.on({
+			"show.bs.modal": function(){
+				$("body").addClass("modeless-open");
+			},
+			"hidden.bs.modal": function(){
+				if(!$(".modal.modeless:visible").length){
+					$("body").removeClass("modeless-open");
+				}
+			}
+		});
+		$calendarEditModal.modal({
+			"backdrop": false,
+			"focus": false,
+			"show": false
+		});
+
+		<!--/* 初期位置の調整 */-->
+		$calendarEditModal.on("show.bs.modal", function(){
+			$calendarEditModal.css({
+				"left": Math.max(($(window).width() - $calendarEditModal.outerWidth()) / 2, 17.5) + "px",
+				"top": Math.max(($(window).height() - $calendarEditModal.outerHeight()) / 2, 17.5) + "px"
+			});
+		});
+
+		<!--/* Draggableの設定 */-->
+		let handle = $calendarEditModal.find(".modal-header");
+		$calendarEditModal.draggable({
+			"handle": handle,
+			"drag": function(event, ui){
+			}
+		});
+
+		<!--/* モードレスとモーダルを同時に開けないように制御 */-->
+		$(document).on({
+			"show.bs.modal": function(e){
+				if($calendarEditModal.is(":visible") && !$(e.target).is(".modeless")){
+					$(e.target).addClass("d-none");
+					$(e.target).css("transition", "none");
+				}
+			},
+			"shown.bs.modal": function(e){
+				if($calendarEditModal.is(":visible") && !$(e.target).is(".modeless")){
+					$(e.target).modal("hide");
+					$(e.target).removeClass("d-none");
+					$(e.target).css("transition", "");
+				}
+			}
+		});
+	});
+	</script>
+	
+	<form id="calendarEditModalInputForm">
+		<div class="modal-header ui-draggable-handle">
+			<h2 class="modal-title">予定登録</h2>
+		</div>
+		
+		<div class="modal-body" th:object="${calendarBasicInputForm}">
+			
+			<div class="modal_split mt-2">
+			
+				<!--/* modal_split__left */-->
+				<div class="modal_split__left">
+					<div class="form-row">
+						<div class="form-group col-md-1 col-form-label text-center"></div>
+						<div class="form-group col-md-11">
+							<input type="text" class="form-control fs18 underlined" placeholder="件名を設定" th:field="*{subject}">
+							<div th:if="${#fields.hasErrors('subject')}" th:errors="${calendarBasicInputForm.subject}" class="error_mag_point">error!</div>
+						</div>
+					</div>
+					
+					<!--/* 予定 or タスク選択 */-->
+					<div class="form-row my-2">
+						<div class="form-group col-md-1 col-form-label text-center"></div>
+						<div class="form-group col-md-11">
+							<div class="d-flex cg10">
+								<div><button type="button" class="btn btn-info">予定</button></div>
+								<div><button type="button" class="btn btn-light text-primary">タスク</button></div>
+							</div>
+						</div>
+					</div>
+					
+					<!--/* 日時設定 */-->
+					<div class="form-row">
+						<div class="form-group col-md-1 col-form-label text-center">
+							<i class="far fa-clock fa-lg fc_sub"></i>
+						</div>
+						<div class="form-group col-md-11 bg_edit p-3">
+							<div class="d-flex cg10">
+								<input type="text" class="form-control digit7 inputDateSlash inputDate" maxlength="10" th:field="*{dateFrom}"
+									data-click-sync="[data-target-name='dateFrom']">
+								<button type="button" class="btn btn_popcal hidden" data-toggle="datepicker" data-target-name="dateFrom">カレンダー</button>
+								<div th:if="*{#fields.hasErrors('dateFrom')}" th:errors="*{dateFrom}" class="error_mag_point digit8">error</div>
+								<input type="text" class="form-control digit4 ">
+								<span class="col-form-label">～</span>
+								<input type="text" class="form-control digit4">
+							</div>
+							<div class="d-flex align-items-center mt-3 cg10">
+								<div>
+									<label class="checkbox_btn">
+										<input type="checkbox" class="checkbox_input">
+										<span class="checkbox_txt">終日</span>
+									</label>
+								</div>
+								<select class="form-control digit10">
+									<option>繰り返さない</option>
+									<option>毎日</option>
+								</select>
+							</div>
+						</div>
+					</div>
+					
+					<!--/* 場所 or 施設 */-->
+					<div class="form-row">
+						<div class="form-group col-md-1 col-form-label text-center">
+							<i class="fas fa-map-marker-alt fc_sub fa-lg"></i>
+						</div>
+						<div class="form-group col-md-11 bg_edit p-3">
+							
+							<!--/* 場所 */-->
+							<input type="text" th:classappend="*{SelectedRoom} ? 'hidden' "
+								class="form-control" th:field="*{place}" placeholder="場所を設定">
+								
+							<!--/* 施設選択 */-->
+							<div th:replace="::calendarSelectedOptionRoomList(${calendarSelectedOptionRoomListInputForm}, *{SelectedRoom})"></div>
+							
+							<!--/* 施設 */-->
+							<div class="d-flex align-items-center mt-3">
+								<label class="checkbox_btn">
+									<input type="checkbox" class="checkbox_input" th:field="*{SelectedRoom}">
+									<span class="checkbox_txt">施設から選択</span>
+								</label>
+							</div>
+						</div>
+					</div>
+					
+					<!--/* 詳細（メモ） */-->
+					<div class="form-row">
+						<div class="form-group col-md-1 col-form-label text-center">
+							<i class="fas fa-align-left fc_sub fa-lg"></i>
+						</div>
+						<div class="form-group col-md-11 bg_edit p-3">
+							<textarea class="form-control" rows="5" placeholder="詳細を設定"></textarea>
+						</div>
+					</div>
+
+					<!--/* 紐づけ設定 */-->
+					<div class="form-row">
+						<div class="form-group col-md-1 col-form-label text-center">
+							<i class="fas fa-link fc_sub fa-lg"></i>
+						</div>
+						<div class="form-group col-md-11 bg_edit p-3">
+							<div th:replace="::calendarRelatedSetting(${calendarRelatedSettingInputForm})"></div>
+						</div>
+					</div>
+					
+					<!--/* 公開・非公開 */-->
+					<div class="form-row">
+						<div class="form-group col-md-1 col-form-label text-center">
+							<i class="fas fa-lock fc_sub fa-lg"></i>
+						</div>
+						<div class="form-group col-md-auto bg_edit p-2">
+							<select class="form-control digit7" th:field="*{openRangeCd}">
+								<option th:each="enum : ${T(jp.loioz.common.constant.CommonConstant$CalendarOpenRange).values()}" 
+									th:value="${enum.cd}" th:text="${enum.val}"></option>
+							</select>
+							<div th:if="*{#fields.hasErrors('openRangeCd')}" th:errors="*{openRangeCd}" class="error_mag_point">error</div>
+						</div>
+					</div>
+					
+					<!--/* 通知 */-->
+					<div class="form-row">
+						<div class="form-group col-md-1 col-form-label text-center">
+							<i class="far fa-bell fc_sub fa-lg"></i>
+						</div>
+						<div class="form-group col-md-auto bg_edit p-2">
+							<select class="form-control digit7" th:field="*{notificationTypeCd}">
+								<option th:each="enum : ${T(jp.loioz.common.constant.CommonConstant$CalendarNotificationType).values()}" 
+									th:value="${enum.cd}" th:text="${enum.val}"></option>
+							</select>
+							<div th:if="*{#fields.hasErrors('notificationTypeCd')}" th:errors="*{notificationTypeCd}" class="error_mag_point">error</div>
+						</div>
+					</div>
+					
+					<!--/* 登録者名 */-->
+					<div class="form-row">
+						<div class="form-group col-md-1 col-form-label text-center">
+							<i class="far fa-calendar-alt fc_sub fa-lg"></i>
+						</div>
+						<div class="form-group col-md-11">
+							<div class="d-flex align-items-center cg10">
+								<div>
+									<span th:text="*{loginAccountName}">account name</span>
+									<div class="fc_sub fs12">所有者</div>
+								</div>
+								<div th:with="colorPallet=${T(jp.loioz.common.constant.CommonConstant$CalendarScheduleColorType)}">
+									<input type="hidden" th:field="*{scheduleColorTypeCd}">
+									<button type="button" id="calendarScheduleColorBtn" class="btn btn_color" th:style="|background-color: *{loginAccountColor}|" role="button" 
+										data-toggle="popover" data-html="true" data-container="#calendarEditModalFragment" 
+										th:data-content='|
+										<div class="p-2">
+											<div class="d-flex cg8">
+												<button type="button" class="btn btn_color colorSelect" data-color-type-cd="${colorPallet.LOGIN_ACCOUNT_COLOR.getCd()}" style="background-color: *{loginAccountColor}"></button>
+												<button type="button" class="btn btn_color colorSelect" data-color-type-cd="${colorPallet.ANKEN_BLUE.getCd()}" style="background-color: ${colorPallet.ANKEN_BLUE.getVal()}"></button>
+												<button type="button" class="btn btn_color colorSelect" data-color-type-cd="${colorPallet.BASE_RED.getCd()}" style="background-color: ${colorPallet.BASE_RED.getVal()}"></button>
+												<button type="button" class="btn btn_color colorSelect" data-color-type-cd="${colorPallet.BASE_YELLOW.getCd()}" style="background-color: ${colorPallet.BASE_YELLOW.getVal()}"></button>
+												<button type="button" class="btn btn_color colorSelect" data-color-type-cd="${colorPallet.BASE_GREEN.getCd()}" style="background-color: ${colorPallet.BASE_GREEN.getVal()}"></button>
+											</div>
+											<div class="mt-2 d-flex cg8">
+												<button type="button" class="btn btn_color colorSelect" data-color-type-cd="${colorPallet.BASE_ORANGE.getCd()}" style="background-color: ${colorPallet.BASE_ORANGE.getVal()}"></button>
+												<button type="button" class="btn btn_color colorSelect" data-color-type-cd="${colorPallet.BASE_PINK.getCd()}" style="background-color: ${colorPallet.BASE_PINK.getVal()}"></button>
+												<button type="button" class="btn btn_color colorSelect" data-color-type-cd="${colorPallet.BASE_PURPLE.getCd()}" style="background-color: ${colorPallet.BASE_PURPLE.getVal()}"></button>
+												<button type="button" class="btn btn_color colorSelect" data-color-type-cd="${colorPallet.BASE_YELLOW_GREEN.getCd()}" style="background-color: ${colorPallet.BASE_YELLOW_GREEN.getVal()}"></button>
+												<button type="button" class="btn btn_color colorSelect" 	data-color-type-cd="${colorPallet.BASE_GREY.getCd()}" style="background-color: ${colorPallet.BASE_GREY.getVal()}"></button>
+											</div>
+										</div>
+										|'>
+									</button>
+								</div>
+							</div>
+						</div>
+					</div>
+					
+				</div>
+				<!--/* modal_split__left end */-->
+				
+				<!--/* modal_split__right */-->
+				<div class="modal_split__right">
+					
+					<!--/* 参加者検索 */-->
+					<div class="form-row">
+						<div class="form-group col-md-12">
+							<input type="text" class="form-control underlined" th:field="*{searchAccountWord}" placeholder="参加者を選択">
+						</div>
+					</div>
+					
+					<!--/* 参加者リスト */-->
+					<div th:replace="::calendarGuestAccount(${calendarGuestAccountInputForm})"></div>
+					
+					<div>
+						<div class="mt-5 mb-3">
+							<span class="fc_title">参加者の権限</span>
+						</div>
+						<div class="form-row">
+							<div class="form-group col-md-12">
+								<label class="checkbox_btn">
+									<input type="checkbox" class="checkbox_input">
+									<span class="checkbox_txt">予定の編集</span>
+								</label>
+							</div>
+						</div>
+					</div>
+				</div>
+				<!--/* modal_split__right end */-->
+				
+			</div>
+			
+		</div>
+		
+		<div class="modal-footer">
+			<button type="button" class="btn btn-info registSchedule"><i class="fas fa-check"></i><span>登録</span></button>
+			<button type="button" class="btn btn-light icon_btn_close" data-dismiss="modal" name="cancel"><i class="fas fa-times"></i>閉じる</button>
+		</div>
+	
+	</form>
+</div>
+
+<!--/* 予定-施設選択のHTML */-->
+<div th:fragment="calendarSelectedOptionRoomList(calendarSelectedOptionRoomListInputForm, SelectedRoom)" id="calendarSelectedOptionRoomListFragment"
+	th:object="${calendarSelectedOptionRoomListInputForm}">
+	
+	<!--/* スクリプト */-->
+	<script th:inline="javascript">
+	$(function() {
+		
+	});
+	</script>
+	
+	<!--/* 施設 */-->
+	<select th:if="${SelectedRoom}" class="form-control" th:field="*{selectedRoomId}">
+		<option
+			th:each="room : *{selectOptionRoomList}"
+			th:value="${room.getValueAsLong()}" th:text="${room.label}"></option>
+	</select>
+	
+</div>
+
+<!--/* 予定紐づけのHTML */-->
+<div th:fragment="calendarRelatedSetting(calendarRelatedSettingInputForm)" id="calendarRelatedSettingFragment" th:object="${calendarRelatedSettingInputForm}">
+	
+	<!--/* スクリプト */-->
+	<script th:inline="javascript">
+	$(function() {
+		
+	});
+	</script>
+
+	<label class="radio_btn" th:each="enum : ${T(jp.loioz.common.constant.CommonConstant$CalendarRelatedSetting).values()}">
+		<input type="radio" class ="radio_input" th:field="*{calendarRelatedSettingCd}" th:value="${enum.cd}" th:checked="*{calendarRelatedSettingCd} == ${enum.cd}">
+		<span class="radio_txt" th:text="${enum.val}">名簿</span>
+	</label>
+	<div>
+		<input type="text" class="form-control" th:field="*{searchWord}" placeholder="名簿／案件／裁判を検索" disabled="disabled">
+		
+		<!--/* 予定紐づけ-有りの場合 */-->
+		<div th:unless="*{#strings.isEmpty(calendarRelatedDataName)}" class="calendar_related_data">
+			<div class="flex-grow-1 char_ellipsis mxw450">
+				<a href="javascript:void(0);" class="relation_link select_relation_anken" data-toggle="tooltip" data-trigger="hover" title="詳細情報へ">
+					<i class="fas fa-hashtag mr-2"></i><span th:text="*{calendarRelatedDataName}"></span>
+				</a>
+			</div>
+			<div class="ml-auto">
+				<button type="button" class="btn btn-light btn_icon_only text-info border-0"
+					data-toggle="tooltip" data-trigger="hover" title="紐づけ解除"><i class="fas fa-unlink"></i></button>
+			</div>
+		</div>
+		
+	</div>
+</div>
+
+<!--/* 予定-参加者のHTML */-->
+<div th:fragment="calendarGuestAccount(calendarGuestAccountInputForm)" id="calendarGuestAccountFragment" th:object="${calendarGuestAccountInputForm}">
+	
+	<!--/* スクリプト */-->
+	<script th:inline="javascript">
+	$(function() {
+		
+	});
+	</script>
+
+	<div>
+		<div class="mt-2">
+			<span class="fc_title">参加者</span>
+		
+		<th:block th:if="*{#lists.isEmpty(guestAccountSelectOptionList)}">
+			<!--/* 0件の場合 */-->
+			<div class="fc_sub">参加者はいません。</div>
+		</th:block>
+		
+		<th:block th:unless="*{#lists.isEmpty(guestAccountSelectOptionList)}">
+			<!--/* 参加者を追加した場合 */-->
+			<ul class="list-group list-group-flush calendar_guest_list">
+				<li class="list-group-item" th:id="|guestAccount_${stat.index}|" th:each="rowData, stat : *{guestAccountSelectOptionList}">
+					
+					<input type="hidden" th:field="*{guestAccountSelectOptionList[__${stat.index}__].guestAccountSeq}">
+					<div class="guest_list_contents">
+						<div class="guest_list_contents__name">
+							<div class="d-flex align-items-center cg10">
+								<div>
+							<!--/* 出席状況（edit_mode) */-->
+							<th:block th:switch="*{guestAccountSelectOptionList[__${stat.index}__].attendanceStatusCd}">
+								<!--/* 出席 */-->
+								<th:block th:case="${T(jp.loioz.common.constant.CommonConstant$AccountInvitationStatus).ATTEND.getCd()}">
+									<i class="far fa-check-circle text-success fs16"></i>
+								</th:block>
+								<!--/* 欠席 */-->
+								<th:block th:case="${T(jp.loioz.common.constant.CommonConstant$AccountInvitationStatus).ABSENT.getCd()}">
+									<i class="far fa-times-circle text-danger fs16"></i>
+								</th:block>
+								<!--/* 未定 */-->
+								<th:block th:case="${T(jp.loioz.common.constant.CommonConstant$AccountInvitationStatus).UNDECIDED.getCd()}">
+									<i class="far fa-question-circle text-warning fs16"></i>
+								</th:block>
+							</th:block>
+								</div>
+								
+								<div class="lh1_4">
+									<span th:text="*{guestAccountSelectOptionList[__${stat.index}__].guestAccountName}">account name</span>
+									<div class="fc_sub fs12">
+										<span th:text="*{guestAccountSelectOptionList[__${stat.index}__].invitationTypeVal}">必須</span>
+									</div>
+									<div class="fc_sub fs12 text-break word-break">
+										<span th:text="*{guestAccountSelectOptionList[__${stat.index}__].guestAccountComment}">コメント</span>
+									</div>
+								</div>
+							</div>
+						</div>
+						<div class="guest_list_contents__type">
+							<select class="form-control digit5" th:field="*{guestAccountSelectOptionList[__${stat.index}__].invitationTypeCd}">
+								<option th:each="enum : ${T(jp.loioz.common.constant.CommonConstant$InvitationType).values()}" 
+									th:value="${enum.cd}" th:text="${enum.val}"></option>
+							</select>
+						</div>
+						<div class="guest_list_contents__del">
+							<button type="button" class="btn btn-sm btn-light btn_icon_only">
+								<i class="fas fa-times"></i>
+							</button>
+						</div>
+					</div>
+				</li>
+			</ul>
+		</th:block>
+		
+		</div>
+	</div>
+</div>
+
+</body>
+</html>

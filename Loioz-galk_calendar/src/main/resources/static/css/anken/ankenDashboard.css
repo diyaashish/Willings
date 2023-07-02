@@ -1,0 +1,156 @@
+@charset "UTF-8";
+
+/********************************************************
+ * 案件ダッシュボード
+*********************************************************/
+
+/* 業務履歴ブロック */
+.separate_box_wrapper.gyoreki_block {
+	min-height: 250px;
+	margin-bottom: 40px;
+}
+/* divヘッダ固定内コンテンツ */
+.gyoreki_list_header {
+	padding-right: 15px;
+}
+.relation_link_text {
+	max-width: 250px;
+}
+.important_flg_mark {
+	color: var(--red);
+	padding: 1px 5px;
+	border-radius: 3px;
+	font-size: 1.2rem;
+	text-align: center;
+	display: inline-block;
+	border: 1px solid var(--red);
+}
+.kotei_flg_mark {
+	color: var(--red);
+	padding: 1px 5px;
+	border-radius: 3px;
+	font-size: 1.2rem;
+	text-align: center;
+	display: inline-block;
+	border: 1px solid var(--red);
+}
+ul.section_list .section_list_item .item_title_block {
+	height: 30px;
+} 
+ul.section_list .section_list_item .item_sub {
+	-ms-flex-item-align: start;
+	align-self: flex-start;
+	display: -ms-flexbox;
+	display: flex;
+}
+ul.section_list .section_list_item .item_title a {
+	position: relative;
+	top: 1.5px;
+	font-size: 1.8rem;
+	color: var(--text-color-sub);
+}
+ul.section_list .section_list_item .item_other {
+	margin: 0;
+}
+
+/* タスク一覧  */
+.section_task.section_block_body {
+	padding: 0;
+	max-height: 1000px;
+	overflow-y: auto;
+}
+ul.dashboard_task_list {
+	list-style: none;
+	margin: 0;
+	padding: 0;
+}
+ul.dashboard_task_list li {
+	background-color: var(--white);
+	border-bottom: 1px solid var(--bor-color-main);
+	cursor: default;
+	margin-bottom: 0;
+	padding: 5px;
+}
+ul.dashboard_task_list li:last-child {
+	border-bottom: 0px;
+}
+ul.dashboard_task_list li:hover {
+	background-color: var(--lz-gray-100);
+	-webkit-transition: 0.2s ease-in-out;
+	-moz-transition: 0.2s ease-in-out;
+	-o-transition: 0.2s ease-in-out;
+	transition: 0.2s ease-in-out;
+}
+.dashboard_task_data {
+	display: flex;
+	align-items: flex-start;
+	padding: 0 5px;
+}
+/* 完了チェック */
+.dashboard_task_data_comp {
+	font-size: 2.5rem;
+	color: var(--text-color-sub);
+	flex-basis: 21px;
+}
+.dashboard_task_data_comp svg {
+	background-color: var(--white);
+	cursor: pointer;
+	border-radius: 25px;
+}
+.dashboard_task_data_comp .task_comp {
+	color: var(--text-color-link);
+}
+/* タスク詳細 */
+.dashboard_task_data_detail {
+	padding-left: 8px;
+	width: 100%;
+}
+/* タスクデータ行 */
+.dashboard_task_list_row {
+	align-items: center;
+	display: flex;
+	margin-top: 8px;
+}
+/* タスクデータ-タイトル */
+.dashboard_task_list_row__title {
+	font-size: 1.6rem;
+	position: relative;
+	top: 7px;
+	word-break: break-all;
+}
+.task_title_comp {
+	text-decoration: line-through;
+	color: var(--text-color-title);
+}
+/* 期限 */
+.dashboard_task_list_row__limit {
+	margin-right: 10px;
+	color: var(--text-color-sub);
+}
+/* 期限切れ */
+.dashboard_task_list_row__limit.task_over {
+	color: var(--danger);
+}
+/* コメント件数 */
+.dashboard_task_list_row__comment {
+	margin-right: 10px;
+	color: var(--text-color-sub);
+}
+
+/* 予定一覧 */
+.dashboard_yotei_list.section_block_body {
+	padding: 0;
+	max-height: 1000px;
+	overflow-y: auto;
+	overflow-x: hidden; 
+}
+ul.card_yotei_list > li {
+	border-top: 0px;
+	border-left: 0px;
+	border-right: 0px;
+	border-bottom: 1px solid var(--bor-color-main);
+	margin-bottom: 0px;
+}
+ul.card_yotei_list > li:last-child {
+	border-bottom: 0px;
+}

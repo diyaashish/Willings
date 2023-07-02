@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+	xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+	layout:decorator="commonLayout">
+<head>
+	<meta charset="utf-8" />
+</head>
+<body>
+	<div th:fragment="select-modal" class="select-modal">
+		<div th:object="${selectEditForm}">
+			<div class="modal-header">
+				<h2 class="modalheader_title" th:text="*{isNew()} ? '相談経路登録' : '相談経路更新'"></h2>
+			</div>
+			<div class="modal-body">
+				<div th:replace="common/messageArea::jsMessageArea"></div>
+				<form id="editForm">
+					<input type="hidden" th:field="*{selectEditData.selectSeq}">
+					<input type="hidden" th:field="*{selectEditData.versionNo}">
+					<div class="modal_input_area">
+						<div class="form-row">
+							<div class="form-group col-md-12">
+								<label class="input_parts_label">名称</label>
+								<span class="mark_equired">必須</span>
+								<input type="text" class="form-control" th:field="*{selectEditData.selectVal}" placeholder="全角半角30文字" maxlength="30">
+								<!-- Enter key対応のダミー -->
+								<input type="text" name="dummy" style="display:none;">
+								<div class="error_mag_point hidden" id="itemMsg_selectEditData.selectVal"></div>
+							</div>
+						</div>
+					</div>
+				</form>
+			</div>
+			<div class="modal-footer">
+				<button th:if="*{!isNew()} and *{isUsing()}" type="button" class="btn btn-light mr-auto" id="delete" th:data-using="*{isUsing()}">停止</button>
+				<button th:if="*{!isNew()} and *{!isUsing()}" type="button" class="btn btn-light mr-auto" id="delete" th:data-using="*{isUsing()}">再開</button>
+				<button th:if="*{isNew()}" type="button" class="btn btn-info" id="regist"><i class="fas fa-check"></i>登録</button>
+				<button th:if="*{!isNew()}" type="button" class="btn btn-info" id="update"><i class="fas fa-check"></i>保存</button>
+				<button type="button" class="btn btn-light" data-dismiss="modal"><i class="fas fa-times"></i>閉じる</button>
+			</div>
+		</div>
+	</div>
+</body>
+</html>

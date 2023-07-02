@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+	xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+	layout:decorator="commonLayout">
+<head>
+<title layout:fragment="title-contents">
+	[[${T(jp.loioz.common.utility.LoiozUtils).getHtmlTitle("外部サービス連携", T(jp.loioz.common.utility.SessionUtils).getTenantName())}]]
+</title>
+<meta charset="utf-8" />
+</head>
+<body>
+	<div th:fragment="externalStorageSelectViewFragment(externalStorageSelectViewForm)" id="externalStorageSelectViewFragment">
+		<script type="text/javascript" th:inline="javascript">
+		$(function() {
+			<!--/* 連携処理 */-->
+			$(".useStorageService").on("click", function() {
+				const serviceCd = $(this).data("cd");
+				const url = $(this).data("url");
+				// 2重押下防止
+				if(ajaxRunning){
+					return false;
+				}
+				ajaxRunning = true;
+				$.ajax({
+					url : /*[[@{/common/api/auth/storageConnectPreCheck}]]*/,
+					type : "GET",
+					data : {"serviceCd":serviceCd},
+				})
+				.done(function(data, status, jqXHR) {
+					if (data.canConnect) {
+						let childWindow = window.open(url, 'rel=noopener');
+					} else {
+						showErrorMessageForJs(data.message);
+					}
+				})
+				.fail(function(jqXHR, status, errorThrown) {
+					<!--/* なにもしない */-->
+					showErrorMessageForJs(/*[[#{E00091}]]*/ "error");
+				})
+				.always(function(){
+					ajaxRunning = false;
+				});
+				
+			});
+			
+			<!--/* 連携解除処理 */-->
+			$("#disconnectExternalStorageBtn").on("click", function() {
+				// 2重押下防止
+				if(ajaxRunning){
+					return false;
+				}
+				if (!confirm(/*[[#{W00013}]]*/'')) {
+					return false;
+				}
+				ajaxRunning = true;
+				$.ajax({
+					url : /*[[@{/user/fileManagementSetting/disconnectExternalStorage}]]*/,
+					type : "POST",
+				})
+				.done(function(data, status, jqXHR) {
+					<!--/* なにもしない */-->
+					if (isAjaxProcSuccess(jqXHR)) {
+						const successMsg = getAjaxProcResutlMessage(jqXHR);
+						Promise.resolve()
+							.then(() => renderExternalStorageSelectView())
+							.then(() => showInfoMessageForJs(successMsg))
+							.catch((errors) => console.log(errors));
+					} else {
+						const errorMsg = getAjaxProcResutlMessage(jqXHR);
+						showErrorMessageForJs(errorMsg);
+					}
+				})
+				.fail(function(jqXHR, status, errorThrown) {
+					<!--/* なにもしない */-->
+					showErrorMessageForJs(/*[[#{E00091}]]*/ "error");
+				})
+				.always(function(){
+					ajaxRunning = false;
+				});
+			});
+			
+			$("#reCreateFolderBtn").on("click", function() {
+				// 2重押下防止
+				if(ajaxRunning){
+					return false;
+				}
+				if (!confirm('現在、外部サービスと連携中の場合、\r\n再作成を行うと、もとの連携フォルダとは再接続ができなくなります。\r\n連携フォルダを新規作成してよろしいですか？')) {
+					return false;
+				}
+				
+				ajaxRunning = true;
+				$.ajax({
+					url : /*[[@{/user/fileManagementSetting/reCreateRootFolder}]]*/,
+					type : "POST",
+				})
+				.done(function(data, status, jqXHR) {
+					<!--/* なにもしない */-->
+					if (isAjaxProcSuccess(jqXHR)) {
+						const successMsg = getAjaxProcResutlMessage(jqXHR);
+						Promise.resolve()
+							.then(() => renderExternalStorageSelectView())
+							.then(() => showInfoMessageForJs(successMsg))
+							.catch((errors) => console.log(errors));
+					} else {
+						const errorMsg = getAjaxProcResutlMessage(jqXHR);
+						showErrorMessageForJs(errorMsg);
+					}
+				})
+				.fail(function(jqXHR, status, errorThrown) {
+					<!--/* なにもしない */-->
+					showErrorMessageForJs(/*[[#{E00091}]]*/ "error");
+				})
+				.always(function(){
+					ajaxRunning = false;
+				});
+			});
+			
+		});
+		</script>
+		<div class="block_title">ファイル管理</div>
+		<div class="block_detail">
+			<div>
+				<span class="d-block mb-3">loiozと連携するサービスを選択してください。</span>
+				<span class="d-block">※loiozのファイル管理機能は外部サービスと連携しなくてもご利用いただけます。</span>
+				<span class="d-block">　電子ファイルを外部サービスに格納したい事務所様向けの機能です。</span>
+				<th:block th:if="${!externalStorageSelectViewForm.nowLoiozStorageIsFree}">
+					<!--/* システム管理者 かつ loiozストレージで有料のものを利用中の場合 */-->
+					<span class="d-block mt-2">※現在、「ご利用プラン／請求情報」にて、有料のloiozファイルストレージを利用中です。</span>
+					<span class="d-block">　連携を行うには、loiozファイルストレージを無料の[[${T(jp.loioz.common.constant.plan.PlanConstant).FREE_PLAN_STORAGE_CAPACITY}]]GBに変更する必要があります。</span>
+				</th:block>
+			</div>
+		</div>
+		
+		<div class="detail_input_area mb-4">
+			<!--/* 連携するサービスの設定 */-->
+			<div class="form-row">
+				<div class="col-md-4" th:with="enum=${T(jp.loioz.common.constant.CommonConstant$ExternalService).GOOGLE}">
+					<div class="storage_select">
+						<div class="storage_icon google_icon"></div>
+						<div class="storage_detail">
+							<label class="storage_name">Google Drive</label>
+							<button type="button" class="btn btn-sm useStorageService"
+								th:unless="${externalStorageSelectViewForm.storageType == enum.cd}"
+								th:classappend="${externalStorageSelectViewForm.storageType == null} ? 'btn-outline-info' : 'btn-secondary'"
+								th:data-cd="${enum.cd}"
+								th:data-url="@{/common/api/auth/google?requestCode=1}"><i class="far fa-folder fa-lg mr-2"></i>連携フォルダを作成する</button>
+							<p th:if="${externalStorageSelectViewForm.storageType == enum.cd}">
+								<button type="button" id="disconnectExternalStorageBtn" class="btn btn-warning btn-sm"><i class="fas fa-unlink"></i>連携を解除する</button>
+							</p>
+						</div>
+					</div>
+				</div>
+				<!--/* Box */-->
+				<div class="col-md-4" th:with="enum=${T(jp.loioz.common.constant.CommonConstant$ExternalService).BOX}">
+					<div class="storage_select">
+						<div class="storage_icon_bg_wrapper wrapper_box">
+							<div class="storage_icon box_icon m-0"></div>
+						</div>
+						<div class="storage_detail">
+							<label class="storage_name">Box</label>
+							<button type="button" class="btn btn-sm useStorageService"
+								th:unless="${externalStorageSelectViewForm.storageType == enum.cd}"
+								th:classappend="${externalStorageSelectViewForm.storageType == null} ? 'btn-outline-info' : 'btn-secondary'"
+								th:data-cd="${enum.cd}"
+								th:data-url="@{/common/api/auth/box?requestCode=1}"><i class="far fa-folder fa-lg mr-2"></i>連携フォルダを作成する</button>
+							<p th:if="${externalStorageSelectViewForm.storageType == enum.cd}">
+								<button type="button" id="disconnectExternalStorageBtn" class="btn btn-warning btn-sm"><i class="fas fa-unlink mr-2"></i>連携を解除する</button>
+							</p>
+						</div>
+					</div>
+				</div>
+				<!--/* Dropbox */-->
+				<div class="col-md-4" th:with="enum=${T(jp.loioz.common.constant.CommonConstant$ExternalService).DROPBOX}">
+					<div class="storage_select">
+						<div class="storage_icon dropbox_icon"></div>
+						<div class="storage_detail">
+							<label class="storage_name">Dropbox</label>
+							<button type="button" class="btn btn-sm useStorageService"
+								th:unless="${externalStorageSelectViewForm.storageType == enum.cd}"
+								th:classappend="${externalStorageSelectViewForm.storageType == null} ? 'btn-outline-info' : 'btn-secondary'"
+								th:data-cd="${enum.cd}"
+								th:data-url="@{/common/api/auth/dropbox?requestCode=1}"><i class="far fa-folder fa-lg mr-2"></i>連携フォルダを作成する</button>
+							<p th:if="${externalStorageSelectViewForm.storageType == enum.cd}">
+								<button type="button" id="disconnectExternalStorageBtn" class="btn btn-warning btn-sm"><i class="fas fa-unlink"></i>連携を解除する</button>
+							</p>
+						</div>
+					</div>
+				</div>
+			</div>
+		</div>
+		
+		<!--/* ルートフォルダ情報 */-->
+		<section class="section_select_storage fc_sub w-75 mt-5" th:if="${externalStorageSelectViewForm.storageType}">
+			<div class="section_block_header">
+				<div class="section_block_title">
+					<i class="fas fa-link mr-2"></i><span>連携先情報</span>
+				</div>
+			</div>
+			<div class="section_block_body">
+				<!--/* error メッセージ */-->
+				<!--/* メッセージに<a>タグなどが入るケースがあるため、サニタイズを行わないth:utextを利用 */-->
+				<div class="alert alert-danger" role="alert" th:if="${!#strings.isEmpty(externalStorageSelectViewForm.apiErrorMsg)}"
+					th:utext="${externalStorageSelectViewForm.apiErrorMsg}">
+				</div>
+				<!--/* info メッセージ */-->
+				<div th:if="!${#strings.isEmpty(externalStorageSelectViewForm.infoMsg)}">
+					<p class="text_mark">
+						<!--/* メッセージに<a>タグなどが入るケースがあるため、サニタイズを行わないth:utextを利用 */-->
+						<i class="fas fa-exclamation-circle mr-2"></i><span th:utext="${externalStorageSelectViewForm.infoMsg}"></span>
+					</p>
+				</div>
+				<!--/* 連携先情報詳細 */-->
+			<th:block th:if="${#strings.isEmpty(externalStorageSelectViewForm.apiErrorMsg)} AND ${#strings.isEmpty(externalStorageSelectViewForm.infoMsg)}">
+				<ul class="section_list shadow-none">
+					<li class="list_contents pb-0">
+						<div class="section_list_item">
+							<div class="item_title_block">
+								<div class="item_title h3 font-weight-bold">
+									<i class="far fa-folder mr-1"></i>
+									<span th:text="${externalStorageSelectViewForm.rootFolderInfo.folderName}"></span>
+								</div>
+							</div>
+							<div class="item_content_block">
+								<div class="data_block">
+									<div class="d-flex flex-wrap">
+										<div class="pr-5 mb-2">
+											<label>所有者</label>
+											<div class="font-weight-bold">
+												<span th:text="${externalStorageSelectViewForm.rootFolderInfo.ownerName}"></span><span th:text="|（${externalStorageSelectViewForm.rootFolderInfo.ownerServiceAccountId}）|"></span>
+											</div>
+										</div>
+										<div class="pr-5 mb-2">
+											<label>作成日(連携開始日)</label>
+											<div class="font-weight-bold">
+												<span th:text="${externalStorageSelectViewForm.rootFolderInfo.createdAt}"></span>
+											</div>
+										</div>
+									</div>
+								</div>
+							</div>
+						</div>
+					</li>
+				</ul>
+			</th:block>
+				<div class="block_action">
+					<button type="button" th:if="${externalStorageSelectViewForm.NotFount}"
+						id="reCreateFolderBtn" class="btn btn-outline-info">
+						<i class="fas fa-folder-plus mr-2"></i>連携先のフォルダを再作成する
+					</button>
+				</div>
+			</div>
+		</section>
+	</div>
+</body>
+</html>

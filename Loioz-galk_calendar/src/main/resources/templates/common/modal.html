@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+<meta charset="utf-8" />
+</head>
+<body>
+	<!--/*
+		モーダル
+		
+		@param id
+			モーダルのID属性
+			
+		@param modalWidthCss
+			モーダル幅を指定するcssクラス(modal-lg, modal_w_wide)
+			デフォルトはmodal-lg
+			
+		@param title
+			ヘッダー部分のタイトル
+			
+		@param headerNaviList
+			ヘッダー部分の制御ボタン(Thymeleafフラグメント)
+		
+		@param bodyContents
+			ボディ部分(Thymeleafフラグメント)
+			
+		@param footerContents
+			フッター部分(Thymeleafフラグメント)
+			
+		@param modeless
+			trueを指定した場合はモーダルではなくモードレスにする
+			デフォルトはfalse
+			
+		
+		e.g.)
+		<div th:replace="common/modal::modal(
+			id='fooModal',
+			title='タイトル',
+			headerNaviList=~{::headerNaviList},
+			bodyContents=~{::bodyContents},
+			footerContents=~{::footerContents})"></div>
+	*/-->
+	<!--/* 通常のモーダル */-->
+	<th:block th:fragment="modal"
+		th:with="
+			modalWidthCss=${modalWidthCss}?: 'modal-lg',
+			modeless=${modeless}?: false">
+		<div class="modal fade" th:classappend="${modeless}? 'modeless'" th:id="${id}?: _" tabindex="-1" role="dialog" aria-hidden="true" data-backdrop="static">
+			<div class="modal-dialog" th:classappend="|${modalWidthCss} ${!modeless? 'modal-dialog-centered' : ''}|" role="document">
+				<div class="modal-content">
+					<div class="modal-header">
+						<h2 class="modalheader_title" th:text="${title}?: _"></h2>
+						<ul th:if="${headerNaviList}" th:replace="${headerNaviList}?: _"></ul>
+					</div>
+					<div class="modal-body" th:insert="${bodyContents}?: _"></div>
+					<div th:if="${footerContents}" class="modal-footer" th:insert="${footerContents}?: _"></div>
+				</div>
+			</div>
+		</div>
+		<!--/* モードレスの場合のみ設定 */-->
+		<script type="text/javascript" th:inline="javascript" th:if="${modeless}">
+		$(function() {
+			let dialog = $("#[(${id})]");
+			if(!dialog.length){
+				return;
+			}
+			<!--/* モードレス用のスタイルを有効にする */-->
+			dialog.on({
+				"show.bs.modal": function(){
+					$("body").addClass("modeless-open");
+				},
+				"hidden.bs.modal": function(){
+					if(!$(".modal.modeless:visible").length){
+						$("body").removeClass("modeless-open");
+					}
+				}
+			});
+			dialog.modal({
+				"backdrop": false,
+				"focus": false,
+				"show": false
+			});
+
+			<!--/* 初期位置の調整 */-->
+			dialog.on("show.bs.modal", function(){
+				dialog.css({
+					"left": Math.max(($(window).width() - dialog.outerWidth()) / 2, 17.5) + "px",
+					"top": Math.max(($(window).height() - dialog.outerHeight()) / 2, 17.5) + "px"
+				});
+			});
+
+			<!--/* Draggableの設定 */-->
+			let handle = dialog.find(".modal-header");
+			dialog.draggable({
+				"handle": handle,
+				"drag": function(event, ui){
+
+				}
+			});
+
+			<!--/* モードレスとモーダルを同時に開けないように制御 */-->
+			$(document).on({
+				"show.bs.modal": function(e){
+					if(dialog.is(":visible") && !$(e.target).is(".modeless")){
+						$(e.target).addClass("d-none");
+						$(e.target).css("transition", "none");
+					}
+				},
+				"shown.bs.modal": function(e){
+					if(dialog.is(":visible") && !$(e.target).is(".modeless")){
+						$(e.target).modal("hide");
+						$(e.target).removeClass("d-none");
+						$(e.target).css("transition", "");
+					}
+				}
+			});
+		});
+		</script>
+	</th:block>
+	<div th:fragment="modalSchedule" th:replace="::modal(modalWidthCss='modal_schedule')"></div>
+	<div th:fragment="modalAnkenPool" th:replace="::modal(modalWidthCss='modal_pool_anken_select')"></div>
+</body>
+</html>

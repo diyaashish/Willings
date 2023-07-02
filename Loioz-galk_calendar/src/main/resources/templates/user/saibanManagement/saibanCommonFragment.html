@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+	<meta charset="utf-8" />
+</head>
+<body>
+
+
+<!--/* 裁判-基本情報表示の裁判官ブロック */-->
+<span th:fragment="saibanBasicViewSaibankanFragment(saibankanDtoList)" id="saibanBasicViewSaibankanFragment">
+	
+	<!--/* スクリプト */-->
+	<script th:inline="javascript">
+	$(function() {
+		
+		// 共有の要素セットアップ処理
+		commonSetUpElement();
+	})
+	</script>
+
+	<!--/* HTML */-->
+	<th:block th:if="${saibankanDtoList.size() == 0}">
+		-
+	</th:block>
+	<th:block th:each="saibankanDto : ${saibankanDtoList}">
+		<span class="d-inline-block mr-3" th:text="${saibankanDto.saibankanName}">裁判官名</span>
+	</th:block>
+	
+</span>
+
+<!--/* 裁判-基本情報編集の裁判官ブロック */-->
+<div th:fragment="saibanBasicInputSaibankanFragment(saibankanInputFormList)" id="saibanBasicInputSaibankanFragment">
+	
+	<!--/* スクリプト */-->
+	<script th:inline="javascript">
+	$(function() {
+		
+		let ajaxRunning = false;
+		
+		<!--/* 共有の要素セットアップ処理 */-->
+		commonSetUpElement();
+		
+		<!--/* 追加ボタンの表示制御 */-->
+		refreshAddBtnShowHidden();
+		<!--/* ✖ボタンの表示制御*/-->
+		refreshDeleteBtnShowHidden();
+		
+		<!--/* 裁判官の入力エリアの追加 */-->
+		$('#saibanBasicInputSaibankanFragment #saibankanInputAdd').on('click', function() {
+			
+			<!--/* 2重押下防止 */-->
+			if(ajaxRunning){
+				return false;
+			}
+			
+			ajaxRunning = true;
+			
+			try{
+			
+				<!--/* 先頭の裁判官入力フォームをテンプレートとして利用する */-->
+				let saibankanInputFormTemplate = $('#saibanBasicInputSaibankanFragment .saibankanInputFormWrap').get(0);
+				let $saibankanInputFormTemplate = $(saibankanInputFormTemplate).clone(true);
+				
+				<!--/* 元の値は削除 */-->
+				$saibankanInputFormTemplate.find('.saibankanInputName').val("")
+				<!--/* エラーメッセージタグは削除 */-->
+				$saibankanInputFormTemplate.find('.saibankanInputNameError').remove();
+				
+				<!--/* テンプレートを追加 */-->
+				$('#saibanBasicInputSaibankanFragment .saibankanInputFormsWrap').append($saibankanInputFormTemplate);
+				
+				<!--/* Listのindex値の整理 */-->
+				refreshSaibankanInputFormIndex();
+				
+				<!--/* 追加ボタンを非表示 */-->
+				refreshAddBtnShowHidden();
+				<!--/* ✖ボタンを表示 */-->
+				refreshDeleteBtnShowHidden();
+			
+			} finally {
+				ajaxRunning = false;
+			}
+		})
+		
+		<!--/* 裁判官の入力エリアの削除 */-->
+		$('#saibanBasicInputSaibankanFragment .saibankanInputNameDelete').on('click', function() {
+			
+			<!--/* 2重押下防止 */-->
+			if(ajaxRunning){
+				return false;
+			}
+			
+			ajaxRunning = true;
+			
+			try{
+			
+				let $saibankanInputFormWrap = $(this).parents('.saibankanInputFormWrap');
+				$saibankanInputFormWrap.remove();
+				
+				<!--/* Listのindex値の整理 */-->
+				refreshSaibankanInputFormIndex();
+				
+				<!--/* 追加ボタンを表示 */-->
+				refreshAddBtnShowHidden();
+				<!--/* ✖ボタンを非表示 */-->
+				refreshDeleteBtnShowHidden();
+				
+			} finally {
+				ajaxRunning = false;
+			}
+		})
+		
+		<!--/* 裁判官の入力エリアのindex番号（id属性やname属性として利用されているListのindex値）を整える */-->
+		function refreshSaibankanInputFormIndex() {
+			
+			let $saibankanInputFormWrapAry = $('#saibanBasicInputSaibankanFragment .saibankanInputFormsWrap .saibankanInputFormWrap');
+			
+			$saibankanInputFormWrapAry.each(function(idx, elem) {
+				
+				let $saibankanInputFormWrap = $(elem);
+				
+				<!--/* 古い値を取得（追加や削除を行うことで、歯抜けが起きている値） */-->
+				let saibankanInputNameOldIndex = $saibankanInputFormWrap.find('.saibankanInputNameIndex').text();
+				let saibankanInputNameOldId = $saibankanInputFormWrap.find('.saibankanInputName').prop('id');
+				let saibankanInputNameOldName = $saibankanInputFormWrap.find('.saibankanInputName').prop('name');
+				
+				<!--/* 古い値を現在のループのidx値で置換（歯抜けがない状態になる） */-->
+				let saibankanInputNameNewId = saibankanInputNameOldId.replace(saibankanInputNameOldIndex + '.', String(idx) + '.')
+				let saibankanInputNameNewName = saibankanInputNameOldName.replace('[' + saibankanInputNameOldIndex + '].', '[' + String(idx) + '].')
+				
+				<!--/* 設定 */-->
+				$saibankanInputFormWrap.find('.saibankanInputNameIndex').text(idx);
+				$saibankanInputFormWrap.find('.saibankanInputName').prop('id', saibankanInputNameNewId);
+				$saibankanInputFormWrap.find('.saibankanInputName').prop('name', saibankanInputNameNewName);
+			})
+		}
+		
+		<!--/* 裁判官の入力エリアの削除ボタンの表示／非表示制御 */-->
+		function refreshDeleteBtnShowHidden() {
+			
+			<!--/* 裁判官の入力エリアの表示件数 */-->
+			let saibankanInputFormCount = $('#saibanBasicInputSaibankanFragment .saibankanInputFormsWrap .saibankanInputFormWrap').length;
+			
+			<!--/* 複数の入力エリアが表示されている場合は、削除ボタンを表示する */-->
+			if (saibankanInputFormCount >= 2) {
+				$('#saibanBasicInputSaibankanFragment .saibankanInputNameDelete').removeClass('hidden');
+			} else {
+				$('#saibanBasicInputSaibankanFragment .saibankanInputNameDelete').addClass('hidden');
+			}
+		}
+		
+		<!--/* 裁判官の入力エリアの追加ボタンの表示／非表示制御 */-->
+		function refreshAddBtnShowHidden() {
+			
+			let saibankanAddLimit = /*[[${T(jp.loioz.common.constant.CommonConstant).SAIBAN_SAIBANKAN_ADD_LIMIT}]]*/ ''
+			
+			<!--/* 裁判官の入力エリアの表示件数 */-->
+			let saibankanInputFormCount = $('#saibanBasicInputSaibankanFragment .saibankanInputFormsWrap .saibankanInputFormWrap').length;
+			
+			<!--/* 入力エリアが裁判官の上限数より小さい場合は追加ボタンを表示する */-->
+			if (saibankanInputFormCount < saibankanAddLimit) {
+				$('#saibanBasicInputSaibankanFragment #saibankanInputAdd').removeClass('hidden');
+			} else {
+				$('#saibanBasicInputSaibankanFragment #saibankanInputAdd').addClass('hidden');
+			}
+		}
+		
+	})
+	</script>
+
+	<!--/* HTML */-->
+	<div>
+		<div class="shokikan_add_row">
+			<label class="input_parts_label">裁判官</label>
+			<!--/* 追加 */-->
+			<a href="javascript:void(0);" id="saibankanInputAdd" class="pr-2 action_link">
+				<i class="fas fa-plus mr-2"></i>追加
+			</a>
+		</div>
+		<div class="saibankanInputFormsWrap">
+			<th:block th:each="saibankanInputForm, stat : *{saibankanInputFormList}">
+				<div class="mb-2 saibankanInputFormWrap">
+					<div class="d-flex">
+						<input type="text" class="form-control saibankanInputName" maxlength="128" tabindex="6" th:field="*{saibankanInputFormList[__${stat.index}__].saibankanName}">
+						<span class="col-1 ml-2 pl-2 align-self-center btn fc_sub saibankanInputNameDelete" >✖</span>
+						<div th:if="${#fields.hasErrors('*{saibankanInputFormList[__${stat.index}__].saibankanName}')}" th:errors="*{saibankanInputFormList[__${stat.index}__].saibankanName}" class="error_mag_point saibankanInputNameError">error</div>
+					</div>
+					<span class="hidden saibankanInputNameIndex" th:text="${stat.index}"></span>
+				</div>
+			</th:block>
+		</div>
+	</div>
+</div>
+
+</body>
+</html>

@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+		xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+		layout:decorator="commonLayout">
+<head>
+	<meta charset="utf-8" />
+</head>
+<body>
+	<!--/* 閲覧権限変更モーダル */-->
+	<div th:fragment="viewLimitChangeModal" >
+		<div class="modal-content">
+			<div class="modal-header">
+				<h2 class="modalheader_title">閲覧権限変更</h2>
+				<ul th:if="${headerNaviList}" th:replace="${headerNaviList}?: _"></ul>
+			</div>
+			<div class="modal-body">
+				<div class="modal_input_area">
+					<div class="form-row">
+						<div class="form-group col-md-12">
+							<label class="input_parts_label" for="viewLimitSelect">閲覧権限</label>
+							<select id="viewLimitSelect" class="form-control" th:field="${viewLimitForm.viewLimit}">
+								<option th:each="enum : ${T(jp.loioz.common.constant.CommonConstant$ViewLimit).values()}"th:value="${enum.cd}" th:text="${enum.val}"></option>
+							</select>
+							<input type="hidden" th:field="${viewLimitForm.folderPermissionInfoManagementId}">
+						</div>
+					</div>
+				</div>
+			</div>
+			<div class="modal-footer">
+				<button type="button" name="confirm" class="btn btn-info updateViewLimitChangeBtn"><i class="fas fa-check"></i>保存</button>
+				<button type="button" class="btn btn-light" data-dismiss="modal"><i class="fas fa-times"></i>閉じる</button>
+			</div>
+		</div>
+	</div>
+	<!--/* メンテナンスモーダル */-->
+	<div th:fragment="mentenanceModal"class="file_mentenance_menu">
+			<ul class="file_menu_navi_list">
+				<li>
+					<button type="button" class="btn btn-light downloadByMenu" th:data-fileconfigurationmanagementid = "${mentenanceViewForm.fileConfigurationManagementId}">ダウンロード</button>
+				</li>
+				<th:block th:if="${T(jp.loioz.common.constant.CommonConstant.FileKubun).IS_ROOT_FOLDER.getCd()} ne ${mentenanceViewForm.fileKubun}">
+					<!--/* ルートフォルダは位置固定のため、ルートフォルダ以外のファイルの場合に移動可とする */-->
+					<li class="file_menu_navi_list_li">
+						<button type="button" class="btn btn-light nameChangeBtn" data-toggle="modal" data-target="#nameChangeModal"
+							th:data-fileconfigurationmanagementid = "${mentenanceViewForm.fileConfigurationManagementId}"
+							th:data-filename="${mentenanceViewForm.fileName}"
+							th:data-filekubun="${mentenanceViewForm.fileKubun}">名前の変更</button>
+					</li>
+					<li class="file_menu_navi_list_li">
+						<button type="button" class="btn btn-light moveBtn"
+							th:data-fileconfigurationmanagementid="${mentenanceViewForm.fileConfigurationManagementId}">移動</button>
+					</li>
+					<li class="file_menu_navi_list_li">
+						<button type="button" class="btn btn-light deleteBtn"
+							th:data-fileconfigurationmanagementid="${mentenanceViewForm.fileConfigurationManagementId}" th:data-filename="${mentenanceViewForm.fileName}">ゴミ箱</button>
+					</li>
+					<th:block th:if="${T(jp.loioz.common.constant.CommonConstant.FileKubun).IS_ROOT_FOLDER.getCd()} ne ${mentenanceViewForm.fileKubun} and ${mentenanceViewForm.ableLimit}">
+						<li class="file_menu_navi_list_li file_menu_navi_trashed file_menu_navi_hide">
+							<button type="button" class="btn btn-light viewLimitChangeBtn" data-toggle="modal" data-target="#viewLimitChangeModal"
+								th:data-fileconfigurationmanagementid = "${mentenanceViewForm.fileConfigurationManagementId}">閲覧権限変更</button>
+						</li>
+					</th:block>
+					<th:block th:if="${T(jp.loioz.common.constant.CommonConstant.FileKubun).IS_FILE.getCd()} eq ${mentenanceViewForm.fileKubun}">
+						<th:block th:if="${T(jp.loioz.common.constant.CommonConstant.FileType).PDF.getCd()} eq ${mentenanceViewForm.getFileType()} or ${T(jp.loioz.common.constant.CommonConstant.FileType).JPEG.getCd()} eq ${mentenanceViewForm.getFileType()} or ${T(jp.loioz.common.constant.CommonConstant.FileType).PNG.getCd()} eq ${mentenanceViewForm.getFileType()}">
+							<li class="file_menu_navi_list_li file_menu_navi_trashed file_menu_navi_hide">
+								<button type="button" class="btn btn-light previewByMenu"
+									th:data-fileconfigurationmanagementid="${mentenanceViewForm.fileConfigurationManagementId}">プレビュー</button>
+							</li>
+						</th:block>
+					</th:block>
+				</th:block>
+			</ul>
+		</div>
+</body>
+</html>

@@ -1,0 +1,1 @@
+DELETE FROM t_accg_doc_file_detail;

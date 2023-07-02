@@ -1,0 +1,602 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+	xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+	layout:decorator="commonLayout">
+<head>
+<meta charset="utf-8" />
+<title layout:fragment="title-contents">
+	[[${T(jp.loioz.common.utility.LoiozUtils).getHtmlTitle("当事者・関与者", T(jp.loioz.common.utility.SessionUtils).getTenantName())}]]
+</title>
+<!--/* 当事者・関与者一覧 */-->
+<style type="text/css">
+/* ダウンロード選択ボタン */
+.popover .arrow {
+	display: none;
+}
+ul.output_nav {
+	list-style: none;
+	padding: 0;
+	margin: 0 0;
+}
+.output_nav li {
+	width: 100%;
+	text-align: left;
+}
+.output_nav li:hover {
+	background-color: #EFF1F3;
+}
+.output_nav .btn {
+	border: none;
+	color: #14171A;
+	background-color: transparent;
+	box-shadow: none;
+}
+</style>
+<!--/* 関与者モーダルを扱うので共通JS定義 */-->
+<script type="text/javascript" th:replace="common/mvc/kanyosha/kanyoshaEditModal::kanyoshaEditModalFragmentObjJs"></script>
+
+<script type="text/javascript" th:inline="javascript">
+let ajaxRunning = false;
+
+</script>
+<script type="text/javascript" th:inline="javascript">
+$(function() {
+	
+	const $kanyoshaEditModal = $("#kanyoshaEditModal");
+	
+	<!--/* 関与者編集を開いたときのセットアップ処理 */-->
+	$kanyoshaEditModal.on("show.bs.modal", function() {
+		
+		// 登録処理
+		benzo.global.fragment.kanyoshaEditModalFragmentObj.setUpObj.registAction = function(triggerBtn) {
+			let param = benzo.global.fragment.kanyoshaEditModalFragmentObj.paramObj.getFormParams($kanyoshaEditModal);
+			let url = /*[[@{/common/mvc/kanyosha/registKanyosha}]]*/"";
+			if (ajaxRunning) {
+				return false;
+			}
+			ajaxRunning = true;
+			$.ajax({
+				type : "POST",
+				url : url,
+				data : param,
+				dataType : "html",
+			})
+			.done(function(data, status, jqXHR) {
+				if (isAjaxProcSuccess(jqXHR)) {
+					// 処理成功
+					alert(getAjaxProcResutlMessage(jqXHR));
+					location.reload();
+				} else {
+					if (data) {
+						$kanyoshaEditModal.find(".kanyoshaEditModalFragmentWrap").html(data);
+					}
+					const errorMsg = getAjaxProcResutlMessage(jqXHR);
+					showErrorMessage(errorMsg, $kanyoshaEditModal);
+				}
+			})
+			.fail(function(jqXHR, status, errorThrown) {
+				const errorMsg = /*[[#{E00091}]]*/ "error";
+				showErrorMessage(errorMsg, $kanyoshaEditModal);
+			})
+			.always(function(){
+				ajaxRunning = false;
+			});
+		};
+		
+		// 更新処理
+		benzo.global.fragment.kanyoshaEditModalFragmentObj.setUpObj.updateAction = function(triggerBtn) {
+			let param = benzo.global.fragment.kanyoshaEditModalFragmentObj.paramObj.getFormParams($kanyoshaEditModal);
+			let url = /*[[@{/common/mvc/kanyosha/updateKanyosha}]]*/"";
+			
+			if (ajaxRunning) {
+				return false;
+			}
+			ajaxRunning = true;
+
+			$.ajax({
+				type : "POST",
+				url : url,
+				data : param,
+				dataType : "html",
+			})
+			.done(function(data, status, jqXHR) {
+				if (isAjaxProcSuccess(jqXHR)) {
+					// 処理成功
+					alert(getAjaxProcResutlMessage(jqXHR));
+					location.reload();
+				} else {
+					if (data) {
+						$kanyoshaEditModal.find(".kanyoshaEditModalFragmentWrap").html(data);
+					}
+					const errorMsg = getAjaxProcResutlMessage(jqXHR);
+					showErrorMessage(errorMsg, $kanyoshaEditModal);
+				}
+			})
+			.fail(function(jqXHR, status, errorThrown) {
+				const errorMsg = /*[[#{E00091}]]*/ "error";
+				showErrorMessage(errorMsg, $kanyoshaEditModal);
+			})
+			.always(function(){
+				ajaxRunning = false;
+			});
+		};
+		
+		// 削除処理
+		benzo.global.fragment.kanyoshaEditModalFragmentObj.setUpObj.deleteAction = function(triggerBtn) {
+			let param = benzo.global.fragment.kanyoshaEditModalFragmentObj.paramObj.getFormParams($kanyoshaEditModal);
+
+			if (ajaxRunning) {
+				return false;
+			}
+			ajaxRunning = true;
+
+			Promise.resolve()
+				.then(() => beforeCheck(param))
+				.then(() => deleteAction(param))
+				.then((resolveMsg) => {
+					// 処理成功
+					alert(resolveMsg);
+					location.reload();
+				})
+				.catch((errorObj) => console.log(errorObj))
+				.finally(() => ajaxRunning = false);
+			
+			function beforeCheck(param) {
+				return new Promise((resolve, reject) => {
+					$.ajax({
+						type : "POST",
+						url : /*[[@{/common/mvc/kanyosha/deleteKanyoshaBeforeCheck}]]*/,
+						data : param,
+						dataType : "json",
+					}).done(function(data) {
+						if (data.needConfirm && !confirm(data.message)) {
+							return reject();
+						} else {
+							return resolve([data]);
+						}
+					}).fail(function(jqXHR, status, errorThrown) {
+						const errorMsg = /*[[#{E00091}]]*/ "error";
+						showErrorMessage(errorMsg, $kanyoshaEditModal);
+						return reject(jqXHR, status, errorThrown);
+					});
+				});
+			}
+			
+			function deleteAction(param) {
+				return new Promise((resolve, reject) => {
+					$.ajax({
+						type : "POST",
+						url : /*[[@{/common/mvc/kanyosha/deleteKanyosha}]]*/,
+						data : param,
+						dataType : "html",
+					})
+					.done(function(data, status, jqXHR) {
+						if (isAjaxProcSuccess(jqXHR)) {
+							// 処理成功
+							return resolve(getAjaxProcResutlMessage(jqXHR))
+						} else {
+							const errorMsg = getAjaxProcResutlMessage(jqXHR);
+							showErrorMessage(errorMsg, $kanyoshaEditModal);
+							return reject([errorMsg]);
+						}
+					})
+					.fail(function(jqXHR, status, errorThrown) {
+						const errorMsg = /*[[#{E00091}]]*/ "error";
+						showErrorMessage(errorMsg, $kanyoshaEditModal);
+						return reject([jqXHR, status, errorThrown]);
+					});
+				});
+			}
+		};
+		
+		// 登録・編集エリアの初期レンダリング（再レンダリングも含む）
+		benzo.global.fragment.kanyoshaEditModalFragmentObj.setUpObj.initRenderEditViewAction = function(triggerBtn) {
+			if (ajaxRunning) {
+				return false;
+			}
+			ajaxRunning = true;
+			Promise.resolve()
+				.then(() => initRenderEditViewAction())
+				.catch((errors) => console.log(errors))
+				.finally(() => ajaxRunning = false);
+		};
+		
+		// 検索エリアの登録処理
+		benzo.global.fragment.kanyoshaEditModalFragmentObj.setUpObj.searchRegistAction = function(triggerBtn) {
+			let param = benzo.global.fragment.kanyoshaEditModalFragmentObj.paramObj.getSearchResultFormParams($kanyoshaEditModal);
+			const url = /*[[@{/common/mvc/kanyosha/registKanyoshaSearchResult}]]*/"";
+			
+			if (ajaxRunning) {
+				return false;
+			}
+			ajaxRunning = true;
+
+			$.ajax({
+				type : "POST",
+				url : url,
+				data : param,
+				dataType : "html",
+			})
+			.done(function(data, status, jqXHR) {
+				if (isAjaxProcSuccess(jqXHR)) {
+					// 処理成功
+					alert(getAjaxProcResutlMessage(jqXHR));
+					location.reload();
+				} else {
+					const errorMsg = getAjaxProcResutlMessage(jqXHR);
+					showErrorMessage(errorMsg, $kanyoshaEditModal);
+				}
+			})
+			.fail(function(jqXHR, status, errorThrown) {
+				const errorMsg = /*[[#{E00091}]]*/ "error";
+				showErrorMessage(errorMsg, $kanyoshaEditModal);
+			})
+			.always(function(){
+				ajaxRunning = false;
+			});
+		};
+		
+		// 検索エリアの検索処理
+		benzo.global.fragment.kanyoshaEditModalFragmentObj.setUpObj.searchRenderPromise = function() {
+			return new Promise((resolve, reject) => {
+				const url = /*[[@{/common/mvc/kanyosha/getKanyoshaSearchModalFragment}]]*/"";
+				let optionParam = benzo.global.fragment.kanyoshaEditModalFragmentObj.paramObj.getSearchFormParams($kanyoshaEditModal);
+				$.ajax({
+					type : "GET",
+					url : url,
+					data : optionParam,
+					dataType : "html"
+				})
+				.done(function(result) {
+					$kanyoshaEditModal.find(".kanyoshaEditModalFragmentWrap").html(result);
+					return resolve();
+				})
+				.fail(function(jqXHR, status, errorThrown) {
+					showErrorMessageForJs(/*[[#{E00091}]]*/ "error");
+					return reject([jqXHR, status, errorThrown]);
+				});
+			});
+		};
+		
+		// 検索エリアの初期表示処理
+		benzo.global.fragment.kanyoshaEditModalFragmentObj.setUpObj.initRenderSearchViewAction = function() {
+			if (ajaxRunning) {
+				return false;
+			}
+			ajaxRunning = true;
+			Promise.resolve()
+				.then(() => initRenderSearchViewAction())
+				.catch((errors) => console.log(errors))
+				.finally(() => ajaxRunning = false);
+		};
+	});
+	
+	function initRenderEditViewAction() {
+		return new Promise((resolve, reject) => {
+			let initRenderEditViewParams = Object.assign({}, benzo.global.fragment.kanyoshaEditModalFragmentObj.initRenderEditViewParams);
+			const ankenId = initRenderEditViewParams["ankenId"];
+			const kanyoshaSeq =initRenderEditViewParams["kanyoshaSeq"];
+			
+			let url = /*[[@{/common/mvc/kanyosha/getKanyoshaEditModalFragment}]]*/"";
+			let param = {} ;
+			if (kanyoshaSeq) {
+				url += `/${kanyoshaSeq}`;
+			} else {
+				url += "/create";
+				param = {
+					"ankenId" : ankenId,
+					"initCustomerType" : "0",
+				};
+			}
+			
+			$.ajax({
+				type : "GET",
+				url : url,
+				data : param,
+				dataType : "html"
+			})
+			.done(function(result) {
+				$kanyoshaEditModal.find(".kanyoshaEditModalFragmentWrap").html(result);
+				return resolve();
+			})
+			.fail(function(jqXHR, status, errorThrown) {
+				showErrorMessageForJs(/*[[#{E00091}]]*/ "error");
+				return reject([jqXHR, status, errorThrown])
+			})
+		});
+	};
+	
+	function initRenderSearchViewAction() {
+		return new Promise((resolve, reject) => {
+			let initRenderSearchViewParams = Object.assign({}, benzo.global.fragment.kanyoshaEditModalFragmentObj.initRenderSearchViewParams);
+			const ankenId = initRenderSearchViewParams["ankenId"]
+			let param = [{name:"ankenId", value: ankenId}];
+			
+			const url = /*[[@{/common/mvc/kanyosha/getKanyoshaSearchModalFragment}]]*/"";
+			$.ajax({
+				type : "GET",
+				url : url,
+				data : param,
+				dataType : "html"
+			})
+			.done(function(result) {
+				$kanyoshaEditModal.find(".kanyoshaEditModalFragmentWrap").html(result);
+				return resolve();
+			})
+			.fail(function(jqXHR, status, errorThrown) {
+				showErrorMessageForJs(/*[[#{E00091}]]*/ "error");
+				return reject([jqXHR, status, errorThrown]);
+			})
+		});
+	};
+	
+	<!--/* 関与者編集モーダルを開く処理 */-->
+	$(document).on("click", ".openKanyoshaModal", function() {
+		const ankenId = /*[[${viewForm.ankenId}]]*/"";
+		const kanyoshaSeq =$(this).data("kanyoshaSeq");
+		
+		// 登録・編集初期表示で必要なパラメータをメモリに保持しておく
+		benzo.global.fragment.kanyoshaEditModalFragmentObj.initRenderEditViewParams = {
+				"ankenId": ankenId,
+				"kanyoshaSeq": kanyoshaSeq,
+		}
+		
+		// 検索初期表示で必要なパラメータをメモリに保持しておく
+		benzo.global.fragment.kanyoshaEditModalFragmentObj.initRenderSearchViewParams = {
+				"ankenId": ankenId,
+		}
+		
+		if (ajaxRunning) {
+			return false;
+		}
+		ajaxRunning = true;
+		Promise.resolve()
+			.then(() => initRenderEditViewAction())
+			.then(() => $kanyoshaEditModal.modal("show"))
+			.catch((errors) => console.log(errors))
+			.finally(() => ajaxRunning = false);
+	});
+	
+});
+</script>
+
+<script type="text/javascript" th:inline="javascript">
+$(function() {
+	
+	<!--/* 初期の表示順を保存する */-->
+	let currentDispOrder = new Map();
+	$('#kanyoshaSortData tr').each(function(idx){
+		currentDispOrder.set($(this).attr('data-kanyosha-seq'), parseInt(idx));
+	});
+	
+	<!--/* 表示順の変更処理 */-->
+	$('#kanyoshaSortData').sortable({
+		  containment: "parent",
+		  handle: '.sortableObj',
+	});
+
+	$('#kanyoshaSortData').bind('sortupdate', function(){
+		let kanyoshaSeq = [];
+		let index = [];
+		const ankenId = /*[[${viewForm.ankenId}]]*/"";
+
+		$(this).find('.sortDataTarget').each(function(idx){
+			kanyoshaSeq.push($(this).attr('data-kanyosha-seq'));
+
+			/* 変更箇所を記憶する */
+			if (currentDispOrder.get($(this).attr('data-kanyosha-seq')) != parseInt(idx)) {
+				index.push(parseInt(idx));
+			}
+		});
+
+		<!--/* パラメータをStringに変換して渡す */-->
+		if (kanyoshaSeq.length > 0) {
+			if (ajaxRunning) {
+				return false;
+			}
+			ajaxRunning = true;
+			$.ajax({
+				url : /*[[@{/user/kanyosha/dispOrder}]]*/,
+				type : "POST",
+				data : {"kanyoshaSeq" : String(kanyoshaSeq), "index" : String(index), "ankenId" :ankenId},
+			}).done(function(responce) {
+				if (responce.succeeded) {
+					$('#kanyoshaSortData tr').each(function(idx){
+						currentDispOrder.set($(this).attr('data-kanyosha-seq'), parseInt(idx));
+					});
+				} else {
+					if (responce.message) {
+						alert(responce.message);
+					}
+				}
+			}).fail(function(jqXHR, textStatus, errorThrown) {
+			}).always(function() {
+				ajaxRunning = false;
+			});
+		}
+	});
+
+
+	/** 一覧の並べ替え */
+	$('#kanyoshaSortData tr').on({
+		mouseenter: function() {
+			_commonSortableObjOn(this);
+		},
+		mouseleave: function() {
+			_commonSortableObjOff(this);
+		}
+	});
+
+	<!--/* popoverを閉じる */-->
+	$(document).on('click touchend', function(event) {
+		if (!$(event.target).closest('.popover').length) {
+			$(document).find('[data-toggle="popover"]').popover('hide');
+		}
+	});
+
+	<!--/* 対象以外のpopoverを閉じる */-->
+	$(document).on('click', '[data-toggle="popover"]', function(event) {
+		$('[data-toggle="popover"]:not([id="'+$(this).prop('id')+'"])').popover('hide');
+	});
+
+});
+</script>
+</head>
+<body>
+	<div layout:fragment="main-contents" th:remove="tag">
+
+		<div class="contents_sidebar_wrapper contentsSlidebarWrapper" th:data-click-open=${customerAnkenMenuOpenClickForSessionValue} th:data-resize-open=${customerAnkenMenuOpenResizeForSessionValue}>
+
+			<!--/* 顧客・案件メニュー */-->
+			<div th:replace="common/customerAnkenMenu::menuList(
+				sideMenuAnkenId=${viewForm.ankenId},
+				sideMenuCustomerId=null,
+				selectedTabClass = 'is_kanyosya')">
+			</div>
+
+			<!--/* メインコンテンツ */-->
+			<div class="contents_wrapper">
+				<div class="container-fluid">
+					
+					<main class="content">
+						<!--/* ぱんくず */-->
+						<div th:replace="common/wrapHeader::wrapHeader(
+							returnListScreen=${T(jp.loioz.common.utility.SessionUtils).getSessionVaule(T(jp.loioz.common.constant.SessionAttrKeyEnum).RETURN_LIST_SCREEN.codeKey)},
+							sideMenuAnkenId=${viewForm.ankenId},
+							selectedTabClass = 'is_kanyosya')"></div>
+						
+						<!--/* メッセージエリア */-->
+						<div th:replace="common/messageArea::messageArea"></div>
+						
+						<!--/* 顧客情報・案件情報 */-->
+						<div th:replace="common/customerAnkenSelected::detailInfo(
+							wrapHeaderAnkenId=${viewForm.ankenId},
+							wrapHeaderCustomerId=null,
+							pageName='当事者・関与者')">
+						</div>
+						
+						<div class="">
+							<!--/* コンテンツ */-->
+							<form th:object="${viewForm}" id="kanyoshaListViewForm">
+								<section>
+									<div class="section_header">
+										<div class="section_header__title">当事者・関与者</div>
+										<!--/* アクションボタン郡 */-->
+										<div class="section_header__action">
+											<a href="javascript:void(0);" class="openKanyoshaModal fs15"><i class="fas fa-plus-square mr-2"></i>当事者・関与者追加</a>
+										</div>
+									</div>
+									<div class="section_body">
+										<div class="section_body__contents p-0">
+											
+											<table class="table table-hover align-top table_sort table_fixed kanyosha_list">
+												<thead class="bg-info">
+													<tr>
+														<th class="th_td_order"><i class="fas fa-grip-vertical fc_sub"></i></th>
+														<th class="th_td_person_id">名簿ID</th>
+														<th class="th_td_attribute">属性</th>
+														<th class="th_td_name">名前</th>
+														<th class="th_td_address">住所</th>
+														<th class="th_td_contact">連絡先</th>
+														<th class="th_td_bank">口座</th>
+														<th class="th_td_relation">関係</th>
+														<th class="th_td_remarks">備考</th>
+													</tr>
+												</thead>
+												<tbody id="kanyoshaSortData" class="kanyoshaListData">
+		<!--/*/ 							<th:block th:if="*{#lists.isEmpty(kanyoshaDtoList)}"> /*/-->
+													<tr>
+														<td colspan="8" class="no_data_table_list">
+															<span th:text="#{I00021}">MSG_I00021</span>
+														</td>
+													</tr >
+		<!--/*/ 							</th:block> /*/-->
+													<tr th:each="kanyosha : *{kanyoshaDtoList}" class="openKanyoshaModal sortDataTarget" th:data-click-sync-for-descendants="td" th:data-kanyosha-seq="${kanyosha.kanyoshaSeq}">
+														<td class="stop-events th_td_order">
+															<div class="move_point icon_drag_indicator_sp sortableObj">
+																<svg class="icon_drag_indicator hidden"></svg>
+															</div>
+														</td>
+														<td class="th_td_person_id">
+															<a class=""
+																th:href="@{/user/personManagement/edit/{personId}/(personId=${kanyosha.personId})}"
+																th:text="${kanyosha.personId}"
+																data-boundary="window" data-container="#kanyoshaListViewForm" data-toggle="tooltip" data-trigger="hover" title="名簿情報へ">
+															</a>
+														</td>
+														<td class="th_td_attribute">
+															<th:block  th:switch="${kanyosha.personAttribute.getCd()}">
+																<span th:case="${T(jp.loioz.common.constant.CommonConstant$PersonAttributeCd).CUSTOMER}"
+																	class="badge badge-pill list_attr badge_blue" th:text="${kanyosha.personAttribute.getName()}">顧客</span>
+																<span th:case="${T(jp.loioz.common.constant.CommonConstant$PersonAttributeCd).ADVISOR}"
+																	class="badge badge-pill list_attr badge_wine_red" th:text="${kanyosha.personAttribute.getName()}">顧問先</span>
+																<span th:case="${T(jp.loioz.common.constant.CommonConstant$PersonAttributeCd).LAWYER}"
+																	class="badge badge-pill list_attr badge_purple" th:text="${kanyosha.personAttribute.getName()}">弁護士</span>
+																<span th:case="${T(jp.loioz.common.constant.CommonConstant$PersonAttributeCd).OTHER}"
+																	class="badge badge-pill list_attr badge_green" th:text="${kanyosha.personAttribute.getName()}">その他</span>
+																<span th:case="*"></span>
+															</th:block>
+														</td>
+														<td class="th_td_name char_ellipsis">
+															<span th:text="${kanyosha.kanyoshaName}"></span>
+															<div th:if="${!#strings.isEmpty(kanyosha.jimushoName)}" th:text="${kanyosha.jimushoName}"
+																class="row_sub_data sub_text"></div>
+														</td>
+														<td class="th_td_address">
+															<div class="data_zip_address_block">
+																<div>
+																	<span th:text="${!#strings.isEmpty(kanyosha.zipCode) ? '〒' + kanyosha.zipCode : ''}"></span>
+																</div>
+																<span th:text="${kanyosha.address1}" class="text-break"> </span>
+																<span th:text="${kanyosha.address2}" class="text-break"></span>
+															</div>
+														</td>
+														<td class="th_td_contact">
+															<div>
+																<span class="sub_text">TEL</span>
+																<span th:text="${kanyosha.telNo}"></span>
+															</div>
+															<div>
+																<span class="sub_text">FAX</span>
+																<span th:text="${kanyosha.faxNo}"></span>
+															</div>
+															<div>
+																<span class="sub_text">メール</span>
+																<span th:text="${kanyosha.mailAddress}"></span>
+															</div>
+														</td>
+														<td class="th_td_bank">
+															<span data-boundary="window" data-container="#kanyoshaListViewForm" data-toggle="tooltip" data-trigger="hover"
+																th:title="${#bools.isTrue(kanyosha.hasKoza)} ? '口座情報有り' : '口座情報なし' ">
+																<i class="fas fa-money-check fa-lg" th:classappend="${#bools.isTrue(kanyosha.hasKoza)} ? 'text-success' : 'text-secondary' "></i>
+															</span>
+														</td>
+														<td class="text-break th_td_relation" th:text="${kanyosha.kankei}"/>
+														<td class="char_ellipsis text-break th_td_remarks" myth:nl2br="${kanyosha.remarks}"/>
+													</tr>
+												</tbody>
+											</table>
+										</div>
+									</div>
+								</section>
+							</form>
+						</div>
+					</main>
+				</div>
+
+				<!--/* 関与者モーダル */-->
+				<div id="kanyoshaEditModal" class="modal fade" tabindex="-1" role="dialog" aria-hidden="true" data-backdrop="static">
+					<div class="modal-dialog modal-dialog-centered modal_kanyosha_customer_select" role="document">
+						<div class="modal-content">
+							<div class="kanyoshaEditModalFragmentWrap">
+								<!--/* 関与者情報 */-->
+							</div>
+						</div>
+					</div>
+				</div>
+				
+			</div>
+		</div>
+	</div>
+</body>
+</html>

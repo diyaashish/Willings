@@ -1,0 +1,1021 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+	<meta charset="utf-8" />
+</head>
+<body>
+
+
+
+<!--/* 案件 基本情報登録ブロック */-->
+<div th:fragment="ankenRegistBasicInputFragment(ankenRegistBasicInputForm)" id="ankenRegistBasicInputFragment">
+
+<!--/* スクリプト */-->
+<script th:inline="javascript">
+
+$(function() {
+	
+	<!--/* 共有の要素セットアップ処理 */-->
+	commonSetUpElement();
+	gropingSelectOptions("salesOwner-select", "tantoLawyer-select", "tantoJimu-select");
+	$(".addInputItem").each(function() {
+		hideIfNoTarget(this);
+		showMainTanto(this);
+	});
+	
+	const ankenRegistBasicInputFragment = $('#ankenRegistBasicInputFragment');
+	let ajaxRunning = false;
+
+	<!--/* 案件区分の変更（事務所案件⇔個人案件）で売上計上先の再取得 */-->
+	ankenRegistBasicInputFragment.on("change", "[name='ankenType']", function() {
+		<!--/* 二重押下の防止 */-->
+		if (ajaxRunning) {
+			return false;
+		}
+		let alertFlg = false;
+		<!--/* 売上計上先の弁護士が選択されているかチェックする */-->
+		if(ankenRegistBasicInputFragment.find(".salesOwner").length !== ankenRegistBasicInputFragment.find(".salesOwner.pl-0.hidden").length) {
+			alertFlg = true;
+		}
+		if (alertFlg) {
+			if (!confirm("区分を変更した場合、売上計上先がリセットされます。")) {
+				ankenRegistBasicInputFragment.find("[name='ankenType']:not(:checked)").prop("checked", true);
+				return false;
+			}
+		}
+		ajaxRunning = true;
+		<!--/* 売上計上先を取得し、再設定する */-->
+		_setSalesOwner().finally(() => {
+			$("[data-toggle=popover]").popover();
+			ajaxRunning = false;
+		});
+	});
+
+	<!--/** 売上計上先取得 */-->
+	function _setSalesOwner() {
+		return new Promise((resolve, reject) => {
+			let ankenType = ankenRegistBasicInputFragment.find("[name='ankenType']:checked").val();
+			$.ajax({
+				url : '/user/ankenRegist/changeType',
+				type :"GET",
+				data : {'ankenType' : ankenType},
+				dataType: 'html',
+			}).done(function(data, status, jqXHR) {
+				if (isAjaxProcSuccess(jqXHR)) {
+					ankenRegistBasicInputFragment.find(".lawyerOptionList").replaceWith(data);
+					
+					return resolve();
+				} else {
+					<!--/** 処理失敗 */-->
+					const errorMsg = getAjaxProcResutlMessage(jqXHR);
+					showErrorMessageForJs(errorMsg);
+					
+					return reject();
+				}
+
+			}).fail(function(jqXHR, status, errorThrown) {
+				showErrorMessageForJs(/*[[#{E00091}]]*/ "error");
+				return reject();
+			});
+		});
+	}
+	
+	<!--/* 案件・顧客情報の登録 */-->
+	$('#ankenRegistBasicInputFragment #registAnkenCustomerBasic').on('click', function() {
+		<!--/* リクエストパラメータ */-->
+		let formData = $('#ankenRegistBasicInputForm').serializeArray();
+		
+		<!--/* 2重押下防止 */-->
+		if(ajaxRunning){
+			return false;
+		}
+		ajaxRunning = true;
+		
+		$.ajax({
+			url : '/user/ankenRegist/registAnkenCustomerBasic',
+			type : "POST",
+			data : formData
+		}).done(function(result) {
+			if(result.succeeded){
+				<!--/* 処理成功 */-->
+				let ankenManagementEditUrl = /*[[${T(jp.loioz.common.constant.UrlConstant).ANKEN_EDIT_URL}]]*/'';
+				ankenManagementEditUrl = ankenManagementEditUrl + result.ankenId + '/';
+				
+				<!--/* URLにメッセージを付与 */-->
+				const messageLevel = /*[[${T(jp.loioz.common.constant.CommonConstant$MessageLevel).INFO.getCd()}]]*/null;
+				const param = "level="+ messageLevel +"&message=" + encodeURIComponent(result.message);
+				const ankenManagementEditUrlWithMessage = ankenManagementEditUrl + "redirectIndexWithMessage?"+param;
+				
+				<!--/* 下記の画面遷移中（画面ロード中）に再度登録ボタンが押されないよう、クリックイベントを削除 */-->
+				<!--/* ※画面遷移の完了より前にalwaysの関数が実行され、通常の2重押下防止対応だけでは対応しきれないことによる特別な対応 */-->
+				$('#ankenRegistBasicInputFragment #registAnkenCustomerBasic').off('click');
+				
+				window.location.href = ankenManagementEditUrlWithMessage;
+			} else {
+				showErrorMessageForJs(result.message);
+				showErrorMessage(result.message, true, result.errors);
+			}
+		})
+		.fail(function(jqXHR, status, errorThrown) {
+			showErrorMessageForJs(/*[[#{E00007}]]*/ "登録に失敗しました。");
+		})
+		.always(function(){
+			ajaxRunning = false;
+		});
+	});
+	
+})
+</script>
+	
+	<!--/* HTML */-->
+	<form id="ankenRegistBasicInputForm" th:object="${ankenRegistBasicInputForm}" autocomplete="off">
+
+		<!--/* 入力 */-->
+		<div class="row">
+			
+			<!--/* 左ブロック */-->
+			<div class="col-md-6">
+				<div class="new_regist_edit_title case_title">
+					<span>案件情報入力</span>
+				</div>
+				
+				<div class="pl-4">
+					<!--/* 区分・登録日 */-->
+					<div class="form-row" id="ankenTypeCreatedDateArea">
+						<!--/* 区分 */-->
+						<div class="form-group col-md-8">
+							<label class="input_parts_label">受任区分</label>
+							<div class=" pt-2">
+								<label class="radio_btn mb-0" th:each="option : *{ankenTypeOptions}">
+									<input type="radio" class="radio_input" th:field="*{ankenType}" th:value="${option.value}">
+									<span class="radio_txt" th:text="${option.label}"></span>
+								</label>
+							</div>
+							<div th:if="*{#fields.hasErrors('ankenType')}" th:errors="*{ankenType}" class="error_mag_point">error</div>
+						</div>
+						
+						<!--/*  登録日 */-->
+						<div class="form-group col-md-4">
+							<label class="input_parts_label">登録日</label>
+							<input type="text" class="form-control digit7 inputDateSlash" data-click-sync="[data-target-name='ankenCreatedDate']"
+								th:field="*{ankenCreatedDate}" maxlength="10">
+							<button type="button" class="btn btn_popcal hidden" data-target-name="ankenCreatedDate"
+								data-toggle="datepicker" data-target="#ankenCreatedDate">カレンダー</button>
+							<div th:if="*{#fields.hasErrors('ankenCreatedDate')}" th:errors="*{ankenCreatedDate}" class="error_mag_point">error</div>
+							<div class="error_mag_point hidden" th:id="itemMsg_ankenCreatedDate"></div>
+						</div>
+					</div>
+					
+					<!--/* 案件名・分野 */-->
+					<div class="form-row" id="ankenNameBunyaArea">
+						<!--/* 案件名 */-->
+						<div class="form-group col-md-8">
+							<label class="input_parts_label">案件名</label>
+							<input type="text" class="form-control" th:field="*{ankenName}" maxlength="150">
+							<div th:if="*{#fields.hasErrors('ankenName')}" th:errors="*{ankenName}" class="error_mag_point">error</div>
+							<div class="error_mag_point hidden" th:id="itemMsg_ankenName"></div>
+						</div>
+						
+						<!--/* 分野 */-->
+						<div class="form-group col-md-4">
+							<label class="input_parts_label">分野</label>
+							<select class="form-control" th:field="*{bunya}">
+								<option
+									th:each="bunyaDto : ${ankenRegistBasicInputForm.bunyaList}"
+									th:value="${bunyaDto.cd}" th:text="${bunyaDto.val}"></option>
+							</select>
+							<div th:if="*{#fields.hasErrors('bunya')}" th:errors="*{bunya}" class="error_mag_point">error</div>
+							<div class="error_mag_point hidden" th:id="itemMsg_bunya"></div>
+						</div>
+					</div>
+					<!--/* 案件名・分野 end */-->
+					
+					<!--/* 弁護士・事務選択 */-->
+					<div class="form-row">
+						<div class="form-group col-sm-6">
+							<div class="lawyerOptionList" th:fragment="lawyerOptionList">
+								<div
+									th:replace="::tantoTemplate(
+									itemName='salesOwner',
+									itemLabel='売上計上先',
+									optionList=${ankenRegistBasicInputForm.salesOwnerOptions},
+									salesOwnerHelpNavi=true)">
+								</div>
+							</div>
+						</div>
+					</div>
+					<div class="form-row">
+						<div class="form-group col-sm-6">
+							<div
+								th:replace="::tantoTemplate(
+								itemName='tantoLawyer',
+								itemLabel='担当弁護士',
+								optionList=${ankenRegistBasicInputForm.tantoLawyerOptions},
+								dispMainTanto=true,
+								salesOwnerHelpNavi=false)">
+							</div>
+						</div>
+						<div class="form-group col-sm-6">
+							<div
+								th:replace="::tantoTemplate(
+								itemName='tantoJimu',
+								itemLabel='担当事務',
+								optionList=${ankenRegistBasicInputForm.tantoJimuOptions},
+								dispMainTanto=true,
+								salesOwnerHelpNavi=false)">
+							</div>
+						</div>
+					</div>
+					<!--/* 弁護士・事務選択 end */-->
+					
+					<!--/* 事案概要・方針 */-->
+					<div class="form-row" id="jianSummaryArea">
+						<div class="form-group col-md-12">
+							<label class="input_parts_label">事案概要・方針</label>
+							<textarea rows="10" class="form-control" th:field="*{jianSummary}" maxlength="5000"></textarea>
+							<div th:if="*{#fields.hasErrors('jianSummary')}" th:errors="*{jianSummary}" class="error_mag_point">error</div>
+							<div class="error_mag_point hidden" th:id="itemMsg_jianSummary"></div>
+						</div>
+					</div>
+					<!--/* 事案概要・方針 end */-->
+					
+				</div>
+			</div>
+			<!--/* 左ブロック end */-->
+
+			<!--/* 右ブロック */-->
+			<div class="col-md-6" id="customerRegistBasicFragmentWrap"
+				th:insert="::customerRegistBasicInputFragment(${ankenRegistBasicInputForm})">
+			</div>
+			<!--/* 右ブロック end */-->
+		</div>
+		<!--/* ボタン */-->
+		<hr class="my-4">
+		<div class="text-right my-4">
+			<!--/* 登録ボタン */-->
+			<button type="button" id="registAnkenCustomerBasic" class="btn btn-info">
+				<i class="fas fa-check"></i>登録
+			</button>
+		</div>
+		
+	</form>
+	
+</div>
+
+<!--/* 売上帰属・担当弁護士・担当事務 入力項目 */-->
+<div th:id="|${itemName}Container|" th:fragment="tantoTemplate(itemName, itemLabel, optionList, salesOwnerHelpNavi)" th:with="dispMainTanto=${dispMainTanto}?: false">
+
+	<!--/* Script */-->
+	<script th:inline="javascript">
+	$(function() {
+		const $container = $(/*[[|#${itemName}Container|]]*/"");
+		
+		<!--/* レンダリング時に選択アカウントの表示非表示切り替えを発火 */-->
+		hiddenIfSelect();
+		
+		<!--/* 選択アカウントの表示非表示設定を最新化 */-->
+		function hiddenIfSelect() {
+			const seletedAccount = getSelectedAccountSeq();
+			$container.find(".selectArea button").removeClass("hidden");
+			$container.find(".selectArea button").filter((idx, elem) => {
+				return seletedAccount.includes($(elem).data("seq"));
+			}).addClass("hidden");
+			if (canAddUser()) {
+				$container.find(".showSelectArea").removeClass("hidden");
+			}
+		};
+		
+		<!--/* 選択中のアカウントSEQをArray型で取得 */-->
+		function getSelectedAccountSeq() {
+			return $.map($container.find("input[name*='accountSeq']"), (elem, idx) => {
+				if (elem.value) {
+					return Number(elem.value);
+				}
+			});
+		};
+		
+		<!--/* アカウントが追加可能かどうか */-->
+		function canAddUser() {
+			return  $container.find("."+ [[${itemName}]] + ".hidden").length > 0;
+		}
+		
+		<!--/* removeした際にパラメータの中抜けが発生するため、パラメータを詰める */-->
+		function sortParam() {
+			const paramContents = $container.find("."+ [[${itemName}]]);
+			const paramJson = $.map(paramContents, (elem, ids) => {
+				if($(elem).find("input[name*='accountSeq']").val()) {
+					return {
+						"seq": $(elem).find("input[name*='accountSeq']").val(),
+						"mainTanto": $(elem).find("input[name*='mainTanto']").val() === "true",
+						"name":$(elem).find(".accountName").text(),
+					};
+				} 
+			});
+			
+			paramContents.addClass("hidden")
+			paramContents.each((idx, elem) => {
+				const params = paramJson[idx];
+				if (params) {
+					$(elem).find("input[name*='accountSeq']").val(params.seq);
+					$(elem).find(".accountName").text(params.name);
+					$(elem).removeClass("hidden");
+
+					if (params.mainTanto) {
+						$(elem).find(".star_btn_main").addClass("btn_checked");
+						$(elem).find("input[name*='mainTanto']").val(true);
+					} else {
+						$(elem).find(".star_btn_main").removeClass("btn_checked");
+						$(elem).find("input[name*='mainTanto']").val(false);
+					}
+				} else {
+					$(elem).find("input[name*='accountSeq']").val("");
+					$(elem).find(".star_btn_main").removeClass("btn_checked");
+					$(elem).find("input[name*='mainTanto']").val(false);
+					$(elem).find(".accountName").text("");
+				}
+			});
+		}
+		
+		<!--/* 独自popperの表示処理 */-->
+		$container.on("click", ".showSelectArea", function() {
+			$(".selectArea").addClass("hidden");
+			$container.find(".selectArea").removeClass("hidden");
+		});
+		
+		<!--/* 独自popperの閉じる処理 */-->
+		$container.on("click", ".closeSelectArea", function() {
+			$container.find(".selectArea").addClass("hidden");
+		});
+		
+		<!--/* ここだけdocumentにアクションを追加する*/-->
+		const itemName = /*[[${itemName}]]*/"";
+		$(document).off("click."+itemName);
+		$(document).on("click."+itemName, function(e) {
+			if ($(e.target).is(".showSelectArea")) {
+				return false;
+			}
+			if (!$(e.target).closest('.tanto_select').length && !$container.find(".selectArea").hasClass("hidden")) {
+				$container.find(".selectArea").toggleClass("hidden");
+			}
+		});
+		
+		<!--/* ユーザーの選択処理 */-->
+		$container.on("click",".addInputUser", function() {
+			const accountSeq = $(this).data("seq");
+			const accountName = $(this).text();
+			
+			const nextContent = $container.find("."+ [[${itemName}]] + ".hidden:first");
+			if (!nextContent.length) {
+				alert("追加できる上限追加できません")
+			}
+			
+			nextContent.removeClass("hidden");
+			nextContent.find("input[name*='accountSeq']").val(accountSeq);
+			nextContent.find(".accountName").text(accountName);
+			
+			<!--/* 選択肢の表示非表示切り替え */-->
+			hiddenIfSelect();
+			
+			if(!canAddUser()) {
+				$container.find(".selectArea").addClass("hidden");
+				$container.find(".showSelectArea").addClass("hidden");
+			}
+		});
+		
+		<!--/* ユーザーの選択解除処理 */-->
+		$container.on("click",".removeInputUser", function() {
+			const refleshContent = $(this).closest("."+ [[${itemName}]]);
+			refleshContent.addClass("hidden");
+			refleshContent.find(".star_btn_main").removeClass("btn_checked");
+			refleshContent.find("input[name*='mainTanto']").val(false);
+			refleshContent.find("input[name*='accountSeq']").val("");
+			refleshContent.find(".accountName").text("");
+			
+			hiddenIfSelect();
+			sortParam();
+			
+			<!--/* 追加可能の場合 */-->
+			if(canAddUser()) {
+				$container.find(".showSelectArea").removeClass("hidden");
+			}
+		});
+		
+	});
+	</script>
+
+	<div class="hoverTooltip tanto_block">
+		<div class="d-flex align-items-center">
+			<div th:unless="${itemLabel} == '売上計上先'">
+				<label class="input_parts_label" th:text="${itemLabel}">担当弁護士</label>
+			</div>
+			<div th:if="${itemLabel} == '売上計上先'" class="stop-events outPutContainerClose" data-toggle="popover" data-html="true" 
+							data-content='
+							<div class="popover_anken_msg">
+								<div class="pt-2 pb-2 px-3">
+									弁護士アカウントの種別、区分によって選択できるアカウントが変わります。
+									<ul>
+										<li>事務所案件：経営者種別を持つ弁護士アカウントのみ選択できます。</li>
+										<li>個人案件　：すべての弁護士アカウントから選択できます。</li>
+									</ul>
+								</div>
+							</div>
+							'>
+				<label class="input_parts_label">売上計上先 <i class="far fa-question-circle cursor_pointer"></i></label>
+			</div>
+			<div class="ml-auto pt-1 mr-3">
+				<a href="javascript:void(0);" class="showSelectArea hidden"><i class="fas fa-user-plus mr-2"></i>選択</a>
+				
+				<!--/* 選択候補のアカウントエリア */-->
+				<div class="position-relative">
+					<div class="position-absolute tanto_select selectArea hidden">
+					
+					<!--/* 選択候補が存在する */-->
+<!--/*/			<th:block th:if="${!optionList.isEmpty()}"> /*/-->
+						<div class="tanto_select_title">担当を選択してください。</div>
+						<ul>
+							<!--/* 選択候補のアカウント */-->
+							<li th:each="option : ${optionList}">
+								<button type="button" class="btn btn-light addInputUser" th:data-seq="${option.value}">
+									<i class="fas fa-user-check"></i><span class="tanto_select__account_label" th:text="${option.label}"></span>
+								</button>
+							</li>
+						</ul>
+						<div class="tanto_select_footer">
+							<button type="button" class="btn btn-light btn_icon_only closeSelectArea" title="閉じる">
+								<i class="fas fa-times"></i>
+							</button>
+						</div>
+<!--/*/			</th:block> /*/-->
+					<!--/* 選択候補が存在する end */-->
+					
+					</div>
+				</div>
+				<!--/* 選択候補のアカウントエリア end */-->
+				
+			</div>
+		</div>
+		
+		<!--/* 選択済みのアカウントエリア */-->
+		<div class="row row_list">
+			<!--/* 選択候補が存在しない場合 */-->
+			<div class="tanto_select_no_data" th:if="${optionList.isEmpty()}">
+				<div>
+					<p><i class="fas fa-exclamation-triangle mr-2"></i>選択できるアカウント</p>
+					<p>（<span th:text="${itemLabel}"></span>）が存在しません。</p>
+				</div>
+				<th:block th:if="${salesOwnerHelpNavi}">
+					<!--/* 売上計上先のみのエラーメッセージ */-->
+					<div class="sub_text">
+						<p><i class="far fa-question-circle mr-2"></i>売上計上先のアカウントとは：</p>
+						<p class="ml-3">「弁護士」「経営者」チェックあり</p>
+					</div>
+				</th:block>
+			</div>
+			<!--/* 選択候補が存在しない場合 end */-->
+			
+<!--/*/		<th:block th:if="${!optionList.isEmpty()}" th:each="i : ${#numbers.sequence(0, T(java.lang.Math).min(optionList.size(), T(jp.loioz.common.constant.CommonConstant).ANKEN_TANTO_ADD_LIMIT) - 1)}"> /*/-->
+			<div th:class="|col-auto mw-100 ${itemName} pl-0|" th:object="${ankenRegistBasicInputForm.__${itemName}__[__${i}__]}"
+				th:classappend="*{isEmpty()} ? 'hidden'">
+				<div class="d-flex align-items-center" th:id="|${itemName}${i}|">
+					<input type="button" th:if="${dispMainTanto}" class="star_btn_main" th:classappend="*{mainTanto} ? 'btn_checked': ''"
+						data-boundary="window" th:data-container="|#${itemName}${i}|" data-toggle="tooltip" data-trigger="hover" title="主担当">
+					<input type="hidden" th:if="${dispMainTanto}" th:field="*{mainTanto}" th:value="*{mainTanto}">
+					<input type="hidden" th:field="*{accountSeq}" th:value="*{accountSeq}">
+					<th:block th:with="accountSeq=*{accountSeq}">
+						<button type="button" class="btn tanto_selected_btn accountName removeInputUser"
+							th:text="${ankenRegistBasicInputForm.getAccountName(accountSeq)}"></button>
+					</th:block>
+				</div>
+				<div th:if="${#fields.hasErrors('${ankenRegistBasicInputForm.__${itemName}__[__${i}__]}')}" class="error_mag_point m-2"
+					th:errors="${ankenRegistBasicInputForm.__${itemName}__[__${i}__]}">
+				</div>
+			</div>
+<!--/*/		</th:block> /*/-->
+		</div>
+		<!--/* 選択済みのアカウントエリア end */-->
+		
+		<div th:if="${#fields.hasErrors('${ankenRegistBasicInputForm.__${itemName}__}')}" th:errors="${ankenRegistBasicInputForm.__${itemName}__}" class="error_mag_point mr-2"></div>
+		<div class="error_mag_point hidden" th:id="|itemMsg_${itemName}|"></div>
+		
+	</div>
+</div>
+
+
+<!--/* 顧客情報エリア */-->
+<div th:fragment="customerRegistBasicInputFragment(ankenRegistBasicInputForm)" th:id="customerRegistBasicInputFragment">
+
+	<!--/* Script */-->
+	<script th:inline="javascript">
+	$(function() {
+
+		<!--/* 姓(かな)の自動入力 */-->
+		$.fn.autoKana('#customerRegistBasicInputFragment #customerNameSei', '#customerRegistBasicInputFragment #customerNameSeiKana', {
+		});
+		<!--/* 名(かな)の自動入力 */-->
+		$.fn.autoKana('#customerRegistBasicInputFragment #customerNameMei', '#customerRegistBasicInputFragment #customerNameMeiKana', {
+		});
+		<!--/* 会社名(かな)の自動入力 */-->
+		$.fn.autoKana('#customerRegistBasicInputFragment #companyName', '#customerRegistBasicInputFragment #companyNameKana', {
+		});
+
+		<!--/* 個人・法人切り替え */-->
+		$("#customerRegistBasicInputFragment #customerType").on("change", function() {
+			let customerType = $('#customerRegistBasicInputFragment #customerType').val();
+			if(customerType == /*[[${{T(jp.loioz.common.constant.CommonConstant$CustomerType).KOJIN}}]]*/ 0){
+				$("#ankenRegistBasicInputFragment .kojinForm").removeClass("hidden");
+				$("#ankenRegistBasicInputFragment .hojinForm").addClass("hidden");
+			} else {
+				$("#ankenRegistBasicInputFragment .kojinForm").addClass("hidden");
+				$("#ankenRegistBasicInputFragment .hojinForm").removeClass("hidden");
+			}
+		});
+		$("#customerRegistBasicInputFragment #customerType").trigger("change");
+		
+		<!--/* 顧客の登録方法の切り替え */-->
+		$("#customerRegistBasicInputFragment").on("change", "[name='registCustomerType']", function() {
+			<!--/* 追加顧客上限件数 */-->
+			let customerAddLimit = /*[[${T(jp.loioz.common.constant.CommonConstant).CUSTOMER_ADD_LIMIT}]]*/''
+			
+			<!--/* 選択中の顧客件数 */-->
+			let customerInputFormCount = $('#customerRegistBasicInputFragment .selectCustomerList button').length;
+			
+			<!--/* 顧客が上限に達していない場合に表示／非表示を変更する */-->
+			if (customerInputFormCount < customerAddLimit) {
+				$('.customerNew').toggleClass('hidden');
+				$('.customerRegistered').toggleClass('hidden');
+			}
+		});
+		
+		<!--/* 【個人】顧客を追加ボタン */-->
+		$('#customerRegistBasicInputFragment .addKojinCustomer').on('click', function() {
+			<!--/* リクエストパラメータ */-->
+			let formData = $('#ankenRegistBasicInputForm').serializeArray();
+			
+			<!--/* 2重押下防止 */-->
+			if(ajaxRunning){
+				return false;
+			}
+			ajaxRunning = true;
+			
+			$.ajax({
+				url : "/user/ankenRegist/addKojinCustomer",
+				type : "POST",
+				data : formData
+			})
+			.done(function(data, status, jqXHR) {
+				if (isAjaxProcSuccess(jqXHR)) {
+					<!--/* 処理成功 */-->
+					$('#selectedCustomerFragmentWrap').html(data);
+					clearInputForm(/*[[${{T(jp.loioz.common.constant.CommonConstant$CustomerType).KOJIN}}]]*/0);
+					hiddenCustomerAddArea();
+				} else {
+					<!--/* 処理失敗 */-->
+					if (data) {
+						<!--/* HTMLのコンテンツが返却されている場合 */-->
+						$('#customerRegistBasicFragmentWrap').html(data);
+					}
+					
+					const errorMsg = getAjaxProcResutlMessage(jqXHR);
+					showErrorMessageForJs(errorMsg);
+				}
+			})
+			.fail(function(jqXHR, status, errorThrown) {
+				showErrorMessageForJs(/*[[#{E00010}]]*/ "変更に失敗しました。");
+			})
+			.always(function(){
+				ajaxRunning = false;
+			});
+		});
+		
+		<!--/* 【法人】顧客を追加ボタン */-->
+		$('#customerRegistBasicInputFragment .addHojinCustomer').on('click', function() {
+			<!--/* リクエストパラメータ */-->
+			let formData = $('#ankenRegistBasicInputForm').serializeArray();
+			
+			<!--/* 2重押下防止 */-->
+			if(ajaxRunning){
+				return false;
+			}
+			ajaxRunning = true;
+			
+			$.ajax({
+				url : "/user/ankenRegist/addHojinCustomer",
+				type : "POST",
+				data : formData
+			})
+			.done(function(data, status, jqXHR) {
+				if (isAjaxProcSuccess(jqXHR)) {
+					<!--/* 処理成功 */-->
+					$('#selectedCustomerFragmentWrap').html(data);
+					clearInputForm(/*[[${{T(jp.loioz.common.constant.CommonConstant$CustomerType).HOJIN}}]]*/1);
+					hiddenCustomerAddArea();
+				} else {
+					<!--/* 処理失敗 */-->
+					if (data) {
+						<!--/* HTMLのコンテンツが返却されている場合 */-->
+						$('#customerRegistBasicFragmentWrap').html(data);
+					}
+					
+					const errorMsg = getAjaxProcResutlMessage(jqXHR);
+					showErrorMessageForJs(errorMsg);
+				}
+			})
+			.fail(function(jqXHR, status, errorThrown) {
+				showErrorMessageForJs(/*[[#{E00010}]]*/ "変更に失敗しました。");
+			})
+			.always(function(){
+				ajaxRunning = false;
+			});
+		});
+		
+		<!--/* 入力フォームのリセット、エラーメッセージリセット */-->
+		function clearInputForm(customerType) {
+			<!--/* エラーメッセージ削除 */-->
+			$('#customerRegistBasicInputFragment .error_mag_point').text("");
+			$('#customerRegistBasicInputFragment .error_mag_point').addClass("hidden");
+			
+			<!--/* 入力フォーム削除 */-->
+			if(customerType == /*[[${{T(jp.loioz.common.constant.CommonConstant$CustomerType).KOJIN}}]]*/0){
+				$('#customerRegistBasicInputFragment #customerNameSei').val("");
+				$('#customerRegistBasicInputFragment #customerNameSeiKana').val("");
+				$('#customerRegistBasicInputFragment #customerNameMei').val("");
+				$('#customerRegistBasicInputFragment #customerNameMeiKana').val("");
+				$('#customerRegistBasicInputFragment #customerNameSei').focus();
+			} else {
+				$('#customerRegistBasicInputFragment #companyName').val("");
+				$('#customerRegistBasicInputFragment #companyNameKana').val("");
+				$('#customerRegistBasicInputFragment #companyName').focus();
+			}
+		}
+		
+		<!--/* 顧客検索処理 */-->
+		$('#customerRegistBasicInputFragment .searchCustomer').on('keydown', function(e) {
+			<!--/* Enterキー以外は処理終了 */-->
+			if (e.keyCode != 13) {
+				return;
+			}
+			<!--/* 本来設定されているキーイベントを外す */-->
+			e.preventDefault();
+			
+			<!--/* リクエストパラメータ */-->
+			const searchWord = $(this).val();
+			
+			<!--/* 検索ワードが空の場合は検索しない */-->
+			if (searchWord == '') {
+				return;
+			}
+			let formData = $('#ankenRegistBasicInputForm').serializeArray();
+			formData.push({name: "searchWord", value: searchWord});
+			
+			<!--/* 2重押下防止 */-->
+			if(ajaxRunning){
+				return false;
+			}
+			ajaxRunning = true;
+			
+			$.ajax({
+				url : "/user/ankenRegist/searchCustomer",
+				type : "GET",
+				data : formData
+			}).done(function(result) {
+				setUpCustomerSearchPopUp($('#customerSearchInput').data("target"), result.customerList);
+			})
+			.fail(function(jqXHR, status, errorThrown) {
+			})
+			.always(function(){
+				ajaxRunning = false;
+			});
+		});
+		
+		<!--/** 顧客Poperのセットアップ処理 */-->
+		function setUpCustomerSearchPopUp(target, customerList) {
+			$(target).popover('dispose');
+			let poperOption = {
+					html: true,
+					placement: 'bottom',
+					offset: "100,30",
+					template: '<div class="popover customerSearchPoper my-2" role="tooltip"><div class="popover-body"></div></div>',
+			};
+			if (customerList.length < 1) {
+				poperOption.template = '<div class="popover customerSearchPoper mt-1" role="tooltip"><div class="popover-body py-2"></div></div>';
+				poperOption.offset = '-70, 30';
+				poperOption.content = '<div class="popover_info">該当する名簿が見つかりません</div>';
+			} else {
+				if (customerList.length == 1) {
+					poperOption.offset = '-70, 30';
+				} else if (customerList.length == 2) {
+					poperOption.offset = '15, 30';
+				}
+				poperOption.content = function() {
+					let contents = $('<div class="customer_search"></div>');
+					let appendList = customerList.map((customer, i) => {
+						let button = $('<button class="btn add_customer addCustomer" data-boundary="window" data-container="body"></button>')
+							.data("id", customer.customerId)
+							.text(customer.customerName + " (" + customer.customerIdDisp + ")");
+						
+						if(i === 0) {
+							// 最初の要素
+							button.attr("aria-selected", true);
+						} else {
+							button.attr("aria-selected", false);
+						}
+						
+						return button;
+					});
+					contents.append(appendList);
+					return contents;
+				}
+			}
+			$(target).popover(poperOption);
+			$(target).popover('show');
+		};
+	
+		<!--/* 【検索結果】顧客追加 */-->
+		$(document).on('click', '.customerSearchPoper .addCustomer', function() {
+			<!--/* リクエストパラメータ */-->
+			let formData = $('#ankenRegistBasicInputForm').serializeArray();
+			formData.push({name: "addCustomerId", value: $(this).data("id")});
+			
+			<!--/* 2重押下防止 */-->
+			if(ajaxRunning){
+				return false;
+			}
+			ajaxRunning = true;
+			
+			$.ajax({
+				url : "/user/ankenRegist/addCustomer",
+				type : "POST",
+				data : formData
+			})
+			.done(function(data, status, jqXHR) {
+				if (isAjaxProcSuccess(jqXHR)) {
+					<!--/* 処理成功 */-->
+					$('#selectedCustomerFragmentWrap').html(data);
+					clearInputForm(/*[[${{T(jp.loioz.common.constant.CommonConstant$CustomerType).HOJIN}}]]*/1);
+					hiddenCustomerAddArea();
+					$('#customerSearchPoperObj').popover('dispose');
+					$('#customerSearchInput').val('');
+					$('#customerSearchInput').focus();
+				} else {
+					<!--/* 処理失敗 */-->
+					if (data) {
+						<!--/* HTMLのコンテンツが返却されている場合 */-->
+						$('#customerRegistBasicFragmentWrap').html(data);
+					}
+					
+					const errorMsg = getAjaxProcResutlMessage(jqXHR);
+					showErrorMessageForJs(errorMsg);
+				}
+			})
+			.fail(function(jqXHR, status, errorThrown) {
+				showErrorMessageForJs(/*[[#{E00010}]]*/ "変更に失敗しました。");
+			})
+			.always(function(){
+				ajaxRunning = false;
+			});
+		});
+		
+		<!--/* 検索結果顧客ポップオーバーからフォーカスアウト */-->
+		$(document).click(function(event) {
+			$('#customerSearchPoperObj').popover('dispose');
+		});
+		
+	});
+
+	</script>
+
+	<div class="new_regist_edit_title person_title">
+		<span>顧客情報入力</span>
+	</div>
+		
+	<div class="pl-4">
+		<!--/* 顧客登録モード */-->
+		<div class="form-row">
+			<!--/* 種別 */-->
+			<div class="form-group col-md-12">
+				<label class="radio_btn mb-0" th:each="enum : ${T(jp.loioz.common.constant.CommonConstant$RegistCustomerType).values()}">
+					<input type="radio" class="radio_input" th:field="${ankenRegistBasicInputForm.registCustomerType}" th:value="${enum.cd}">
+					<span class="radio_txt" th:text="${enum.val}"></span>
+				</label>
+			</div>
+		</div>
+				
+		<!--/* 新規顧客追加 */-->
+		<div class="anken_customer_new customerNew">
+			
+			<div class="form-row customerAddMode">
+				<!--/* 種別 */-->
+				<div class="form-group col-md-auto">
+					<label class="input_parts_label">種別</label>
+					<select id="customerType" class="form-control digit8" th:field="${ankenRegistBasicInputForm.customerType}">
+						<option th:with="type=${T(jp.loioz.common.constant.CommonConstant$CustomerType).KOJIN}"
+								th:text="${type.getVal()}" th:value="${type.getCd()}" th:selected="${type.equalsByCode(customerType)}">個人</option>
+						<option th:with="type=${T(jp.loioz.common.constant.CommonConstant$CustomerType).HOJIN}"
+								th:text="${type.getVal()}" th:value="${type.getCd()}" th:selected="${type.equalsByCode(customerType)}">法人</option>
+					</select>
+				</div>
+			</div>
+			
+			<!--/* 個人 */-->
+			<div class="kojinForm">
+				<div class="form-row">
+					<!--/* 氏名 */-->
+					<div class="form-group col-md-8 mb-0">
+						<label class="input_parts_label">名前</label>
+						<span class="mark_equired">必須</span>
+					</div>
+				</div>
+				
+				<!--/* 姓・名 */-->
+				<div class="form-row">
+					<!-- 姓 -->
+					<div class="form-group col-md-5">
+						<input type="text"class="form-control" th:field="${ankenRegistBasicInputForm.customerNameSei}" placeholder="姓" maxlength="24">
+						<div th:if="${#fields.hasErrors('${ankenRegistBasicInputForm.customerNameSei}')}" th:errors="${ankenRegistBasicInputForm.customerNameSei}" class="error_mag_point">error</div>
+					</div>
+					<!-- 名 -->
+					<div class="form-group col-md-5">
+						<input type="text"class="form-control" th:field="${ankenRegistBasicInputForm.customerNameMei}" placeholder="名" maxlength="24">
+						<div th:if="${#fields.hasErrors('${ankenRegistBasicInputForm.customerNameMei}')}" th:errors="${ankenRegistBasicInputForm.customerNameMei}" class="error_mag_point">error</div>
+					</div>
+				</div>
+				
+				<!--/* せい・めい */-->
+				<div class="form-row">
+					<!-- せい -->
+					<div class="form-group col-md-5">
+						<input type="text" class="form-control" th:field="${ankenRegistBasicInputForm.customerNameSeiKana}" placeholder="せい" maxlength="64">
+						<div th:if="${#fields.hasErrors('${ankenRegistBasicInputForm.customerNameSeiKana}')}" th:errors="${ankenRegistBasicInputForm.customerNameSeiKana}" class="error_mag_point">error</div>
+					</div>
+					<!-- めい -->
+					<div class="form-group col-md-5">
+						<input type="text" class="form-control" th:field="${ankenRegistBasicInputForm.customerNameMeiKana}" placeholder="めい" maxlength="64">
+						<div th:if="${#fields.hasErrors('${ankenRegistBasicInputForm.customerNameMeiKana}')}" th:errors="${ankenRegistBasicInputForm.customerNameMeiKana}" class="error_mag_point">error</div>
+					</div>
+				</div>
+				
+				<!--/* 追加ボタン */-->
+				<div class="form-row">
+					<div class="form-group col-md-10 text-right">
+						<button type="button" class="btn btn-sm btn-primary addKojinCustomer"><i class="fas fa-user-check"></i>顧客に設定</button>
+					</div>
+				</div>
+			</div>
+			
+			<!--/* 法人 */-->
+			<div class="hojinForm">
+				<div class="form-row">
+					<!--/* 氏名 */-->
+					<div class="form-group col-md-10 mb-0">
+						<label class="input_parts_label">会社名</label>
+						<span class="mark_equired">必須</span>
+					</div>
+				</div>
+				
+				<!--/* 姓（会社名） */-->
+				<div class="form-row">
+					<!-- 姓（会社名） -->
+					<div class="form-group col-md-10">
+						<input type="text"class="form-control" th:field="${ankenRegistBasicInputForm.companyName}" placeholder="会社名" maxlength="64">
+						<div th:if="${#fields.hasErrors('${ankenRegistBasicInputForm.companyName}')}" th:errors="${ankenRegistBasicInputForm.companyName}" class="error_mag_point">error</div>
+					</div>
+				</div>
+				
+				<!--/* せい（会社名） */-->
+				<div class="form-row">
+					<!-- せい（会社名） -->
+					<div class="form-group col-md-10">
+						<input type="text" class="form-control" th:field="${ankenRegistBasicInputForm.companyNameKana}" placeholder="ふりがな" maxlength="128">
+						<div th:if="${#fields.hasErrors('${ankenRegistBasicInputForm.companyNameKana}')}" th:errors="${ankenRegistBasicInputForm.companyNameKana}" class="error_mag_point">error</div>
+					</div>
+				</div>
+				
+				<!--/* 追加ボタン */-->
+				<div class="form-row">
+					<div class="form-group col-md-10 text-right">
+						<button type="button" class="btn btn-sm btn-primary addHojinCustomer"><i class="fas fa-user-check"></i>顧客に設定</button>
+					</div>
+				</div>
+			</div>
+		</div>
+		<!--/* 新規顧客追加 end */-->
+		
+		<!--/* 顧客選択 */-->
+		<div class="customer_select customerRegistered hidden">
+			<div class="form-row">
+				<!--/* 種別 */-->
+				<div class="form-group col-md-10">
+					<label class="input_parts_label">名前を入力してください</label>
+					<span id="customerSearchPoperObj"></span>
+					<input type="search" id="customerSearchInput" class="form-control searchCustomer" placeholder="Enterで検索実行..." autocomplete="off" data-target="#customerSearchPoperObj">
+				</div>
+			</div>
+		</div>
+		
+		<!--/* 案件に紐づく顧客エリア */-->
+		<div id="selectedCustomerFragmentWrap"
+			th:insert="::selectedCustomerFragment(${ankenRegistBasicInputForm.customerList})">
+		</div>
+		<div class="sub_text mb-2">※データ登録後に、住所、連絡先、精算口座等の情報を設定いただけます。</div>
+		
+	</div>
+</div>
+
+
+<!--/* 案件に紐づく顧客エリア */-->
+<div th:fragment="selectedCustomerFragment(customerList)" th:id="selectedCustomerFragment">
+
+	<!--/* Script */-->
+	<script th:inline="javascript">
+	$(function() {
+		
+		<!--/* 選択顧客から削除処理 */-->
+		$('#selectedCustomerFragment .deleteCustomer').on('click', function() {
+			<!--/* リクエストパラメータ */-->
+			let formData = $('#ankenRegistBasicInputForm').serializeArray();
+			formData.push({name: "deleteCustomerIndex", value: $(this).data("index")});
+			
+			<!--/* 2重押下防止 */-->
+			if(ajaxRunning){
+				return false;
+			}
+			ajaxRunning = true;
+			
+			$.ajax({
+				url : "/user/ankenRegist/deleteCustomer",
+				type : "POST",
+				data : formData
+			})
+			.done(function(data, status, jqXHR) {
+				if (isAjaxProcSuccess(jqXHR)) {
+					<!--/* 処理成功 */-->
+					$('#selectedCustomerFragmentWrap').html(data);
+					showCustomerAddArea();
+				} else {
+					<!--/* 処理失敗 */-->
+					const errorMsg = getAjaxProcResutlMessage(jqXHR);
+					showErrorMessageForJs(errorMsg);
+				}
+			})
+			.fail(function(jqXHR, status, errorThrown) {
+				showErrorMessageForJs(/*[[#{E00010}]]*/ "変更に失敗しました。");
+			})
+			.always(function(){
+				ajaxRunning = false;
+			});
+		});
+		
+	});
+	</script>
+
+	<div class="anken_customer_select">
+		<th:block th:if="${#lists.isEmpty(customerList)}">
+			<!--/* 顧客【未選択】 */-->
+			<div class="notSelectCustomerList">
+				<div class="sub_text fs13"><i class="fas fa-user-check mr-2"></i>設定済みの顧客</div>
+				<div class="text-danger mt-1">
+					<span>顧客を設定してください。</span>
+				</div>
+			</div>
+		</th:block>
+		<th:block th:if="!${#lists.isEmpty(customerList)}">
+			<!--/* 顧客【選択】 */-->
+			<div class="selectCustomerList">
+				<div class="sub_text"><i class="fas fa-user-check mr-2"></i>設定済みの顧客</div>
+				<div class="d-flex flex-wrap align-items-center pt-2">
+					<div class="mr-2 mb-2" th:each="customer, stat : ${customerList}">
+						<button type="button" class="btn btn-sm btn-outline-primary deleteCustomer" th:data-index=${stat.index}>
+							<span th:text="|【${customer.customerType.val}】|"></span>
+							<th:block th:if="${(T(jp.loioz.common.constant.CommonConstant$CustomerType).KOJIN.equalsByCode(customer.customerType.cd))}">
+								<span th:text="${customer.customerNameSei}"></span>
+								<span th:text="${customer.customerNameMei}"></span>
+							</th:block>
+							<th:block th:if="${(T(jp.loioz.common.constant.CommonConstant$CustomerType).HOJIN.equalsByCode(customer.customerType.cd))}">
+								<span th:text="${customer.companyName}"></span>
+							</th:block>
+							<th:block th:if="${customer.customerId} != null">
+								<span th:text="|(名-${customer.customerId})|"></span>
+							</th:block>
+							<i class="fas fa-times mx-2"></i>
+						</button>
+						<input type="hidden" th:field="${ankenRegistBasicInputForm.customerList[__${stat.index}__].registCustomerType}">
+						<input type="hidden" th:field="${ankenRegistBasicInputForm.customerList[__${stat.index}__].customerType}">
+						<th:block th:if="${(T(jp.loioz.common.constant.CommonConstant$CustomerType).KOJIN.equalsByCode(customer.customerType.cd))}">
+							<input type="hidden" th:field="${ankenRegistBasicInputForm.customerList[__${stat.index}__].customerNameSei}">
+							<input type="hidden" th:field="${ankenRegistBasicInputForm.customerList[__${stat.index}__].customerNameSeiKana}">
+							<input type="hidden" th:field="${ankenRegistBasicInputForm.customerList[__${stat.index}__].customerNameMei}">
+							<input type="hidden" th:field="${ankenRegistBasicInputForm.customerList[__${stat.index}__].customerNameMeiKana}">
+						</th:block>
+						<th:block th:if="${(T(jp.loioz.common.constant.CommonConstant$CustomerType).HOJIN.equalsByCode(customer.customerType.cd))}">
+							<input type="hidden" th:field="${ankenRegistBasicInputForm.customerList[__${stat.index}__].companyName}">
+							<input type="hidden" th:field="${ankenRegistBasicInputForm.customerList[__${stat.index}__].companyNameKana}">
+						</th:block>
+						<th:block th:if="${customer.customerId} != null">
+							<input type="hidden" th:field="${ankenRegistBasicInputForm.customerList[__${stat.index}__].customerId}">
+						</th:block>
+					</div>
+				</div>
+			</div>
+		</th:block>
+	</div>
+</div>

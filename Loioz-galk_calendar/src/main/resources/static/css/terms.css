@@ -1,0 +1,65 @@
+@charset "UTF-8";
+
+.modal-header {
+	display : block;
+	background-color: var(--loioz-blue);
+}
+.modalbody_terms {
+	height: 553px;
+	overflow-y: auto;
+	-ms-overflow-style: none; /* IE, Edge */
+	scrollbar-width: none; /* Firefox */
+	justify-content: space-around;
+}
+.modalbody_terms::-webkit-scrollbar {  /* Chrome, Safari 対応 */
+	display:none;
+}
+.modal_terms{
+	width: 655px !important;
+	max-width: 100%;
+}
+
+.header_close {
+	list-style: none;
+	margin: 0 7px 0;
+	right: 0;
+	position: fixed;
+}
+.header_close li a.close_icon {
+    background-image: url(../img/icon_btn_close.svg);
+    cursor: pointer;
+}
+.header_close li a {
+    display: block;
+    width: 28px;
+    height: 28px;
+    background: #f8f9fa;/** ヘッダーの文字と同じ */
+    border: 1px solid #f8f9fa; /** ヘッダーの文字と同じ */
+    border-radius: 100px;
+    text-indent: -9999px;
+    background-repeat: no-repeat;
+    background-position: center center;
+}
+
+.tremsList label{
+	font-size: 1.7rem;
+}
+
+.tremsList ul {
+	padding-left: 20px;
+	list-style-type: disc;
+}
+.tremsList ul li{
+	margin: 5px 0;
+}
+.tremsList ol {
+	padding-left: 15px;
+	counter-reset: item
+}
+.tremsList ol li{
+	display: flex;
+}
+.tremsList ol li:not(.non_count):before {
+	content: counters(item, ".") "．"; 
+	counter-increment: item 
+}

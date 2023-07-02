@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+	xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout">
+<head>
+<meta charset="UTF-8">
+</head>
+<body>
+	<th:block th:fragment="keizokubuModal" th:object="${viewForm}">
+		<div class="modal-header">
+			<h2 class="modalheader_title">裁判所係属部一覧</h2>
+			<ul class="navi_list">
+				<li><button type="button" class="btn btn-primary openSaibanshoBuEditModal" data-toggle="modal" 
+					data-target="#saibanshoBuEditModal" th:data-saibansho-id="*{saibanshoId}"><i class="fas fa-plus"></i>新規登録</button></li>
+				<li><button type="button" class="btn btn-light" data-dismiss="modal"><i class="fas fa-times"></i>閉じる</button></li>
+			</ul>
+		</div>
+		<div class="modal-body">
+			<div class="list_area header_fixed_table_wrapper table_keizokubu_list">
+				<table class="table table_standard table-sm table_fixed table-striped">
+					<thead>
+						<tr>
+							<th class="col_30">裁判所名</th>
+							<th class="col_30">係属部名</th>
+							<th class="col_15">電話番号</th>
+							<th class="col_15">FAX番号</th>
+							<th class="col_10">操作</th>
+						</tr>
+					</thead>
+					<tbody>
+<!--/*/ 			<th:block th:if="${viewForm.saibanshoBuList.size() == 0}"> /*/-->
+						<tr>
+							<td colspan="5" class="no_data_table_list">
+								<span th:text="#{I00021}">MSG_I00021</span>
+							</td>
+						</tr>
+<!--/*/ 			</th:block> /*/-->
+						<tr th:each="saibanshoBu : *{saibanshoBuList}" th:object="${saibanshoBu}">
+							<td th:text="*{saibanshoName}"></td>
+							<td th:text="*{keizokuBuName}"></td>
+							<td th:text="*{keizokuBuTelNo}"></td>
+							<td th:text="*{keizokuBuFaxNo}"></td>
+							<td>
+								<span class="d-inline-block" data-toggle="tooltip" th:data-placement="${viewForm.saibanshoBuList.size() == 1 ? 'right' : 'top'}" title="係属部を編集" data-trigger="hover">
+									<button class="btn btn-light btn-sm openSaibanshoBuEditModal" data-toggle="modal" data-target="#saibanshoBuEditModal"
+										th:data-id="*{keizokuBuId}" th:data-saibansho-id="*{saibanshoId}">
+										<i class="fas fa-edit mr-1"></i>
+										<span>編集</span>
+									</button>
+								</span>
+							</td>
+						</tr>
+					</tbody>
+				</table>
+			</div>
+		</div>
+	</th:block>
+</body>
+</html>

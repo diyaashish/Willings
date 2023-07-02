@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+<meta charset="utf-8" />
+</head>
+<body>
+<nav class="pager_block" th:fragment="pager(page)"
+	th:with="
+		pageParamName=${pageParamName}?: 'page',
+		page=${page}?: ${T(org.springframework.data.domain.Page).empty()},
+		url=${url}?: null">
+	<ul class="pagination justify-content-center">
+		<li class="page-item" th:classappend="${page.first}? 'disabled'">
+			<a th:if="${page.first}" class="page-link"><i class="fas fa-angle-double-left"></i></a>
+			<a th:if="${!page.first && (url != null)}" class="page-link enabled" data-page="0" th:href="@{${url}(${pageParamName}=0)}"><i class="fas fa-angle-double-left"></i></a>
+			<a th:if="${!page.first && (url == null)}" class="page-link enabled" data-page="0"><i class="fas fa-angle-double-left"></i></a>
+		</li>
+		<li class="page-item" th:classappend="${!page.hasPrevious()}? 'disabled'">
+			<a th:if="${!page.hasPrevious()}" class="page-link" href="javascript:void(0);"><i class="fas fa-angle-left"></i></a>
+			<a th:if="${page.hasPrevious() && (url != null)}" class="page-link enabled" th:data-page="${page.number-1}"
+				th:href="@{${url}(${pageParamName}=${page.number-1})}"><i class="fas fa-angle-left"></i></a>
+			<a th:if="${page.hasPrevious() && (url == null)}" class="page-link enabled" th:data-page="${page.number-1}"><i class="fas fa-angle-left"></i></a>
+		</li>
+		<li class="page-item" th:classappend="${i==page.number}? 'active'" th:if="${i==page.number} or ${i!=page.number && i>=0}"
+			th:each="i : ${#numbers.sequence(
+			T(java.lang.Math).max(0                , page.number-5 - T(java.lang.Math).max(0, page.number+4 - (page.totalPages-1))),
+			T(java.lang.Math).min(page.totalPages-1, page.number+4 + T(java.lang.Math).max(0, 5 - page.number))
+			)}">
+			<a th:if="${i==page.number}" class="page-link" href="javascript:void(0);" th:text="${i+1}">1</a>
+			<a th:if="${i!=page.number && i>=0 && (url != null)}" class="page-link enabled" th:text="${i+1}" th:data-page="${i}" th:href="@{${url}(${pageParamName}=${i})}">1</a>
+			<a th:if="${i!=page.number && i>=0 && (url == null)}" class="page-link enabled" th:text="${i+1}" th:data-page="${i}">1</a>
+		</li>
+		<li class="page-item" th:classappend="${!page.hasNext()}? 'disabled'">
+			<a th:if="${!page.hasNext()}" class="page-link" href="javascript:void(0);"><i class="fas fa-angle-right"></i></a>
+			<a th:if="${page.hasNext() && (url != null)}" class="page-link enabled" th:data-page="${page.number+1}" th:href="@{${url}(${pageParamName}=${page.number+1})}"><i class="fas fa-angle-right"></i></a>
+			<a th:if="${page.hasNext() && (url == null)}" class="page-link enabled" th:data-page="${page.number+1}"><i class="fas fa-angle-right"></i></a>
+		</li>
+		<li class="page-item" th:classappend="${page.last}? 'disabled'">
+			<a th:if="${page.last}" class="page-link" href="javascript:void(0);"><i class="fas fa-angle-double-right"></i></a>
+			<a th:if="${!page.last && (url != null)}" class="page-link  enabled" th:data-page="${page.totalPages-1}" th:href="@{${url}(${pageParamName}=${page.totalPages-1})}"><i class="fas fa-angle-double-right"></i></a>
+			<a th:if="${!page.last && (url == null)}" class="page-link enabled" th:data-page="${page.totalPages-1}"><i class="fas fa-angle-double-right"></i></a>
+		</li>
+	</ul>
+</nav>
+</body>
+</html>

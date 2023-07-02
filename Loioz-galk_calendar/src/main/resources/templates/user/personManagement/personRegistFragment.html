@@ -1,0 +1,678 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+	<meta charset="utf-8" />
+</head>
+<body>
+
+
+
+<!--/* 登録名簿基本情報編集ブロック */-->
+<div th:fragment="personRegistBasicInputFragment(personRegistBasicInputForm)" id="personRegistBasicInputFragment">
+
+	<!--/* スクリプト */-->
+	<script th:inline="javascript">
+	$(function() {
+		
+		<!--/* 共有の要素セットアップ処理 */-->
+		commonSetUpElement();
+		
+		<!--/* 自動入力 */-->
+		<!--/* 個人：姓(かな) */-->
+		$.fn.autoKana('#personRegistBasicInputFragment .kojinForm #customerNameSei', '#personRegistBasicInputFragment .kojinForm #customerNameSeiKana', {
+		});
+		<!--/* 会社名(かな) */-->
+		$.fn.autoKana('#personRegistBasicInputFragment .hojinForm #customerNameSei', '#personRegistBasicInputFragment .hojinForm #customerNameSeiKana', {
+		});
+		<!--/* 弁護士：姓(かな) */-->
+		$.fn.autoKana('#personRegistBasicInputFragment .lawyerForm #customerNameSei', '#personRegistBasicInputFragment .lawyerForm #customerNameSeiKana', {
+		});
+		<!--/* 個人：名(かな) */-->
+		$.fn.autoKana('#personRegistBasicInputFragment .kojinForm #customerNameMei', '#personRegistBasicInputFragment .kojinForm #customerNameMeiKana', {
+		});
+		<!--/* 弁護士：名(かな) */-->
+		$.fn.autoKana('#personRegistBasicInputFragment .lawyerForm #customerNameMei', '#personRegistBasicInputFragment .lawyerForm #customerNameMeiKana', {
+		});
+		<!--/* 旧姓(かな) */-->
+		$.fn.autoKana('#personRegistBasicInputFragment #oldName', '#personRegistBasicInputFragment #oldNameKana', {
+		});
+		<!--/* 屋号(かな) */-->
+		$.fn.autoKana('#personRegistBasicInputFragment #yago', '#personRegistBasicInputFragment #yagoKana', {
+		});
+		<!--/* 代表者(かな) */-->
+		$.fn.autoKana('#personRegistBasicInputFragment #daihyoName', '#personRegistBasicInputFragment #daihyoNameKana', {
+		});
+		<!--/* 担当者(かな) */-->
+		$.fn.autoKana('#personRegistBasicInputFragment #tantoName', '#personRegistBasicInputFragment #tantoNameKana', {
+		});
+		
+		<!--/* 入力項目削除時は値をクリア（国籍／言語、屋号）*/-->
+		$("#personRegistBasicInputFragment .collapse.clearOnHide").on("hidden.bs.collapse", function(){
+			$(this).find("input, select").val("");
+		});
+		
+		<!--/* 種別切り替え */-->
+		$("#personRegistBasicInputFragment #customerType").on("change", function() {
+			
+			let customerType = $('#customerType').val();
+			if(customerType == /*[[${{T(jp.loioz.common.constant.CommonConstant$CustomerType).KOJIN}}]]*/ 0){
+				$("#personRegistBasicInputFragment .kojinForm").removeClass("hidden");
+				$("#personRegistBasicInputFragment .hojinForm").addClass("hidden");
+				$("#personRegistBasicInputFragment .lawyerForm").addClass("hidden");
+				$("#personRegistBasicInputFragment .kojinHojinForm").removeClass("hidden");
+			} else if(customerType == /*[[${{T(jp.loioz.common.constant.CommonConstant$CustomerType).HOJIN}}]]*/ 1){
+				$("#personRegistBasicInputFragment .kojinForm").addClass("hidden");
+				$("#personRegistBasicInputFragment .hojinForm").removeClass("hidden");
+				$("#personRegistBasicInputFragment .lawyerForm").addClass("hidden");
+				$("#personRegistBasicInputFragment .kojinHojinForm").removeClass("hidden");
+			} else {
+				$("#personRegistBasicInputFragment .kojinForm").addClass("hidden");
+				$("#personRegistBasicInputFragment .hojinForm").addClass("hidden");
+				$("#personRegistBasicInputFragment .lawyerForm").removeClass("hidden");
+				$("#personRegistBasicInputFragment .kojinHojinForm").addClass("hidden");
+			}
+		});
+		
+		$("#personRegistBasicInputFragment #customerType").trigger("change");
+		
+		<!--/* 顧客情報の登録 */-->
+		$('#personRegistBasicInputFragment #customerBasicSave').on('click', function() {
+			
+			<!--/* リクエストURL */-->
+			let requestUrl = ''
+			<!--/* リクエストパラメータ */-->
+			let formData = null;
+			
+			<!--/* 選択されている 顧客区分の値により、リクエストURLとリクエストパラメータを設定する */-->
+			let customerType = $("#customerType").val();
+			if(customerType == /*[[${{T(jp.loioz.common.constant.CommonConstant$CustomerType).KOJIN}}]]*/ 0){
+				<!--/* 個人 */-->
+				requestUrl = 'registKojinPersonBasic'
+				formData = $('#personRegistBasicInputFragment')
+								.find('.customerCommonForm, .kojinForm, .kojinHojinForm')
+								.find('input, select, textArea')
+								.serializeArray();
+			} else if(customerType == /*[[${{T(jp.loioz.common.constant.CommonConstant$CustomerType).HOJIN}}]]*/ 1){
+				<!--/* 企業・団体 */-->
+				requestUrl = 'registHojinPersonBasic'
+				formData = $('#personRegistBasicInputFragment')
+								.find('.customerCommonForm, .hojinForm, .kojinHojinForm')
+								.find('input, select, textArea')
+								.serializeArray();
+			} else {
+				<!--/* 弁護士 */-->
+				requestUrl = 'registLawyerPersonBasic'
+				formData = $('#personRegistBasicInputFragment')
+								.find('.customerCommonForm, .lawyerForm')
+								.find('input, select, textArea')
+								.serializeArray();
+			}
+			
+			<!--/* 2重押下防止 */-->
+			if(ajaxRunning){
+				return false;
+			}
+			
+			ajaxRunning = true;
+			
+			$.ajax({
+				url : requestUrl,
+				type : "POST",
+				data : formData
+			})
+			.done(function(data, status, jqXHR) {
+				if (isAjaxProcSuccess(jqXHR)) {
+					<!--/* 処理成功 */-->
+					
+					const msg = getAjaxProcResutlMessage(jqXHR);
+					
+					<!--/* 登録処理のレスポンスとして返ってきたHTMLから登録処理で発番された名簿IDを取得 */-->
+					const personIdDom = $(data).find('#personId');
+					const personId = $(personIdDom).val()
+					
+					<!--/* 名簿編集画面へのURL */-->
+					let personEditUrl = /*[[${T(jp.loioz.common.constant.UrlConstant).PERSON_EDIT_URL}]]*/'';
+					personEditUrl = personEditUrl + personId + "/";
+					
+					<!--/* URLにメッセージを付与 */-->
+					const messageLevel = /*[[${T(jp.loioz.common.constant.CommonConstant$MessageLevel).INFO.getCd()}]]*/null
+					const param = "level="+ messageLevel +"&message=" + encodeURIComponent(msg)
+					const personEditUrlWithMessage = personEditUrl + "redirectIndexWithMessage?"+param
+					
+					<!--/* 下記の画面遷移中（画面ロード中）に再度登録ボタンが押されないよう、クリックイベントを削除 */-->
+					<!--/* ※画面遷移の完了より前にalwaysの関数が実行され、通常の2重押下防止対応だけでは対応しきれないことによる特別な対応 */-->
+					$('#personRegistBasicInputFragment #customerBasicSave').off('click');
+					
+					<!--/* 画面遷移 */-->
+					window.location.href = personEditUrlWithMessage;
+					
+				} else {
+					<!--/* 処理失敗 */-->
+					
+					if (data) {
+						<!--/* HTMLのコンテンツが返却されている場合 */-->
+						<!--/* 親HTMLのID */-->
+						$('#personRegistBasicFragmentWrap').html(data);
+					}
+					
+					const errorMsg = getAjaxProcResutlMessage(jqXHR);
+					showErrorMessageForJs(errorMsg);
+				}
+			})
+			.fail(function(jqXHR, status, errorThrown) {
+				showErrorMessageForJs(/*[[#{E00007}]]*/ "登録に失敗しました。");
+			})
+			.always(function(){
+				ajaxRunning = false;
+			});
+		})
+		
+		<!--/* 故人のチェックボックス変更 */-->
+		$('#personRegistBasicInputFragment .changeDeceased').on('change', function() {
+			if ($(this).prop('checked')) {
+				<!--/* 死亡日入力フィールドを表示する */-->
+				$('.deathDate').removeClass('hidden');
+			} else {
+				<!--/* 死亡日入力フィールドを非表示にする */-->
+				$('.deathDate').addClass('hidden');
+			}
+		})
+		
+	})
+	</script>
+	
+	<!--/* HTML */-->
+	<form id="personRegistBasicInputForm" th:object="${personRegistBasicInputForm}" autocomplete="off">
+
+		<!--/* 入力 */-->
+		<div class="row">
+		
+			<!--/* 左側 */-->
+			<div class="col-md-6">
+				<div class="detail_input_area">
+					<!--/* 顧客共通 */-->
+					<div class="form-row customerCommonForm">
+						<!--/* 種別 */-->
+						<div class="form-group col-md-8">
+							<label class="input_parts_label">種別</label>
+							<select class="form-control digit7" th:field="*{customerType}" th:with="customerType=*{customerType}">
+								<option th:each="type : ${T(jp.loioz.common.constant.CommonConstant$CustomerType).values()}" 
+									th:label="${type.getVal()}" th:text="${type.getVal()}" th:value="${type.getCd()}" th:selected="${type.equalsByCode(customerType)}">個人</option>
+							</select>
+						</div>
+						<!--/*  登録日 */-->
+						<div class="form-group col-md-4">
+							<label class="input_parts_label">登録日</label>
+							<input type="text" class="form-control digit7 inputDateSlash" th:field="*{customerCreatedDate}" data-click-sync="[data-target-name='customerCreatedDate']" maxlength="10">
+							<button type="button" class="btn btn_popcal hidden" data-toggle="datepicker" data-target-name="customerCreatedDate" data-target="#customerCreatedDate">カレンダー</button>
+							<div th:if="${#fields.hasErrors('customerCreatedDate')}" th:errors="*{customerCreatedDate}" class="error_mag_point">error!</div>
+						</div>
+					</div>
+
+					<!--/* 個人 */-->
+					<div class="kojinForm">
+						<div class="form-row">
+							<!--/* 氏名 */-->
+							<div class="form-group col-md-8 mb-0">
+								<label class="input_parts_label">名前</label>
+								<span class="mark_equired">必須</span>
+							</div>
+							<!--/*  旧姓 */-->
+							<div class="form-group col-md mb-0">
+								<label class="input_parts_label">旧姓</label>
+							</div>
+						</div>
+						
+						<!--/* 姓・名・旧姓 */-->
+						<div class="form-row">
+							<!-- 姓 -->
+							<div class="form-group col-md-4">
+								<input type="text"class="form-control" th:field="*{customerNameSei}" placeholder="姓" maxlength="24">
+								<div th:if="${#fields.hasErrors('customerNameSei')}" th:errors="*{customerNameSei}" class="error_mag_point">error</div>
+							</div>
+							<!-- 名 -->
+							<div class="form-group col-md-4">
+								<input type="text"class="form-control" th:field="*{customerNameMei}" placeholder="名" maxlength="24">
+								<div th:if="${#fields.hasErrors('customerNameMei')}" th:errors="*{customerNameMei}" class="error_mag_point">error</div>
+							</div>
+							<!-- 旧姓 -->
+							<div class="form-group col-md-4" th:with="isEmpty=*{#strings.isEmpty(oldName) && #strings.isEmpty(oldNameKana)}">
+								<input type="text" class="form-control" th:field="*{oldName}" placeholder="漢字" maxlength="24">
+								<div th:if="${#fields.hasErrors('oldName')}" th:errors="*{oldName}" class="error_mag_point">error</div>
+							</div>
+						</div>
+						
+						<!--/* せい・めい・きゅうせい */-->
+						<div class="form-row">
+							<!-- せい -->
+							<div class="form-group col-md-4">
+								<input type="text" class="form-control" th:field="*{customerNameSeiKana}" placeholder="せい" maxlength="64">
+								<div th:if="${#fields.hasErrors('customerNameSeiKana')}" th:errors="*{customerNameSeiKana}" class="error_mag_point">error</div>
+							</div>
+							<!-- めい -->
+							<div class="form-group col-md-4">
+								<input type="text" class="form-control" th:field="*{customerNameMeiKana}" placeholder="めい" maxlength="64">
+								<div th:if="${#fields.hasErrors('customerNameMeiKana')}" th:errors="*{customerNameMeiKana}" class="error_mag_point">error</div>
+							</div>
+							<!-- 旧姓（ふりがな） -->
+							<div class="form-group col-md-4" th:with="isEmpty=*{#strings.isEmpty(oldName) && #strings.isEmpty(oldNameKana)}">
+								<input type="text" class="form-control" th:field="*{oldNameKana}" placeholder="ふりがな" maxlength="64">
+								<div th:if="${#fields.hasErrors('oldNameKana')}" th:errors="*{oldNameKana}" class="error_mag_point">error</div>
+							</div>
+						</div>
+						
+						<!--/* 性別 */-->
+						<div class="form-row">
+							<div class="form-group col-md-12">
+								<label class="input_parts_label">性別</label>
+								<div>
+									<label class="radio_btn" th:each="option : *{genderOptionList}">
+										<input type="radio" class="radio_input radio_nyushukkinType" th:field="*{gender}" th:value="${option.value}">
+										<span class="radio_txt" th:text="${option.label}">切り上げ</span>
+									</label>
+									<div th:if="${#fields.hasErrors('gender')}" th:errors="*{gender}" class="error_mag_point">error</div>
+								</div>
+							</div>
+						</div>
+						
+						<!--/* 生年月日 */-->
+						<div class="form-row">
+							<div class="form-group col-md-12 mb-0">
+								<label class="input_parts_label">生年月日</label>
+							</div>
+							<div class="form-group col-md-12">
+								<div class="d-flex">
+									<!--/* 和暦・西暦 */-->
+									<select class="form-control digit5 mr-2" th:field="*{birthEra}">
+										<option th:each="enum : ${T(jp.loioz.common.constant.CommonConstant$EraType).values()}"
+											th:value="${enum.cd}" th:text="${enum.val}">平成</option>
+									</select>
+									<!--/* 年 */-->
+									<select class="form-control digit6 mr-2" th:field="*{birthYear}">
+										<th:block th:if="*{birthEra} == null or *{birthEra.getCd()} == ${T(jp.loioz.common.constant.CommonConstant$EraType).SEIREKI.getCd()}">
+											<!-- 西暦の場合 -->
+											<option value="">-</option>
+											<option th:each="num : ${#numbers.sequence(#calendars.year(#calendars.createToday()), 1900, -1)}"
+												th:value="${num}" th:text="|${num}年|"></option>
+										</th:block>
+										<th:block th:if="*{birthEra} != null and *{birthEra.getCd()} == ${T(jp.loioz.common.constant.CommonConstant$EraType).REIWA.getCd()}">
+											<!-- 令和の場合 -->
+											<option value="">-</option>
+											<option th:each="num : ${#numbers.sequence(#calendars.year(#calendars.createToday()) - 2018, 2, -1)}"
+												th:value="${num}" th:text="|${num}年|"></option>
+											<option value="1">元年</option>
+										</th:block>
+										<th:block th:if="*{birthEra} != null and *{birthEra.isJp()} and *{birthEra.getCd()} != ${T(jp.loioz.common.constant.CommonConstant$EraType).REIWA.getCd()}">
+											<!-- 令和以外の和暦の場合 -->
+											<option value="">-</option>
+											<option th:each="num : ${#numbers.sequence(T(jp.loioz.common.constant.CommonConstant$EraEpoch).of(__*{birthEra.getCd()}__).getVal(), 2, -1)}"
+												th:value="${num}" th:text="|${num}年|"></option>
+											<option value="1">元年</option>
+										</th:block>
+									</select>
+									<!--/* 月 */-->
+									<select class="birth_select_month form-control digit5 mr-2" th:field="*{birthMonth}">
+										<option value="">-</option>
+										<option th:each="num : ${#numbers.sequence(1,12)}"
+											th:value="${num}" th:text="|${num}月|">1</option>
+									</select>
+									<!--/* 日 */-->
+									<select class="birth_select_day form-control digit5" th:field="*{birthDay}">
+										<option value="">-</option>
+										<option th:each="num : ${#numbers.sequence(1,31)}"
+											th:value="${num}" th:text="|${num}日|">1</option>
+									</select>
+								</div>
+								<div class="error_mag_point hidden">日付が不正です。</div>
+								<div th:if="${#fields.hasErrors('birthEra')}" th:errors="*{birthEra}" class="error_mag_point">error</div>
+							</div>
+						</div>
+						
+						<!--/* 故人 */-->
+						<div class="form-row">
+							<div class="form-group col-md-12 mb-1">
+								<label class="checkbox_btn">
+									<input type="checkbox" class="checkbox_input changeDeceased" th:field="*{deathFlg}">
+									<span class="checkbox_txt">故人</span>
+								</label>
+							</div>
+						</div>
+						
+						<!--/* 死亡日 */-->
+						<div class="form-row deathDate" th:classappend="*{deathFlg} == true ? '' : 'hidden'">
+							<div class="form-group col-md-12 mb-0">
+								<label class="input_parts_label">死亡日</label>
+							</div>
+							<div class="form-group col-md-12">
+								<div class="d-flex">
+									<!--/* 和暦・西暦 */-->
+									<select class="form-control digit5 mr-2" th:field="*{deathEra}">
+										<option th:each="enum : ${T(jp.loioz.common.constant.CommonConstant$EraType).values()}"
+											th:value="${enum.cd}" th:text="${enum.val}">平成</option>
+									</select>
+									<!--/* 年 */-->
+									<select class="form-control digit6 mr-2" th:field="*{deathYear}">
+										<th:block th:if="*{deathEra} == null or *{deathEra.getCd()} == ${T(jp.loioz.common.constant.CommonConstant$EraType).SEIREKI.getCd()}">
+											<!-- 西暦の場合 -->
+											<option value="">-</option>
+											<option th:each="num : ${#numbers.sequence(#calendars.year(#calendars.createToday()), 1900, -1)}"
+												th:value="${num}" th:text="|${num}年|"></option>
+										</th:block>
+										<th:block th:if="*{deathEra} != null and *{deathEra.getCd()} == ${T(jp.loioz.common.constant.CommonConstant$EraType).REIWA.getCd()}">
+											<!-- 令和の場合 -->
+											<option value="">-</option>
+											<option th:each="num : ${#numbers.sequence(#calendars.year(#calendars.createToday()) - 2018, 2, -1)}"
+												th:value="${num}" th:text="|${num}年|"></option>
+											<option value="1">元年</option>
+										</th:block>
+										<th:block th:if="*{deathEra} != null and *{deathEra.isJp()} and *{deathEra.getCd()} != ${T(jp.loioz.common.constant.CommonConstant$EraType).REIWA.getCd()}">
+											<!-- 令和以外の和暦の場合 -->
+											<option value="">-</option>
+											<option th:each="num : ${#numbers.sequence(T(jp.loioz.common.constant.CommonConstant$EraEpoch).of(__*{deathEra.getCd()}__).getVal(), 2, -1)}"
+												th:value="${num}" th:text="|${num}年|"></option>
+											<option value="1">元年</option>
+										</th:block>
+									</select>
+									<!--/* 月 */-->
+									<select class="death_select_month form-control digit5 mr-2" th:field="*{deathMonth}">
+										<option value="">-</option>
+										<option th:each="num : ${#numbers.sequence(1,12)}"
+											th:value="${num}" th:text="|${num}月|">1</option>
+									</select>
+									<!--/* 日 */-->
+									<select class="death_select_day form-control digit5" th:field="*{deathDay}">
+										<option value="">-</option>
+										<option th:each="num : ${#numbers.sequence(1,31)}"
+											th:value="${num}" th:text="|${num}日|">1</option>
+									</select>
+								</div>
+								<div class="error_mag_point hidden">日付が不正です。</div>
+								<div th:if="${#fields.hasErrors('deathEra')}" th:errors="*{deathEra}" class="error_mag_point">error</div>
+							</div>
+						</div>
+						
+					</div>
+					
+					<!--/* 企業・団体 */-->
+					<div class="hojinForm">
+						<div class="form-row">
+							<!--/* 氏名 */-->
+							<div class="form-group col-md-8 mb-0">
+								<label class="input_parts_label">名前</label>
+								<span class="mark_equired">必須</span>
+							</div>
+						</div>
+						
+						<!--/* 姓（会社名） */-->
+						<div class="form-row">
+							<!-- 姓（会社名） -->
+							<div class="form-group col-md-12">
+								<input type="text"class="form-control" th:field="*{customerNameSei}" placeholder="名前" maxlength="64">
+								<div th:if="${#fields.hasErrors('customerNameSei')}" th:errors="*{customerNameSei}" class="error_mag_point">error</div>
+							</div>
+						</div>
+						
+						<!--/* せい（会社名） */-->
+						<div class="form-row">
+							<!-- せい（会社名） -->
+							<div class="form-group col-md-12">
+								<input type="text" class="form-control" th:field="*{customerNameSeiKana}" placeholder="ふりがな" maxlength="128">
+								<div th:if="${#fields.hasErrors('customerNameSeiKana')}" th:errors="*{customerNameSeiKana}" class="error_mag_point">error</div>
+							</div>
+						</div>
+						
+						<!--/* 代表、担当者 */-->
+						<div>
+							<!--/* 代表者名・担当者ラベル */-->
+							<div class="form-row">
+								<div class="form-group col-md-8 mb-0">
+									<label class="input_parts_label">代表者</label>
+								</div>
+								<div class="form-group col-md-4 mb-0">
+									<label class="input_parts_label">担当者</label>
+								</div>
+							</div>
+							<!--/* 代表者名・担当者 */-->
+							<div class="form-row">
+								<!--/* 代表者 */-->
+								<div class="form-group col-md-4">
+									<input type="text" class="form-control" th:field="*{daihyoName}" placeholder="漢字" maxlength="24">
+									<div th:if="${#fields.hasErrors('daihyoName')}" th:errors="*{daihyoName}" class="error_mag_point">error</div>
+								</div>
+								<!--/* 役職 */-->
+								<div class="form-group col-md-4">
+									<input type="text" class="form-control" th:field="*{daihyoPositionName}" placeholder="役職（代表者）" maxlength="24">
+									<div th:if="${#fields.hasErrors('daihyoPositionName')}" th:errors="*{daihyoPositionName}" class="error_mag_point">error</div>
+								</div>
+								<!--/* 担当者名（漢字） */-->
+								<div class="form-group col-md-4">
+									<input type="text" class="form-control" th:field="*{tantoName}" placeholder="漢字" maxlength="24">
+									<div th:if="${#fields.hasErrors('tantoName')}" th:errors="*{tantoName}" class="error_mag_point">error</div>
+								</div>
+							</div>
+							<div class="form-row">
+								<!-- 代表者（ふりがな） -->
+								<div class="form-group col-md-4">
+									<input type="text" class="form-control" th:field="*{daihyoNameKana}" placeholder="ふりがな" maxlength="64">
+									<div th:if="${#fields.hasErrors('daihyoNameKana')}" th:errors="*{daihyoNameKana}" class="error_mag_point">error</div>
+								</div>
+								<div class="form-group col-md-4"></div>
+								<!--/* 担当者名（ふりがな） */-->
+								<div class="input_parts form-group col-md-4">
+									<input type="text" class="form-control" th:field="*{tantoNameKana}" placeholder="ふりがな" maxlength="64">
+									<div th:if="${#fields.hasErrors('tantoNameKana')}" th:errors="*{tantoNameKana}" class="error_mag_point">error</div>
+								</div>
+							</div>
+						</div>
+						
+						<!--/* 旧商号 */-->
+						<div>
+							<!--/* 旧商号ラベル */-->
+							<div class="form-row">
+								<div class="form-group col-md-12 mb-0">
+									<label class="input_parts_label">旧商号</label>
+								</div>
+							</div>
+							<!--/* 旧商号 */-->
+							<div class="form-row">
+								<div class="form-group col-md-12">
+									<input type="text" class="form-control" th:field="*{oldHojinName}" maxlength="64">
+									<div th:if="${#fields.hasErrors('oldHojinName')}" th:errors="*{oldHojinName}" class="error_mag_point">error</div>
+								</div>
+							</div>
+						</div>
+					</div>
+					
+					<!--/* 弁護士 */-->
+					<div class="lawyerForm">
+						<div class="form-row">
+							<!--/* 氏名 */-->
+							<div class="form-group col-md-12 mb-0">
+								<label class="input_parts_label">名前</label>
+								<span class="mark_equired">必須</span>
+							</div>
+						</div>
+						
+						<!--/* 姓・名 */-->
+						<div class="form-row">
+							<!-- 姓 -->
+							<div class="form-group col-md-4">
+								<input type="text"class="form-control" th:field="*{customerNameSei}" placeholder="姓" maxlength="24">
+								<div th:if="${#fields.hasErrors('customerNameSei')}" th:errors="*{customerNameSei}" class="error_mag_point">error</div>
+							</div>
+							<!-- 名 -->
+							<div class="form-group col-md-4">
+								<input type="text"class="form-control" th:field="*{customerNameMei}" placeholder="名" maxlength="24">
+								<div th:if="${#fields.hasErrors('customerNameMei')}" th:errors="*{customerNameMei}" class="error_mag_point">error</div>
+							</div>
+						</div>
+						
+						<!--/* せい・めい */-->
+						<div class="form-row">
+							<!-- せい -->
+							<div class="form-group col-md-4">
+								<input type="text" class="form-control" th:field="*{customerNameSeiKana}" placeholder="せい" maxlength="64">
+								<div th:if="${#fields.hasErrors('customerNameSeiKana')}" th:errors="*{customerNameSeiKana}" class="error_mag_point">error</div>
+							</div>
+							<!-- めい -->
+							<div class="form-group col-md-4">
+								<input type="text" class="form-control" th:field="*{customerNameMeiKana}" placeholder="めい" maxlength="64">
+								<div th:if="${#fields.hasErrors('customerNameMeiKana')}" th:errors="*{customerNameMeiKana}" class="error_mag_point">error</div>
+							</div>
+						</div>
+					</div>
+				</div>
+
+				<div class="kojinForm">
+<!--/*/				<th:block th:with="isEmpty=*{#strings.isEmpty(country) && #strings.isEmpty(language)}"> /*/-->
+						<!--/* 国籍・言語 */-->
+						<div>
+							<div>
+								<span data-toggle="collapse" data-target=".country" th:classappend="${isEmpty}? 'collapsed'">
+									<a href="javascript:void(0);" class="showIfTargetHidden" title="追加"><i class="fas fa-plus mr-2"></i>国籍／言語を追加する</a>
+									<a href="javascript:void(0);" class="showIfTargetShown" title="削除"><i class="fas fa-minus mr-2"></i>国籍／言語を削除する</a>
+								</span>
+							</div>
+							<div class="country collapse clearOnHide" th:classappend="${!isEmpty}? 'show'">
+								<div class="form-row">
+									<div class="form-group col-md-12 mb-0">
+										<label class="input_parts_label">国籍／言語</label>
+									</div>
+								</div>
+								<div class="form-row">
+									<div class="form-group col-md-6">
+										<input type="text" class="form-control" th:field="*{country}" placeholder="国籍" maxlength="30">
+										<div th:if="${#fields.hasErrors('country')}" th:errors="*{country}" class="error_mag_point">error</div>
+									</div>
+									<div class="form-group col-md-6">
+										<input type="text" class="form-control" th:field="*{language}" placeholder="言語" maxlength="30">
+										<div th:if="${#fields.hasErrors('language')}" th:errors="*{language}" class="error_mag_point">error</div>
+									</div>
+								</div>
+							</div>
+						</div>
+<!--/*/				</th:block> /*/-->
+	
+<!--/*/				<th:block th:with="isEmpty=*{#strings.isEmpty(yago) && #strings.isEmpty(yagoKana)}"> /*/-->
+						<!--/* 屋号・通称名 */-->
+						<div>
+							<div>
+								<span data-toggle="collapse" data-target=".yago" th:classappend="${isEmpty}? 'collapsed'">
+									<a href="javascript:void(0);" class="showIfTargetHidden" title="追加"><i class="fas fa-plus mr-2"></i>屋号／通称名を追加する</a>
+									<a href="javascript:void(0);" class="showIfTargetShown" title="削除"><i class="fas fa-minus mr-2"></i>屋号／通称名を削除する</a>
+								</span>
+							</div>
+							<div class="yago collapse clearOnHide" th:classappend="${!isEmpty}? 'show'">
+								<div class="form-row">
+									<div class="form-group col-md-12 mb-0">
+										<label class="input_parts_label">屋号／通称名</label>
+									</div>
+								</div>
+								<div class="form-row">
+									<div class="form-group col-md-6">
+										<input type="text" class="form-control" th:field="*{yago}" placeholder="漢字" maxlength="24">
+										<div th:if="${#fields.hasErrors('yago')}" th:errors="*{yago}" class="error_mag_point">error</div>
+									</div>
+									<div class="form-group col-md-6">
+										<input type="text" class="form-control" th:field="*{yagoKana}" placeholder="ふりがな" maxlength="64">
+										<div th:if="${#fields.hasErrors('yagoKana')}" th:errors="*{yagoKana}" class="error_mag_point">error</div>
+									</div>
+								</div>
+							</div>
+						</div>
+<!--/*/				</th:block> /*/-->
+				</div>
+			</div>
+
+			<!--/* 右ブロック */-->
+			<div class="col-md-6">
+				<div class="detail_input_area">
+					<!--/* 職業（個人用） */-->
+					<div class="form-row kojinForm">
+						<div class="form-group col-md-12">
+							<label class="input_parts_label">職業</label>
+							<input type="text"class="form-control" th:field="*{job}" placeholder="職業" maxlength="50">
+							<div th:if="${#fields.hasErrors('job')}" th:errors="*{job}" class="error_mag_point">error</div>
+						</div>
+					</div>
+
+					<!--/* 勤務先（個人用） */-->
+					<div class="form-row kojinForm">
+						<div class="form-group col-md-12">
+							<label class="input_parts_label">勤務先</label>
+							<input type="text"class="form-control" th:field="*{workPlace}" placeholder="勤務先" maxlength="50">
+							<div th:if="${#fields.hasErrors('workPlace')}" th:errors="*{workPlace}" class="error_mag_point">error</div>
+						</div>
+					</div>
+
+					<!--/* 部署（個人用） */-->
+					<div class="form-row kojinForm">
+						<div class="form-group col-md-12">
+							<label class="input_parts_label">部署</label>
+							<input type="text"class="form-control" th:field="*{bushoName}" placeholder="部署" maxlength="50">
+							<div th:if="${#fields.hasErrors('bushoName')}" th:errors="*{bushoName}" class="error_mag_point">error</div>
+						</div>
+					</div>
+
+					<!--/* 事務所名（弁護士用） */-->
+					<div class="form-row lawyerForm">
+						<div class="form-group col-md-12">
+							<label class="input_parts_label">事務所名</label>
+							<input type="text"class="form-control" th:field="*{jimushoName}" placeholder="事務所名" maxlength="50">
+							<div th:if="${#fields.hasErrors('jimushoName')}" th:errors="*{jimushoName}" class="error_mag_point">error</div>
+						</div>
+					</div>
+
+					<!--/* 部署・役職名（弁護士用） */-->
+					<div class="form-row lawyerForm">
+						<div class="form-group col-md-12">
+							<label class="input_parts_label">部署・役職名</label>
+							<input type="text"class="form-control" th:field="*{bushoName}" placeholder="部署・役職名" maxlength="50">
+							<div th:if="${#fields.hasErrors('bushoName')}" th:errors="*{bushoName}" class="error_mag_point">error</div>
+						</div>
+					</div>
+
+					<!--/* 特記事項（個人、企業・団体、弁護士共通） */-->
+					<div class="form-row customerCommonForm">
+						<div class="form-group col-md-12">
+							<label class="input_parts_label">特記事項</label>
+							<textarea rows="5" class="form-control" th:field="*{remarks}" maxlength="3000"></textarea>
+							<div th:if="${#fields.hasErrors('remarks')}" th:errors="*{remarks}" class="error_mag_point">error</div>
+						</div>
+					</div>
+
+					<!--/* 相談経路（個人、企業・団体共通） */-->
+					<div class="form-row kojinHojinForm">
+						<div class="form-group col-md-12 mb-0">
+							<label class="input_parts_label">相談経路</label>
+						</div>
+						<div class="form-group col-md-3">
+							<select class="form-control" th:field="*{sodanRoute}">
+								<option value="">-</option>
+								<option th:each="option : *{sodanRouteOptionList}"
+									th:value="${option.value}" th:text="${option.label}"></option>
+							</select>
+						</div>
+						<div class="form-group col-md-9">
+							<input type="text" class="form-control" th:field="*{sodanRemarks}" maxlength="500" placeholder="相談経路の詳細">
+							<div th:if="${#fields.hasErrors('sodanRemarks')}" th:errors="*{sodanRemarks}" class="error_mag_point">error</div>
+						</div>
+					</div>
+				</div>
+			</div>
+			
+		</div>
+		<hr class="my-4">
+		<!--/* ボタン */-->
+		<div class="text-right my-4">
+			<!--/* 登録ボタン */-->
+			<button type="button" id="customerBasicSave" class="btn btn-info">
+				<i class="fas fa-check"></i>登録
+			</button>
+		</div>
+		
+		<input type="hidden" id="customerId" th:field="*{customerId}">
+		<input type="hidden" id="personId" th:field="*{personId}">
+	</form>
+	
+</div>

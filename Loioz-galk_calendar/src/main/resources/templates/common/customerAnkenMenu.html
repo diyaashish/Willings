@@ -1,0 +1,1231 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+	layout:decorator="commonLayout">
+<head>
+<meta charset="utf-8" />
+</head>
+<body>
+
+	<!--/* 顧客・案件メニュータブ */-->
+	<div th:fragment="menuList(selectedTabClass)" class="nav_sidebar_c_a navSidebar"
+		th:data-click-open=${customerAnkenMenuOpenClickForSessionValue}
+		th:data-resize-open=${customerAnkenMenuOpenResizeForSessionValue}
+		th:with="
+			ankenId=${sideMenuAnkenId}?: null,
+			customerId=${sideMenuCustomerId}?: null,
+			selectedSaiban=${selectedSaiban}?: null,
+			focusPersonId=${focusPersonId}?:null">
+
+		<script type="text/javascript" th:inline="javascript">
+		
+		$(function() {
+			let ajaxRunning = false;
+			
+			// リサイズが発生した場合に、画面幅が縮まっているのか、拡がっているのかを判定するための値（リサイズイベント発生時に値を設定する）
+			let beforeResizeWidth = null;
+			let afterResizeWidth = null;
+			
+			const $sidebar = $(".navSidebar");
+			const $contentsSlidebarWrapper = $(".contentsSlidebarWrapper") // 階層が上への処理だが、致し方ない
+
+			ankenCustomerResizeFn(false, true);
+
+			<!--/* 表示時にサイドバーを隠している場合は、サイドメニューツールチップを有効にする */-->
+			$(document).ready(function() {
+				if ($contentsSlidebarWrapper[0].dataset.clickOpen === 'true') {
+					return;
+				} else if ($contentsSlidebarWrapper[0].dataset.clickOpen === 'false' || $contentsSlidebarWrapper[0].dataset.resizeOpen === 'false') {
+					// サイドメニューツールチップ設定
+					$('#ankenMenuList li').each(function(index) {
+						appendDataToggleTooltipAttribute($(this));
+					});
+					$('[data-toggle="tooltip"]').tooltip();
+				}
+			});
+
+			<!--/* サイドバー開く */-->
+			$(document).on("click", ".sideBarOpen", function() {
+				<!--/* クリックで開いた状態にする */-->
+				$sidebar.attr("data-click-open", "true");
+				$contentsSlidebarWrapper.attr("data-click-open", "true");
+				<!--/* クリックで状態が変更されたため、リサイズの状態は空とする */-->
+				$sidebar.attr("data-resize-open", "");
+				$contentsSlidebarWrapper.attr("data-resize-open", "");
+				setCustomerAnkenMenuOpenClickForSessionAjax("true");
+				// サイドメニューツールチップの停止と属性削除
+				$('#ankenMenuList [data-toggle="tooltip"]').tooltip('dispose');
+				$('#ankenMenuList li').each(function(index) {
+					removeDataToggleTooltipAttribute($(this));
+				});
+			});
+
+			<!--/* サイドバー閉じる */-->
+			$(document).on("click", ".sideBarClose", function() {
+				<!--/* クリックで閉じた状態にする */-->
+				$sidebar.attr("data-click-open", "false");
+				$contentsSlidebarWrapper.attr("data-click-open", "false");
+				<!--/* クリックで状態が変更されたため、リサイズの状態は空とする */-->
+				$sidebar.attr("data-resize-open", "");
+				$contentsSlidebarWrapper.attr("data-resize-open", "");
+				setCustomerAnkenMenuOpenClickForSessionAjax("false");
+				// サイドメニューツールチップ設定
+				$('#ankenMenuList li').each(function(index) {
+					appendDataToggleTooltipAttribute($(this));
+				});
+				$('[data-toggle="tooltip"]').tooltip();
+			});
+
+			<!--/* リサイズアクション */-->
+			$(window).on('load resize', function(event) {
+				// リサイズ後の幅
+				afterResizeWidth = window.innerWidth;
+				
+				ankenCustomerResizeFn(true, false);
+				if ($contentsSlidebarWrapper[0].dataset.resizeOpen === 'false' || $contentsSlidebarWrapper[0].dataset.clickOpen === 'false') {
+					// サイドメニューツールチップ設定
+					$('#ankenMenuList li').each(function(index) {
+						appendDataToggleTooltipAttribute($(this));
+					});
+					$('[data-toggle="tooltip"]').tooltip();
+				} else {
+					// サイドメニューツールチップの停止と属性削除
+					$('#ankenMenuList [data-toggle="tooltip"]').tooltip('dispose');
+					$('#ankenMenuList li').each(function(index) {
+						removeDataToggleTooltipAttribute($(this));
+					});
+				}
+				
+				// このリサイズイベントでの「リサイズ後の幅」を、次のリサイズイベントでの「リサイズ前の幅」として設定
+				beforeResizeWidth = afterResizeWidth;
+			});
+
+			<!--/* リサイズ処理 */-->
+			function ankenCustomerResizeFn(saveAjaxFlg, initDisplayFlg) {
+				
+				if (window.matchMedia('(max-width:1200px)').matches) {
+					<!--/* 画面幅が1200px以下の場合 */-->
+					if ($sidebar.attr("data-click-open")) {
+						// クリックでの開閉をされている場合（Sessionからの値が設定されている場合）
+						if($sidebar.attr("data-click-open") === "false") {
+							// クリックですでに閉じられている場合
+							// なにもしない
+						}
+					}
+					
+					// クリックでの開閉をされていない場合（Sessionからの値が設定されていない場合）、
+					// または、クリックで開かれている場合
+					
+					if (initDisplayFlg) {
+						// 初期表示の場合
+						// リサイズで閉じる
+						$sidebar.attr("data-resize-open", "false");
+						$contentsSlidebarWrapper.attr("data-resize-open", "false");
+						setCustomerAnkenMenuOpenResizeForSessionAjax("false");
+					}
+					
+					// 初回のリサイズイベントの場合、処理終了（なにもしない）
+					if (beforeResizeWidth == null) return;
+					
+					if (afterResizeWidth <= 1200 && 1200 < beforeResizeWidth) {
+						// 1200pxの境界を縮める方向に超えた場合
+						// リサイズで閉じる
+						$sidebar.attr("data-resize-open", "false");
+						$contentsSlidebarWrapper.attr("data-resize-open", "false");
+						setCustomerAnkenMenuOpenResizeForSessionAjax("false");
+					}
+
+				} else if (window.matchMedia('(min-width:1200px)').matches) {
+					<!--/* 画面幅が1200px以上の場合 */-->
+					if ($sidebar.attr("data-click-open")) {
+						// クリックでの開閉をされている場合（Sessionからの値が設定されている場合）
+						if($sidebar.attr("data-click-open") === "false") {
+							// クリックで閉じられている場合
+							// なにもしない（閉じたままにする）
+						}
+					}
+					
+					// クリックでの開閉をされていない場合（Sessionからの値が設定されていない場合）、
+					// または、クリックで開かれている場合
+					
+					if (initDisplayFlg) {
+						// 初期表示の場合
+						// リサイズで開く
+						$sidebar.attr("data-resize-open", "true");
+						$contentsSlidebarWrapper.attr("data-resize-open", "true");
+						setCustomerAnkenMenuOpenResizeForSessionAjax("true");
+					}
+					
+					// 初回のリサイズイベントの場合、処理終了（なにもしない）
+					if (beforeResizeWidth == null) return;
+					
+					if (beforeResizeWidth <= 1200 && 1200 < afterResizeWidth) {
+						// 1200pxの境界を拡げる方向に超えた場合
+						// リサイズで開く
+						$sidebar.attr("data-resize-open", "true");
+						$contentsSlidebarWrapper.attr("data-resize-open", "true");
+						setCustomerAnkenMenuOpenResizeForSessionAjax("true");
+					}
+				}
+			}
+			
+			<!--/* サイドバーの開閉状態セッションに保存 */-->
+			function setCustomerAnkenMenuOpenClickForSessionAjax(param) {
+
+				// 2重押下防止
+				if(ajaxRunning){
+					return false;
+				}
+				ajaxRunning = true;
+				$.ajax({
+					url : /*[[@{/common/customerAnkenMenu/setCustomerAnkenMenuOpenClickForSession}]]*/,
+					type : "POST",
+					data : {"customerAnkenMenuOpenClick" : param}
+				})
+				.done(function(data, status, jqXHR) {
+					<!--/* なにもしない */-->
+				})
+				.fail(function(jqXHR, status, errorThrown) {
+					<!--/* なにもしない */-->
+				})
+				.always(function(){
+					ajaxRunning = false;
+				});
+			}
+			
+			<!--/* サイドバーの開閉状態セッションから削除 */-->
+			function deleteCustomerAnkenMenuOpenClickForSessionAjax() {
+				
+				<!--/* 2重押下防止 */-->
+				if(ajaxRunning){
+					return false;
+				}
+				ajaxRunning = true;
+				$.ajax({
+					url : /*[[@{/common/customerAnkenMenu/deleteCustomerAnkenMenuOpenClickForSession}]]*/,
+					type : "POST",
+				})
+				.done(function(data, status, jqXHR) {
+					<!--/* なにもしない */-->
+				})
+				.fail(function(jqXHR, status, errorThrown) {
+					<!--/* なにもしない */-->
+				})
+				.always(function(){
+					ajaxRunning = false;
+				});
+			}
+			
+			<!--/* サイドバーの開閉状態（リサイズ）セッションに保存 */-->
+			function setCustomerAnkenMenuOpenResizeForSessionAjax(param) {
+
+				<!--/* リサイズ処理はブラウザ幅の変更をトリガーに行われるため2重押下防止は行わない */-->
+				$.ajax({
+					url : /*[[@{/common/customerAnkenMenu/setCustomerAnkenMenuOpenResizeForSession}]]*/,
+					type : "POST",
+					data : {"customerAnkenMenuOpenResize" : param}
+				})
+				.done(function(data, status, jqXHR) {
+					<!--/* なにもしない */-->
+				})
+				.fail(function(jqXHR, status, errorThrown) {
+					<!--/* なにもしない */-->
+				})
+				.always(function(){
+				});
+			}
+			
+		});
+		</script>
+		
+		<div class="nav_sidebar_c_a_inner">
+			
+			<ul id="ankenMenuList">
+				<!--/* メニュータブ（案件） START */-->
+<!--/*/ 	<th:block th:if="${ankenId}" th:with="ankenHeader=${wrapAnkenHeader.get(ankenId)}"> /*/-->
+
+					<li th:classappend="|is_anken ${(selectedTabClass == 'is_anken' ? 'selected' : '')}|" data-placement="right" data-boundary="window" data-container="body" data-trigger="hover" data-title="案件情報">
+						<a th:href="@{/user/ankenManagement/edit/{ankenId}/(ankenId=${ankenId})}">
+							<div class="side_menu_list_contents">
+								<i class="far fa-file-alt menu_svg menu_anken_svg"></i>
+								<span class="nav_menu_txt">案件情報</span>
+							</div>
+						</a>
+					</li>
+					
+					<!--/* 裁判情報有り */-->
+					<!--/* 裁判情報無しの場合メニューを表示しない */-->
+					<th:block th:if="${ankenHeader.existSaiban}">
+						<li class="sidebarSubItemsOpCl"
+							th:classappend="|is_anken ${(selectedTabClass == 'is_saiban' ? 'selected' : '')}|" th:data-placement="${((ankenHeader.sideMenuParentSaibanList.size() > 1) ? 'top' : 'right')}" data-boundary="window" data-container="body" data-trigger="hover" data-title="裁判管理">
+							<a th:href="@{/user/saibanManagement/{ankenId}/{branchNo}/(ankenId=${ankenId}, branchNo=${ankenHeader.firstSaibanBranchNo})}">
+								<div class="side_menu_list_contents">
+									<i class="fas fa-gavel menu_svg reverses_text"></i>
+									<span class="nav_menu_txt">裁判管理</span>
+									<!--/* 子裁判が有る場合のみ表示する */-->
+									<span th:if="${ankenHeader.parentSaiban}" class="nav_menu_txt" th:text="${ankenHeader.sideMenuParentSaibanList.size()}"></span>
+									<i th:if="${ankenHeader.parentSaiban}" class="fas fa-chevron-right ml-auto d-inline-block"></i>
+								</div>
+							</a>
+							
+							<!--/* 複数裁判一覧 */-->
+							<th:block th:if="${ankenHeader.parentSaiban}" th:with="maxCharCountAnkenMenuJikenName=${ankenHeader.MAX_CHAR_COUNT_ANKEN_MENU_JIKEN_NAME}">
+								<ul class="nav_sidebar_c_a__menu_list_items hidden">
+									<li th:classappend="|saiban_data ${(saiban.saibanSeq.equals(selectedSaiban) ? 'saiban_selected' : '')}|"
+											th:each="saiban : ${ankenHeader.sideMenuParentSaibanList}" th:object="${saiban}" >
+										<a class="menu_data_list"
+											th:href="@{/user/saiban{bunya}Management/{saibanSeq}/{ankenId}/(saibanSeq=*{saibanSeq}, ankenId=${ankenId}, bunya=${ankenHeader.keiji} ? 'Keiji' : 'Minji')}">
+											<th:block th:unless="${#strings.isEmpty(saiban.jikenName)}" th:with="isOverCharCount=(${maxCharCountAnkenMenuJikenName} < ${#strings.length(saiban.jikenName)})">
+												<!-- 事件名の文字数が多い場合の表示 -->
+												<div class="name_text" th:if="${isOverCharCount}">
+													<span myth:nl2br="|${#strings.substring(saiban.jikenName,0,maxCharCountAnkenMenuJikenName)}...|"></span>
+												</div>
+												<!-- 事件名の文字数が多くない場合の表示 -->
+												<div class="name_text" th:unless="${isOverCharCount}">
+													<span myth:nl2br="${saiban.jikenName}"></span>
+												</div>
+											</th:block>
+											<th:block th:if="${#strings.isEmpty(saiban.jikenName)}">
+												<!-- 事件名が無い場合の表示 -->
+												<span class="name_text">(事件名未入力)</span>
+											</th:block>
+											<span class="d-block sub_text">
+												<span th:text="*{jikenNo}"></span>
+												<span class="label_tag kihon_jiken ml-2" th:if ="${T(jp.loioz.common.constant.CommonConstant$SystemFlg).FLG_ON.equalsByCode(saiban.kihonFlg)}">基本事件</span>
+												<span class="label_tag honso_jiken ml-2" th:if ="${T(jp.loioz.common.constant.CommonConstant$SystemFlg).FLG_ON.equalsByCode(saiban.honsoFlg)}">本訴事件</span>
+											</span>
+										</a>
+									</li>
+								</ul>
+							</th:block>
+						</li>
+					</th:block>
+					
+					<li th:classappend="|is_anken ${(selectedTabClass == 'is_anken_dashboard' ? 'selected' : '')}|" data-placement="right" data-boundary="window" data-container="body" data-trigger="hover" data-title="案件ダッシュボード">
+						<a th:href="@{/user/ankenDashboard/{ankenId}/(ankenId=${ankenId})}">
+							<div class="side_menu_list_contents">
+								<i class="fas fa-tachometer-alt menu_svg"></i>
+								<span class="nav_menu_txt">案件ダッシュボード</span>
+							</div>
+						</a>
+					</li>
+					
+					<li th:classappend="|is_anken ${(selectedTabClass == 'is_kanyosya' ? 'selected' : '')}|" data-placement="right" data-boundary="window" data-container="body" data-trigger="hover" data-title="当事者・関与者">
+						<a th:href="@{/user/kanyosha/list(transitionAnkenId=${ankenId}, transitionCustomerId=null)}">
+							<div class="side_menu_list_contents">
+								<i class="fas fa-users menu_svg"></i>
+								<span class="nav_menu_txt">当事者・関与者</span>
+							</div>
+						</a>
+					</li>
+					
+					<li th:classappend="|is_anken ${(selectedTabClass == 'is_gyomu' ? 'selected' : '')}|" data-placement="right" data-boundary="window" data-container="body" data-trigger="hover" data-title="業務履歴">
+						<a th:href="@{/user/gyomuHistory/anken/list(transitionAnkenId=${ankenId}, transitionCustomerId=null)}">
+							<div class="side_menu_list_contents">
+								<i class="fas fa-history menu_svg"></i>
+								<span class="nav_menu_txt">業務履歴</span>
+							</div>
+						</a>
+					</li>
+
+					<li th:classappend="|is_anken ${(selectedTabClass == 'is_azukari' ? 'selected' : '')}|" data-placement="right" data-boundary="window" data-container="body" data-trigger="hover" data-title="預り品">
+						<a th:href="@{/user/azukariItem/list(transitionAnkenId=${ankenId}, transitionCustomerId=null)}">
+							<div class="side_menu_list_contents">
+								<i class="fas fa-cube menu_svg"></i>
+								<span class="nav_menu_txt">預り品</span>
+							</div>
+						</a>
+					</li>
+					
+					<th:block th:switch="${ankenHeader.storageConnectedService}">
+						<th:block th:case="${T(jp.loioz.common.constant.CommonConstant$ExternalService).GOOGLE}">
+							<li th:classappend="|is_anken ${(selectedTabClass == 'is_file' ? 'selected' : '')}|" data-placement="right" data-boundary="window" data-container="body" data-trigger="hover" data-title="Google">
+								<script type="text/javascript" th:inline="javascript">
+								$(function() {
+									let createFolderAjaxRunning = false;
+									$('.googleLink').on('click', function(e) {
+										if(createFolderAjaxRunning) {
+											return false;
+										}
+										createFolderAjaxRunning = true;
+										Promise.resolve()
+											.then(getAnkenGoogleFolder)
+											.then(resultFnc)
+											.catch((error) => {console.log(error)})
+											.finally(() => {createFolderAjaxRunning = false;});
+									});
+									
+									function getAnkenGoogleFolder() {
+										return new Promise((resolve, reject) => {
+											$.ajax({
+												url : /*[[@{/common/api/google/getAnkenFolderUrl}]]*/'',
+												type : "GET",
+												data : {"ankenId" : /*[[${ankenId}]]*/''}
+											}).done(function(data, status, jqXHR) {
+												<!--/* なにもしない */-->
+												return resolve(data);
+											}).fail(function(jqXHR, status, errorThrown) {
+												showErrorMessageForJs(/*[[#{E00091}]]*/ "error");
+												return reject();
+											});
+										});
+									};
+									
+									async function resultFnc(data) {
+										<!--/* なにもしない */-->
+										if (data.successed) {
+											// 別タブで
+											let childWindow = window.open(data.url, 'rel=noopener');
+											return Promise.resolve();
+	
+										} else {
+											// 作成完了したら
+											if (data.needCreate) {
+												if(confirm('この案件のフォルダはまだ作成されていません。 作成してもよろしいですか？')) {
+													await createGoogleAnkenFoloder(false, false);
+												}
+												return Promise.resolve();
+											} else if (data.needReCreate) {
+												if(confirm(data.message)) {
+													await createGoogleAnkenFoloder(false, true);
+												}
+												return Promise.resolve();
+											} else if (data.needReCreateAnkenRoot) {
+												if(confirm(data.message)) {
+													await createGoogleAnkenFoloder(true, false);
+												}
+												return Promise.resolve();
+											} else {
+												showErrorMessageForJs(data.message);
+												return Promise.reject();
+											}
+										}
+									};
+									
+									<!--/* 案件フォルダの作成 */-->
+									function createGoogleAnkenFoloder(reCreateAnkenRootFlg, reCreateFlg) {
+										return new Promise((resolve, reject) => {
+											$.ajax({
+												url : /*[[@{/common/api/google/createGoogleAnkenFolder}]]*/,
+												type : "POST",
+												data : {
+													"ankenId" : /*[[${ankenId}]]*/'',
+													"reCreateAnkenRootFlg" : reCreateAnkenRootFlg,
+													"reCreateFlg" : reCreateFlg
+												}
+											})
+											.done(function(data, status, jqXHR) {
+												if (data.successed) {
+													if(confirm(data.message + '\n作成したフォルダを表示しますか？')){
+														let childWindow = window.open(data.url, 'rel=noopener');
+													}
+													return resolve();
+												} else {
+													showErrorMessageForJs(data.message);
+													return reject();
+												}
+											})
+											.fail(function(jqXHR, status, errorThrown) {
+												<!--/* なにもしない */-->
+												showErrorMessageForJs(/*[[#{E00091}]]*/ "error");
+												return reject();
+											});
+										});
+									};
+								});
+								</script>
+								<a href="javascript:void(0);" class="googleLink">
+									<div class="side_menu_list_contents">
+										<i class="menu_svg google_icon"></i>
+										<span class="nav_menu_txt">Google</span>
+									</div>
+								</a>
+							</li>
+						</th:block>
+						<th:block th:case="${T(jp.loioz.common.constant.CommonConstant$ExternalService).BOX}">
+							<li th:classappend="|is_anken ${(selectedTabClass == 'is_file' ? 'selected' : '')}|" data-placement="right" data-boundary="window" data-container="body" data-trigger="hover" data-title="Box">
+								<script type="text/javascript" th:inline="javascript">
+								$(function() {
+									let createFolderAjaxRunning = false;
+									$('.boxLink').on('click', function(e) {
+										if(createFolderAjaxRunning) {
+											return false;
+										}
+										createFolderAjaxRunning = true;
+										Promise.resolve()
+											.then(getAnkenBoxFolder)
+											.then(resultFnc)
+											.catch((error) => {console.log(error)})
+											.finally(() => {createFolderAjaxRunning = false;});
+									});
+									
+									function getAnkenBoxFolder() {
+										return new Promise((resolve, reject) => {
+											$.ajax({
+												url : /*[[@{/common/api/box/getAnkenFolderUrl}]]*/'',
+												type : "GET",
+												data : {"ankenId" : /*[[${ankenId}]]*/''}
+											}).done(function(data, status, jqXHR) {
+												<!--/* なにもしない */-->
+												return resolve(data);
+											}).fail(function(jqXHR, status, errorThrown) {
+												showErrorMessageForJs(/*[[#{E00091}]]*/ "error");
+												return reject();
+											});
+										});
+									};
+									
+									async function resultFnc(data) {
+										<!--/* なにもしない */-->
+										if (data.successed) {
+											// 別タブで
+											let childWindow = window.open(data.url, 'rel=noopener');
+											return Promise.resolve();
+
+										} else {
+											// 作成完了したら
+											if (data.needCreate) {
+												if(confirm('この案件のフォルダはまだ作成されていません。 作成してもよろしいですか？')) {
+													await createBoxAnkenFoloder(false, false);
+												}
+												return Promise.resolve();
+											} else if (data.needReCreate) {
+												if(confirm(data.message)) {
+													await createBoxAnkenFoloder(false, true);
+												}
+												return Promise.resolve();
+											} else if (data.needReCreateAnkenRoot) {
+												if(confirm(data.message)) {
+													await createBoxAnkenFoloder(true, false);
+												}
+												return Promise.resolve();
+											} else {
+												showErrorMessageForJs(data.message);
+												return Promise.reject();
+											}
+										}
+									};
+									
+									<!--/* 案件フォルダの作成 */-->
+									function createBoxAnkenFoloder(reCreateAnkenRootFlg, reCreateFlg) {
+										return new Promise((resolve, reject) => {
+											$.ajax({
+												url : /*[[@{/common/api/box/createBoxAnkenFolder}]]*/,
+												type : "POST",
+												data : {
+													"ankenId" : /*[[${ankenId}]]*/'',
+													"reCreateAnkenRootFlg" : reCreateAnkenRootFlg,
+													"reCreateFlg" : reCreateFlg
+												}
+											})
+											.done(function(data, status, jqXHR) {
+												if (data.successed) {
+													if(confirm(data.message + '\n作成したフォルダを表示しますか？')){
+														let childWindow = window.open(data.url, 'rel=noopener');
+													}
+													return resolve();
+												} else {
+													showErrorMessageForJs(data.message);
+													return reject();
+												}
+											})
+											.fail(function(jqXHR, status, errorThrown) {
+												<!--/* なにもしない */-->
+												showErrorMessageForJs(/*[[#{E00091}]]*/ "error");
+												return reject();
+											});
+										});
+									};
+									
+								});
+								</script>
+								<a href="javascript:void(0);" class="boxLink">
+									<div class="side_menu_list_contents">
+										<i class="menu_svg box_icon"></i>
+										<span class="nav_menu_txt">Box</span>
+									</div>
+								</a>
+							</li>
+						</th:block>
+						<th:block th:case="${T(jp.loioz.common.constant.CommonConstant$ExternalService).DROPBOX}">
+							<li th:classappend="|is_anken ${(selectedTabClass == 'is_file' ? 'selected' : '')}|" data-placement="right" data-boundary="window" data-container="body" data-trigger="hover" data-title="Dropbox">
+								<script type="text/javascript" th:inline="javascript">
+								$(function() {
+									let createFolderAjaxRunning = false;
+									$('.dropboxLink').on('click', function(e) {
+										if(createFolderAjaxRunning) {
+											return false;
+										}
+										createFolderAjaxRunning = true;
+										Promise.resolve()
+											.then(getAnkenDropboxFolder)
+											.then(resultFnc)
+											.catch((error) => {console.log(error)})
+											.finally(() => {createFolderAjaxRunning = false;});
+									});
+									
+									function getAnkenDropboxFolder() {
+										return new Promise((resolve, reject) => {
+											$.ajax({
+												url : /*[[@{/common/api/dropbox/getAnkenFolderUrl}]]*/'',
+												type : "GET",
+												data : {"ankenId" : /*[[${ankenId}]]*/''}
+											}).done(function(data, status, jqXHR) {
+												<!--/* なにもしない */-->
+												return resolve(data);
+											}).fail(function(jqXHR, status, errorThrown) {
+												showErrorMessageForJs(/*[[#{E00091}]]*/ "error");
+												return reject();
+											});
+										});
+									};
+									
+									async function resultFnc(data) {
+										<!--/* なにもしない */-->
+										if (data.successed) {
+											// 別タブで
+											let childWindow = window.open(data.url, 'rel=noopener');
+											return Promise.resolve();
+										} else {
+											// 作成完了したら
+											if (data.needCreate) {
+												if(confirm('この案件のフォルダはまだ作成されていません。 作成してもよろしいですか？')) {
+													await createDropboxAnkenFoloder(false, false);
+												}
+												return Promise.resolve();
+											} else if (data.needReCreate) {
+												if(confirm(data.message)) {
+													await createDropboxAnkenFoloder(false, true);
+												}
+												return Promise.resolve();
+											} else if (data.needReCreateAnkenRoot) {
+												if(confirm(data.message)) {
+													await createDropboxAnkenFoloder(true, false);
+												}
+												return Promise.resolve();
+											} else {
+												showErrorMessageForJs(data.message);
+												return Promise.reject();
+											}
+										}
+									};
+									
+									<!--/* 案件フォルダの作成 */-->
+									function createDropboxAnkenFoloder(reCreateAnkenRootFlg, reCreateFlg) {
+										return new Promise((resolve, reject) => {
+											$.ajax({
+												url : /*[[@{/common/api/dropbox/createDropboxAnkenFolder}]]*/,
+												type : "POST",
+												data : {
+													"ankenId" : /*[[${ankenId}]]*/'',
+													"reCreateAnkenRootFlg" : reCreateAnkenRootFlg,
+													"reCreateFlg" : reCreateFlg
+												}
+											})
+											.done(function(data, status, jqXHR) {
+												if (data.successed) {
+													if(confirm(data.message + '\n作成したフォルダを表示しますか？')){
+														let childWindow = window.open(data.url, 'rel=noopener');
+													}
+													return resolve();
+												} else {
+													showErrorMessageForJs(data.message);
+													return reject();
+												}
+											})
+											.fail(function(jqXHR, status, errorThrown) {
+												<!--/* なにもしない */-->
+												showErrorMessageForJs(/*[[#{E00091}]]*/ "error");
+												return reject();
+											});
+										});
+									};
+								});
+								</script>
+								<a href="javascript:void(0);" class="dropboxLink">
+									<div class="side_menu_list_contents">
+										<i class="menu_svg dropbox_icon"></i>
+										<span class="nav_menu_txt">Dropbox</span>
+									</div>
+								</a>
+							</li>
+						</th:block>
+						<th:block th:case=*>
+							<li th:classappend="|is_anken ${(selectedTabClass == 'is_file' ? 'selected' : '')}|" data-placement="right" data-boundary="window" data-container="body" data-trigger="hover" data-title="ファイル">
+								<a th:href="@{/user/fileManagement/list(transitionAnkenId=${ankenId})}">
+									<div class="side_menu_list_contents">
+										<i class="far fa-folder-open menu_svg"></i>
+										<span class="nav_menu_txt">ファイル</span>
+									</div>
+								</a>
+							</li>
+						</th:block>
+					</th:block>
+					
+					<th:block th:if="${T(jp.loioz.common.utility.SessionUtils).canUsePlanFunc(T(jp.loioz.common.constant.plan.PlanConstant$PlanFuncRestrict).PF0002)}"
+						th:with="personIdList=${userMenuPersonIdList.get(ankenId)}">
+						
+						<!--/* 会計管理 */-->
+						<li class="menu_sub_title_block">
+							<span class="sub_title_invoice_statement"></span>
+						</li>
+						
+						<!--/* 外部から名簿IDを指定する場合 */-->
+						<th:block th:with="focusPersonId=${#strings.isEmpty(focusPersonId)} ? ${personIdList.get(0)} : ${focusPersonId}">
+							<li th:classappend="|is_anken ${(selectedTabClass == 'is_fee' ? 'selected' : '')}|" data-placement="right" data-boundary="window" data-container="body" data-trigger="hover" data-title="報酬">
+								<a th:href="@{/user/feeDetail/{personId}/{ankenId}/?{paramName}=true(personId=${focusPersonId},ankenId=${ankenId},paramName=${T(jp.loioz.common.constant.UrlConstant).ACCG_REFERER_ANKEN_SIDE_PARAM_NAME})}">
+									<div class="side_menu_list_contents">
+										<i class="fas fa-yen-sign menu_svg menu_anken_svg"></i>
+										<span class="nav_menu_txt">報酬</span>
+									</div>
+								</a>
+							</li>
+							<li th:classappend="|is_anken ${(selectedTabClass == 'is_deposit_recv' ? 'selected' : '')}|" data-placement="right" data-boundary="window" data-container="body" data-trigger="hover" data-title="預り金">
+								<a th:href="@{/user/depositRecvDetail/{personId}/{ankenId}/?{paramName}=true(personId=${focusPersonId},ankenId=${ankenId},paramName=${T(jp.loioz.common.constant.UrlConstant).ACCG_REFERER_ANKEN_SIDE_PARAM_NAME})}">
+									<div class="side_menu_list_contents">
+										<i class="fas fa-coins menu_svg"></i>
+										<span class="nav_menu_txt">預り金／実費</span>
+									</div>
+								</a>
+							</li>
+							<li th:classappend="|is_anken ${(selectedTabClass == 'is_invoice_statement' ? 'selected' : '')}|" data-placement="right" data-boundary="window" data-container="body" data-trigger="hover" data-title="請求書／精算書">
+								<a th:href="@{/user/caseInvoiceStatementList/{personId}/{ankenId}/(personId=${focusPersonId},ankenId=${ankenId},paramName=${T(jp.loioz.common.constant.UrlConstant).ACCG_REFERER_ANKEN_SIDE_PARAM_NAME})}">
+									<div class="side_menu_list_contents">
+										<i class="fas fa-file-invoice menu_svg menu_anken_svg"></i>
+										<span class="nav_menu_txt">請求書／精算書</span>
+									</div>
+								</a>
+							</li>
+							
+						</th:block>
+						
+						
+						<!-- /* 旧会計機能の利用可能判定_ロイオズ管理者制御、テナント機能設定による判定用の値を変数に設定 */ -->
+						<th:block th:with="oldKaikeiIsOpenInLoiozAdminControl=${T(jp.loioz.common.constant.CommonConstant$SystemFlg).FLG_ON.equalsByCode(
+																													T(jp.loioz.common.utility.SessionUtils).getLoiozAdminControlValue(T(jp.loioz.common.constant.LoiozAdminControlConstant$LoiozAdminControl).OLD_KAIKEI_OPEN)
+																												)},
+														oldKaikeiIsOnInTenantFuncSetting=${T(jp.loioz.common.constant.CommonConstant$SystemFlg).FLG_ON.equalsByCode(
+																													T(jp.loioz.common.utility.SessionUtils).getTenantFuncSettingValue(T(jp.loioz.common.constant.TenantFuncSettingConstant$TenantFuncSetting).OLD_KAIKEI_ON_OFF)
+																												)}">
+							<!-- /* 旧会計機能の利用可能判定 */ -->
+							
+							<!-- /* ロイオズ管理者制御でOpenされている */ -->
+							<th:block th:if="${oldKaikeiIsOpenInLoiozAdminControl}">
+								<!-- /* テナント機能設定でONになっている、または、案件に会計データがある */ -->
+								<th:block th:if="${oldKaikeiIsOnInTenantFuncSetting or ankenHeader.existsOldKaikeiData}">
+								
+									<li th:classappend="|is_anken ${(selectedTabClass == 'is_kaikei' ? 'selected' : '')}|" data-placement="right" data-boundary="window" data-container="body" data-trigger="hover" data-title="会計管理">
+										<a th:href="@{/user/kaikeiManagement/list(transitionAnkenId=${ankenId}, transitionCustomerId=null, isSeisanshoTab=false)}">
+											<div class="side_menu_list_contents">
+												<i class="far fa-credit-card menu_svg"></i>
+												<span class="nav_menu_txt">旧）会計管理</span>
+											</div>
+										</a>
+									</li>
+									
+									<li th:if="${selectedTabClass == 'is_seisansho'}" th:classappend="|is_anken ${(selectedTabClass == 'is_seisansho' ? 'selected' : '')}|" data-placement="right" data-boundary="window" data-container="body" data-trigger="hover" data-title="精算書作成">
+										<a href="javascript:void(0);">
+											<div class="side_menu_list_contents">
+												<i class="fas fa-file-invoice menu_svg menu_anken_svg"></i>
+												<span class="nav_menu_txt">旧）精算書作成</span>
+											</div>
+										</a>
+									</li>
+								
+								</th:block>
+							</th:block>
+						</th:block>
+						
+					</th:block>
+
+					<!--/* 案件配下の顧客 */-->
+					<li class="customer_data separat_data"></li>
+					<li class="menu_sub_title_block">
+						<span class="sub_title_customer"></span>
+					</li>
+					<li class="customer_data is_kokyaku" th:title="${customer.customerName}" th:each="customer : ${ankenHeader.relatedCustomer}" data-placement="right" data-boundary="window" data-container="body" data-trigger="hover">
+						<a class="menu_data_list" th:href="@{/user/personManagement/edit/{customerId}/(customerId=${customer.customerId.asLong()})}">
+							<div class="d-flex align-items-center">
+								<i class="far fa-id-card menu_svg my-3"></i>
+								<div class="nav_data">
+									<div class="name_text" th:text="${customer.customerName}"></div>
+									<div class="sub_text" th:text="${T(jp.loioz.common.constant.CommonConstant$AnkenStatus).of(customer.ankenStatus).getVal()}"></div>
+								</div>
+							</div>
+						</a>
+					</li>
+<!--/*/ 	</th:block> /*/-->
+				<!--/* メニュータブ（案件） END */-->
+
+				<!--/* メニュータブ（顧客） START */-->
+				<th:block th:if="${customerId}" th:with="ankenList=${userMenuAnkenList.get(customerId)}">
+<!--/*/ 		<th:block th:if="${customerId}" th:with="customerHeader=${wrapCustomerHeader.get(customerId)}"> /*/-->
+					<li th:classappend="|is_kokyaku ${(selectedTabClass == 'is_kokyaku' ? 'selected' : '')}|"
+						data-placement="right" data-boundary="window" data-container="body" data-trigger="hover" th:data-title="${customerHeader.customerName}">
+						<a th:href="@{/user/personManagement/edit/{customerId}/(customerId=${customerId})}">
+							<div class="side_menu_list_contents">
+								<i class="far fa-id-card menu_svg"></i>
+								<span class="nav_menu_txt char_ellipsis" th:text="${customerHeader.customerName}">山田太郎</span>
+							</div>
+						</a>
+					</li>
+
+<!--/*/ 	<th:block th:if="${customerHeader.personAttribute.getCd() != T(jp.loioz.common.constant.CommonConstant$PersonAttributeCd).LAWYER}"> /*/-->
+					<li th:classappend="|is_kokyaku ${(selectedTabClass == 'is_person_case' ? 'selected' : '')}|" data-placement="right" data-boundary="window"
+						data-container="body" data-trigger="hover" data-title="案件情報">
+						<a th:href="@{/user/person/{personId}/case/(personId=${customerId})}">
+							<div class="side_menu_list_contents">
+								<i class="far fa-file-alt menu_svg menu_anken_svg"></i>
+								<span class="nav_menu_txt">案件情報</span>
+							</div>
+						</a>
+					</li>
+					
+					<li th:classappend="|is_kokyaku ${(selectedTabClass == 'is_advisor_contract' ? 'selected' : '')}|" data-placement="right" data-boundary="window" data-container="body" data-trigger="hover" data-title="顧問契約">
+						<a th:href="@{/user/advisorContractPerson/list(personId=${customerId})}">
+							<div class="side_menu_list_contents">
+								<i class="fas fa-file-signature menu_svg"></i>
+								<span class="nav_menu_txt">顧問契約</span>
+							</div>
+						</a>
+					</li>
+<!--/*/ 	</th:block> /*/-->
+
+					<li th:classappend="|is_kokyaku ${(selectedTabClass == 'is_gyomu' ? 'selected' : '')}|" data-placement="right" data-boundary="window" data-container="body" data-trigger="hover" data-title="業務履歴">
+						<a th:href="@{/user/gyomuHistory/customer/list(customerId=${customerId})}">
+							<div class="side_menu_list_contents">
+								<i class="fas fa-history menu_svg"></i>
+								<span class="nav_menu_txt">業務履歴</span>
+							</div>
+						</a>
+					</li>
+
+					<th:block th:switch="${customerHeader.storageConnectedService}">
+						<th:block th:case="${T(jp.loioz.common.constant.CommonConstant$ExternalService).GOOGLE}">
+							<li th:classappend="|is_kokyaku ${(selectedTabClass == 'is_file' ? 'selected' : '')}|" data-placement="right" data-boundary="window" data-container="body" data-trigger="hover" data-title="Google">
+								<script type="text/javascript" th:inline="javascript">
+								$(function() {
+									let createFolderAjaxRunning = false;
+									$('.googleLink').on('click', function(e) {
+										if(createFolderAjaxRunning) {
+											return false;
+										}
+										createFolderAjaxRunning = true;
+										Promise.resolve()
+											.then(getCustomerGoogleFolder)
+											.then(resultFnc)
+											.catch((error) => {console.log(error)})
+											.finally(() => {createFolderAjaxRunning = false;});
+									});
+									
+									function getCustomerGoogleFolder() {
+										return new Promise((resolve, reject) => {
+											$.ajax({
+												url : /*[[@{/common/api/google/getCustomerFolderUrl}]]*/'',
+												type : "GET",
+												data : {"customerId" : /*[[${customerId}]]*/''}
+											}).done(function(data, status, jqXHR) {
+												<!--/* なにもしない */-->
+												return resolve(data);
+											}).fail(function(jqXHR, status, errorThrown) {
+												showErrorMessageForJs(/*[[#{E00091}]]*/ "error");
+												return reject();
+											});
+										});
+									};
+									
+									async function resultFnc(data) {
+										<!--/* なにもしない */-->
+										if (data.successed) {
+											// 別タブで
+											let childWindow = window.open(data.url, 'rel=noopener');
+											return Promise.resolve();
+	
+										} else {
+											// 作成完了したら
+											if (data.needCreate) {
+												if(confirm('この顧客のフォルダはまだ作成されていません。 作成してもよろしいですか？')) {
+													await createGoogleCustomerFoloder(false, false);
+												}
+												return Promise.resolve();
+											} else if (data.needReCreate) {
+												if(confirm(data.message)) {
+													await createGoogleCustomerFoloder(false, true);
+												}
+												return Promise.resolve();
+											} else if (data.needReCreateCustomerRoot) {
+												if(confirm(data.message)) {
+													await createGoogleCustomerFoloder(true, false);
+												}
+												return Promise.resolve();
+											} else {
+												showErrorMessageForJs(data.message);
+												return Promise.reject();
+											}
+										}
+									};
+									
+									<!--/* 顧客フォルダの作成 */-->
+									function createGoogleCustomerFoloder(reCreateCustomerRootFlg, reCreateFlg) {
+										return new Promise((resolve, reject) => {
+											$.ajax({
+												url : /*[[@{/common/api/google/createGoogleCustomerFolder}]]*/,
+												type : "POST",
+												data : {
+													"customerId" : /*[[${customerId}]]*/'',
+													"reCreateCustomerRootFlg" : reCreateCustomerRootFlg,
+													"reCreateFlg" : reCreateFlg
+												}
+											})
+											.done(function(data, status, jqXHR) {
+												if (data.successed) {
+													if(confirm(data.message + '\n作成したフォルダを表示しますか？')){
+														let childWindow = window.open(data.url, 'rel=noopener');
+													}
+													return resolve();
+												} else {
+													showErrorMessageForJs(data.message);
+													return reject();
+												}
+											})
+											.fail(function(jqXHR, status, errorThrown) {
+												<!--/* なにもしない */-->
+												showErrorMessageForJs(/*[[#{E00091}]]*/ "error");
+												return reject();
+											});
+										});
+									};
+								});
+								</script>
+								<a href="javascript:void(0);" class="googleLink">
+									<div class="side_menu_list_contents">
+										<i class="menu_svg google_icon"></i>
+										<span class="nav_menu_txt">Google</span>
+									</div>
+								</a>
+							</li>
+						</th:block>
+						<th:block th:case="${T(jp.loioz.common.constant.CommonConstant$ExternalService).BOX}">
+							<li th:classappend="|is_kokyaku ${(selectedTabClass == 'is_file' ? 'selected' : '')}|" data-placement="right" data-boundary="window" data-container="body" data-trigger="hover" data-title="Box">
+								<script type="text/javascript" th:inline="javascript">
+								$(function() {
+									let createFolderAjaxRunning = false;
+									$('.boxLink').on('click', function(e) {
+										if(createFolderAjaxRunning) {
+											return false;
+										}
+										createFolderAjaxRunning = true;
+										Promise.resolve()
+											.then(getCustomerBoxFolder)
+											.then(resultFnc)
+											.catch((error) => {console.log(error)})
+											.finally(() => {createFolderAjaxRunning = false;});
+									});
+									
+									function getCustomerBoxFolder() {
+										return new Promise((resolve, reject) => {
+											$.ajax({
+												url : /*[[@{/common/api/box/getCustomerFolderUrl}]]*/'',
+												type : "GET",
+												data : {"customerId" : /*[[${customerId}]]*/''}
+											}).done(function(data, status, jqXHR) {
+												<!--/* なにもしない */-->
+												return resolve(data);
+											}).fail(function(jqXHR, status, errorThrown) {
+												showErrorMessageForJs(/*[[#{E00091}]]*/ "error");
+												return reject();
+											});
+										});
+									};
+									
+									async function resultFnc(data) {
+										<!--/* なにもしない */-->
+										if (data.successed) {
+											// 別タブで
+											let childWindow = window.open(data.url, 'rel=noopener');
+											return Promise.resolve();
+
+										} else {
+											// 作成完了したら
+											if (data.needCreate) {
+												if(confirm('この顧客のフォルダはまだ作成されていません。 作成してもよろしいですか？')) {
+													await createBoxCustomerFoloder(false, false);
+												}
+												return Promise.resolve();
+											} else if (data.needReCreate) {
+												if(confirm(data.message)) {
+													await createBoxCustomerFoloder(false, true);
+												}
+												return Promise.resolve();
+											} else if (data.needReCreateCustomerRoot) {
+												if(confirm(data.message)) {
+													await createBoxCustomerFoloder(true, false);
+												}
+												return Promise.resolve();
+											} else {
+												showErrorMessageForJs(data.message);
+												return Promise.reject();
+											}
+										}
+									};
+									
+									<!--/* 顧客フォルダの作成 */-->
+									function createBoxCustomerFoloder(reCreateCustomerRootFlg, reCreateFlg) {
+										return new Promise((resolve, reject) => {
+											$.ajax({
+												url : /*[[@{/common/api/box/createBoxCustomerFolder}]]*/,
+												type : "POST",
+												data : {
+													"customerId" : /*[[${customerId}]]*/'',
+													"reCreateCustomerRootFlg" : reCreateCustomerRootFlg,
+													"reCreateFlg" : reCreateFlg
+												}
+											})
+											.done(function(data, status, jqXHR) {
+												if (data.successed) {
+													if(confirm(data.message + '\n作成したフォルダを表示しますか？')) {
+														let childWindow = window.open(data.url, 'rel=noopener');
+													}
+													return resolve();
+												} else {
+													showErrorMessageForJs(data.message);
+													return reject();
+												}
+											})
+											.fail(function(jqXHR, status, errorThrown) {
+												<!--/* なにもしない */-->
+												showErrorMessageForJs(/*[[#{E00091}]]*/ "error");
+												return reject();
+											});
+										});
+									};
+								});
+								</script>
+								<a href="javascript:void(0);" class="boxLink">
+									<div class="side_menu_list_contents">
+										<i class="menu_svg box_icon"></i>
+										<span class="nav_menu_txt">Box</span>
+									</div>
+								</a>
+							</li>
+						</th:block>
+						<th:block th:case="${T(jp.loioz.common.constant.CommonConstant$ExternalService).DROPBOX}">
+							<li th:classappend="|is_kokyaku ${(selectedTabClass == 'is_file' ? 'selected' : '')}|" data-placement="right" data-boundary="window" data-container="body" data-trigger="hover" data-title="Dropbox">
+								<script type="text/javascript" th:inline="javascript">
+								$(function() {
+									let createFolderAjaxRunning = false;
+									$('.dropboxLink').on('click', function(e) {
+										if(createFolderAjaxRunning) {
+											return false;
+										}
+										createFolderAjaxRunning = true;
+										Promise.resolve()
+											.then(getCustomerDropboxFolder)
+											.then(resultFnc)
+											.catch((error) => {console.log(error)})
+											.finally(() => {createFolderAjaxRunning = false;});
+									});
+									
+									function getCustomerDropboxFolder() {
+										return new Promise((resolve, reject) => {
+											$.ajax({
+												url : /*[[@{/common/api/dropbox/getCustomerFolderUrl}]]*/'',
+												type : "GET",
+												data : {"customerId" : /*[[${customerId}]]*/''}
+											}).done(function(data, status, jqXHR) {
+												<!--/* なにもしない */-->
+												return resolve(data);
+											}).fail(function(jqXHR, status, errorThrown) {
+												showErrorMessageForJs(/*[[#{E00091}]]*/ "error");
+												return reject();
+											});
+										});
+									};
+									
+									async function resultFnc(data) {
+										<!--/* なにもしない */-->
+										if (data.successed) {
+											// 別タブで
+											let childWindow = window.open(data.url, 'rel=noopener');
+											return Promise.resolve();
+
+										} else {
+											// 作成完了したら
+											if (data.needCreate) {
+												if(confirm('この顧客のフォルダはまだ作成されていません。 作成してもよろしいですか？')) {
+													await createDropboxCustomerFoloder(false, false);
+												}
+												return Promise.resolve();
+											} else if (data.needReCreate) {
+												if(confirm(data.message)) {
+													await createDropboxCustomerFoloder(false, true);
+												}
+												return Promise.resolve();
+											} else if (data.needReCreateCustomerRoot) {
+												if(confirm(data.message)) {
+													await createDropboxCustomerFoloder(true, false);
+												}
+												return Promise.resolve();
+											} else {
+												showErrorMessageForJs(data.message);
+												return Promise.reject();
+											}
+										}
+									};
+									
+									<!--/* 顧客フォルダの作成 */-->
+									function createDropboxCustomerFoloder(reCreateCustomerRootFlg, reCreateFlg) {
+										return new Promise((resolve, reject) => {
+											$.ajax({
+												url : /*[[@{/common/api/dropbox/createDropboxCustomerFolder}]]*/,
+												type : "POST",
+												data : {
+													"customerId" : /*[[${customerId}]]*/'',
+													"reCreateCustomerRootFlg" : reCreateCustomerRootFlg,
+													"reCreateFlg" : reCreateFlg
+												}
+											})
+											.done(function(data, status, jqXHR) {
+												if (data.successed) {
+													if(confirm(data.message + '\n作成したフォルダを表示しますか？')) {
+														let childWindow = window.open(data.url, 'rel=noopener');
+													}
+													return resolve();
+												} else {
+													showErrorMessageForJs(data.message);
+													return reject();
+												}
+											})
+											.fail(function(jqXHR, status, errorThrown) {
+												<!--/* なにもしない */-->
+												showErrorMessageForJs(/*[[#{E00091}]]*/ "error");
+												return reject();
+											});
+										});
+									};
+								});
+								</script>
+								<a href="javascript:void(0);" class="dropboxLink">
+									<div class="side_menu_list_contents">
+										<i class="menu_svg dropbox_icon"></i>
+										<span class="nav_menu_txt">Dropbox</span>
+									</div>
+								</a>
+							</li>
+						</th:block>
+						<th:block th:case=*>
+							<li th:classappend="|is_kokyaku ${(selectedTabClass == 'is_file' ? 'selected' : '')}|" data-placement="right" data-boundary="window" data-container="body" data-trigger="hover" data-title="ファイル">
+								<a th:href="@{/user/fileManagement/list(transitionCustomerId=${customerId})}">
+									<div class="side_menu_list_contents">
+										<i class="far fa-folder-open menu_svg"></i>
+										<span class="nav_menu_txt">ファイル</span>
+									</div>
+								</a>
+							</li>
+						</th:block>
+					</th:block>
+					
+					<th:block th:if="${T(jp.loioz.common.utility.SessionUtils).canUsePlanFunc(T(jp.loioz.common.constant.plan.PlanConstant$PlanFuncRestrict).PF0002)}">
+					
+						<!-- /* 旧会計機能の利用可能判定_ロイオズ管理者制御、テナント機能設定による判定用の値を変数に設定 */ -->
+						<th:block th:with="oldKaikeiIsOpenInLoiozAdminControl=${T(jp.loioz.common.constant.CommonConstant$SystemFlg).FLG_ON.equalsByCode(
+																													T(jp.loioz.common.utility.SessionUtils).getLoiozAdminControlValue(T(jp.loioz.common.constant.LoiozAdminControlConstant$LoiozAdminControl).OLD_KAIKEI_OPEN)
+																												)},
+														oldKaikeiIsOnInTenantFuncSetting=${T(jp.loioz.common.constant.CommonConstant$SystemFlg).FLG_ON.equalsByCode(
+																													T(jp.loioz.common.utility.SessionUtils).getTenantFuncSettingValue(T(jp.loioz.common.constant.TenantFuncSettingConstant$TenantFuncSetting).OLD_KAIKEI_ON_OFF)
+																												)}">
+							<!-- /* 旧会計機能の利用可能判定 */ -->
+							
+							<!-- /* ロイオズ管理者制御でOpenされている */ -->
+							<th:block th:if="${oldKaikeiIsOpenInLoiozAdminControl}">
+								<!-- /* テナント機能設定でONになっている、または、名簿に会計データがある */ -->
+								<th:block th:if="${oldKaikeiIsOnInTenantFuncSetting or customerHeader.existsOldKaikeiData}">
+								
+									<li th:if="${!#lists.isEmpty(ankenList)}" th:classappend="|is_kokyaku ${(selectedTabClass == 'is_kaikei' ? 'selected' : '')}|" data-placement="right" data-boundary="window" data-container="body" data-trigger="hover" data-title="会計管理">
+										<a th:href="@{/user/kaikeiManagement/list(transitionCustomerId=${customerId}, transitionAnkenId=null, isSeisanshoTab=false)}">
+											<div class="side_menu_list_contents">
+												<i class="far fa-credit-card menu_svg"></i>
+												<span class="nav_menu_txt">旧）会計管理</span>
+											</div>
+										</a>
+									</li>
+									<li th:if="${selectedTabClass == 'is_seisansho'}" th:classappend="|is_kokyaku ${(selectedTabClass == 'is_seisansho' ? 'selected' : '')}|" data-placement="right" data-boundary="window" data-container="body" data-trigger="hover" data-title="精算書作成">
+										<a href="javascript:void(0);">
+											<div class="side_menu_list_contents">
+												<i class="fas fa-file-invoice menu_svg menu_anken_svg"></i>
+												<span class="nav_menu_txt">旧）精算書作成</span>
+											</div>
+										</a>
+									</li>
+								
+								</th:block>
+							</th:block>
+						</th:block>
+					
+					</th:block>
+					
+					<!--/* 顧客配下の案件 */-->
+					<li class="anken_data separat_data"></li>
+<!--/*/ 		<th:block th:if="${customerHeader.relatedAnken.size() > 0}"> /*/-->
+					<li class="menu_sub_title_block">
+						<span class="sub_title_anken"></span>
+					</li>
+					<li class="anken_data is_anken" data-placement="right"
+						data-boundary="window" data-container="body" data-trigger="hover" th:title="${#strings.isEmpty(anken.ankenName)} ? '(案件名未入力)' : ${anken.ankenName}"
+						th:each="anken : ${customerHeader.relatedAnken}">
+						<a class="menu_data_list" th:href="@{/user/ankenManagement/edit/{ankenId}/(ankenId=${anken.ankenId.asLong()})}">
+							<div class="d-flex align-items-center">
+								<i class="far fa-file-alt menu_svg menu_anken_svg my-3"></i>
+								<div class="nav_data">
+									<div class="name_text" th:text="${#strings.isEmpty(anken.ankenName)} ? '(案件名未入力)' : ${anken.ankenName}"></div>
+									<div class="sub_text" th:text="${T(jp.loioz.common.constant.CommonConstant$AnkenStatus).of(anken.ankenStatus).getVal()}"></div>
+								</div>
+							</div>
+						</a>
+					</li>
+<!--/*/ 		</th:block> /*/-->
+<!--/*/ 		<th:block th:if="${customerHeader.relatedAnkenCompleted.size() > 0}"> /*/-->
+					<li class="pr-1" data-placement="right" data-boundary="window" data-container="body" data-trigger="hover" th:title="完了済みの案件">
+						<a class="menu_data_list collapse_wrap mb-0" data-toggle="collapse" href="#customerMenuCompletedAnkenWrap" aria-expanded="false" aria-controls="completedAnkenWrap">
+							<div class="d-flex align-items-center">
+								<i class=" fas fa-chevron-down menu_svg icon_wrap"></i>
+								<div class="nav_data">
+									<span class="name_text pl-1">完了済みの案件</span>
+								</div>
+							</div>
+						</a>
+					</li>
+					<li class="collapse" id="customerMenuCompletedAnkenWrap">
+						<ul>
+							<li class="anken_data is_anken" data-placement="right"
+								data-boundary="window" data-container="body" data-trigger="hover" th:title="${#strings.isEmpty(anken.ankenName)} ? '(案件名未入力)' : ${anken.ankenName}"
+								th:each="anken : ${customerHeader.relatedAnkenCompleted}">
+								<a class="menu_data_list" th:href="@{/user/ankenManagement/edit/{ankenId}/(ankenId=${anken.ankenId.asLong()})}">
+									<div class="d-flex align-items-center">
+										<i class="far fa-file-alt menu_svg menu_anken_svg my-3"></i>
+										<div class="nav_data">
+											<div class="name_text" th:text="${#strings.isEmpty(anken.ankenName)} ? '(案件名未入力)' : ${anken.ankenName}"></div>
+											<div class="sub_text" th:text="${T(jp.loioz.common.constant.CommonConstant$AnkenStatus).of(anken.ankenStatus).getVal()}"></div>
+										</div>
+									</div>
+								</a>
+							</li>
+						</ul>
+					</li>
+<!--/*/ 		</th:block> /*/-->
+<!--/*/ 		</th:block> /*/-->
+
+				</th:block>
+				<!--/* メニュータブ（顧客） END */-->
+
+			</ul>
+			
+			<a href="javascript:void(0);" class="nav_sidebar_cl sideBarClose">
+				<i class="fas fa-angle-double-left" data-boundary="window" data-container="body" data-toggle="tooltip" data-trigger="hover" th:title="サイドバーを隠す"></i>
+			</a>
+			<a href="javascript:void(0);" class="nav_sidebar_op sideBarOpen">
+				<i class="fas fa-angle-double-right" data-boundary="window" data-container="body" data-toggle="tooltip" data-trigger="hover" th:title="サイドバーを表示"></i>
+			</a>
+		</div>
+	</div>
+</body>
+</html>

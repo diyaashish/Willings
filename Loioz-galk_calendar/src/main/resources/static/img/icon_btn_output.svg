@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="18" height="15" viewBox="0 0 18 15">
+  <g id="icon_btn_output" transform="translate(-717 -1441)">
+    <g id="長方形_669" data-name="長方形 669" transform="translate(720 1441)" fill="none" stroke="#fff" stroke-miterlimit="10" stroke-width="0.81">
+      <rect width="12" height="13" stroke="none"/>
+      <rect x="0.405" y="0.405" width="11.19" height="12.19" fill="none"/>
+    </g>
+    <rect id="長方形_716" data-name="長方形 716" width="18" height="6" rx="1" transform="translate(717 1450)" fill="#fff"/>
+    <line id="線_575" data-name="線 575" x2="7" transform="translate(722.5 1444.5)" fill="none" stroke="#fff" stroke-width="1"/>
+    <line id="線_576" data-name="線 576" x2="7" transform="translate(722.5 1446.5)" fill="none" stroke="#fff" stroke-width="1"/>
+    <line id="線_577" data-name="線 577" x2="4" transform="translate(722.5 1448.5)" fill="none" stroke="#fff" stroke-width="1"/>
+  </g>
+</svg>

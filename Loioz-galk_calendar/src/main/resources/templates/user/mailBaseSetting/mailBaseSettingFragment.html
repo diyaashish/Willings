@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+	xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+	layout:decorator="commonLayout">
+<head>
+	<meta charset="utf-8" />
+</head>
+<body>
+
+<!--/* 詳細データ */-->
+<div th:fragment="downloadPeriodSettingFragment(downloadPeriodSettingInputForm)" id="downloadPeriodSettingFragment" th:object="${downloadPeriodSettingInputForm}">
+	<script type="text/javascript" th:inline="javascript">
+	$(function() {
+		
+		<!--/* 定数 */-->
+		const downloadPeriodSettingFragmentWrap = $("#downloadPeriodSettingFragmentWrap");
+		const downloadPeriodSettingFragment = $("#downloadPeriodSettingFragment");
+		
+		<!--/* 共有の要素セットアップ処理 */-->
+		commonSetUpElement("#downloadPeriodSettingFragment");
+		
+		<!--/* 保存処理 */-->
+		downloadPeriodSettingFragment.find(".save").on('click', function(e) {
+			const formData = downloadPeriodSettingFragment.find('.downloadPeriodSettingForm').serializeArray();
+			if(ajaxRunning) {
+				return false
+			}
+			ajaxRunning = true;
+			Promise.resolve(formData)
+				.then((param) => {
+					return new Promise((resolve, reject) => {
+						$.ajax({
+							url : '/user/mailBaseSetting/saveDownloadPeriodSetting',
+							type : "POST",
+							data : param
+						}).done(function(data, status, jqXHR) {
+							<!--/* 成功 */-->
+							if (isAjaxProcSuccess(jqXHR)) {
+								showInfoMessageForJs(getAjaxProcResutlMessage(jqXHR));
+								return resolve();
+							} else {
+								if (data) {
+									downloadPeriodSettingFragmentWrap.html(data);
+								}
+								// 処理失敗
+								const errorMsg = getAjaxProcResutlMessage(jqXHR);
+								showErrorMessageForJs(errorMsg);
+								return reject();
+							}
+						}).fail(function(jqXHR, textStatus, errorThrown) {
+							<!--/* 失敗 */-->
+							const errorMsg = /*[[#{E00091}]]*/ "error";
+							showErrorMessageForJs(errorMsg);
+							return reject();
+						});
+					});
+				})
+				.then(getDownloadPeriodSettingFragment)
+				.catch((errors) => console.log(errors))
+				.finally(() => ajaxRunning = false);
+		});
+		
+	});
+	</script>
+	
+	<form class="downloadPeriodSettingForm" th:autocomplete="off">
+		<input type="text" class="hidden" name="dummy" value="dummy"/>
+		<div class="block_title">WEB共有のリンク有効期間</div>
+		<div class="block_detail d-flex">
+			<div>
+				<p>メール受信者がWEB共有のダウンロードリンクにアクセスできる期間を指定します。</p>
+				<p>期間は1日以上で必ず設定する必要があります。</p>
+			</div>
+		</div>
+		<div class="detail_input_area">
+			<div class="form-row">
+				<div class="form-group col-md-12">
+					<div class="d-flex align-items-center">
+						<label class="side_parts_label mr-3">有効期限</label>
+						<input type="text" class="form-control digit5 inputNumberOnly" th:field="*{reportDownloadPeroidDays}" maxlength="3">
+						<label class="side_parts_label ml-2">日</label>
+					</div>
+					<div th:if="*{#fields.hasErrors('reportDownloadPeroidDays')}" th:errors="*{reportDownloadPeroidDays}" class="error_mag_point">error</div>
+				</div>
+			</div>
+		</div>
+		<div class="input_block_btn_area">
+			<button type="button" id="save" class="btn btn-info save"><i class="fas fa-check"></i>保存する</button>
+		</div>
+	</form>
+</div>
+<!--/* 詳細エリア end */-->
+
+<!--/* 詳細データ */-->
+<div th:fragment="mailPasswordSettingFragment(mailPasswordSettingInputForm)" id="mailPasswordSettingFragment" th:object="${mailPasswordSettingInputForm}">
+	<script type="text/javascript" th:inline="javascript">
+	$(function() {
+		
+		<!--/* 定数 */-->
+		const mailPasswordSettingFragmentWrap = $("#mailPasswordSettingFragmentWrap");
+		const mailPasswordSettingFragment = $("#mailPasswordSettingFragment");
+		
+		<!--/* 共有の要素セットアップ処理 */-->
+		commonSetUpElement("#mailPasswordSettingFragment");
+		
+		<!--/* メールパスワード設定保存処理 */-->
+		mailPasswordSettingFragment.find('.save').on('click', function(e) {
+			const formData = mailPasswordSettingFragment.find('.mailPasswordSettingForm').serializeArray();
+			if(ajaxRunning) {
+				return false
+			}
+			ajaxRunning = true;
+			Promise.resolve(formData)
+				.then((param) => {
+					return new Promise((resolve, reject) => {
+						$.ajax({
+							url : '/user/mailBaseSetting/saveMailPasswordSetting',
+							type : "POST",
+							data : param
+						}).done(function(data, status, jqXHR) {
+							<!--/* 成功 */-->
+							if (isAjaxProcSuccess(jqXHR)) {
+								showInfoMessageForJs(getAjaxProcResutlMessage(jqXHR));
+								return resolve();
+							} else {
+								if (data) {
+									mailPasswordSettingFragmentWrap.html(data);
+								}
+								// 処理失敗
+								const errorMsg = getAjaxProcResutlMessage(jqXHR);
+								showErrorMessageForJs(errorMsg);
+								return reject();
+							}
+						}).fail(function(jqXHR, textStatus, errorThrown) {
+							<!--/* 失敗 */-->
+							const errorMsg = /*[[#{E00091}]]*/ "error";
+							showErrorMessageForJs(errorMsg);
+							return reject();
+						});
+					});
+				})
+				.then(getMailPasswordSettingFragment)
+				.catch((errors) => console.log(errors))
+				.finally(() => ajaxRunning = false);
+		});
+		
+	});
+	</script>
+	
+	<form class="mailPasswordSettingForm" th:autocomplete="off">
+		<input type="text" class="hidden" name="dummy" value="dummy" />
+		<div class="block_title">メールパスワード</div>
+		<div class="block_detail d-flex">
+			<div>
+				<p>WEB共有のパスワード設定を既定で有効にすることができます。</p>
+				<p>メールパスワードを有効にした場合、WEB共有のダウンロードリンクにアクセスするためのパスワードが別メールでメール受信者に送信されます。</p>
+			</div>
+		</div>
+		<div class="detail_input_area">
+			<div class="form-row">
+				<div class="form-group col-md-12">
+					<div>
+						<label class="checkbox_btn">
+							<input type="checkbox" class="checkbox_input" th:field="*{DownloadViewPasswordEnabled}">
+							<span class="checkbox_txt">既定で有効にする</span>
+						</label>
+					</div>
+				</div>
+			</div>
+		</div>
+		<div class="input_block_btn_area">
+			<button type="button" id="save" class="btn btn-info save"><i class="fas fa-check"></i>保存する</button>
+		</div>
+	</form>
+</div>
+<!--/* 詳細エリア end */-->
+	
+</body>
+</html>

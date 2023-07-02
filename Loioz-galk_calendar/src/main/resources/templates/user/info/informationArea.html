@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+<meta charset="utf-8" />
+
+<!--/* お知らせ既読処理 */-->
+<script type="text/javascript" th:inline="javascript">
+
+$(function() {
+	
+	let ajaxRunning = false;
+	
+	$(document).on('click', '.closeInfoBySeq', function(){
+
+		<!--/* お知らせ情報 */-->
+		let obj = $(this);
+		const infoMgtSeq = obj.data("seq");
+
+		<!--/* 2重押下防止 */-->
+		if(ajaxRunning){
+			return false;
+		}
+		
+		ajaxRunning = true;
+		
+		<!-- /* お知らせ既読登録 */ -->
+		$.ajax({
+			type : "POST",
+			url : "/user/information/regist",
+			data : {
+				"infoMgtSeq" : infoMgtSeq
+			},
+		}).done(function(result){
+			<!--/* tooltip削除 */-->
+			obj.tooltip('hide');
+			// 対象のお知らせを削除
+			obj.closest("li").remove();
+
+			if (result.succeeded) {
+				// 残りのお知らせ件数を取得
+				const infoCount = $(".information_inner").find("li").length;
+				if (infoCount == 0) {
+					// 0件の場合は、お知らせエリアを削除
+					$(".information_area").remove();
+				}
+			} else {
+				// 何もしない
+			}
+		}).fail(function() {
+			location.reload();
+		}).always(function(){
+			ajaxRunning = false;
+		});
+	});
+	
+})
+
+</script>
+</head>
+<body>
+	<!-- /* お知らせ表示領域  */ -->
+	<div class="information_area" th:fragment="informationArea"
+		th:classappend="${infoForm} != null and ${infoForm.infoOpenFlg} ? '' : 'd-none'">
+		<div class="information_inner">
+			<ul class="list-unstyled" th:if="${infoForm}">
+				<th:block th:each="info : ${infoForm.infoList}">
+					<li>
+						<div class="d-flex flex-row align-items-center">
+							<div class="col justify-content-start align-items-center info_body">
+								<div class="row ml-1">
+									<div class="d-flex flex-row">
+										<!--/* お知らせタイプ ラベル */-->
+										<div th:class="'info_type_label ' +  'info_type' + *{info.infoType}">
+											<div th:text="*{info.infoTypeStr}"></div>
+										</div>
+										<!--/* 表示日時（更新日時） */-->
+										<div class="text-left text-nowrap">
+											<div th:text="${info.updatedAtStr}"></div>
+										</div>
+										<!--/* お知らせ内容 */-->
+										<div class="col-auto text-left ml-4">
+											<div class="row text-nowrap">
+												<div class="d-flex flex-row" myth:txt2link="${info.infoBody}"></div>
+												<div class="ml-3" th:if="${#strings.contains({info.infoBody}, '[A]') && #strings.contains({info.infoBody}, '[/A]')}">
+													<i class="fas fa-external-link-alt"></i>
+												</div>
+											</div>
+										</div>
+									</div>
+								</div>
+							</div>
+							<!--/* 閉じる（既読処理） */-->
+							<div class="col-auto justify-content-end closeInfoBySeq" th:data-seq="${info.infoMgtSeq}" 
+								data-boundary="window" data-container="body" data-toggle="tooltip" data-trigger="hover" title="閉じる">
+								<span class="info_close"></span>
+							</div>
+						</div>
+					</li>
+				</th:block>
+			</ul>
+		</div>
+	</div>
+</body>
+</html>

@@ -1,0 +1,1071 @@
+@charset "UTF-8";
+
+/********************************************************
+ * タスクメニューブロック
+*********************************************************/
+/* タスクモーダルに入力エリア */
+.modal_task_input {
+	max-height: 65vh;
+	overflow-y: auto;
+	overflow-x: hidden;
+	padding-right: 10px;
+	padding: 0 5px;
+	margin: 0 -5px;
+}
+/* タスク件数（新着、未確認タスクが有る場合） */
+.nav_sidebar_user__menu_new_icon {
+	padding-left: 2px;
+	flex: 0 0 14px;
+}
+.nav_sidebar_user__menu_new_icon > svg {
+	color: var(--lz-red-500);
+	position: relative;
+	top: -6px;
+}
+/* 検索ワードボックス */
+.task_search_box {
+	border-radius: 4px 0 0 4px;
+	background: #fff;
+	border: 1px solid #a3a3a3;
+	height: 28px;
+	width: 170px;
+	padding: 2px 10px 0 10px;
+	margin: 15px 0 10px 15px;
+}
+/* 検索ボタン */
+.task_search_btn {
+	width: 45px;
+	height: 28px;
+	border-radius: 0px 4px 4px 0px;
+	background: #63595c;
+	border-color: #63595c;
+	color: #fff;
+	margin: 15px 0 0 0;
+	padding: 2px 0 0 0;
+	transition: all 0.3s;
+	background-image: url(/img/icon_btn_search_wh.svg);
+	background-repeat: no-repeat;
+	background-position: center;
+}
+.task_search_btn:hover {
+	opacity: 0.75;
+	outline: 0;
+}
+.task_anken_name {
+	line-height: 1.4;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+	overflow: hidden;
+	width: 170px;
+	font-size: 1.4rem;
+}
+.task_menu_list .task_anken_name {
+	/* タスク画面のサイドメニューは幅が狭いので調整 */
+	width: 165px;
+}
+.task_anken_customer_name {
+	line-height: 1.3;
+	font-size: 1.2rem;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+	overflow: hidden;
+	width: 165px;
+}
+.plus_anken_task {
+	border-radius: 15px;
+	padding: 4px 8px 2px !important;
+}
+.plus_anken_task:hover {
+	background-color: #e9ecef;
+}
+.task_anken_side_menu_btn_space {
+	width: 19px;
+	color: var(--text-color-sub);
+}
+.task_anken_side_menu_btn {
+	margin-left: 7px;
+	background-color: var(--light);
+	border: 0;
+	cursor: pointer;
+}
+.task_anken_container {
+	margin-top: 5px;
+	margin-left: 1px;
+	display: none;
+}
+.task_anken_menu:hover .task_anken_container {
+	display: inline-block;
+}
+.task_anken_menu:hover .task_anken_side_menu_btn {
+	display: inline-block;
+	background-color: var(--white);
+	border: 0;
+	margin-right: 7px;
+}
+.task_anken_thumbtack {
+	margin-left: 4px;
+	margin-top: 5px;
+	padding-left: 2px;
+	color: var(--text-color-sub);
+}
+.task_anken_menu:hover .task_anken_thumbtack {
+	display: none;
+}
+.task_anken_nav_data {
+	text-align: left;
+}
+.nav_sidebar_user ul.task_menu_list li:hover:not([class="menu_sub_title_block"]) {
+	color: var(--text-color-link);
+} 
+.nav_sidebar_user li.selected .nav_sidebar_user_menu_contents .nav_sidebar_task_anken__menu_cnt {
+	color: var(--text-color-link);
+}
+.nav_sidebar_task_anken__menu_cnt {
+	margin-right: 2px;
+	height: 20px;
+	text-align: right;
+	font-weight: 600;
+	font-size: 1.4rem;
+	color: var(--text-color-sub);
+}
+ul.task_anken_nav_list {
+	list-style: none;
+	padding: 0;
+	margin: 0 0;
+}
+ul.task_anken_nav_list li {
+	width: 100%;
+	text-align: left;
+	padding: 0;
+}
+.task_anken_nav_list li:hover .btn {
+	background-color: #EFF1F3;
+}
+.task_anken_nav_list .btn {
+	background-color: var(--white);
+	border: none;
+	box-shadow: none;
+	color: #14171A;
+	text-align: left;
+	width: 100%;
+}
+.task_anken_popover_thumbtack {
+	position: relative;
+	top: 3px;
+	margin-right: 12px;
+	margin-left: 1px;
+}
+/********************************************************
+ * タスク一覧ブロック
+*********************************************************/
+.task_list_block {
+	flex: 1;
+	padding: 0 5px 0 15px;
+}
+.task_detail_block {
+	flex-basis: 32vw;
+	border-left: 2px solid var(--bor-color-main);
+}
+.anken_task_list_title {
+	margin-right: 6px;
+	overflow: hidden;
+	display: -webkit-box;
+	-webkit-box-orient: vertical;
+	-webkit-line-clamp: 1;
+ }
+.task_anken_list .header_actions_container {
+	/* 案件タスク以外のタスクメニューと表示位置を合わせるためのマージン（メニュー切り替えをした場合にガタガタしないようにするため） */
+	margin-top: 2px;
+}
+/* 選択リストタイトル */
+.selected_list_title {
+	font-size: 2.5rem;
+	font-weight: 600;
+	color: var(--text-color-sub);
+}
+
+/* 案件詳細情報 */
+.case_task_header {
+	-ms-flex-align: start;
+	align-items: flex-start;
+	-ms-flex-wrap: wrap;
+	flex-wrap: wrap;
+	display: -ms-flexbox;
+	display: flex;
+	gap: 10px;
+}
+.case_task_header__name {
+	flex: 1;
+}
+.case_task_header__button {
+	flex: 0 0 100px;
+	margin-left: auto;
+}
+.case_task_info {
+	display: flex;
+	display: -ms-flexbox;
+	flex-wrap: wrap;
+	max-height: 150px;
+	overflow: auto;
+	gap: 10px 25px;
+	padding: 5px 6px 8px;
+}
+.case_task_info__customer {
+}
+.case_task_info__opposing_party {
+}
+.case_task_info__accomplice {
+}
+.case_task_info__victim {
+}
+
+.case_task_info_val {
+	display: flex;
+	display: -ms-flexbox;
+	font-size: 1.5rem;
+	flex-wrap: wrap;
+	gap: 5px 15px;
+	padding: 5px 0;
+}
+
+
+/* 今日の日付 */
+.selected_list_title_day {
+	font-size: 1.7rem;
+	font-weight: 600;
+	color: var(--text-color-title);
+}
+/* 表示切替 */
+.selected_list_disp_task {
+	font-size: 1.5rem;
+}
+.selected_list_disp_task > select.form-control {
+	height: 33px;
+}
+/* 並び替え */
+.selected_list_sort_task {
+	font-size: 1.5rem;
+	margin-right: 10px;
+	margin-left: 10px;
+}
+.selected_list_sort_task > select.form-control {
+	height: 33px;
+}
+/* 並び替え（カレンダー画面用） */
+.schedule_task_list .selected_list_sort_task > select.form-control {
+	margin-top: 2px;
+}
+
+.task_contents__delete {
+	font-size: 1.5rem;
+	flex-basis: 45px;
+	text-align: center;
+}
+.task_list_delete__trash {
+	color: var(--text-color-title);
+	font-size: 1.8rem;
+	display: none;
+}
+.task_compleat:hover .task_list_delete__trash {
+	display: inline-block;
+} 
+.task_list_delete__trash:hover {
+	cursor: pointer!important;
+}
+/* 案件紐付け解除 */
+.unlink_anken_block {
+	flex: 1 0 auto;
+	margin-left: 10px;
+	text-align: right;
+}
+/* 案件紐付け解除ボタン */
+.btn.unlink_anken {
+	color: var(--case-color);
+}
+/* タスクタイプタイトル */
+.task_type_title {
+	padding-bottom: 10px;
+}
+.task_type_title > a {
+	color: var(--text-color-link);
+	padding: 4px 8px 1px;
+	border-radius: 2px;
+	display: inline-block;
+	background-color: var(--bg-color-row-hover);
+	opacity: 0.5;
+	font-weight: 600;
+}
+.task_type_title > a:hover {
+	opacity: 1;
+	text-decoration: none;
+	transition: all 0.25s; 
+}
+.no_data_task {
+	text-align: center;
+	font-size: 2.5rem;
+	font-weight: 600;
+	color: var(--text-color-sub);
+	margin-top: 80px;
+}
+.assign_task_type_title {
+	padding-bottom: 10px;
+	padding-top: 15px;
+}
+.assign_task_type_title > a {
+	color: var(--text-color-link);
+	padding: 4px 8px 1px;
+	border-radius: 2px;
+	display: inline-block;
+	background-color: var(--bg-color-row-hover);
+	opacity: 0.5;
+	font-weight: 600;
+}
+.assign_task_type_title > a:hover {
+	opacity: 1;
+	text-decoration: none;
+	transition: all 0.25s; 
+}
+.task_collapse_open {
+	opacity: 1!important;
+}
+/* タスクデータリスト */
+ ul.task_data_list {
+	padding-left: 0;
+	padding-top: 1px;
+	padding-bottom: 1px;
+	list-style: none;
+}
+ul.task_data_list li {
+	border-top: 1px solid var(--bor-color-main);
+	border-bottom: 1px solid var(--bor-color-main);
+	font-size: 1.4rem;
+	padding: 5px 0;
+	margin-bottom: -1px;
+}
+ul.task_data_list li:hover, ul.task_data_list li:hover:not(.selected) {
+	background-color: var(--bg-color-row-hover);
+	transition: all 0.1s;
+}
+ul.task_data_list li.selected {
+	background-color: var(--bg-color-row-hover-selected);
+	color: var(--text-color-link);
+}
+/* タスクデータリスト内 */
+.task_list_data_block {
+	padding: 0 10px 0 0;
+	margin-bottom: 15px;
+}
+.task_list_assign_data_block {
+	padding: 0 10px 0 0;
+}
+
+/* タスク一覧の1行 */
+.task_row_data {
+	display: flex;
+	display: -ms-flexbox;
+	-ms-flex-align: center;
+	align-items: center;
+	padding: 0 10px 0 0;
+}
+/* タスク一覧の1行目のチェックブロック */
+.task_row_data_check {
+	font-size: 2.5rem;
+	color: var(--text-color-sub);
+	flex-basis: 35px;
+	margin-right: 8px;
+	text-align: right;
+}
+.task_row_data_check:first-child {
+	margin-left: 10px;
+}
+.task_row_data_check svg {
+	cursor: pointer;
+}
+/* タスクドラック */
+.task_row_data .icon_drag_indicator {
+	background-size: 23px;
+	background-position: 1px 0;
+	width: 20px;
+	height: 29px;
+}
+/* タスクチェックの完了状態 */
+.task_check__comp {
+	color: var(--text-color-link);
+}
+.sortable_obj_space {
+	width: 20px;
+	height: 22px;
+	margin-top: 2px;
+}
+/* タスク一覧の内容 */
+.task_contents {
+	cursor: default;
+	flex: 1 1 70%;
+	margin-left: 10px;
+}
+.task_contents_main {
+	display: flex;
+	display: -ms-flexbox;
+	-ms-flex-align: center;
+	align-items: center;
+}
+/* タスクのタイトル */
+.task_contents__title {
+	font-size: 1.6rem;
+	cursor: default;
+	word-break:break-word;
+	flex: 1 0;
+}
+/* 完了のタスクタイトル */
+.task_compleat .task_contents__title {
+	color: var(--disabled-color-text);
+	text-decoration: line-through;
+}
+.task_compleat .relation_link {
+	color: var(--disabled-color-text);
+}
+.edit_title {
+	background-color: var(--bg-color-edit);
+	padding: 10px 8px 0px;
+}
+/* タスク一覧の2行目 */
+.task_contents_sub {
+	display: flex;
+	display: -ms-flexbox;
+	-ms-flex-align: center;
+	align-items: center;
+	flex-wrap: wrap;
+	margin-top: 2px;
+}
+.task_compleat .task_contents_sub {
+	color: var(--disabled-color-text);
+}
+/* 期限 */
+.task_contents_sub__limit {
+	font-size: 1.3rem;
+	margin-right: 15px;
+	min-width: 100px;
+	padding-top: 2px;
+}
+/* 今日のタスク */
+.task_contents_sub__today {
+	font-size: 1.3rem;
+	margin-right: 15px;
+	min-width: 100px;
+	padding-top: 2px;
+}
+/* コメント数 */
+.task_contents_sub__comment {
+	font-size: 1.3rem;
+	margin-right: 15px;
+	min-width: 35px;
+	padding-top: 2px;
+}
+.task_contents_sub__anken {
+	font-size: 1.3rem;
+	margin-right: 15px;
+	padding-top: 2px;
+}
+.task_contents_sub__anken .relation_anken {
+	display: inline-block;
+}
+/* タスク割り当て */
+.task_contents_sub__tanto {
+	padding: 0 0 0 5px;
+	font-size: 2rem;
+	margin-left: auto;
+	align-items: flex-start;
+	display: flex;
+	flex-wrap: wrap;
+}
+.task_contents_sub__tanto > span {
+	display: inline-block;
+	height: 21px;
+	padding: 0px 3px;
+}
+.task_contents_sub__tanto > span > svg {
+	vertical-align: -0.025em;
+}
+/* タスク追加ブロック */
+.add_task_block {
+	margin: 30px 20px 40px 5px;
+	border-radius: 10px;
+}
+/* タスク追加テキストボックス */
+.add_task_text {
+	height: 45px;
+	font-size: 1.6rem;
+	padding: 0 15px;
+	border-color: #495057;
+}
+/* サブタスク件数表示 */
+.check_item_count {
+	color: var(--text-color-sub);
+	margin-left: auto;
+	padding-left: 10px;
+	padding-top: 1px;
+}
+/* タスク進捗表示 */
+.task_list_staus {
+	margin-left: auto;
+	padding-left: 10px;
+}
+.task_list_staus > span {
+	background: #fff9d7;
+	border: 1px solid #c6ac1d;
+	border-radius: 3px;
+	color: #704908;
+	padding: 1px 5px;
+	font-size: 1.3rem;
+}
+
+/********************************************************
+ * タスク一覧（ページャー）
+*********************************************************/
+.pager_block {
+	/* application.cssのスタイルを打ち消し */
+	margin: 0;
+}
+
+/********************************************************
+ * タスク編集ブロック
+*********************************************************/
+.task_edit_wrapper {
+}
+
+/* タスク詳細ヘッダー */
+.task_edit_header {
+	display: flex;
+	display: -ms-flexbox;
+	align-items: center;
+	flex-wrap: wrap;
+	border-bottom: 1px solid var(--bor-color-main);
+	padding: 8px 15px 8px 10px;
+	background-color: var(--white);
+	position: sticky;
+	top: 0;
+	z-index: 999;
+}
+.task_action_block {
+	margin-left: auto;
+}
+.task_action_block > svg {
+	font-size: 2rem;
+	cursor: pointer;
+}
+
+/* タスク詳細ボディ */
+.task_edit_body {
+	padding: 10px 20px 15px 18px;
+	height: calc(100vh - 105px);
+	max-height: calc(100vh - 105px);
+	overflow-y: auto;
+}
+/* 案件紐付け */
+.task_edit_relation_anken_block {
+	/* 配下の要素にchar_ellipsisを設定するため.task_detail_blockの表示幅（32vw）から、解除ボタン分の幅を残すため0.8をかける */
+	max-width: calc(32vw * 0.8);
+	/* 文字が長い場合に「...」の色を文字色と合わせる */
+	color: var(--case-color);
+}
+/* タイトル部 */
+.task_edit_top {
+	margin: 10px 0 5px;
+}
+/* 【表示用】タイトル部 */
+.task_edit_top__title_view {
+	font-size: 1.8rem;
+	font-weight: 600;
+	padding: 6px 5px 4px;
+	margin: 10px 0 0 -5px;
+	line-height: 1.1;
+	word-break:break-word;
+}
+.task_edit_top__title_view:hover {
+	box-shadow: 0px 0px 0px 1px var(--bor-color-main);
+	background-color: var(--bg-color-edit);
+	cursor: pointer;
+}
+.task_edit_top__title_view.task_compleat {
+	text-decoration: line-through;
+	color: var(--disabled-color-text);
+}
+
+/* 【編集用】 */
+.task_edit_top_input {
+	display: -ms-flexbox;
+	display: flex;
+	align-items: flex-start;
+	margin-bottom: 10px;
+}
+.task_edit_top_input__title {
+	flex: 1;
+}
+.task_edit_top_input__check_list {
+	flex: 1;
+}
+
+/* 案件選択 */
+.select_anken {
+	padding: 0;
+	height: 25px;
+	display: inline-block;
+}
+.select_relation_anken {
+	font-size: 1.4rem;
+	padding-top: 1px;
+}
+
+.task_anken_search_no_data {
+	border: none;
+}
+
+.task_anken_search_no_data .no_data {
+	/* .no_dataのスタイルを上書き */
+	height: auto;
+}
+
+.task_anken_search_data_list {
+	border-right: 0;
+	border-left: 0;
+	border-top: 1px solid var(--bor-color-main);
+	border-bottom: 1px solid var(--bor-color-main);
+	font-size: 1.3rem;
+	padding: 5px 0;
+	margin-bottom: -1px;
+	white-space: nowrap;
+	overflow-x: hidden;
+	text-overflow: ellipsis;
+}
+.task_anken_search_data_list:hover{
+	cursor: default;
+	background-color: var(--bg-color-row-hover);
+	transition: all 0.1s;
+}
+
+/* タイトルエリア */
+.task_edit_top_title {
+	display: -ms-flexbox;
+	display: flex;
+	flex: 1 0 auto;
+}
+/* 詳細登録 */
+.task_content {
+	margin: 10px 0 10px;
+}
+.task_content__edit, .task_comment_edit {
+	padding: 8px 8px 5px;
+	background-color: var(--bg-color-edit);
+}
+a.task_content__link {
+	border-radius: 4px;
+	background-color: var(--white);
+	color: var(--text-color-title);
+	display: inline-block;
+	font-size: 1.6rem;
+	height: 50px;
+	width: 100%;
+	padding: 5px;
+}
+a.task_content__link:hover {
+	background-color: var(--bg-color-edit);
+	box-shadow: 0px 0px 0px 1px var(--bor-color-main);
+	border-radius: 1px;
+	color: var(--text-color-sub);
+	opacity: 1;
+	text-decoration: none;
+}
+/* タスク詳細表示 */
+.task_content__view {
+	margin-left: -5px;
+	font-size: 1.6rem;
+	padding: 5px 5px 10px 5px;
+	word-break: break-all;
+}
+.task_content__view.short_content_wrap {
+	padding: 5px 5px 38px 5px;
+}
+.task_content__view:hover {
+	cursor: pointer;
+	box-shadow: 0px 0px 0px 1px var(--bor-color-main);
+	background-color: var(--bg-color-edit);
+}
+.show_all_content_wrap {
+	margin-top: -30px;
+	margin-bottom: 20px !important;
+}
+.task_setting .form-row {
+	-ms-flex-align: center;
+	align-items: center;
+}
+/* タスク担当者 */
+.task_tanto_view {
+	-ms-flex-align: center;
+	align-items: center;
+	-ms-flex-wrap: wrap;
+	flex-wrap: wrap;
+	display: -ms-flexbox;
+	display: flex;
+	padding-left: 6px;
+}
+.task_tanto_view__name {
+	text-overflow: ellipsis;
+	overflow: hidden;
+	white-space: nowrap;
+	max-width: 110px;
+	margin-right: 1.5rem;
+}
+.task_tanto_edit {
+	padding: 0 0 10px;
+}
+.task_tanto_select {
+	padding: 10px 10px 5px 10px;
+	border-radius: 4px;
+	background-color: #ffffff;
+	box-shadow: 0px 0px 5px rgb(0 0 0 / 50%);
+	width: fit-content;
+}
+.task_tanto_select_for_modal {
+	bottom: 10px;
+	left: 85px;
+}
+.task_tanto_select ul {
+	padding: 0;
+	list-style: none;
+	margin: 5px 0;
+	max-height: 180px;
+	overflow-y: auto;
+}
+.task_tanto_select ul li {
+	margin-top: 3px;
+	margin: 3px 5px 3px 2px;
+}
+.task_tanto_select ul li .btn {
+	padding: 0px 7px 3px;
+	width: 100%;
+	text-align: left;
+	border: none;
+	font-size: 1.4rem;
+	max-width: 190px;
+	box-shadow: none;
+}
+.task_tanto_select ul li .btn:hover {
+	background-color: var(--bg-color-row-hover-selected)!important;
+	transition: background-color 100ms linear;
+	opacity: 1;
+}
+.task_tanto_select_title {
+	width: 200px;
+	color: var(--text-color-sub);
+	border-bottom: 1px solid var(--bor-color-main);
+	padding-bottom: 5px;
+}
+.task_tanto_select_footer {
+	border-top: 1px solid var(--bor-color-main);
+	padding-top: 5px;
+	display: flex;
+	justify-content: flex-end;
+}
+.task_tanto_select_no_data > .sub_text {
+	font-size: 1.2rem;
+}
+/* タスク詳細ヘッダー */
+.task_detail_header {
+	border-bottom: 1px solid var(--bor-color-main);
+	-ms-flex-align: center;
+	align-items: center;
+	display: -ms-flexbox;
+	display: flex;
+	padding: 2px;
+	font-weight: 600;
+	font-size: 1.8rem;
+	color: var(--text-color-sub);
+}
+/* タスク詳細ヘッダー */
+.task_detail_body {
+	padding: 0px 0px 0px 0px;
+	margin-bottom: 80px;
+}
+
+/* タブ */
+.task_edit_wrapper .under_line_tab.task_edit_tab {
+	width: fit-content;
+	position: relative;
+	bottom: -7px;
+}
+.task_edit_wrapper .under_line_tab .nav-tabs .nav-item.show .nav-link, .task_edit_wrapper .under_line_tab .nav-tabs .nav-link {
+	width: 110px;
+	padding: 0px 5px 7px;
+	font-size: 1.4rem;
+}
+.task_edit_wrapper .nav-tabs {
+	border-bottom: none;
+}
+.task_edit_wrapper .nav-justified .nav-item {
+	flex: none;
+}
+.task_edit_wrapper .under_line_tab .nav-tabs .under_line_tab__detail > .nav-link {
+	width: 60px;
+}
+.task_edit_wrapper .under_line_tab .nav-tabs .under_line_tab__comment > .nav-link {
+	width: 120px;
+}
+.task_edit_wrapper .under_line_tab .nav-tabs .under_line_tab__activity > .nav-link {
+	width: 120px;
+}
+/* タブの選択状態 */
+.task_edit_wrapper .under_line_tab .nav-tabs .nav-item.show .nav-link, .under_line_tab .nav-tabs .nav-link.active {
+	border-bottom: 3px solid var(--loioz-blue-600);
+	border-right: 0;
+	border-left: 0;
+	border-top: 0;
+}
+/* タブの未選択状態 */
+.nav-tabs .nav-item.show .nav-link, .nav-tabs .nav-link {
+	border-right: 0;
+	border-left: 0;
+	border-top: 0;
+}
+/* タスク詳細入力項目 */
+.task_edit_item {
+	padding: 3px 0px 1px 0px;
+}
+
+/* タスクデータリスト */
+ .task_edit_tab ul {
+	padding-left: 0;
+	list-style: none;
+}
+.task_edit_tab ul li {
+}
+/* 期限登録 */
+.task_detail_body .col-md-4 {
+	padding: 0 0 0 5.5px;
+}
+.task_limit_date {
+	border: 1px solid var(--white);
+	color: var(--text-color-title);
+	font-size: 1.4rem;
+	width: 98px;
+}
+.task_limit_date:hover {
+	background-color: var(--bg-color-edit);
+	box-shadow: 0px 0px 0px 1px var(--bor-color-main);
+	border-radius: 1px;
+	cursor: pointer;
+	opacity: 1;
+}
+.registed_limit_date {
+	color: var(--text-color-main);
+}
+.form-control.task_limit_date:hover::placeholder {
+	color: var(--text-color-title);
+}
+.task_limit_date:focus {
+	background-color: var(--white);
+}
+.btn_limit_delete {
+	padding: 2.5px 8px;
+	margin: 4px 7px 0px 7px;
+	font-size: 1.4rem;
+}
+/* コメント登録 */
+.comment_regist {
+	padding: 0;
+}
+/* コメント一覧、アクティビティ一覧 */
+.comment_list, .activity_list {
+	list-style: none;
+	padding-left: 0;
+}
+.comment_list li {
+	border-bottom: 1px solid var(--bor-color-main);
+	padding: 10px 0;
+}
+/* アクティビティサブテキスト */
+.activity_sub_text {
+	font-size: 1.2rem;
+	color: var(--text-color-gray);
+	margin-bottom: 10px;
+	margin-left: 1px;
+}
+.comment_header > .comment_name {
+	font-weight: 600;
+	font-size: 1.7rem;
+	color: var(--text-color-sub);
+}
+.comment_header > .sub_text {
+	line-height: 1.2;
+}
+.comment_body {
+	padding: 5px 0 0;
+	color: var(--text-color-sub);
+}
+.comment_link {
+	word-wrap:break-word;
+}
+/* テキストボックスフォーカス時の枠線表示無し */
+.textBoxFocusBorderNon:focus {
+	outline: none;
+	border: none;
+}
+/* ボタンの色無し枠線表示無し */
+.btn_today_task {
+	border: 1px solid var(--white);
+	background-color: var(--white);
+	border-radius: 1px;
+	color: var(--text-color-title);
+	width: 100px;
+	text-align: left;
+	font-size: 1.4rem;
+	padding: 3px 5px;
+	position: relative;
+	top: -2px;
+	letter-spacing: normal;
+}
+.btn_today_task.comp_task {
+	color: var(--text-color-main);
+}
+.btn_today_task:hover {
+	border-radius: 1px;
+	box-shadow: 0px 0px 0px 1px var(--bor-color-main);
+	background-color: var(--bg-color-edit);
+	cursor: pointer;
+	color: var(--text-color-sub);
+	opacity: 1;
+}
+/* 担当者選択 */
+.btn_select_tanto {
+	border: 1px solid var(--white);
+	background-color: var(--white);
+	color: var(--text-color-title);
+	display: inline-block;
+	font-size: 1.4rem;
+	padding: 3px 5px;
+	position: relative;
+	top: -4px;
+	width: 100px;
+}
+.btn_select_tanto:hover {
+	box-shadow: 0px 0px 0px 1px var(--bor-color-main);
+	background-color: var(--bg-color-edit);
+	cursor: pointer;
+	color: var(--text-color-sub);
+	opacity: 1;
+	text-decoration: none;
+	border-radius: 1px;
+}
+/* アクティビティの強調 */
+.activity_list__val {
+	font-weight: 600;
+	font-size: 1.7rem;
+	color: var(--text-color-sub);
+	padding: 0 2px;
+}
+/* コメント追加リンク */
+a.task_comment__link {
+	display: inline-block;
+	height: 50px;
+	width: 100%;
+	color: var(--text-color-title);
+	border-radius: 4px;
+	padding: 5px;
+	margin-top: 2px;
+}
+a.task_comment__link:hover {
+	background-color: var(--bg-color-edit);
+	border-radius: 1px;
+	box-shadow: 0px 0px 0px 1px var(--bor-color-main);
+	color: var(--text-color-sub);
+	opacity: 1;
+	text-decoration: none;
+}
+/* チェックリスト */
+.task_check_list {
+	margin: 0;
+	padding-left: 0;
+	padding-top: 1px;
+	padding-bottom: 1px;
+	list-style: none;
+}
+.task_sub_item {
+	min-height: 30px;
+	-ms-flex-align: baseline;
+	align-items: baseline;
+	display: -ms-flexbox;
+	display: flex;
+	margin-bottom: .7rem;
+}
+.task_sub_item .task_edit_top_input__check_list, .task_edit_top_input .task_edit_top_input__check_list {
+	background: var(--bg-color-edit);
+	padding: 7px 5px;
+}
+/* サブタスク hover */
+.task_check_item_name {
+	width: 100%;
+}
+.task_check_item_name:hover {
+	box-shadow: 0px 0px 0px 1px var(--bor-color-main);
+	background-color: var(--bg-color-edit);
+	cursor: pointer;
+	color: var(--text-color-sub);
+}
+.task_check_item_name:hover .check_item_delete__trash {
+	display: inline-block;
+} 
+/* サブタスク完了 hover*/
+.task_check_item_name_compleat {
+	width: 100%;
+	color: var(--disabled-color-text);
+	text-decoration: line-through;
+}
+.task_check_item_name_compleat:hover {
+	box-shadow: 0px 0px 0px 1px var(--bor-color-main);
+	background-color: var(--bg-color-edit);
+	cursor: pointer;
+	color: var(--text-color-sub);
+}
+.task_check_item_name_compleat:hover .check_item_delete__trash {
+	display: inline-block;
+} 
+/* サブタスク名表示 */
+.task_check_item_name_view {
+	width: 95%;
+	padding: 2px  5px;
+}
+.task_check_item_check_box {
+	margin-right: 10px;
+	position: relative;
+	top: 1px;
+}
+/* チェックアイテム削除 hover */
+.check_item_delete__trash {
+	margin-top: 1px;
+	margin-right: 12px;
+	color: var(--text-color-title);
+	display: none;
+}
+.check_item_delete__trash:hover {
+	cursor: pointer!important;
+}
+/********************************************************
+ * タスクモーダル内
+********************************************************/
+.task_anken_info .task_anken_name {
+	color: var(--case-color);
+	font-size: 1.3rem;
+	line-height: 1.4;
+	padding: 3px 5px 0 0;
+}
+.task_anken_info.char_ellipsis {
+	/* 文字が長い場合に「...」の色を文字色と合わせる */
+	color: var(--case-color);
+}
+
+/********************************************************
+ * 案件タスク追加モーダル
+********************************************************/
+.modal_task_anken_add {
+	width: 1150px !important;
+	max-width: 100%;
+}

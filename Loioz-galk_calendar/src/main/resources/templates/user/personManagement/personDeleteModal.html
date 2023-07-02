@@ -1,0 +1,307 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+<meta charset="UTF-8">
+</head>
+<body>
+
+<!--/* 名簿削除モーダル */-->
+<div th:fragment="personDeleteModal" id="personDeleteModalFragment">
+
+	<script th:inline="javascript">
+
+		<!--/* フラグメント表示時の初期処理*/-->
+		function setUpHTML() {
+			if(!$('#deleteTargetPersonId').val()) {
+				<!--/* 排他メッセージ */-->
+				showErrorMessage([[#{E00025}]], $("#personDeleteModal"));
+			}
+			if($('#deleteTargetCustomerType').val() == /*[[${{T(jp.loioz.common.constant.CommonConstant$CustomerType).HOJIN}}]]*/ 0){
+				$('#deleteInputCustomerNameSei').attr('placeholder','名前').attr("maxlength", '64').end();
+				$('#deleteInputCustomerNameMei').addClass('hidden');
+				$('#houjinItem').removeClass('col-md-5');
+				$('#houjinItem').addClass('col-md-10');
+			}
+		}
+		
+		$(function() {
+			
+			let ajaxRunning = false;
+			
+			<!--/* 会計機能が使用できるプランか */-->
+			const canUseKaikei = [[${T(jp.loioz.common.utility.SessionUtils).canUsePlanFunc(T(jp.loioz.common.constant.plan.PlanConstant$PlanFuncRestrict).PF0002)}]];
+			
+			<!--/* 名簿削除説明文 */-->
+			let explainDelete = 
+				'<div class="popover popover_delete_customer_msg html-content" role="tooltip">' +
+					'<div class="popover-body py-3 px-4">' +
+						'削除者に特定のデータが登録されている場合、削除できません。<br>' +
+						'詳細は下記をご確認ください。' +
+						'<div class="mb-3 mt-3">' +
+							'■案件情報について' +
+							'<div class="ml-2 mb-3">' +
+								'【案件情報】' +
+								'<div class="ml-4">' +
+									'<div>・案件に削除者以外の顧客が設定されている</div>' +
+									'<div>・削除者の顧客情報に、<br>　受任日、事件処理完了日、精算完了日が設定されている</div>' +
+								'</div>' +
+							'</div>' +
+							'<div class="ml-2 mb-3">' +
+								'【案件ダッシュボード】' +
+								'<div class="ml-4">' +
+									'<div>・予定情報</div>' +
+								'</div>' +
+							'</div>' +
+							'<div class="ml-2 mb-3">' +
+								'【裁判管理】' +
+								'<div class="ml-4">' +
+									'<div>・裁判情報</div>' +
+								'</div>' +
+							'</div>' +
+							'<div class="ml-2 mb-3">' +
+								'【預り品】' +
+								'<div class="ml-4">' +
+									'<div>・預り品（削除者が預り元、返却先として設定されているもの）</div>' +
+								'</div>' +
+							'</div>';
+			
+			<!--/* 会計機能が使用できるプランの場合は、名簿が削除できない条件に会計データを追加 */-->
+			if (canUseKaikei) {
+				explainDelete += 
+							'<div class="ml-2">' +
+								'【会計管理】' +
+								'<div class="ml-4">' +
+									'<div>・会計データ</div>' +
+								'</div>' +
+							'</div>';
+			}
+			
+			explainDelete +=
+						'</div>'+
+						'<div class="mb-3">' +
+							'■関与案件について' +
+							'<div class="ml-2 mb-3">' +
+								'【預り品】' +
+								'<div class="ml-4">' +
+									'<div>・預り品（削除者が預り元、返却先として設定されているもの）</div>' +
+								'</div>' +
+							'</div>';
+			
+			<!--/* 会計機能が使用できるプランの場合は、名簿が削除できない条件に会計データを追加 */-->
+			if (canUseKaikei) {
+				explainDelete += 
+							'<div class="ml-2">' +
+								'【会計管理】' +
+								'<div class="ml-4">' +
+									'<div>・会計データ（削除者が設定されているもの）</div>' +
+								'</div>' +
+							'</div>';
+			}
+			
+			explainDelete +=
+						'</div>'+
+						'<div class="mb-3">' +
+							'■その他' +
+							'<div class="ml-2 mb-3">' +
+								'【顧問契約】' +
+								'<div class="ml-4">' +
+									'<div>・顧問契約</div>' +
+								'</div>' +
+							'</div>' +
+							'<div class="ml-2">' +
+								'【名簿情報】' +
+								'<div class="ml-4">' +
+									'<div>・直近の予定</div>' +
+								'</div>' +
+						'</div>' +
+						'</div>'+
+					'</div>' +
+				'</div>';
+			
+			<!--/* 削除説明ポップアップの表示*/-->
+			$('#personDeleteModalFragment .explainDelete').popover({
+				container: "body",
+				boundary: "viewport",
+				trigger: "click",
+				placement: "right",
+				template: explainDelete,
+				content: function(){}
+			});
+			
+			<!--/* 表示時の初期処理*/-->
+			<!--/* ※関数内で削除ボップアップ表示のクリックイベントを発火させるため、上記のクリックイベント設定処理よりあとに実行している*/-->
+			setUpHTML();
+			
+			$('#personDeleteModalFragment').on('keyup', '.delete_customer_match', function() {
+				 let personIdSouce = $('#deleteTargetPersonId').val();
+				 <!--/* モーダル表示時に名簿情報が削除されている（名簿IDが無い）場合、処理終了 */-->
+				 if(!personIdSouce) {
+					 return;
+				 }
+				 let customerNameSeiSource = $('#deleteTargetCustomerNameSei').val();
+				 let customerNameMeiSource = $('#deleteTargetCustomerNameMei').val();
+				 if($('#deleteTargetCustomerType').val() == /*[[${{T(jp.loioz.common.constant.CommonConstant$CustomerType).KOJIN}}]]*/ 0){
+					 if(personIdSouce == $('#deleteInputPersonId').val() && customerNameSeiSource == $('#deleteInputCustomerNameSei').val() && customerNameMeiSource == $('#deleteInputCustomerNameMei').val()){
+						 $('#customerDeleteButton').removeClass('btn-secondary');
+						 $('#customerDeleteButton').addClass('btn-danger');
+						 $('#customerDeleteButton').prop('disabled', false);
+					 }else{
+						 $('#customerDeleteButton').addClass('btn-secondary');
+						 $('#customerDeleteButton').removeClass('btn-danger');
+						 $('#customerDeleteButton').prop('disabled', true);
+					 }
+				 }else if($('#deleteTargetCustomerType').val() == /*[[${{T(jp.loioz.common.constant.CommonConstant$CustomerType).HOJIN}}]]*/ 1){
+					 if(personIdSouce == $('#deleteInputPersonId').val() && customerNameSeiSource == $('#deleteInputCustomerNameSei').val()){
+						 $('#customerDeleteButton').removeClass('btn-secondary');
+						 $('#customerDeleteButton').addClass('btn-danger');
+						 $('#customerDeleteButton').prop('disabled', false);
+					 }else{
+						 $('#customerDeleteButton').addClass('btn-secondary');
+						 $('#customerDeleteButton').removeClass('btn-danger');
+						 $('#customerDeleteButton').prop('disabled', true);
+					 }
+				 }else{
+					 if(personIdSouce == $('#deleteInputPersonId').val() && customerNameSeiSource == $('#deleteInputCustomerNameSei').val() && customerNameMeiSource == $('#deleteInputCustomerNameMei').val()){
+						 $('#customerDeleteButton').removeClass('btn-secondary');
+						 $('#customerDeleteButton').addClass('btn-danger');
+						 $('#customerDeleteButton').prop('disabled', false);
+					 }else{
+						 $('#customerDeleteButton').addClass('btn-secondary');
+						 $('#customerDeleteButton').removeClass('btn-danger');
+						 $('#customerDeleteButton').prop('disabled', true);
+					 }
+				 }
+			});
+
+			$('#personDeleteModalFragment #customerDeleteButton').on("click", function() {
+
+				if(!confirm('削除してもよろしいですか?')){
+					return false;
+				}
+				
+				if (ajaxRunning) {
+					return false;
+				}
+				ajaxRunning = true;
+				
+				const personId = $('#deleteTargetPersonId').val();
+				
+				<!--/* 名簿情報の削除 */-->
+				Promise.resolve()
+					.then(() => deleteBeforeCheck(personId))
+					.then(() => deletePerson(personId))
+					.then(() => deleteAfter())
+					.catch((errorObj) => console.log(errorObj))
+					.finally(() => ajaxRunning = false);
+			});
+
+			<!--/* 名簿情報の削除 */-->
+			function deletePerson(personId) {
+				return new Promise((resolve, reject) => {
+					$.ajax({
+						url : "/user/personManagement/deletePerson",
+						type : "POST",
+						data : {
+							"personId" : personId
+						}
+					}).done(function(result) {
+						if(result.succeeded){
+							return resolve();
+						} else {
+							showErrorMessage(result.message, $("#personDeleteModal"), result.errors);
+							return reject([result]);
+						}
+					}).fail(function(jqXHR, textStatus, errorThrown) {
+						alert([[#{E00014}]]);
+						return reject(jqXHR, status, errorThrown);
+					});
+				});
+			}
+
+			<!--/* 名簿情報の削除前チェック */-->
+			function deleteBeforeCheck(personId) {
+				return new Promise((resolve, reject) => {
+					$.ajax({
+						type : "POST",
+						url : "/user/personManagement/deleteKanyoshaBeforeCheck",
+						data : {
+							"personId": personId,
+						},
+					}).done(function(data) {
+						if (data.needConfirm && !confirm(data.message)) {
+							return reject();
+						} else {
+							return resolve();
+						}
+					}).fail(function(jqXHR, status, errorThrown) {
+						alert([[#{E00014}]]);
+						return reject(jqXHR, status, errorThrown);
+					});
+				});
+			}
+
+			<!--/* 名簿削除後処理（メッセージ表示、名簿一覧へ遷移） */-->
+			function deleteAfter() {
+				return new Promise((resolve, reject) => {
+					alert([[#{I00001}]]);
+					window.location.href ="/user/meiboList/";
+					return resolve();
+				});
+			}
+
+		})
+	</script>
+	<div class="modal-header">
+		<h2 class="modalheader_title bg-danger" th:text="名簿削除"></h2>
+	</div>
+	<div class="modal-body">
+		<div th:replace="common/messageArea::jsMessageArea"></div>
+		<div class="warn_msg_edit msgText">
+			<div>削除した名簿情報は復元することができません。</div>
+			<div>十分に確認したうえで削除を行ってください。</div>
+			<div>※間違い防止のため、名簿ID、名前を正確に入力してください。
+				<span class="explainDelete">
+					<i class="fas fa-info-circle cursor_pointer" data-outside='close'></i>
+				</span>
+			</div>
+		</div>
+		<input type="hidden" id="customerId" maxlength="4">
+		<!-- 入力エリア -->
+		<div class="modal_input_area">
+			<!-- 名称 -->
+			<div class="form-row">
+				<div class="input_parts form-group col-md-5">
+					<label>名簿ID</label>
+					<span class="mark_equired">必須</span>
+					<input type="text" id="deleteInputPersonId" class="form-control delete_customer_match input_number_only" maxlength="10" placeholder="半角数字のみ">
+					<input type="hidden" id="deleteTargetPersonId" th:field="${personDeleteForm.personId}">
+					<input type="hidden" id="deleteTargetCustomerType" th:field="${personDeleteForm.customerType}">
+					<input type="hidden" id="deleteTargetCustomerNameSei" th:field="${personDeleteForm.customerNameSei}">
+					<input type="hidden" id="deleteTargetCustomerNameMei" th:field="${personDeleteForm.customerNameMei}">
+					<input type="hidden" id="deleteTargetCustomerFlg" th:field="${personDeleteForm.customerFlg}">
+				</div>
+			</div>
+			<!-- 名称 -->
+			<div class="form-row">
+				<div class="input_parts form-group col-md-12 mb-0">
+					<label id="deleteCustomerNameTitle">名前</label>
+					<span class="mark_equired">必須</span>
+				</div>
+			</div>
+			<div class="form-row">
+				<div class="input_parts form-group col-md-5" id="houjinItem">
+					<input type="text" id="deleteInputCustomerNameSei" class="form-control delete_customer_match" maxlength="24" autocomplete="off" placeholder="姓">
+				</div>
+				<div class="input_parts form-group col-md-5">
+					<input type="text" id="deleteInputCustomerNameMei" class="form-control delete_customer_match kojinItem" maxlength="24" autocomplete="off" placeholder="名">
+				</div>
+			</div>
+		</div>
+	</div>
+	<div class="modal-footer">
+		<button type="button" class="btn btn-secondary" id="customerDeleteButton" disabled="disabled"><i class="far fa-trash-alt"></i>削除</button>
+		<button type="button" class="btn btn-light" id="customerDeleteButtonClose" data-dismiss="modal"><i class="fas fa-times"></i>閉じる</button>
+	</div>
+</div>
+</body>
+</html>

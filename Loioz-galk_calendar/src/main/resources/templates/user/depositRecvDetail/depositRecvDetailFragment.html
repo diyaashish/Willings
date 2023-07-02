@@ -1,0 +1,900 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+	xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+	layout:decorator="commonLayout">
+<head>
+	<meta charset="utf-8" />
+</head>
+<body>
+
+<!--/* 詳細データ */-->
+<div th:fragment="depositRecvDetailFragment(depositRecvDetailViewForm)" id="depositRecvDetailFragment" th:object="${viewForm}">
+	<script type="text/javascript" th:inline="javascript">
+	$(function() {
+		<!--/* 共有の要素セットアップ処理 */-->
+		commonSetUpElement("#depositRecvDetailFragment");
+		
+		const depositRecvDetailFragment = $('#depositRecvDetailFragment');
+		
+		<!--/* チェックボックス全選択・全解除 */-->
+		depositRecvDetailFragment.on('click', '.checkBoxAllCheck', function(){
+			$('.targetCheck').prop("checked", $(this).prop("checked"));
+		});
+		
+		<!--/* チェックボックスのチェック数を反映 */-->
+		depositRecvDetailFragment.on("click", '.checkBoxAllCheck, .targetCheck', function(){
+			let checkCnt = $('.targetCheck:checked').length;
+			$('.checkCnt').html(checkCnt);
+		});
+		
+		<!--/* 明細出力をクリック */-->
+		depositRecvDetailFragment.on("click", '.excelOutput', function(){
+			const personId = /*[[${personId}]]*/;
+			const ankenId = /*[[${ankenId}]]*/;
+			
+			const url = "/user/depositRecvDetail/" + personId + "/" + ankenId + "/outputDepositRecvDetailExcel";
+			const button = $(this);
+			let formData = {};
+			downloadFileAjax(url, button, formData);
+			
+			return false;
+		});
+		
+		<!--/* 追加のリンクをクリック */-->
+		depositRecvDetailFragment.on("click", '.addDepositRecv', function(){
+			const personId = /*[[${personId}]]*/;
+			const ankenId = /*[[${ankenId}]]*/;
+			
+			<!--/* 2重押下防止 */-->
+			if(ajaxRunning){
+				return false;
+			}
+			
+			ajaxRunning = true;
+			$.ajax({
+				url : "/user/depositRecvDetail/" + personId + "/" + ankenId + "/getDepositRecvDetailInputRow",
+				type : "GET"
+			})
+			.done(function(data, status, jqXHR) {
+				if (isAjaxProcSuccess(jqXHR)) {
+					<!--/* 処理成功 */-->
+					$('#depositRecvDetailInputRowFragmentWrap').html(data);
+					<!--/* 画面の表示位置を預り金の入力フラグメントまでスクロール（画面上部から50px下へ） */-->
+					const adjust = 50;
+					const position = $('#depositRecvDetailInputRowFragmentWrap').position().top - adjust;
+					$(window).scrollTop(position);
+				} else {
+					<!--/* 処理失敗 */-->
+					const errorMsg = getAjaxProcResutlMessage(jqXHR);
+					showErrorMessageForJs(errorMsg);
+				}
+			})
+			.fail(function(jqXHR, status, errorThrown) {
+				showErrorMessageForJs(/*[[#{E00091}]]*/ "error");
+			})
+			.always(function(){
+				ajaxRunning = false;
+			});
+		});
+		
+		<!--/* 登録フォーム閉じる処理 */-->
+		depositRecvDetailFragment.on("click", '.closeAddRow', function(){
+			$('#depositRecvDetailInputRowFragmentWrap').html('');
+		});
+		
+		<!--/* ソート処理 */-->
+		depositRecvDetailFragment.find('.depositRecvDetailSort').on('click', function(){
+			const asc = /*[[${T(jp.loioz.common.constant.SortConstant$SortOrder).ASC.getCd()}]]*/'';
+			const desc = /*[[${T(jp.loioz.common.constant.SortConstant$SortOrder).DESC.getCd()}]]*/'';
+			
+			const currentSortItem = /*[[${depositRecvDetailSearchForm.depositRecvDetailSortItem}]]*/'';
+			const currentSortOrder = /*[[${depositRecvDetailSearchForm.depositRecvDetailSortOrder}]]*/'';
+			let optionParam = [];
+			
+			const sortKey = $(this).data('sortKey');
+			if (sortKey != currentSortItem) {
+				optionParam = [
+					{name:"depositRecvDetailSortItem", value:sortKey},
+					{name:"depositRecvDetailSortOrder", value:desc},
+				];
+			} else {
+				if (currentSortOrder === asc) {
+					optionParam = [
+						{name:"depositRecvDetailSortOrder", value:desc},
+					];
+				} 
+				
+				if (currentSortOrder === desc) {
+					optionParam = [
+						{name:"depositRecvDetailSortOrder", value:asc},
+					]
+				} 
+			}
+			
+			if (ajaxRunning) {
+				return false;
+			}
+			ajaxRunning = true;
+			Promise.resolve(optionParam)
+				.then(sortDepositRecvDetailListFunc)
+				.catch((errorObj) => console.log())
+				.finally(() => ajaxRunning = false);
+		});
+		
+		<!--/* 編集用フラグメント表示処理 */-->
+		depositRecvDetailFragment.on("click", '.openEditDepositRecvFragment', function(){
+			
+			const personId = /*[[${personId}]]*/;
+			const ankenId = /*[[${ankenId}]]*/;
+			const depositRecvSeq = $(this).data("depositRecvSeq");
+			let isChecked = $(this).closest('#depositRow_' + depositRecvSeq).find('.targetCheck').prop('checked');
+			if (isChecked == null) {
+				isChecked = false;
+			}
+			const param = {
+				"depositRecvSeq": depositRecvSeq,
+				"isChecked": isChecked
+			}
+			
+			<!--/* 2重押下防止 */-->
+			if(ajaxRunning){
+				return false;
+			}
+			ajaxRunning = true;
+			
+			Promise.resolve(param)
+				.then(checkOfBeforeEditDepositRecvFunc)
+				.then(openEditDepositRecvFragmentFunc)
+				.catch((errorObj) => console.log())
+				.finally(() => ajaxRunning = false);
+		});
+		
+		<!--/* 削除処理 */-->
+		depositRecvDetailFragment.on("click", '.deleteDepositRecv', function(){
+			
+			const personId = /*[[${personId}]]*/;
+			const ankenId = /*[[${ankenId}]]*/;
+			const depositRecvSeq = $(this).data("depositRecvSeq");
+			const param = {
+				"depositRecvSeq": depositRecvSeq
+			}
+			
+			<!--/* 2重押下防止 */-->
+			if(ajaxRunning){
+				return false;
+			}
+			ajaxRunning = true;
+			
+			Promise.resolve(param)
+				.then(checkOfBeforeDeleteDepositRecvFunc)
+				.then(deleteDepositRecvFunc)
+				.catch((errorObj) => console.log())
+				.finally(() => ajaxRunning = false);
+		});
+		
+		<!--/* 請求書番号をクリック */-->
+		depositRecvDetailFragment.on("click", '.transitionInvoice', function(e){
+			e.stopPropagation();
+			const invoiceSeq = $(this).data("invoiceSeq");
+			<!--/* 請求書詳細画面へ遷移 */-->
+			window.location.href = "/user/invoiceDetail/" + invoiceSeq + "/?isAccgAnkenSide=" + isAccgAnkenSide();
+		});
+		
+		<!--/* 精算書番号をクリック */-->
+		depositRecvDetailFragment.on("click", '.transitionStatement', function(e){
+			e.stopPropagation();
+			const statementSeq = $(this).data("statementSeq");
+			<!--/* 精算書詳細画面へ遷移 */-->
+			window.location.href = "/user/statementDetail/" + statementSeq + "/?isAccgAnkenSide=" + isAccgAnkenSide();
+		});
+		
+		<!--/* 請求書作成ボタンをクリック */-->
+		depositRecvDetailFragment.on("click", '.registInvoice', function(e) {
+			<!--/* 2重押下防止 */-->
+			if(ajaxRunning){
+				return false;
+			}
+			
+			if(!confirm(/*[[#{confirm.C00001(請求書)}]]*/'')) {
+				return false;
+			}
+			
+			ajaxRunning = true;
+			
+			const personId = /*[[${personId}]]*/;
+			const ankenId = /*[[${ankenId}]]*/;
+			const depositRecvSeqArray = $(".targetCheck:checked").map(function(){
+				return $(this).data('depositRecvSeq');
+			}).get();
+			
+			<!--/* リクエストパラメータ */-->
+			const requestParam = [
+				{name:"ankenId", value:ankenId},
+				{name:"personId", value:personId},
+				{name:"depositRecvSeqList", value:depositRecvSeqArray}
+			];
+			
+			$.ajax({
+				type : "POST",
+				url : "/common/mvc/accgDocRegist/registInvoiceAndLinkFeeAndDeposit",
+				data : requestParam,
+			}).done(function(result, status, jqXHR) {
+				if (getAjaxProcResutl(jqXHR) == /*[[${T(jp.loioz.app.common.mvc.accgDocRegist.controller.AccgDocRegistCommonController).HEADER_VALUE_OF_AJAX_PROC_RESULT_ACCG_DOC_REGIST_REDIRECT}]]*/'100') {
+					$('.checkbox_input').removeAttr("checked").prop("checked", false).change();
+					window.location.href = getAjaxProcResutlMessage(jqXHR) +"&isAccgAnkenSide=" + isAccgAnkenSide();
+				} else {
+					const errorMsg = getAjaxProcResutlMessage(jqXHR);
+					showErrorMessageForJs(errorMsg);
+				}
+			})
+			.fail(function(jqXHR, status, errorThrown) {
+				showErrorMessageForJs(/*[[#{E00091}]]*/ "error");
+			})
+			.always(function() {
+				ajaxRunning = false;
+			});
+		});
+		
+		<!--/* 精算書作成ボタンをクリック */-->
+		depositRecvDetailFragment.on("click", '.registStatement', function(e){
+			<!--/* 2重押下防止 */-->
+			if(ajaxRunning){
+				return false;
+			}
+			
+			if(!confirm(/*[[#{confirm.C00001(精算書)}]]*/'')) {
+				return false;
+			}
+			
+			ajaxRunning = true;
+			
+			const personId = /*[[${personId}]]*/;
+			const ankenId = /*[[${ankenId}]]*/;
+			const depositRecvSeqArray = $(".targetCheck:checked").map(function(){
+				return $(this).data('depositRecvSeq');
+			}).get();
+			
+			<!--/* リクエストパラメータ */-->
+			const requestParam = [
+				{name:"ankenId", value:ankenId},
+				{name:"personId", value:personId},
+				{name:"depositRecvSeqList", value:depositRecvSeqArray}
+			];
+			
+			$.ajax({
+				type : "POST",
+				url : "/common/mvc/accgDocRegist/registStatementAndLinkFeeAndDeposit",
+				data : requestParam,
+			}).done(function(result, status, jqXHR) {
+				if (getAjaxProcResutl(jqXHR) == /*[[${T(jp.loioz.app.common.mvc.accgDocRegist.controller.AccgDocRegistCommonController).HEADER_VALUE_OF_AJAX_PROC_RESULT_ACCG_DOC_REGIST_REDIRECT}]]*/'100') {
+					$('.checkbox_input').removeAttr("checked").prop("checked", false).change();
+					window.location.href = getAjaxProcResutlMessage(jqXHR) + "&isAccgAnkenSide=" + isAccgAnkenSide();
+				} else {
+					const errorMsg = getAjaxProcResutlMessage(jqXHR);
+					showErrorMessageForJs(errorMsg);
+				}
+			})
+			.fail(function(jqXHR, status, errorThrown) {
+				showErrorMessageForJs(/*[[#{E00091}]]*/ "error");
+			})
+			.always(function() {
+				ajaxRunning = false;
+			});
+		});
+		
+	});
+	</script>
+	
+	<div class="accg_main_split">
+		
+		<div class="accg_main_split__left">
+
+			<div class="accg_main_top_split">
+			
+				<!--/* 会計管理用の案件情報 */-->
+				<div id="accgCaseFragmentWrap" class="accg_main_top_split__case"
+					th:insert="common/accg/accgCase::accgCaseFragment(accgCaseForm=${viewForm.getAccgCaseForm()}, isDeposit=true)">
+				</div>
+			
+				<!--/* 会計サマリ */-->
+				<div id="accgCaseSummaryFragmentWrap" class="accg_main_top_split__total"
+					th:insert="common/accg/accgCaseSummary::accgCaseSummaryFragment(accgCaseSummaryForm=${viewForm.getAccgCaseSummaryForm()}, isDeposit=true)">
+				</div>
+				
+			</div>
+			
+			<!--/* 詳細一覧 */-->
+			<section class="mt-1">
+				<div class="section_header">
+					<div class="section_header__title">
+						<span class="ml-4 mr-3">
+							<span class="fs20 checkCnt">0</span><span class="fs14 fw0 mx-1">件</span><span class="fs14 fw0">選択中</span>
+						</span>
+						<span class="section_header__title__btn">
+							<button type="button" class="btn btn-light text-info registInvoice">請求書作成</button>
+							<button type="button" class="btn btn-light text-info registStatement">精算書作成</button>
+						</span>
+					</div>
+					<div class="section_header__action">
+						<a href="javascript:void(0);" class="mr-3 excelOutput">
+							<i class="fas fa-download mr-1"></i>
+							<i class="fas fa-spinner mr-1 faa-spin animated hidden"></i>明細出力
+						</a>
+	<th:block th:with="depositRecvAddRegistLimit=${(T(jp.loioz.common.constant.CommonConstant).DEPOSIT_RECV_ADD_REGIST_LIMIT)}">
+						<a href="javascript:void(0);" th:if="${viewForm.getDepositRecvDetailList().size() < depositRecvAddRegistLimit}"
+							class="fs15 pr-4 addDepositRecv"><i class="fas fa-plus-square mr-2"></i>項目を追加</a>
+	</th:block>
+					</div>
+				</div>
+				<div class="section_body">
+					<div class="section_body__contents p-0">
+	<!--/* 預り金項目が0件の場合 */-->
+	<th:block th:if="${viewForm.getDepositRecvDetailList().size() == 0}">
+						<div class="py-3 px-4">
+							<span>預り金／実費の登録がありません。</span>
+						</div>
+	</th:block>
+	
+	<!--/* 預り金項目が1件以上の場合 */-->
+	<th:block th:if="${viewForm.getDepositRecvDetailList().size() > 0}">
+						<div class="hover_scroll of_x_scroll">
+							<table class="table table_standard deposit_recv_detail_list">
+								<thead>
+									<tr>
+										<th class="th_deposit_item_check text-center">
+											<label class="checkbox_btn no_text">
+												<input type="checkbox" class="checkbox_input checkBoxAllCheck">
+												<span class="checkbox_txt"></span>
+											</label>
+										</th>
+										<th class="th_deposit_type sort_column depositRecvDetailSort"
+											th:with="sortItem=${(T(jp.loioz.common.constant.SortConstant$DepositRecvDetailSortItem).DEPOSIT_TYPE)}"
+											th:data-sort-key="${sortItem.getCd()}">
+											種別
+											<th:block th:if="${sortItem == depositRecvDetailSearchForm.depositRecvDetailSortItem}" th:fragment="depositRecvDetailColumn">
+												<th:block th:if="${depositRecvDetailSearchForm.depositRecvDetailSortOrder == T(jp.loioz.common.constant.SortConstant$SortOrder).ASC}">
+													<i class="fas fa-chevron-up"></i>
+												</th:block>
+												<th:block th:if="${depositRecvDetailSearchForm.depositRecvDetailSortOrder == T(jp.loioz.common.constant.SortConstant$SortOrder).DESC}">
+													<i class="fas fa-chevron-down"></i>
+												</th:block>
+											</th:block>
+										</th>
+										<th class="th_deposit_item_name sort_column depositRecvDetailSort"
+											th:with="sortItem=${(T(jp.loioz.common.constant.SortConstant$DepositRecvDetailSortItem).ITEM)}"
+											th:data-sort-key="${sortItem.getCd()}">
+											項目
+											<th:block th:replace="::depositRecvDetailColumn"></th:block>
+										</th>
+										<th class="th_deposit_date sort_column depositRecvDetailSort"
+											th:with="sortItem=${(T(jp.loioz.common.constant.SortConstant$DepositRecvDetailSortItem).DEPOSIT_DATE)}"
+											th:data-sort-key="${sortItem.getCd()}">
+											発生日
+											<th:block th:replace="::depositRecvDetailColumn"></th:block>
+										</th>
+										<th class="th_deposit sort_column text-right depositRecvDetailSort"
+											th:with="sortItem=${(T(jp.loioz.common.constant.SortConstant$DepositRecvDetailSortItem).DEPOSIT_AMOUNT)}"
+											th:data-sort-key="${sortItem.getCd()}">
+											<div class="ws_nowarp d-flex align-items-center justify-content-end">
+												<div>
+													入金額
+												</div>
+												<div class="mnw15" th:insert="::depositRecvDetailColumn"></div>
+											</div>
+										</th>
+										<th class="th_withdrawal sort_column text-right depositRecvDetailSort"
+											th:with="sortItem=${(T(jp.loioz.common.constant.SortConstant$DepositRecvDetailSortItem).WITHDRAWAL_AMOUNT)}"
+											th:data-sort-key="${sortItem.getCd()}">
+											<div class="ws_nowarp d-flex align-items-center justify-content-end">
+												<div>
+													出金額
+												</div>
+												<div class="mnw15" th:insert="::depositRecvDetailColumn"></div>
+											</div>
+										</th>
+										<th class="th_sum_text">摘要</th>
+										<th class="th_deposit_memo">内部メモ</th>
+										<th class="th_doc">請求書／精算書</th>
+										<th class="th_operation">編集／削除</th>
+									</tr>
+								</thead>
+								<tbody>
+									<th:block th:each="depositRecvDetail : ${viewForm.getDepositRecvDetailList()}">
+										<!--/* 預り金明細の1行 */-->
+										<tr th:insert="::depositRecvDetailViewRowFragment(${depositRecvDetail})" th:id="|depositRow_${depositRecvDetail.depositRecvSeq}|" class="accg_row"></tr>
+									</th:block>
+								</tbody>
+							</table>
+						</div>
+					</div>
+	</th:block>
+	<!--/* 預り金項目が1件以上の場合 end */-->
+				</div>
+			</section>
+			<!--/* 預り金追加入力用 */-->
+			<div id="depositRecvDetailInputRowFragmentWrap"></div>
+		</div>
+		
+		<!--/* 会計サマリ、案件-顧客一覧 */-->
+		<div class="accg_main_split__right" th:if="${viewForm.getAccgCasePersonForm().Clients}">
+			<!--/* 会計サマリ */-->
+			<div id="accgCasePersonFragmentWrap" 
+				th:insert="common/accg/accgCasePerson::accgCasePersonFragment(accgCasePersonForm=${viewForm.getAccgCasePersonForm()}, isDeposit=true)">
+			</div>
+		</div>
+		<!--/* 会計サマリ、案件-顧客一覧 end */-->
+			
+	</div>
+	<!--/* 会計サマリ、案件-顧客一覧 end */-->
+
+</div>
+<!--/* 詳細エリア end */-->
+
+<!--/* 預り金明細表示用フラグメント - 1行分のHTML start */-->
+<th:block th:fragment="depositRecvDetailViewRowFragment(depositRecvDetail)" id="depositRecvDetailViewRowFragment">
+	<input type="hidden" class="rowDepositRecvSeq" th:value="${depositRecvDetail.depositRecvSeq}">
+	<!--/* チェックボックス */-->
+	<td class="text-center">
+		<th:block th:if="${depositRecvDetail.checkboxDisplayFlg}">
+			<label class="checkbox_btn no_text">
+				<input type="checkbox" class="checkbox_input targetCheck" th:checked="${depositRecvDetail.checked}" th:data-deposit-recv-seq="${depositRecvDetail.depositRecvSeq}">
+				<span class="checkbox_txt"></span>
+			</label>
+		</th:block>
+	</td>
+	<td>
+		<!--/* 種別 */-->
+		<th:block th:if="${depositRecvDetail.isTypeDeposit()}">
+			<span class="badge badge-pill accg_label_min mnw45 fs13 badge_cyan">入金</span>
+		</th:block>
+		<th:block th:unless="${depositRecvDetail.isTypeDeposit()}">
+			<span class="badge badge-pill accg_label_min mnw45 fs13 badge_red">出金</span>
+		</th:block>
+	</td>
+	<td>
+		<!--/* 項目 */-->
+		<div class="char_ellipsis mxw120 fw600" th:text="${depositRecvDetail.depositItemName}">預り金</div>
+	</td>
+	<td>
+		<!--/* 発生日 */-->
+		<th:block th:unless="${depositRecvDetail.isDispInBlack()}">
+			<span class="text-danger fs15" th:text="${depositRecvDetail.getDateFormat()}">(精算待ち)</span>
+		</th:block>
+		<th:block th:if="${depositRecvDetail.isDispInBlack()}">
+			<span class="fs15" th:text="${depositRecvDetail.depositDate} == null ? '-' : ${depositRecvDetail.getDateFormat()}">2021-08-25</span>
+		</th:block>
+		<!--/* 入出金が完了していない、かつ回収不能フラグが立っている場合は「請求書で回収不能処理がおこなわれました。」を表示 */-->
+		<th:block th:if="${T(jp.loioz.common.constant.CommonConstant$SystemFlg).FLG_OFF.equalsByCode(depositRecvDetail.depositCompleteFlg)}">
+			<th:block th:if="${T(jp.loioz.common.constant.CommonConstant$SystemFlg).FLG_ON.equalsByCode(depositRecvDetail.uncollectibleFlg)}">
+				<div class="text-danger">
+					<i class="fas fa-exclamation-circle"></i>
+					<span>[[#{W00022}]]</span>
+				</div>
+			</th:block>
+		</th:block>
+	</td>
+	<!--/* 入金額 */-->
+	<td class="text-right">
+		<th:block th:unless="${depositRecvDetail.depositAmount} == 0">
+			<span class="fs16 fw600" th:text="${#numbers.formatInteger(depositRecvDetail.depositAmount, 1, 'COMMA')}"></span>
+		</th:block>
+	</td>
+	<td class="text-right">
+		<!--/* 出金額 */-->
+		<th:block th:unless="${depositRecvDetail.withdrawalAmount} == 0">
+			<span class="fs16 fw600" th:text="${#numbers.formatInteger(depositRecvDetail.withdrawalAmount, 1, 'COMMA')}"></span>
+		</th:block>
+		<!--/* 事務所負担 */-->
+		<div class="text-danger" th:if="${depositRecvDetail.tenantBear}">
+			<i class="fas fa-check-square fs14 mr-2"></i><span class="fs13">事務所負担</span>
+		</div>
+	</td>
+	<!--/* 摘要 */-->
+	<td>
+		<div class="char_ellipsis mxw140" th:text="${depositRecvDetail.sumText}">適要</div>
+	</td>
+	<!--/* 内部メモ */-->
+	<td th:text="${depositRecvDetail.depositRecvMemo}"/>
+	<!--/* 請求書／精算書 */-->
+	<td>
+		<!--/* 作成元請求書／精算書 */-->
+		
+		<!--/* 作成元請求番号 */-->
+		<th:block th:unless="${#strings.isEmpty(depositRecvDetail.createdInvoiceNo)}">
+			<div th:id="|createdInvoiceNo_${depositRecvDetail.depositRecvSeq}|" class="char_ellipsis">
+				<span class="badge badge_square_sm py-1 badge_orange fs12">請求</span>
+				<a href="javascript:void(0);" class="transitionInvoice" th:data-container="|#createdInvoiceNo_${depositRecvDetail.depositRecvSeq}|"
+					th:data-invoice-seq="${depositRecvDetail.createdInvoiceSeq}" th:text="${depositRecvDetail.createdInvoiceNo}" data-toggle="tooltip" title="請求書を確認する" data-trigger="hover">20220908-114</a>
+			</div>
+		</th:block>
+		
+		<!--/* 作成元精算番号 */-->
+		<th:block th:unless="${#strings.isEmpty(depositRecvDetail.createdStatementNo)}">
+			<div th:id="|createdStatementNo_${depositRecvDetail.depositRecvSeq}|" class="char_ellipsis">
+				<span  class="badge badge_square_sm py-1 badge_blue fs12">精算</span>
+				<a href="javascript:void(0);" class="transitionStatement" th:data-container="|#createdStatementNo_${depositRecvDetail.depositRecvSeq}|"
+					th:data-statement-seq="${depositRecvDetail.createdStatementSeq}" th:text="${depositRecvDetail.createdStatementNo}" data-toggle="tooltip" title="精算書を確認する" data-trigger="hover">20220908-114</a>
+			</div>
+		</th:block>
+		
+		<!--/* 使用先請求書／精算書 */-->
+		
+		<!--/* 使用先請求番号 */-->
+		<th:block th:unless="${#strings.isEmpty(depositRecvDetail.usingInvoiceNo)}">
+			<div th:id="|usingInvoiceNo_${depositRecvDetail.depositRecvSeq}|" class="char_ellipsis">
+				<span class="badge badge_square_sm py-1 badge_orange fs12">請求</span>
+				<a href="javascript:void(0);" class="transitionInvoice" th:data-container="|#usingInvoiceNo_${depositRecvDetail.depositRecvSeq}|"
+					th:data-invoice-seq="${depositRecvDetail.usingInvoiceSeq}" th:text="${depositRecvDetail.usingInvoiceNo}" data-toggle="tooltip" title="請求書を確認する" data-trigger="hover">20220908-114</a>
+			</div>
+		</th:block>
+		
+		<!--/* 使用先精算番号 */-->
+		<th:block th:unless="${#strings.isEmpty(depositRecvDetail.usingStatementNo)}">
+			<div th:id="|usingStatementNo_${depositRecvDetail.depositRecvSeq}|" class="char_ellipsis">
+				<span class="badge badge_square_sm py-1 badge_blue fs12">精算</span>
+				<a href="javascript:void(0);" class="transitionStatement" th:data-container="|#usingStatementNo_${depositRecvDetail.depositRecvSeq}|"
+					th:data-statement-seq="${depositRecvDetail.usingStatementSeq}" th:text="${depositRecvDetail.usingStatementNo}" data-toggle="tooltip" title="精算書を確認する" data-trigger="hover">20220908-114</a>
+			</div>
+		</th:block>
+	</td>
+	<td class="py-0 td_operation" th:id="|depositOperation_${depositRecvDetail.depositRecvSeq}|">
+		<div class="row_btn">
+			<button type="button" class="btn btn-sm btn-light btn_icon_edit accg_row__edit openEditDepositRecvFragment" th:data-deposit-recv-seq="${depositRecvDetail.depositRecvSeq}"
+				th:data-container="|#depositOperation_${depositRecvDetail.depositRecvSeq}|" data-toggle="tooltip" title="編集" data-trigger="hover">
+				<i class="fas fa-edit mr-2"></i>編集
+			</button>
+			<button type="button" class="btn btn-sm btn-light btn_icon_only accg_row__delete deleteDepositRecv" th:data-deposit-recv-seq="${depositRecvDetail.depositRecvSeq}"
+				th:data-container="|#depositOperation_${depositRecvDetail.depositRecvSeq}|" data-toggle="tooltip" title="削除" data-trigger="hover">
+				<i class="far fa-trash-alt"></i>
+			</button>
+		</div>
+	</td>
+</th:block>
+<!--/* 預り金明細表示用フラグメント - 1行分のHTML end */-->
+
+<!--/* 預り金明細編集用フラグメント - 1行分のHTML start */-->
+<th:block th:fragment="depositRecvDetailEditRowFragment" id="depositRecvDetailEditRowFragment">
+
+	<td th:id="|depositRecvDetailEditRowFragment_${editForm.depositRecvSeq}|" colspan="10" class="p-0" th:object="${editForm}">
+	
+		<input type="hidden" class="rowDepositRecvSeq" th:value="${editForm.depositRecvSeq}">
+		
+		<div class="accg_edit_row editDepositRecvRow">
+			<script type="text/javascript" th:inline="javascript">
+			$(function() {
+				<!--/* 共有の要素セットアップ処理 */-->
+				commonSetUpElement("#depositRecvDetailEditRowFragment_" + /*[[*{depositRecvSeq}]]*/);
+				
+				const depositRecvDetailEditRowFragment = $('#depositRecvDetailEditRowFragment_' + /*[[*{depositRecvSeq}]]*/);
+				
+				$(".depositDate").datepicker();
+				
+				<!--/* 項目入力検索 */-->
+				depositRecvDetailEditRowFragment.on('focus change keydown paste cut', '.depositRecvDataList', function(e) {
+					$('[data-toggle="tooltip"]').tooltip('hide');
+					timeoutId = lazyQueueFn(searchDepositRecvDataListEdit, {"clearQueueId":timeoutId}, /*[[*{depositRecvSeq}]]*/, e.which);
+				});
+				
+				<!--/* 編集フォーム閉じる処理 */-->
+				depositRecvDetailEditRowFragment.on("click", '.closeEditRow', function(){
+					closeEditDepositRecvFragment($(this).data("depositRecvSeq"), $(this).closest('.depositRecvEditForm').find('#checked').val());
+				});
+				
+				<!--/* 編集フォーム登録処理 */-->
+				depositRecvDetailEditRowFragment.on('click', '.editDepositRecv', function(e) {
+					
+					<!--/* 金額のカンマを除去する */-->
+					depositRecvDetailUnformatComma();
+					
+					<!--/* リクエストパラメータ取得のため、紐づく会計書類が発行している場合や会計書類から作成されている場合にdisabledになる要素のdisabledを外す */-->
+					$(this).closest('.depositRecvEditForm').find('.invalidAfterIssued').prop('disabled', false);
+					
+					<!--/* リクエストパラメータ */-->
+					let formData = $(this)
+						.closest('.depositRecvEditForm')
+						.serializeArray();
+					const depositRecvSeq = $(this).data("depositRecvSeq");
+					const depositDate = $(this).closest('.depositRecvEditForm').find('.depositDate').val();
+					formData.push(
+							{name:'depositRecvSeq', value:depositRecvSeq},
+							{name:'depositDate', value:depositDate}
+					);
+					
+					<!--/* 紐づく会計書類が発行している場合にdisabledになる要素にdisabledを設定する */-->
+					if ($(this).closest('.depositRecvEditForm').find('.issued').val() === 'true') {
+						$(this).closest('.depositRecvEditForm').find('.invalidAfterIssued').prop('disabled', true);
+					}
+					
+					<!--/* 種別のチェック値 */-->
+					const depositType = $('input[name="depositType"]:checked').val();
+					
+					<!--/* 種別が入金であれば、事務所負担をdisabledにする */-->
+					const depositTypeNyukinCd = /*[[${T(jp.loioz.common.constant.CommonConstant$DepositType).NYUKIN.cd}]]*/ '';
+					if (depositTypeNyukinCd === depositType) {
+						$(this).closest('.depositRecvEditForm').find(".tenantBearInput").prop("disabled", true);
+					}
+					
+					if (ajaxRunning) {
+						return false;
+					}
+					ajaxRunning = true;
+					Promise.resolve(formData)
+						.then(editDepositRecvFunc)
+						.catch((errorObj) => console.log())
+						.finally(() => ajaxRunning = false);
+				});
+				
+				<!--/* 項目種別変更 */-->
+				depositRecvDetailEditRowFragment.on("change", '.changeDepositType', function(){
+					const nyukinType = /*[[${T(jp.loioz.common.constant.CommonConstant$DepositType).NYUKIN.cd}]]*/ '';
+					const depositType = $('#depositRecvDetailEditRowFragment_' + /*[[*{depositRecvSeq}]]*/).find("input[name='depositType']:checked").val();
+					<!--/* 事務所負担チェックの活性・非活性 */-->
+					if (nyukinType === depositType) {
+						<!--/* 非活性にする場合はチェックを外す */-->
+						$(this).closest('.depositRecvEditForm').find(".tenantBearInput").removeAttr("checked").prop("checked", false).change();
+						$(this).closest('.depositRecvEditForm').find(".tenantBearInput").prop("disabled", true);
+					} else {
+						$(this).closest('.depositRecvEditForm').find(".tenantBearInput").prop("disabled", false);
+					}
+				});
+				
+			});
+			</script>
+			<form class="depositRecvEditForm">
+				<input type="hidden" class="issued" th:field="*{issued}">
+				<input type="hidden" class="checked" th:field="*{checked}">
+				<input type="hidden" class="issuedMessage" th:field="*{issuedMessage}">
+				<input type="hidden" class="createdByName" th:field="*{createdByName}">
+				<input type="hidden" class="createdAtStr" th:field="*{createdAtStr}">
+				<input type="hidden" class="updatedByName" th:field="*{updatedByName}">
+				<input type="hidden" class="updatedAtStr" th:field="*{updatedAtStr}">
+				
+				<!--/* 発行時に変更できない旨のメッセージ表示 */-->
+				<th:block th:if="*{issued}">
+					<div class="edit_inner_msg mb-2">
+						<span class="text-danger">
+							<i class="fas fa-exclamation-circle mr-2"></i><span th:text="*{issuedMessage}"></span>
+						</span>
+					</div>
+				</th:block>
+				
+				<div class="form-row">
+					<div class="form-group col-md-auto">
+						<label class="input_parts_label">種別</label>
+						<div class="mt-1">
+							<label class="radio_btn changeDepositType" th:classappend="*{issued} ? 'radio_btn_disabled'" th:each="enum : ${T(jp.loioz.common.constant.CommonConstant$DepositType).values()}">
+								<input type="radio" class="radio_input depositTypeInput invalidAfterIssued" th:value="${enum.cd}" th:field="*{depositType}" th:disabled="*{issued}">
+								<span class="radio_txt" th:text="${enum.val}"></span>
+							</label>
+						</div>
+						<div th:if="*{#fields.hasErrors('depositType')}" th:errors="*{depositType}" class="error_mag_point">error</div>
+					</div>
+					<div class="form-group col-md-auto depositItemInput">
+						<label class="input_parts_label">項目</label>
+						<span class="mark_equired">必須</span>
+						<input type="text" class="form-control depositRecvDataList invalidAfterIssued" maxlength="30"
+							autocomplete="off" th:field="*{depositItemName}" th:disabled="*{issued}">
+						<div th:id="|depositRecvDataListEditFragment_*{depositRecvSeq}|" class="depositRecvDataListFragmentWrap">
+							<!--/* 初期状態は空のまま */-->
+						</div>
+						<div th:if="*{#fields.hasErrors('depositItemName')}" th:errors="*{depositItemName}" class="error_mag_point">error</div>
+					</div>
+					<div class="form-group col-md-auto">
+						<label class="input_parts_label">発生日</label>
+						<input type="text" th:id="|depositDate_*{depositRecvSeq}|" class="form-control digit8 inputDateSlash inputDate depositDate invalidAfterIssued"
+							maxlength="10" autocomplete="off" th:value="*{depositDate}" th:disabled="*{issued}">
+						<div th:if="*{#fields.hasErrors('depositDate')}" th:errors="*{depositDate}" class="error_mag_point">error</div>
+					</div>
+					<div class="form-group col-md-auto">
+						<label class="input_parts_label">金額</label>
+						<span class="mark_equired">必須</span>
+						<input type="text" class="form-control text-right digit8 fs15 commaFormat inputNumHyphen amountOfMoneyInput invalidAfterIssued"
+							maxlength="9" autocomplete="off" th:field="*{amountOfMoney}" th:disabled="*{issued}">
+						<div th:if="*{#fields.hasErrors('amountOfMoney')}" th:errors="*{amountOfMoney}" class="error_mag_point">error</div>
+					</div>
+					<div class="form-group col-md-auto">
+						<label class="input_parts_label">事務所負担</label>
+						<div>
+							<label class="checkbox_btn pb-5">
+								<input type="checkbox" class="checkbox_input tenantBearInput invalidAfterIssued" th:field="*{tenantBearFlg}"
+									th:disabled="*{T(jp.loioz.common.constant.CommonConstant$DepositType).NYUKIN.equalsByCode(depositType)} or *{issued}">
+								<span class="checkbox_txt"></span>
+							</label>
+						</div>
+						<div th:if="*{#fields.hasErrors('tenantBearFlg')}" th:errors="*{tenantBearFlg}" class="error_mag_point">error</div>
+					</div>
+					<div class="form-group col-md-auto">
+						<label class="input_parts_label">摘要</label>
+						<input type="text" class="form-control digit19 invalidAfterIssued" th:maxlength="${(T(jp.loioz.common.constant.AccgConstant).MX_LEN_INVOICE_SUM_TEXT)}"
+							autocomplete="off" th:field="*{sumText}" th:disabled="*{issued}">
+						<div th:if="*{#fields.hasErrors('sumText')}" th:errors="*{sumText}" class="error_mag_point">error</div>
+					</div>
+					<div class="form-group col-md-auto">
+						<label class="input_parts_label">内部メモ</label>
+						<input type="text" class="form-control digit19" th:field="*{depositRecvMemo}" autocomplete="off"
+							th:maxlength="${(T(jp.loioz.common.constant.AccgConstant).MX_LEN_MEMO)}" placeholder="書類に印字等はされません">
+						<div th:if="*{#fields.hasErrors('depositRecvMemo')}" th:errors="*{depositRecvMemo}" class="error_mag_point">error</div>
+					</div>
+					<div class="form-group col-md-auto">
+						<label class="input_parts_label">登録者</label>
+						<div>
+							<span th:text="*{createdByName}"></span>
+							<div th:text="*{createdAtStr}"></div>
+						</div>
+					</div>
+					<div class="form-group col-md-auto">
+						<label class="input_parts_label">更新者</label>
+						<div>
+							<span th:text="*{updatedByName}"></span>
+							<div th:text="*{updatedAtStr}"></div>
+						</div>
+					</div>
+				</div>
+				<div class="form-row">
+					<div class="form-group col-md-12 mt-auto">
+						<div class="text-right">
+							<button type="button" class="btn btn-info mr-4 editDepositRecv" th:data-deposit-recv-seq=*{depositRecvSeq}><i class="fas fa-check"></i>保存</button>
+							<button type="button" class="btn btn-light closeEditRow" th:data-deposit-recv-seq=*{depositRecvSeq}><i class="fas fa-times"></i>閉じる</button>
+						</div>
+					</div>
+				</div>
+			</form>
+		</div>
+		
+	</td>
+</th:block>
+<!--/* 預り金明細編集用フラグメント - 1行分のHTML end */-->
+
+<!--/* 預り金明細登録用フラグメント start */-->
+<div th:fragment="depositRecvDetailInputRowFragment" id="depositRecvDetailInputRowFragment"
+	class="accg_edit_row addDepositRecvRow mb-3 mt-3" th:object="${inputForm}">
+	<script type="text/javascript" th:inline="javascript">
+	$(function() {
+		<!--/* 共有の要素セットアップ処理 */-->
+		commonSetUpElement("#depositRecvDetailInputRowFragment");
+		
+		$(".depositDate").datepicker();
+		
+		<!--/* 項目種別変更 */-->
+		$("#depositRecvDetailInputRowFragment").on("change", '.changeDepositType', function(){
+			const nyukinType = /*[[${T(jp.loioz.common.constant.CommonConstant$DepositType).NYUKIN.cd}]]*/ '';
+			const depositType = $('#depositRecvInputForm').find("input[name='depositType']:checked").val();
+			<!--/* 事務所負担チェックの活性・非活性 */-->
+			if (nyukinType === depositType) {
+				<!--/* 非活性にする場合はチェックを外す */-->
+				$('#depositRecvInputForm').find(".tenantBearInput").removeAttr("checked").prop("checked", false).change();
+				$('#depositRecvInputForm').find(".tenantBearInput").prop("disabled", true);
+			} else {
+				$('#depositRecvInputForm').find(".tenantBearInput").prop("disabled", false);
+			}
+		});
+		
+		<!--/* 登録ボタンをクリック */-->
+		$("#depositRecvDetailInputRowFragment").on("click", '.registDepositRecv', function(){
+			
+			<!--/* 金額のカンマを除去する */-->
+			depositRecvDetailUnformatComma();
+			
+			<!--/* リクエストパラメータ */-->
+			const formData = $('#depositRecvInputForm').serializeArray();
+			const depositDate = $(this).closest('#depositRecvInputForm').find('.depositDate').val();
+			formData.push(
+					{name:'depositDate', value:depositDate}
+			);
+
+			<!--/* 2重押下防止 */-->
+			if(ajaxRunning){
+				return false;
+			}
+			ajaxRunning = true;
+			Promise.resolve(formData)
+				.then(registDepositRecvFunc)
+				.catch((errorObj) => console.log())
+				.finally(() => ajaxRunning = false);
+		});
+		
+		<!--/* 項目入力検索 */-->
+		$('#depositRecvDetailInputRowFragment').on('focus change keydown paste cut', '.depositRecvDataList', function(e) {
+			$('[data-toggle="tooltip"]').tooltip('hide');
+			timeoutId = lazyQueueFn(searchDepositRecvDataList, {"clearQueueId":timeoutId}, e.which);
+		});
+		
+	});
+	</script>
+	<form id="depositRecvInputForm">
+		<div class="fs18 fw600 fc_sub">預り金／実費-新規追加</div>
+		<div class="form-row">
+			<div class="form-group col-md-auto">
+				<label class="input_parts_label">種別</label>
+				<div class="mt-1">
+					<label class="radio_btn changeDepositType" th:each="enum : ${T(jp.loioz.common.constant.CommonConstant$DepositType).values()}">
+						<input type="radio" class="radio_input" th:value="${enum.cd}" th:field="*{depositType}">
+						<span class="radio_txt" th:text="${enum.val}"></span>
+					</label>
+				</div>
+				<div th:if="*{#fields.hasErrors('depositType')}" th:errors="*{depositType}" class="error_mag_point">error</div>
+			</div>
+			<div class="form-group col-md-auto depositItemInput">
+				<label class="input_parts_label">項目</label>
+				<span class="mark_equired">必須</span>
+				<input type="text" class="form-control depositRecvDataList" maxlength="30" autocomplete="off" th:field="*{depositItemName}"
+					placeholder="預り金、交通費、郵券など">
+				<div id="depositRecvDataListRegistFragment" class="depositRecvDataListFragmentWrap">
+					<!--/* 初期状態は空のまま */-->
+				</div>
+				<div th:if="*{#fields.hasErrors('depositItemName')}" th:errors="*{depositItemName}" class="error_mag_point">error</div>
+			</div>
+			<div class="form-group col-md-auto">
+				<label class="input_parts_label">発生日</label>
+				<input type="text" class="form-control digit8 inputDateSlash inputDate depositDate" maxlength="10" autocomplete="off" th:value="*{depositDate}">
+				<div th:if="*{#fields.hasErrors('depositDate')}" th:errors="*{depositDate}" class="error_mag_point">error</div>
+			</div>
+			<div class="form-group col-md-auto">
+				<label class="input_parts_label">金額</label>
+				<span class="mark_equired">必須</span>
+				<input type="text" class="form-control text-right digit8 fs15 commaFormat inputNumHyphen" maxlength="9" autocomplete="off" th:field="*{amountOfMoney}">
+				<div th:if="*{#fields.hasErrors('amountOfMoney')}" th:errors="*{amountOfMoney}" class="error_mag_point">error</div>
+			</div>
+			<div class="form-group col-md-auto">
+				<label class="input_parts_label">事務所負担</label>
+				<div>
+					<label class="checkbox_btn pb-5">
+						<input type="checkbox" class="checkbox_input tenantBearInput" th:field="*{tenantBearFlg}" th:disabled="*{T(jp.loioz.common.constant.CommonConstant$DepositType).NYUKIN.equalsByCode(depositType)}">
+						<span class="checkbox_txt"></span>
+					</label>
+				</div>
+				<div th:if="*{#fields.hasErrors('tenantBearFlg')}" th:errors="*{tenantBearFlg}" class="error_mag_point">error</div>
+			</div>
+			<div class="form-group col-md-auto">
+				<label class="input_parts_label">摘要</label>
+				<input type="text" class="form-control digit19" th:maxlength="${(T(jp.loioz.common.constant.AccgConstant).MX_LEN_INVOICE_SUM_TEXT)}"
+					autocomplete="off" th:field="*{sumText}">
+				<div th:if="*{#fields.hasErrors('sumText')}" th:errors="*{sumText}" class="error_mag_point">error</div>
+			</div>
+			<div class="form-group col-md-auto">
+				<label class="input_parts_label">内部メモ</label>
+				<input type="text" class="form-control digit19" autocomplete="off" th:field="*{depositRecvMemo}"
+					th:maxlength="${(T(jp.loioz.common.constant.AccgConstant).MX_LEN_MEMO)}" placeholder="書類に印字等はされません">
+				<div th:if="*{#fields.hasErrors('depositRecvMemo')}" th:errors="*{depositRecvMemo}" class="error_mag_point">error</div>
+			</div>
+		</div>
+		<div class="form-row">
+			<div class="form-group col-md-12 mt-auto">
+				<div class="text-right">
+					<button type="button" class="btn btn-info mr-4 registDepositRecv"><i class="fas fa-check"></i>登録</button>
+					<button type="button" class="btn btn-light closeAddRow"><i class="fas fa-times"></i>閉じる</button>
+				</div>
+			</div>
+		</div>
+	</form>
+</div>
+<!--/* 預り金明細登録用フラグメント end */-->
+
+<!--/* 項目データリストフラグメント start */-->
+<div th:fragment="depositRecvItemFragment" id="depositRecvItemFragment">
+	<script type="text/javascript" th:inline="javascript">
+	$(function() {
+		const depositRecvItemFragment = $('#depositRecvItemFragment');
+		depositRecvItemFragment.find('.depositItem').on('click', function() {
+			const depositItemName = $(this).data("name")
+			$(this).closest('.depositItemInput').find('#depositItemName').val(depositItemName);
+			$('.depositRecvDataListFragmentWrap').html('');
+		});
+	});
+	</script>
+	<th:block th:unless="${#lists.isEmpty(depositRecvItemList)}">
+		<div class="popover_box_list popoverBox notAutoClose depositRecvItemSearchPopover">
+			<div class="popover_box_list__wm mxh300 of_y_scroll hover_scroll">
+				<ul class="list-group">
+					<li class="list-group-item item_search_data_list p-3 depositItem" th:each="item : ${depositRecvItemList}"
+						th:text="${item.label}" th:data-deposit-item-seq="${item.value}" th:data-name="${item.label}">
+					</li>
+				</ul>
+			</div>
+		</div>
+	</th:block>
+</div>
+<!--/* 項目データリストフラグメント end */-->
+
+</body>
+</html>

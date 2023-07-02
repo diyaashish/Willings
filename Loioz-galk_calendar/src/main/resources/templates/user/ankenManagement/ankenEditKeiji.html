@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+	xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+	xmlns:xtra="https://github.com/connect-group/thymeleaf-extras"
+	layout:decorator="commonLayout">
+<head>
+<meta charset="utf-8" th:remove="tag" />
+<title layout:fragment="title-contents">
+	[[${T(jp.loioz.common.utility.LoiozUtils).getHtmlTitle("案件情報（刑事弁護）", T(jp.loioz.common.utility.SessionUtils).getTenantName())}]]
+</title>
+<th:block th:with="version=${@environment.getProperty('app.version')}">
+	<link th:href="@{/css/anken/case.css?{ver}(ver=${version})}" rel="stylesheet" type="text/css"/>
+</th:block>
+
+<script type="text/javascript" th:inline="javascript">
+
+<!--/*
+ 二重送信防止対応用の値。
+ このHTMLに差し込まれるfragment内のScriptの処理も、共通してこの変数を利用する。
+*/-->
+let ajaxRunning = false;
+
+<!--/* 以下、各フラグメントをまたいで、共通で利用する関数 */-->
+
+<!--/* サイドメニューの再取得 */-->
+function renderCustomerAnkenMenuView() {
+	return new Promise((resolve, reject) => {
+		$.ajax({
+			url : /*[[@{/user/ankenKeijiManagement/{ankenId}/getCustomerAnkenMenuView(ankenId=${ankenId})}]]*/"",
+			type : "GET",
+			dataType: 'html',
+		})
+		.done(function(data, status, jqXHR) {
+			if (isAjaxProcSuccess(jqXHR)) {
+				// メニュー表示部分のID
+				$('#customerAnkenMenuFragmentWrap').html(data);
+				return resolve();
+			} else {
+				// 処理失敗
+				const errorMsg = getAjaxProcResutlMessage(jqXHR);
+				showErrorMessageForJs(errorMsg);
+				return reject();
+			}
+		})
+		.fail(function(jqXHR, status, errorThrown) {
+			showErrorMessageForJs(/*[[#{E00091}]]*/ "error");
+			
+			return reject();
+		});
+	});
+}
+
+<!--/* 案件関与者情報の再取得*/-->
+function renderAnkenHigaishaListView() {
+	return new Promise((resolve, reject) => {
+		$.ajax({
+			url : /*[[@{/user/ankenKeijiManagement/{ankenId}/getAnkenHigaishaListView(ankenId=${ankenId})}]]*/"",
+			type : "GET",
+			dataType: 'html',
+		})
+		.done(function(data, status, jqXHR) {
+			if (isAjaxProcSuccess(jqXHR)) {
+				// 親HTMLのID
+				$('#ankenHigaishaFragmentWrap').html(data);
+				return resolve();
+			} else {
+				// 処理失敗
+				const errorMsg = getAjaxProcResutlMessage(jqXHR);
+				showErrorMessageForJs(errorMsg);
+				return reject();
+			}
+			
+		})
+		.fail(function(jqXHR, status, errorThrown) {
+			showErrorMessageForJs(/*[[#{E00091}]]*/ "error");
+			
+			return reject();
+		});
+	});
+}
+
+<!--/* 案件関与者（共犯者）情報の再取得 */-->
+function renderAnkenKyohanshaListView() {
+	return new Promise((resolve, reject) => {
+		$.ajax({
+			url : /*[[@{/user/ankenKeijiManagement/{ankenId}/getAnkenKyohanshaListView(ankenId=${ankenId})}]]*/"",
+			type : "GET",
+			dataType: 'html',
+		})
+		.done(function(data, status, jqXHR) {
+			if (isAjaxProcSuccess(jqXHR)) {
+				// 親HTMLのID
+				$('#ankenKyohanshaFragmentWrap').html(data);
+				return resolve();
+			} else {
+				// 処理失敗
+				const errorMsg = getAjaxProcResutlMessage(jqXHR);
+				showErrorMessageForJs(errorMsg);
+				return reject();
+			}
+			
+		})
+		.fail(function(jqXHR, status, errorThrown) {
+			showErrorMessageForJs(/*[[#{E00091}]]*/ "error");
+			
+			return reject();
+		});
+	});
+}
+</script>
+
+<!--/* 名簿ポップオーバー処理 */-->
+<script type="text/javascript" th:replace="common/mvc/person/popover/personPopover::personInfoPopoverJs"></script>
+<style type="text/css" th:replace="common/mvc/person/popover/personPopover::personInfoPopoverStyle"></style>
+
+</head>
+<body>
+	<div layout:fragment="main-contents" th:remove="tag">
+
+		<!--/* ①サイドメニューあり */-->
+		<div class="contents_sidebar_wrapper contentsSlidebarWrapper" th:data-click-open=${customerAnkenMenuOpenClickForSessionValue} th:data-resize-open=${customerAnkenMenuOpenResizeForSessionValue}>
+
+			<!--/* ②顧客・案件 サイドメニュー */-->
+			<div id="customerAnkenMenuFragmentWrap" th:insert="common/customerAnkenMenu::menuList(
+				sideMenuAnkenId=${ankenId},
+				sideMenuCustomerId=null,
+				selectedTabClass = 'is_anken')">
+			</div>
+
+			<!--/* メインコンテンツの外側 */-->
+			<div class="contents_wrapper">
+				<div class="container-fluid">
+					
+					<!--/* 画面メイン */-->
+					<main class="content">
+						
+						<!--/* ぱんくず */-->
+						<div id="wrapHeaderFragmentWrap" th:insert="common/wrapHeader::wrapHeader(
+							returnListScreen=${T(jp.loioz.common.utility.SessionUtils).getSessionVaule(T(jp.loioz.common.constant.SessionAttrKeyEnum).RETURN_LIST_SCREEN.codeKey)},
+							sideMenuAnkenId=${ankenId},
+							selectedTabClass = 'is_anken')">
+						</div>
+						
+						<!--/* メッセージエリア */-->
+						<div th:replace="common/messageArea::messageArea"></div>
+						
+						<div class="case_edit">
+							<th:block th:if="${ankenBasicInputForm} == null">
+								<!-- 初期表示時点で基本情報の「入力フォーム」が設定されていない場合、通常通り表示Viewを表示 -->
+								<div id="ankenBasicFragmentWrap" th:insert="user/ankenManagement/ankenEditKeijiFragment::ankenBasicViewFragment(${viewForm.ankenBasicViewForm})">
+									<!-- 案件の基本情報の表示 -->
+								</div>
+							</th:block>
+							<th:block th:unless="${ankenBasicInputForm} == null">
+								<!-- 初期表示時点で基本情報の「入力フォーム」が設定されている場合、通常とは異なり、初期表示で入力Viewを表示 -->
+								<div id="ankenBasicFragmentWrap" th:insert="user/ankenManagement/ankenEditKeijiFragment::ankenBasicInputFragment(${ankenBasicInputForm})">
+									<!-- 案件の基本情報の表示 -->
+								</div>
+							</th:block>
+						</div>
+
+						<div class="row">
+							<div class="col-lg-12">
+								<div class="">
+									<!--/* 顧客（被疑者）*/-->
+									<div class="customer_jiken_block">
+										<div id="ankenCustomerFragmentWrap" th:insert="user/ankenManagement/ankenEditKeijiFragment::ankenCustomerListViewFragment(${viewForm.ankenCustomerListViewForm})">
+										<!--/* 顧客（被疑者） */-->
+										</div>
+									</div>
+									<!--/* 顧客（被疑者）end */-->
+									
+									<!--/* 捜査機関情報 */-->
+									<div class="sosakikan_block">
+										<div id="ankenSosakikanListFragmentWrap" th:insert="user/ankenManagement/ankenEditKeijiFragment::ankenSosakikanListViewFragment(${viewForm.ankenSosakikanListViewForm})">
+										<!--/* 捜査機関情報 */-->
+										</div>
+									</div>
+									
+									<!--/* 共犯者・被害者 */-->
+									<div class="customer_aitegata_block">
+										<div class="row">
+											<!--/* 共犯者（顧客以外）情報 */-->
+											<div class="col-md-6">
+												<div id="ankenKyohanshaFragmentWrap" th:insert="user/ankenManagement/ankenEditKeijiFragment::ankenKyohanshaListViewFragment(${viewForm.ankenKyohanshaListViewForm})">
+													<!--/* 共犯者（顧客以外）情報 */-->
+												</div>
+											</div>
+											<!--/* 共犯者（顧客以外）情報 end */-->
+											
+											<!--/* 被害者情報 */-->
+											<div class="col-md-6">
+												<div id="ankenHigaishaFragmentWrap" th:insert="user/ankenManagement/ankenEditKeijiFragment::ankenHigaishaListViewFragment(${viewForm.ankenHigaishaListViewForm})">
+													<!--/* 被害者情報 */-->
+												</div>
+											</div>
+											<!--/* 被害者情報 end */-->
+										</div>
+									</div>
+									<!--/* 共犯者・被害者 end */-->
+								</div>
+							</div>
+						</div>
+					</main>
+				</div>
+			</div>
+		</div>
+
+		<!--/* 予定登録モーダル */-->
+		<div
+			th:replace="user/schedule/scheduleModal::modal(
+			createUrl=@{/user/ankenKeijiManagement/{ankenId}/createShokaiMendan(ankenId=${ankenId})},
+			updateUrl=@{/user/ankenKeijiManagement/{ankenId}/updateShokaiMendan(ankenId=${ankenId})},
+			deleteUrl=@{/user/ankenKeijiManagement/{ankenId}/deleteShokaiMendan(ankenId=${ankenId})})">
+		</div>
+		
+		<!-- /* 関与者モーダル */ -->
+		<div id="kanyoshaModal" class="modal fade" tabindex="-1" role="dialog" aria-hidden="true" data-backdrop="static">
+			<div class="modal-dialog modal-dialog-centered kanyosha-modal-body" role="document">
+				<div class="modal-content">
+					<div class="targetModalBody" th:data-anken-id="${viewForm.ankenId.asLong()}"></div>
+				</div>
+			</div>
+		</div>
+		
+	</div>
+
+</body>
+</html>

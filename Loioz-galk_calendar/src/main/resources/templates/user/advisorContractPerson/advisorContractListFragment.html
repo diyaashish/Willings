@@ -1,0 +1,287 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+	<meta charset="utf-8" />
+</head>
+<body>
+
+
+
+<!-- 顧問契約一覧フラグメント -->
+<!-- ※一覧フラグメントの表示は、一覧画面の表示（viewForm）とほぼ同じなので、特別にviewFormを引数に受ける（通常はフラグメント用のFormを受ける） -->
+<div th:fragment="advisorContractListViewFragment(viewForm)" id="advisorContractListViewFragment">
+	
+	<!--/* スクリプト */-->
+	<script th:inline="javascript">
+	$(function() {
+		
+		<!--/* 共有の要素セットアップ処理 */-->
+		commonSetUpElement('#advisorContractListViewFragment');
+		
+		<!--/* 顧問契約の追加ボタンクリック */-->
+		$('#openRegistContractModal').on('click', function() {
+
+			const personId = /*[[${viewForm.personId}]]*/null;
+			
+			<!--/* 2重押下防止 */-->
+			if(ajaxRunning){
+				return false;
+			}
+			
+			ajaxRunning = true;
+			$.ajax({
+				url : "/user/advisorContractPerson/create",
+				type : "GET",
+				data : {
+					"personId" : personId
+				}
+			})
+			.done(function(data, status, jqXHR) {
+				if (isAjaxProcSuccess(jqXHR)) {
+					<!--/* 処理成功 */-->
+					$('#advisorContractEditModalFragmentWrap').html(data);
+					
+				} else {
+					<!--/* 処理失敗 */-->
+					const errorMsg = getAjaxProcResutlMessage(jqXHR);
+					showErrorMessageForJs(errorMsg);
+				}
+			})
+			.fail(function(jqXHR, status, errorThrown) {
+				showErrorMessageForJs(/*[[#{E00091}]]*/ "error");
+			})
+			.always(function(){
+				ajaxRunning = false;
+			});
+		})
+		<!--/* 一覧の行のクリック（編集モーダル表示） */-->
+		$('#advisorContractListViewFragment .openEditContractModal').on('click', function() {
+			
+			const personId = /*[[${viewForm.personId}]]*/null;
+			const contractSeq = $(this).data('seq');
+			
+			<!--/* 2重押下防止 */-->
+			if(ajaxRunning){
+				return false;
+			}
+			
+			ajaxRunning = true;
+			$.ajax({
+				url : "/user/advisorContractPerson/edit",
+				type : "GET",
+				data : {
+					"personId" : personId,
+					"advisorContractSeq" : contractSeq
+				}
+			})
+			.done(function(data, status, jqXHR) {
+				if (isAjaxProcSuccess(jqXHR)) {
+					<!--/* 処理成功 */-->
+					<!--/* 親HTMLに記載のID */-->
+					$('#advisorContractEditModalFragmentWrap').html(data);
+					
+				} else {
+					<!--/* 処理失敗 */-->
+					const errorMsg = getAjaxProcResutlMessage(jqXHR);
+					showErrorMessageForJs(errorMsg);
+				}
+			})
+			.fail(function(jqXHR, status, errorThrown) {
+				showErrorMessageForJs(/*[[#{E00091}]]*/ "error");
+			})
+			.always(function(){
+				ajaxRunning = false;
+			});
+		})
+	})
+	
+	<!--/* 一覧のページング処理実行関数 */-->
+	function getListOfPageNumber(pageNum) {
+		
+		const personId = /*[[${viewForm.personId}]]*/null;
+		
+		<!--/* 2重押下防止 */-->
+		if(ajaxRunning){
+			return false;
+		}
+		
+		ajaxRunning = true;
+		$.ajax({
+			url : "/user/advisorContractPerson/pager",
+			type : "GET",
+			data : {
+				"personId" : personId,
+				"page" : pageNum
+			}
+		})
+		.done(function(data, status, jqXHR) {
+			if (isAjaxProcSuccess(jqXHR)) {
+				<!--/* 処理成功 */-->
+				<!--/* 親HTMLに記載のID */-->
+				$('#advisorContractListFragmentWrap').html(data);
+				
+				scrollTop()
+				
+			} else {
+				<!--/* 処理失敗 */-->
+				const errorMsg = getAjaxProcResutlMessage(jqXHR);
+				showErrorMessageForJs(errorMsg);
+			}
+		})
+		.fail(function(jqXHR, status, errorThrown) {
+			showErrorMessageForJs(/*[[#{E00091}]]*/ "error");
+		})
+		.always(function(){
+			ajaxRunning = false;
+		});
+		
+	}
+	
+	<!--/* 画面スクロールを最上部に移動する */-->
+	function scrollTop() {
+		window.scrollTo({top: 0});
+	}
+	
+	</script>
+	
+	<!-- HTML -->
+	<section class="" th:object="${viewForm}">
+		<div class="section_header">
+			<div class="section_header__title">顧問契約</div>
+			<div class="section_header__action">
+				<span id="openRegistContractModal" class="align-middle" data-toggle="modal" data-target="#contractModal">
+					<a href="javascript:void(0);" class="fs15"><i class="fas fa-plus-square mr-2"></i>契約を追加</a>
+				</span>
+			</div>
+		</div>
+		<div class="section_body">
+			<div class="section_body__contents">
+			<th:block th:if="*{#lists.isEmpty(advisorContractRowDtoList)}">
+				<!--/** 0件の場合 */-->
+				<div class="no_data_msg">
+					<span>顧問契約はありません</span>
+				</div>
+			</th:block>
+			<th:block th:unless="*{#lists.isEmpty(advisorContractRowDtoList)}">
+				<ul class="section_list">
+				<th:block th:each ="contract : *{advisorContractRowDtoList}">
+					<li class="list_contents">
+						<div class="section_list_item_wrap">
+							<div class="contract_haed">
+								<th:block th:switch="${contract.getContractStatus()}">
+									<span th:case="${T(jp.loioz.common.constant.CommonConstant$ContractStatus).CONTRACT_NEW}"
+										class="badge badge-pill list_attr badge_red" th:text="${contract.getContractStatusForDisp()}">契約準備中</span>
+									<span th:case="${T(jp.loioz.common.constant.CommonConstant$ContractStatus).CONTRACTING}"
+										class="badge badge-pill list_attr badge_orange" th:text="${contract.getContractStatusForDisp()}">契約中</span>
+									<span th:case="${T(jp.loioz.common.constant.CommonConstant$ContractStatus).CONTRACT_CANCELL}"
+										class="badge badge-pill list_attr badge_gray" th:text="${contract.getContractStatusForDisp()}">契約解除</span>
+									<span th:case="${T(jp.loioz.common.constant.CommonConstant$ContractStatus).CONTRACT_END}"
+										class="badge badge-pill list_attr badge_gray" th:text="${contract.getContractStatusForDisp()}">終了</span>
+									<span th:case="*"></span>
+								</th:block>
+								<span class="badge badge-pill list_attr badge_cyan ml-3" th:text="${contract.getContractTypeForDisp()}">契約</span>
+								<div class="ml-auto" data-boundary="window" data-container="#advisorContractListViewFragment" data-toggle="tooltip" data-trigger="hover" title="編集する">
+									<button class="btn btn-light btn-sm openEditContractModal" data-toggle="modal" data-target="#contractModal" th:data-seq="${contract.advisorContractSeq}">
+										<i class="fas fa-edit"></i>編集</button>
+								</div>
+							</div>
+							<div class="contract_body">
+								<div class="item_split ">
+									<div class="item_split__main_block">
+										<div class="advisor_contract_block">
+											<div class="advisor_contract_block__label">
+												<label class="side_parts_label">契約期間：</label>
+											</div>
+											<div>
+												<span th:text="${#temporals.format(contract.contractStartDate, 'yyyy-MM-dd')}"></span>
+												<th:block th:if="${!#strings.isEmpty(contract.contractStartDate) or !#strings.isEmpty(contract.contractEndDate)}">
+												～
+												</th:block>
+												<span th:text="${#temporals.format(contract.contractEndDate, 'yyyy-MM-dd')}"></span>
+											</div>
+										</div>
+										<div class="advisor_contract_block">
+											<div class="advisor_contract_block__label">
+												<label class="side_parts_label">顧問料 (月単価)：</label>
+											</div>
+											<div>
+												<span th:if="${contract.contractMonthCharge != null}"
+													th:text="|${#numbers.formatInteger(contract.contractMonthCharge, 1, 'COMMA')}円|"></span>
+											</div>
+										</div>
+										<div class="advisor_contract_block mb-1">
+											<div class="advisor_contract_block__label">
+												<label class="side_parts_label">稼働時間 (月)　：</label>
+											</div>
+											<div>
+												<span th:if="${contract.contractMonthTime != null}"
+													th:text="|${#numbers.formatInteger(contract.contractMonthTime, 1, 'COMMA')}時間|"></span>
+											</div>
+										</div>
+										<div class="advisor_tanto_block">
+											<div class="advisor_tanto_block__label">
+												<label class="side_parts_label">売上計上先：</label>
+											</div>
+											<div>
+												<span th:if="${contract.getSalesOwnerList().size() == 0}" class="sub_text">(未設定)</span>
+				<th:block th:each ="salesOwner : ${contract.getSalesOwnerList()}">
+												<span th:text="${salesOwner.tantoName}"></span>
+				</th:block>
+											</div>
+										</div>
+										<div class="advisor_tanto_block">
+											<div class="advisor_tanto_block__label">
+												<label class="side_parts_label">担当弁護士：</label>
+											</div>
+											<div>
+												<span th:if="${contract.getTantoLawyerList().size() == 0}" class="sub_text">(未設定)</span>
+				<th:block th:each ="tantoLawyer : ${contract.getTantoLawyerList()}">
+												<span th:if="${tantoLawyer.mainTantoFlg}" class="main_tanto"><i class="fas fa-user"></i></span>
+												<span th:text="${tantoLawyer.tantoName}"></span>
+				</th:block>
+											</div>
+										</div>
+										<div class="advisor_tanto_block">
+											<div class="advisor_tanto_block__label">
+												<label class="side_parts_label">担当事務　：</label>
+											</div>
+											<div>
+												<span th:if="${contract.getTantoJimuList().size() == 0}" class="sub_text">(未設定)</span>
+				<th:block th:each ="tantoJimu : ${contract.getTantoJimuList()}">
+												<span th:if="${tantoJimu.mainTantoFlg}" class="main_tanto"><i class="fas fa-user"></i></span>
+												<span th:text="${tantoJimu.tantoName}"></span>
+				</th:block>
+											</div>
+										</div>
+									</div>
+									<div class="item_split__detail_block">
+										<div>
+											<label class="side_parts_label">契約内容：</label>
+											<div myth:nl2br="${contract.contractContent}"></div>
+										</div>
+										<div class="mt-3">
+											<label class="side_parts_label">メモ（内部向け）：</label>
+											<div th:text="${contract.contractMemo}"></div>
+										</div>
+									</div>
+								</div>
+							</div>
+						</div>
+					</li>
+			</th:block>
+				</ul>
+		</th:block>
+			</div>
+			<!-- ページング -->
+			<th:block th:if="${viewForm.page.hasPrevious() || viewForm.page.hasNext()}">
+			<div class="section_block_footer">
+					<div class="pager_ajax_wrap_center">
+						<div th:replace="common/pagerAjax::pagerAjax(page=${viewForm.page}, listFragmentId='advisorContractListViewFragment')"></div>
+					</div>
+			</div>
+			</th:block>
+		</div>
+	</section>
+</div>
+</body>
+</html>

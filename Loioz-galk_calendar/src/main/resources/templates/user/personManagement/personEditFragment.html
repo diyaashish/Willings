@@ -1,0 +1,4233 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+	<meta charset="utf-8" />
+</head>
+<body>
+
+
+
+<!--/* 名簿基本情報表示ブロック */-->
+<div th:fragment="personBasicViewFragment(personBasicViewForm)" id="personBasicViewFragment">
+
+	<!--/* スクリプト */-->
+	<script th:inline="javascript">
+	$(function() {
+		
+		<!--/* 共有の要素セットアップ処理 */-->
+		commonSetUpElement("personBasicViewFragment");
+		
+		<!--/* 名簿情報の詳細の編集をクリックで編集フォームを表示 */-->
+		$("#personBasicViewFragment .personEdit").on("click", function(){
+	
+			<!--/* 2重押下防止 */-->
+			if(ajaxRunning){
+				return false;
+			}
+			
+			ajaxRunning = true;
+			$.ajax({
+				url : "getPersonBasicInputForm",
+				type : "GET"
+			})
+			.done(function(data, status, jqXHR) {
+				if (isAjaxProcSuccess(jqXHR)) {
+					<!--/* 処理成功 */-->
+					<!--/* 親HTMLのID */-->
+					$('#personBasicFragmentWrap').html(data);
+					
+				} else {
+					<!--/* 処理失敗 */-->
+					const errorMsg = getAjaxProcResutlMessage(jqXHR);
+					showErrorMessageForJs(errorMsg);
+				}
+			})
+			.fail(function(jqXHR, status, errorThrown) {
+				showErrorMessageForJs(/*[[#{E00091}]]*/ "error");
+			})
+			.always(function(){
+				ajaxRunning = false;
+			});
+		});
+		
+		<!--/* 名簿削除ダイアログの表示 */-->
+		$('#personBasicViewFragment #openDeletePersonModal').on('click', function() {
+			
+			const personId = /*[[${personId}]]*/null;
+			
+			<!--/* 2重押下防止 */-->
+			if(ajaxRunning){
+				return false;
+			}
+			
+			ajaxRunning = true;
+			
+			$.ajax({
+				url : "/user/personManagement/openPersonDeleteModal",
+				type : "POST",
+				data : {
+					"personId" : personId
+				},
+			}).done(function(val) {
+				<!--/* モーダルの表示 */-->
+				$('#personBasicViewFragment #personDeleteModalBody').html(val);
+				
+			}).fail(function(jqXHR, textStatus, errorThrown) {
+			}).always(function() {
+				ajaxRunning = false;
+			});
+		});
+
+		<!--/* 帳票出力処理 */-->
+		$("#personBasicViewFragment").on("click", ".downloadBtn", function() {
+			
+			const postUrl = "/user/ankenManagement/souhusho/outputSouhusho";
+			
+			const outPutContainer = $($(this).data("target"));
+			const personId = $(outPutContainer).data("personId");
+			const souhushoType = $(this).data("souhushoType");
+			const params = [
+				{name : "souhushoType", value :souhushoType},
+				{name : "personId", value :personId}
+			];
+			
+			downloadFileAjax(postUrl, $(this), params);
+		});
+
+	})
+	</script>
+
+	<!--/* HTML */-->
+	<th:block th:object="${personBasicViewForm}"
+		th:with="customerKojin=*{isKojin()},
+					customerHojin=*{isHojin()},
+					lawyer=*{isLawyer()}">
+		
+		<input type="hidden" id="customerBasicCustomerTypeCd" th:value="*{customerType.cd}">
+		
+		<!--/* ボタンエリア */-->
+		<div class="person_name_top__edit">
+			<div>
+				<!--/* 名簿属性 */-->
+				<span th:class="|badge badge-pill detail_attr person_type*{personAttribute.getCd().getCd()}|">
+					[[*{personAttribute.getCd().getVal()}]]
+				</span>
+			</div>
+			
+			<!--/* ボタンブロック */-->
+			<div class="person_name_top__edit_btn">
+			
+		<!--/* 送付書出力ボタン */-->
+		<th:block th:if="${personBasicViewForm.isCustomerFlg()}">
+				
+				<!--/* 顧客の場合は、委任契約書が出力可能 */-->
+				<div id="outPutContainer" class="d-inline-block stop-events outPutContainerClose" th:data-person-id="*{personId.asLong()}" data-loading-target=".loadingTarget" data-offset="-80,0" 
+					data-boundary="window" data-container="#personBasicViewFragment" data-toggle="popover" data-placement="bottom" data-html="true" th:data-content=
+					'|<ul class="output_nav_list">
+							<li><button class="btn btn-light downloadBtn" data-target="#outPutContainer" data-souhusho-type="${T(jp.loioz.common.constant.CommonConstant$SouhushoType).IPPAN.getCd()}"><i class="fas fa-download text-primary mr-3"></i><i class="fas fa-spinner mr-3 text-primary faa-spin animated hidden"></i>一般送付書を出力する</button></li>
+							<li><button class="btn btn-light downloadBtn" data-target="#outPutContainer" data-souhusho-type="${T(jp.loioz.common.constant.CommonConstant$SouhushoType).ININN.getCd()}"><i class="fas fa-download text-primary mr-3"></i><i class="fas fa-spinner mr-3 text-primary faa-spin animated hidden"></i>委任契約書を出力する</button></li>
+							<li><button class="btn btn-light downloadBtn" data-target="#outPutContainer" data-souhusho-type="${T(jp.loioz.common.constant.CommonConstant$SouhushoType).FAX_USE.getCd()}"><i class="fas fa-download text-primary mr-3"></i><i class="fas fa-spinner mr-3 text-primary faa-spin animated hidden"></i>FAX送付書を出力する</button></li>
+					</ul>|'>
+					<button type=button class="btn btn-light btn_icon_arrow"
+						data-boundary="window" data-container="#personBasicViewFragment" data-toggle="tooltip" data-trigger="hover" title="ダウンロード">
+						<i class="far fa-file-alt fa-lg"></i><i class="fas fa-chevron-down mr-0"></i>
+					</button>
+				</div>
+				
+			</th:block>
+			<!--/* 送付書出力ボタン end */-->
+			
+			<!--/* 顧客でない場合は、委任契約書が出力不可 */-->
+			<th:block th:unless="${personBasicViewForm.isCustomerFlg()}">
+				
+				<div id="outPutContainer" class="d-inline-block stop-events outPutContainerClose" th:data-person-id="*{personId.asLong()}" data-loading-target=".loadingTarget" data-offset="-80,0" 
+					data-boundary="window" data-container="#personBasicViewFragment" data-toggle="popover" data-placement="bottom" data-html="true" th:data-content=
+					'|<ul class="output_nav_list">
+							<li><button class="btn btn-light downloadBtn" data-target="#outPutContainer" data-souhusho-type="${T(jp.loioz.common.constant.CommonConstant$SouhushoType).IPPAN.getCd()}"><i class="fas fa-download text-primary mr-3"></i><i class="fas fa-spinner mr-3 text-primary faa-spin animated hidden"></i>一般送付書を出力する</button></li>
+							<li><button class="btn btn-light downloadBtn" data-target="#outPutContainer" data-souhusho-type="${T(jp.loioz.common.constant.CommonConstant$SouhushoType).FAX_USE.getCd()}"><i class="fas fa-download text-primary mr-3"></i><i class="fas fa-spinner mr-3 text-primary faa-spin animated hidden"></i>FAX送付書を出力する</button></li>
+					</ul>|'>
+					<button type=button class="btn btn-light btn_icon_arrow"
+						data-boundary="window" data-container="#personBasicViewFragment" data-toggle="tooltip" data-trigger="hover" title="ダウンロード">
+						<i class="far fa-file-alt fa-lg"></i><i class="fas fa-chevron-down mr-0"></i>
+					</button>
+				</div>
+				
+			</th:block>
+			<!--/* 顧客でない場合は、委任契約書が出力不可 end */-->
+				
+				<!--/* 編集ボタン */-->
+				<div data-boundary="window" data-container="#personBasicViewFragment" data-toggle="tooltip" data-trigger="hover" title="名簿情報を編集">
+					<button type="button" class="btn btn-primary btn_icon_only btn_icon_edit personEdit "><i class="fas fa-edit mr-2"></i>編集</button>
+				</div>
+				
+				<!--/* 名簿削除ボタン */-->
+				<div data-boundary="window" data-container="#personBasicViewFragment" data-toggle="tooltip" data-trigger="hover" title="名簿削除">
+					<button type="button" id="openDeletePersonModal" class="btn btn-light btn_icon_only"
+						data-toggle="modal" data-target="#personDeleteModal">
+						<i class="far fa-trash-alt"></i>
+					</button>
+				</div>
+			
+			</div>
+			
+			
+		</div>
+		
+		<!--/* 名簿詳細 */-->
+		<div class="person_detail">
+			
+			<!--/* 名簿画像 */-->
+			<div class="person_detail__image">
+				
+				<!--/* 名簿属性ラベル */-->
+				<div th:class="|person_image_wrapper*{personAttribute.getCd().getCd()}|">
+					<!--/* 個人アイコン */-->
+					<img th:if="${customerKojin}" 
+						class="img-thumbnail person_image" th:src="@{/img/person_kojin.svg}"
+						data-boundary="window" data-container="body" data-toggle="tooltip" data-trigger="hover" th:title="個人">
+					
+					<!--/* 企業・団体アイコン */-->
+					<img th:if="${customerHojin}"
+						class="img-thumbnail person_image" th:src="@{/img/person_hojin.svg}"
+						data-boundary="window" data-container="body" data-toggle="tooltip" data-trigger="hover" th:title="企業・団体">
+					
+					<!--/* 弁護士アイコン */-->
+					<img th:if="${lawyer}" 
+						class="img-thumbnail person_image" th:src="@{/img/person_bengoshi.svg}"
+						data-boundary="window" data-container="body" data-toggle="tooltip" data-trigger="hover" th:title="弁護士">
+					
+				</div>
+			</div>
+			<!--/* 名簿画像 end */-->
+			
+			<!--/* 名前 */-->
+			<div class="person_detail__info">
+				
+				<!--/* 名前 */-->
+				<div class="info__person_name">
+					
+					<!--/* ふりがな */-->
+					<div class="person_name__kana">
+						<span th:text="*{customerNameSeiKana}">せい</span>
+						<span th:text="*{customerNameMeiKana}">めい</span>
+					</div>
+					
+					<!--/* 名前（姓） */-->
+					<span th:text="*{customerNameSei}">姓</span>
+					<!--/* 名前（名） */-->
+					<span th:text="*{customerNameMei}">名</span>
+					<!--/* 旧姓 */-->
+					<span th:if="${customerKojin} and *{oldName != null}"
+						class="old_name" th:text=" '（旧姓：' + *{oldName} + '）'"></span>
+					<!--/* 故人 */-->
+					<span class="fs15 fw0 fc_sub" th:if="${personBasicViewForm.deathFlg}">（故人）</span>
+				</div>
+				
+				<!--/* 名簿付帯情報 */-->
+				<div class="info__person_other">
+				
+					<!--/* 名簿ID */-->
+					<span class="app_id_link mr-3">
+						<span>名簿ID：</span>
+						<span th:text ="*{personId.asLong()}"></span>
+					</span>
+					
+					<!--/* 登録日 */-->
+					<span class="mr-3 badge badge_square badge_tag">
+						<i class="far fa-calendar-check fc_title mr-2"></i>登録日：<span th:text ="*{customerCreatedDate == null ? '' : #temporals.format(customerCreatedDate, 'yyyy/MM/dd')}"></span>
+					</span>
+					
+		<!--/* 個人 */-->
+		<th:block th:if="${customerKojin}" th:with="birthdaySeireki=*{getBirthdaySeireki()}, ageNumber=*{getAgeNumber()}">
+					
+					<!--/* 生年月日 */-->
+					<span class="mr-3 badge badge_square badge_tag">
+						<i class="fas fa-birthday-cake fc_title mr-2"></i>生年月日：<span th:text="${not #strings.isEmpty(birthdaySeireki)} ? *{getBirthdayWareki()} : '' ">（昭和58年）</span>
+						<span th:if="*{birthdaySeireki != null}" th:text="${not #strings.isEmpty(birthdaySeireki)} ? ${birthdaySeireki} : '不明' ">1983年1月13日 生まれ</span>
+						<span th:if="*{birthdaySeireki != null}" th:text="${not #strings.isEmpty(ageNumber)} ? |(${ageNumber}歳)| : '' ">38歳</span>
+					</span>
+					<!--/* 性別 */-->
+					<span class="mr-3 badge badge_square badge_tag">
+						<i class="fas fa-venus-mars fc_title mr-2"></i>性別：<span th:text="*{gender != null} ? *{gender.getVal()} : '不明'"></span>
+					</span>
+					
+		</th:block>
+					
+		<!--/* 企業・団体 */-->
+		<th:block th:if="${customerHojin}">
+					
+					<!--/* 代表者 */-->
+					<span class="mr-3 badge badge_square badge_tag">
+						<i class="fas fa-user fc_title mr-2"></i>代表者：<span th:if="*{daihyoName == null && daihyoNameKana == null}" th:text="|(氏名なし)|">(氏名なし)</span>
+						<span th:text="*{daihyoName}"></span>
+						<span th:text="*{daihyoPositionName}"></span>
+					</span>
+					
+					<!--/* 担当者 */-->
+					<span class="mr-3 badge badge_square badge_tag">
+						<i class="far fa-user fc_title mr-2"></i>担当者：<span th:if="*{tantoName == null && tantoNameKana == null}" th:text="|(氏名なし)|">(氏名なし)</span>
+						<span th:text="*{tantoName}"></span>
+					</span>
+					
+		</th:block>
+					
+		<!--/* 弁護士 */-->
+		<th:block th:if="${lawyer}">
+					
+					<!--/* 事務所名 */-->
+					<span class="mr-3 badge badge_square badge_tag">
+						<i class="far fa-building fc_title mr-2"></i>事務所名：<span th:unless="*{#strings.isEmpty(lawyerJimushoName)}" th:text="*{lawyerJimushoName}"></span>
+						<span th:if="*{#strings.isEmpty(lawyerJimushoName)}" th:text="|(未設定)|">(未設定)</span>
+						<!--/* 部署・役職名 */-->
+						<span th:unless="*{#strings.isEmpty(lawyerBushoName)}" th:text="*{lawyerBushoName}"></span>
+					</span>
+					
+		</th:block>
+					
+				</div>
+				<!--/* 名簿付帯情報 end */-->
+				
+			</div>
+			
+		</div>
+		
+		<!--/* 個人 */-->
+		<th:block th:if="${customerKojin}">
+		<div class="person_edit_split">
+			
+			<div class="person_edit_split__left">
+				
+				<!--/* 1行目 */-->
+				<div class="person_edit_row"  th:if="*{deathYear != null} or *{country != null} or *{language != null} or *{!#strings.isEmpty(yago)}">
+					<!--/* 死亡日 */-->
+					<div class="data_date" th:unless="*{deathYear == null}">
+						<span class="badge badge-pill data_label badge_gray badge_square px-3">死亡日</span>
+						<div class="data_label_value" th:with="deathDateSeireki=*{getDeathDateSeireki()}">
+							<span th:text="${not #strings.isEmpty(deathDateSeireki)} ? *{getDeathDateWareki()} : '' ">（令和15年）</span>
+							<span th:if="*{deathDateSeireki != null}" th:text="${deathDateSeireki}">2033年1月13日</span>
+						</div>
+					</div>
+					<!--/* 国籍・言語 */-->
+					<div th:if="*{country != null} or *{language != null}">
+						<span class="badge badge-pill data_label badge_gray badge_square px-3">国籍／言語</span>
+						<div class="data_label_value">
+							<span th:if="*{country != null}" th:text="*{country}"></span>
+							<span>／</span>
+							<span th:if="*{language != null}" th:text="*{language}"></span>
+						</div>
+					</div>
+					<!--/* 屋号・通称名 */-->
+					<div th:unless="*{#strings.isEmpty(yago)}">
+						<span class="badge badge-pill data_label badge_gray badge_square px-3">屋号／通称名</span>
+						<div class="data_label_value">
+							<span th:text="*{yago}"></span>
+							<span th:unless="*{#strings.isEmpty(yagoKana)}" th:text="*{'（' + yagoKana + '）'}"></span>
+						</div>
+					</div>
+				</div>
+				
+				<!--/* 2行目 */-->
+				<div class="person_edit_row">
+					<!--/* 職業 */-->
+					<div>
+						<span class="badge badge-pill data_label badge_gray badge_square px-3">職業</span>
+						<div class="data_label_value">
+							<span th:text="*{#strings.isEmpty(job)} ? '(記載なし)' : *{job} "></span>
+						</div>
+					</div>
+					<!--/* 勤務先 */-->
+					<div>
+						<span class="badge badge-pill data_label badge_gray badge_square px-3">勤務先</span>
+						<div class="data_label_value">
+							<span th:text="*{#strings.isEmpty(workPlace)} ? '(記載なし)' : *{workPlace} "></span>
+						</div>
+					</div>
+					<!--/* 部署 */-->
+					<div th:unless="*{#strings.isEmpty(bushoName)}">
+						<span class="badge badge-pill data_label badge_gray badge_square px-3">部署</span>
+						<div class="data_label_value">
+							<span th:text="*{bushoName}"></span>
+						</div>
+					</div>
+				</div>
+			</div>
+			<!--/* 左側 end */-->
+			
+			<!--/* 右側 */-->
+			<div class="person_edit_split__right">
+				<div class="person_edit_row">
+					<!--/* 特記事項 */-->
+					<div>
+						<span class="badge badge-pill data_label badge_gray badge_square px-3">特記事項</span>
+						<div class="data_content biko_detail my-0" 
+							myth:nl2br="*{#strings.isEmpty(remarks)} ? '(記載なし)' : *{remarks}">
+						</div>
+					</div>
+					<!--/* 相談経路 */-->
+					<div th:if="*{not #strings.isEmpty(sodanRouteText)} or *{sodanRemarks != null}">
+						<span class="badge badge-pill data_label badge_gray badge_square px-3">相談経路</span>
+						<div class="data_label_value">
+							<span th:if="*{not #strings.isEmpty(sodanRouteText)}" th:text="|*{sodanRouteText}：|"></span>
+							<span th:text="*{sodanRemarks}"></span>
+						</div>
+					</div>
+				</div>
+			</div>
+			<!--/* 右側 end */-->
+			
+		</div>
+		</th:block>
+		<!--/* 個人 end */-->
+		
+		<!--/* 企業・団体 */-->
+		<th:block th:if="${customerHojin}">
+		
+		<!--/* 分割なし */-->
+		<div class="person_edit_split">
+			<div class="person_edit_row">
+				<div th:if="*{not #strings.isEmpty(oldHojinName)}">
+					<!--/* 旧商号 */-->
+					<span class="badge badge-pill data_label badge_gray badge_square px-3">旧商号</span>
+					<div class="data_label_value">
+						<span th:text="*{oldHojinName}"></span>
+					</div>
+				</div>
+				<!--/* 特記事項 */-->
+				<div>
+					<span class="badge badge-pill data_label badge_gray badge_square px-3">特記事項</span>
+					<div class="data_content biko_detail my-0" 
+						myth:nl2br="*{#strings.isEmpty(remarks)} ? '(記載なし)' : *{remarks}">
+					</div>
+				</div>
+				<!--/* 相談経路 */-->
+				<div th:if="*{not #strings.isEmpty(sodanRouteText)} or *{sodanRemarks != null}">
+					<span class="badge badge-pill data_label badge_gray badge_square px-3">相談経路</span>
+					<div class="data_label_value">
+						<span th:if="*{not #strings.isEmpty(sodanRouteText)}" th:text="|*{sodanRouteText}：|"></span>
+						<span th:text="*{sodanRemarks}"></span>
+					</div>
+				</div>
+			</div>
+		</div>
+		</th:block>
+		<!--/* 企業・団体 end */-->
+		
+		<!--/* 弁護士 */-->
+		<th:block th:if="${lawyer}">
+		<!--/* 分割なし */-->
+		<div class="person_edit_split">
+			<div class="person_edit_row">
+				<!--/* 特記事項 */-->
+				<div>
+					<span class="badge badge-pill data_label badge_gray badge_square px-3">特記事項</span>
+					<div class="biko_detail my-0" 
+						myth:nl2br="*{#strings.isEmpty(remarks)} ? '(記載なし)' : *{remarks}">
+					</div>
+				</div>
+			</div>
+		</div>
+		</th:block>
+		<!--/* 弁護士 end */-->
+	</th:block>
+	
+	<!--/* 名簿削除モーダル */-->
+	<div id="personDeleteModal" class="modal fade" tabindex="-1" role="dialog" aria-hidden="true" data-backdrop="static">
+		<div class="modal-dialog modal-dialog-centered modal_deleteSelect_simple" role="document">
+			<div class="modal-content">
+				<div id="personDeleteModalBody"></div>
+			</div>
+		</div>
+	</div>
+	
+	<!--/* 送付書モーダル */-->
+	<div id="souhushoSelectModal" class="modal fade" tabindex="-1" role="dialog" aria-hidden="true" data-backdrop="static">
+		<div class="modal-dialog modal-dialog-centered modal_souhushoSelect_simple" role="document">
+			<div class="modal-content">
+				<div id="souhushoSelectModalBody"></div>
+			</div>
+		</div>
+	</div>
+	
+</div>
+
+<!--/* 名簿基本情報編集ブロック */-->
+<div th:fragment="personBasicInputFragment" id="personBasicInputFragment">
+
+	<!--/* Script */-->
+	<script th:inline="javascript">
+	$(function() {
+		
+		<!--/* 共有の要素セットアップ処理 */-->
+		commonSetUpElement();
+		
+		<!--/* 自動入力 */-->
+		<!--/* 個人：姓(かな) */-->
+		$.fn.autoKana('#personBasicInputFragment .kojinForm #customerNameSei', '#personBasicInputFragment .kojinForm #customerNameSeiKana', {
+		});
+		<!--/* 会社名(かな) */-->
+		$.fn.autoKana('#personBasicInputFragment .hojinForm #customerNameSei', '#personBasicInputFragment .hojinForm #customerNameSeiKana', {
+		});
+		<!--/* 弁護士：姓(かな) */-->
+		$.fn.autoKana('#personBasicInputFragment .lawyerForm #customerNameSei', '#personBasicInputFragment .lawyerForm #customerNameSeiKana', {
+		});
+		<!--/* 個人：名(かな) */-->
+		$.fn.autoKana('#personBasicInputFragment .kojinForm #customerNameMei', '#personBasicInputFragment .kojinForm #customerNameMeiKana', {
+		});
+		<!--/* 弁護士：名(かな) */-->
+		$.fn.autoKana('#personBasicInputFragment .lawyerForm #customerNameMei', '#personBasicInputFragment .lawyerForm #customerNameMeiKana', {
+		});
+		<!--/* 旧姓(かな) */-->
+		$.fn.autoKana('#personBasicInputFragment #oldName', '#personBasicInputFragment #oldNameKana', {
+		});
+		<!--/* 屋号(かな) */-->
+		$.fn.autoKana('#personBasicInputFragment #yago', '#personBasicInputFragment #yagoKana', {
+		});
+		<!--/* 代表者(かな) */-->
+		$.fn.autoKana('#personBasicInputFragment #daihyoName', '#personBasicInputFragment #daihyoNameKana', {
+		});
+		<!--/* 担当者(かな) */-->
+		$.fn.autoKana('#personBasicInputFragment #tantoName', '#personBasicInputFragment #tantoNameKana', {
+		});
+		
+		<!--/* 入力項目削除時は値をクリア（国籍／言語、屋号）*/-->
+		$("#personBasicInputFragment .collapse.clearOnHide").on("hidden.bs.collapse", function(){
+			$(this).find("input, select").val("");
+		});
+		
+		<!--/* 名簿情報の詳細の編集を閉じる（表示モードの表示に切り替える） */-->
+		$('#personBasicInputFragment .customerClose').on('click', function() {
+			
+			<!--/* 2重押下防止 */-->
+			if(ajaxRunning){
+				return false;
+			}
+			
+			ajaxRunning = true;
+			$.ajax({
+				url : "getCustomerBasicView",
+				type : "GET"
+			})
+			.done(function(data, status, jqXHR) {
+				if (isAjaxProcSuccess(jqXHR)) {
+					<!--/* 親HTMLのID */-->
+					$('#personBasicFragmentWrap').html(data);
+					<!--/* 共有の要素セットアップ処理 */-->
+					commonSetUpElement();
+
+				} else {
+					<!--/* 処理失敗 */-->
+					const errorMsg = getAjaxProcResutlMessage(jqXHR);
+					showErrorMessageForJs(errorMsg);
+				}
+			})
+			.fail(function(jqXHR, status, errorThrown) {
+				showErrorMessageForJs(/*[[#{E00091}]]*/ "error");
+			})
+			.always(function(){
+				ajaxRunning = false;
+			});
+			
+		})
+		
+		<!--/* 顧客区分切り替え */-->
+		$("#personBasicInputFragment #customerType").on("change", function() {
+			
+			let customerType = $('#customerType').val();
+			if(customerType == /*[[${{T(jp.loioz.common.constant.CommonConstant$CustomerType).KOJIN}}]]*/ 0){
+				$("#personBasicInputFragment .kojinForm").removeClass("hidden");
+				$("#personBasicInputFragment .hojinForm").addClass("hidden");
+				$("#personBasicInputFragment .lawyerForm").addClass("hidden");
+				$("#personBasicInputFragment .kojinHojinForm").removeClass("hidden");
+			} else if(customerType == /*[[${{T(jp.loioz.common.constant.CommonConstant$CustomerType).HOJIN}}]]*/ 1){
+				$("#personBasicInputFragment .kojinForm").addClass("hidden");
+				$("#personBasicInputFragment .hojinForm").removeClass("hidden");
+				$("#personBasicInputFragment .lawyerForm").addClass("hidden");
+				$("#personBasicInputFragment .kojinHojinForm").removeClass("hidden");
+			} else {
+				$("#personBasicInputFragment .kojinForm").addClass("hidden");
+				$("#personBasicInputFragment .hojinForm").addClass("hidden");
+				$("#personBasicInputFragment .lawyerForm").removeClass("hidden");
+				$("#personBasicInputFragment .kojinHojinForm").addClass("hidden");
+			}
+		});
+		
+		$("#personBasicInputFragment #customerType").trigger("change");
+		
+		<!--/* 名簿基本情報の保存 */-->
+		$('#personBasicInputFragment #customerBasicSave').on('click', function() {
+			
+			<!--/* リクエストURL */-->
+			let requestUrl = ''
+			<!--/* リクエストパラメータ */-->
+			let formData = null;
+			
+			<!--/* 選択されている 顧客区分の値により、リクエストURLとリクエストパラメータを設定する */-->
+			const customerType = $('#customerType').val();
+			if(customerType == /*[[${{T(jp.loioz.common.constant.CommonConstant$CustomerType).KOJIN}}]]*/ 0){
+				<!--/* 個人 */-->
+				requestUrl = 'saveKojinCustomerBasic'
+				formData = $('#personBasicInputFragment')
+								.find('.customerCommonForm, .kojinForm, .kojinHojinForm')
+								.find('input, select, textArea')
+								.serializeArray();
+			} else if(customerType == /*[[${{T(jp.loioz.common.constant.CommonConstant$CustomerType).HOJIN}}]]*/ 1){
+				<!--/* 企業・団体 */-->
+				requestUrl = 'saveHojinCustomerBasic'
+				formData = $('#personBasicInputFragment')
+								.find('.customerCommonForm, .hojinForm, .kojinHojinForm')
+								.find('input, select, textArea')
+								.serializeArray();
+			} else {
+				<!--/* 弁護士 */-->
+				requestUrl = 'saveLawyerCustomerBasic'
+				formData = $('#personBasicInputFragment')
+								.find('.customerCommonForm, .lawyerForm')
+								.find('input, select, textArea')
+								.serializeArray();
+			}
+			
+			<!--/* 2重押下防止 */-->
+			if(ajaxRunning){
+				return false;
+			}
+			
+			ajaxRunning = true;
+			$.ajax({
+				url : requestUrl,
+				type : "POST",
+				data : formData
+			})
+			.done(function(data, status, jqXHR) {
+				if (isAjaxProcSuccess(jqXHR)) {
+					<!--/* 処理成功 */-->
+				
+					<!--/* 顧客区分の値が変更されたかどうか */-->
+					<!--/* 変更された場合は、基本情報部分以外の関連する部分の再表示を行う */-->
+					const customerTypeBeforeUpdate = $('#personBasicInputFragment #customerTypeBeforeUpdate').val();
+					const customerTypeChanged = !(customerType === customerTypeBeforeUpdate)
+					
+					<!--/* 親HTMLのID */-->
+					$('#personBasicFragmentWrap').html(data);
+					<!--/* 共有の要素セットアップ処理 */-->
+					commonSetUpElement();
+
+					const msg = getAjaxProcResutlMessage(jqXHR);
+					showInfoMessageForJs(msg);
+					
+					if (customerTypeChanged) {
+						<!--/* 顧客区分の値が変更された場合 */-->
+						
+						<!--/* 住所情報の表示領域を再描画 */-->
+						renderAddressViewFunc();
+						
+						if(customerType == /*[[${{T(jp.loioz.common.constant.CommonConstant$CustomerType).LAWYER}}]]*/ 2) {
+							<!--/* 名簿のタイプを「弁護士」に変更した場合 */-->
+							
+							<!--/* 名簿の案件情報表示フォームをリセットする*/-->
+							resetCustomerAnkenViewFunc();
+						} else {
+							<!--/* 名簿のタイプを「個人 or 企業・団体」に変更した場合 */-->
+							
+							let dataObjForRenderCustomerAnkenViewFunc = {
+									<!--/* 顧客タイプ変更後の案件情報の表示では、すべて表示フラグは固定でfalse（チェックなし）にする */-->
+									allAnkenFlg : false,
+									customerId : /*[[${personId}]]*/null
+							}
+							
+							<!--/* 名簿の案件情報表示フォームの再表示 */-->
+							renderCustomerAnkenViewFunc(dataObjForRenderCustomerAnkenViewFunc);
+						}
+					}
+					
+					<!--/* サイドメニューの再レンダリング */-->
+					renderCustomerAnkenMenuView();
+					
+					<!--/* パンくず部分の再レンダリング */-->
+					let dataObj = {
+						sideMenuPersonId : /*[[${personId}]]*/null,
+						sideMenuAnkenId : null,
+						selectedTabClass : 'is_kokyaku'
+					}
+					wrapHeaderRefresh(dataObj);
+					
+				} else {
+					<!--/* 処理失敗 */-->
+					
+					if (data) {
+						<!--/* HTMLのコンテンツが返却されている場合 */-->
+						<!--/* 親HTMLのID */-->
+						$('#personBasicFragmentWrap').html(data);
+					}
+					
+					const errorMsg = getAjaxProcResutlMessage(jqXHR);
+					showErrorMessageForJs(errorMsg);
+				}
+			})
+			.fail(function(jqXHR, status, errorThrown) {
+				showErrorMessageForJs(/*[[#{E00013}]]*/ "保存に失敗しました。");
+			})
+			.always(function(){
+				ajaxRunning = false;
+			});
+		})
+
+		<!--/* 故人のチェックボックス変更 */-->
+		$('#personBasicInputFragment .changeDeceased').on('change', function() {
+			if ($(this).prop('checked')) {
+				<!--/* 死亡日入力フィールドを表示する */-->
+				$('.deathDate').removeClass('hidden');
+			} else {
+				<!--/* 死亡日入力フィールドを非表示にする */-->
+				$('.deathDate').addClass('hidden');
+			}
+		})
+		
+		<!--/* サイドメニューの再取得 */-->
+		function renderCustomerAnkenMenuView() {
+			return new Promise((resolve, reject) => {
+				
+				$.ajax({
+					url : "getCustomerAnkenMenuView",
+					type : "GET",
+					dataType: 'html',
+				})
+				.done(function(data, status, jqXHR) {
+					if (isAjaxProcSuccess(jqXHR)) {
+						// メニュー表示部分のID
+						$('#customerAnkenMenuFragmentWrap').html(data);
+						return resolve();
+					} else {
+						// 処理失敗
+						const errorMsg = getAjaxProcResutlMessage(jqXHR);
+						showErrorMessageForJs(errorMsg);
+						return reject();
+					}
+				})
+				.fail(function(jqXHR, status, errorThrown) {
+					showErrorMessageForJs(/*[[#{E00091}]]*/ "error");
+					
+					return reject();
+				});
+			});
+		}
+
+	});
+	</script>
+
+	<!--/* HTML */-->
+	<form id="personBasicInputForm" th:action="@{/user/personManagement/edit/{personId}/save(personId=${personId})}"
+		 th:object="${personBasicInputForm}" method="post" autocomplete="off">
+		
+		<div class="main_edit mb-4">
+			
+			<!--/* 入力 */-->
+			<div class="row">
+			
+				<!--/* 左側 */-->
+				<div class="col-md-6">
+					<div class="detail_input_area">
+						<!--/* 顧客共通 */-->
+						<div class="form-row customerCommonForm">
+							<!--/* 種別 */-->
+							<div class="form-group col-md-8">
+								<label class="input_parts_label">種別</label>
+								<select class="form-control digit7" th:field="*{customerType}" th:with="customerType=*{customerType}">
+									<option th:each="type : ${T(jp.loioz.common.constant.CommonConstant$CustomerType).values()}" 
+										th:label="${type.getVal()}" th:text="${type.getVal()}" th:value="${type.getCd()}" th:selected="${type.equalsByCode(customerType)}">個人</option>
+								</select>
+								<div th:if="${#fields.hasErrors('customerType')}" th:errors="*{customerType}" class="error_mag_point">error!</div>
+							</div>
+							<!--/*  登録日 */-->
+							<div class="form-group col-md-4">
+								<label class="input_parts_label">登録日</label>
+								<input type="text" class="form-control digit7 inputDateSlash" th:field="*{customerCreatedDate}" data-click-sync="[data-target-name='customerCreatedDate']" maxlength="10">
+								<button type="button" class="btn btn_popcal hidden" data-toggle="datepicker" data-target-name="customerCreatedDate" data-target="#customerCreatedDate">カレンダー</button>
+								<div th:if="${#fields.hasErrors('customerCreatedDate')}" th:errors="*{customerCreatedDate}" class="error_mag_point">error!</div>
+							</div>
+						</div>
+						
+						<!--/* 個人 */-->
+						<div class="kojinForm">
+							<div class="form-row">
+								<!--/* 名前 */-->
+								<div class="form-group col-md-8 mb-0">
+									<label class="input_parts_label">名前</label>
+									<span class="mark_equired">必須</span>
+								</div>
+								<!--/*  旧姓 */-->
+								<div class="form-group col-md mb-0">
+									<label class="input_parts_label">旧姓</label>
+								</div>
+							</div>
+							
+							<!--/* 姓・名・旧姓 */-->
+							<div class="form-row">
+								<!-- 姓 -->
+								<div class="form-group col-md-4">
+									<input type="text"class="form-control" th:field="*{customerNameSei}" placeholder="姓" maxlength="24">
+									<div th:if="${#fields.hasErrors('customerNameSei')}" th:errors="*{customerNameSei}" class="error_mag_point">error</div>
+								</div>
+								<!-- 名 -->
+								<div class="form-group col-md-4">
+									<input type="text"class="form-control" th:field="*{customerNameMei}" placeholder="名" maxlength="24">
+									<div th:if="${#fields.hasErrors('customerNameMei')}" th:errors="*{customerNameMei}" class="error_mag_point">error</div>
+								</div>
+								<!-- 旧姓 -->
+								<div class="form-group col-md-4" th:with="isEmpty=*{#strings.isEmpty(oldName) && #strings.isEmpty(oldNameKana)}">
+									<input type="text" class="form-control" th:field="*{oldName}" placeholder="漢字" maxlength="24">
+									<div th:if="${#fields.hasErrors('oldName')}" th:errors="*{oldName}" class="error_mag_point">error</div>
+								</div>
+							</div>
+							
+							<!--/* せい・めい・きゅうせい */-->
+							<div class="form-row">
+								<!-- せい -->
+								<div class="form-group col-md-4">
+									<input type="text" class="form-control" th:field="*{customerNameSeiKana}" placeholder="せい" maxlength="64">
+									<div th:if="${#fields.hasErrors('customerNameSeiKana')}" th:errors="*{customerNameSeiKana}" class="error_mag_point">error</div>
+								</div>
+								<!-- めい -->
+								<div class="form-group col-md-4">
+									<input type="text" class="form-control" th:field="*{customerNameMeiKana}" placeholder="めい" maxlength="64">
+									<div th:if="${#fields.hasErrors('customerNameMeiKana')}" th:errors="*{customerNameMeiKana}" class="error_mag_point">error</div>
+								</div>
+								<!-- 旧姓（ふりがな） -->
+								<div class="form-group col-md-4" th:with="isEmpty=*{#strings.isEmpty(oldName) && #strings.isEmpty(oldNameKana)}">
+									<input type="text" class="form-control" th:field="*{oldNameKana}" placeholder="ふりがな" maxlength="64">
+									<div th:if="${#fields.hasErrors('oldNameKana')}" th:errors="*{oldNameKana}" class="error_mag_point">error</div>
+								</div>
+							</div>
+							
+							<!--/* 性別 */-->
+							<div class="form-row">
+								<div class="form-group col-md-12">
+									<label class="input_parts_label">性別</label>
+									<div>
+										<label class="radio_btn" th:each="option : *{genderOptionList}">
+											<input type="radio" class="radio_input radio_nyushukkinType" th:field="*{gender}" th:value="${option.value}">
+											<span class="radio_txt" th:text="${option.label}">切り上げ</span>
+										</label>
+										<div th:if="${#fields.hasErrors('gender')}" th:errors="*{gender}" class="error_mag_point">error</div>
+									</div>
+								</div>
+							</div>
+							
+							<!--/* 生年月日 */-->
+							<div class="form-row">
+								<!-- 生年月日 -->
+								<div class="form-group col-md-12 mb-0">
+									<label class="input_parts_label">生年月日</label>
+								</div>
+								<div class="form-group col-md-12">
+									<div class="d-flex">
+										<!--/* 和暦・西暦 */-->
+										<select class="form-control digit5 mr-2" th:field="*{birthEra}">
+											<option th:each="enum : ${T(jp.loioz.common.constant.CommonConstant$EraType).values()}"
+												th:value="${enum.cd}" th:text="${enum.val}">平成</option>
+										</select>
+										<!--/* 年 */-->
+										<select class="form-control digit6 mr-2" th:field="*{birthYear}">
+											<th:block th:if="*{birthEra} == null or *{birthEra.getCd()} == ${T(jp.loioz.common.constant.CommonConstant$EraType).SEIREKI.getCd()}">
+												<!-- 西暦の場合 -->
+												<option value="">-</option>
+												<option th:each="num : ${#numbers.sequence(#calendars.year(#calendars.createToday()), 1900, -1)}"
+													th:value="${num}" th:text="|${num}年|"></option>
+											</th:block>
+											<th:block th:if="*{birthEra} != null and *{birthEra.getCd()} == ${T(jp.loioz.common.constant.CommonConstant$EraType).REIWA.getCd()}">
+												<!-- 令和の場合 -->
+												<option value="">-</option>
+												<option th:each="num : ${#numbers.sequence(#calendars.year(#calendars.createToday()) - 2018, 2, -1)}"
+													th:value="${num}" th:text="|${num}年|"></option>
+												<option value="1">元年</option>
+											</th:block>
+											<th:block th:if="*{birthEra} != null and *{birthEra.isJp()} and *{birthEra.getCd()} != ${T(jp.loioz.common.constant.CommonConstant$EraType).REIWA.getCd()}">
+												<!-- 令和以外の和暦の場合 -->
+												<option value="">-</option>
+												<option th:each="num : ${#numbers.sequence(T(jp.loioz.common.constant.CommonConstant$EraEpoch).of(__*{birthEra.getCd()}__).getVal(), 2, -1)}"
+													th:value="${num}" th:text="|${num}年|"></option>
+												<option value="1">元年</option>
+											</th:block>
+										</select>
+										<!--/* 月 */-->
+										<select class="birth_select_month form-control digit5 mr-2" th:field="*{birthMonth}">
+											<option value="">-</option>
+											<option th:each="num : ${#numbers.sequence(1,12)}"
+												th:value="${num}" th:text="|${num}月|">1</option>
+										</select>
+										<!--/* 日 */-->
+										<select class="birth_select_day form-control digit5" th:field="*{birthDay}">
+											<option value="">-</option>
+											<option th:each="num : ${#numbers.sequence(1,31)}"
+												th:value="${num}" th:text="|${num}日|">1</option>
+										</select>
+									</div>
+									<div class="error_mag_point hidden">日付が不正です。</div>
+									<div th:if="${#fields.hasErrors('birthEra')}" th:errors="*{birthEra}" class="error_mag_point">error</div>
+								</div>
+							</div>
+							
+							<!--/* 故人 */-->
+							<div class="form-row">
+								<div class="form-group col-md-12 mb-1">
+									<label class="checkbox_btn">
+										<input type="checkbox" class="checkbox_input changeDeceased" th:field="*{deathFlg}">
+										<span class="checkbox_txt">故人</span>
+									</label>
+								</div>
+							</div>
+							
+							<!--/* 死亡日 */-->
+							<div class="form-row deathDate" th:classappend="*{deathFlg} == true ? '' : 'hidden'">
+								<div class="form-group col-md-12 mb-0">
+									<label class="input_parts_label">死亡日</label>
+								</div>
+								<div class="form-group col-md-12">
+									<div class="d-flex">
+										<!--/* 和暦・西暦 */-->
+										<select class="form-control digit5 mr-2" th:field="*{deathEra}">
+											<option th:each="enum : ${T(jp.loioz.common.constant.CommonConstant$EraType).values()}"
+												th:value="${enum.cd}" th:text="${enum.val}">平成</option>
+										</select>
+										<!--/* 年 */-->
+										<select class="form-control digit6 mr-2" th:field="*{deathYear}">
+											<th:block th:if="*{deathEra} == null or *{deathEra.getCd()} == ${T(jp.loioz.common.constant.CommonConstant$EraType).SEIREKI.getCd()}">
+												<!-- 西暦の場合 -->
+												<option value="">-</option>
+												<option th:each="num : ${#numbers.sequence(#calendars.year(#calendars.createToday()), 1900, -1)}"
+													th:value="${num}" th:text="|${num}年|"></option>
+											</th:block>
+											<th:block th:if="*{deathEra} != null and *{deathEra.getCd()} == ${T(jp.loioz.common.constant.CommonConstant$EraType).REIWA.getCd()}">
+												<!-- 令和の場合 -->
+												<option value="">-</option>
+												<option th:each="num : ${#numbers.sequence(#calendars.year(#calendars.createToday()) - 2018, 2, -1)}"
+													th:value="${num}" th:text="|${num}年|"></option>
+												<option value="1">元年</option>
+											</th:block>
+											<th:block th:if="*{deathEra} != null and *{deathEra.isJp()} and *{deathEra.getCd()} != ${T(jp.loioz.common.constant.CommonConstant$EraType).REIWA.getCd()}">
+												<!-- 令和以外の和暦の場合 -->
+												<option value="">-</option>
+												<option th:each="num : ${#numbers.sequence(T(jp.loioz.common.constant.CommonConstant$EraEpoch).of(__*{deathEra.getCd()}__).getVal(), 2, -1)}"
+													th:value="${num}" th:text="|${num}年|"></option>
+												<option value="1">元年</option>
+											</th:block>
+										</select>
+										<!--/* 月 */-->
+										<select class="death_select_month form-control digit5 mr-2" th:field="*{deathMonth}">
+											<option value="">-</option>
+											<option th:each="num : ${#numbers.sequence(1,12)}"
+												th:value="${num}" th:text="|${num}月|">1</option>
+										</select>
+										<!--/* 日 */-->
+										<select class="death_select_day form-control digit5" th:field="*{deathDay}">
+											<option value="">-</option>
+											<option th:each="num : ${#numbers.sequence(1,31)}"
+												th:value="${num}" th:text="|${num}日|">1</option>
+										</select>
+									</div>
+									<div class="error_mag_point hidden">日付が不正です。</div>
+									<div th:if="${#fields.hasErrors('deathEra')}" th:errors="*{deathEra}" class="error_mag_point">error</div>
+								</div>
+							</div>
+						</div>
+						
+						<!--/* 企業・団体 */-->
+						<div class="hojinForm">
+							<div class="form-row">
+								<!--/* 名前 */-->
+								<div class="form-group col-md-8 mb-0">
+									<label class="input_parts_label">名前</label>
+									<span class="mark_equired">必須</span>
+								</div>
+							</div>
+							
+							<!--/* 姓（会社名） */-->
+							<div class="form-row">
+								<!-- 姓（会社名） -->
+								<div class="form-group col-md-12">
+									<input type="text"class="form-control" th:field="*{customerNameSei}" placeholder="名前" maxlength="64">
+									<div th:if="${#fields.hasErrors('customerNameSei')}" th:errors="*{customerNameSei}" class="error_mag_point">error</div>
+								</div>
+							</div>
+							
+							<!--/* せい（会社名） */-->
+							<div class="form-row">
+								<!-- せい（会社名） -->
+								<div class="form-group col-md-12">
+									<input type="text" class="form-control" th:field="*{customerNameSeiKana}" placeholder="ふりがな" maxlength="128">
+									<div th:if="${#fields.hasErrors('customerNameSeiKana')}" th:errors="*{customerNameSeiKana}" class="error_mag_point">error</div>
+								</div>
+							</div>
+							
+							<!--/* 代表、担当者 */-->
+							<div>
+								<!--/* 代表者名・担当者ラベル */-->
+								<div class="form-row">
+									<div class="form-group col-md-8 mb-0">
+										<label class="input_parts_label">代表者</label>
+									</div>
+									<div class="form-group col-md-4 mb-0">
+										<label class="input_parts_label">担当者</label>
+									</div>
+								</div>
+								<!--/* 代表者名・担当者 */-->
+								<div class="form-row">
+									<!--/* 代表者 */-->
+									<div class="form-group col-md-4">
+										<input type="text" class="form-control" th:field="*{daihyoName}" placeholder="漢字" maxlength="24">
+										<div th:if="${#fields.hasErrors('daihyoName')}" th:errors="*{daihyoName}" class="error_mag_point">error</div>
+									</div>
+									<!--/* 役職 */-->
+									<div class="form-group col-md-4">
+										<input type="text" class="form-control" th:field="*{daihyoPositionName}" placeholder="役職（代表者）" maxlength="24">
+										<div th:if="${#fields.hasErrors('daihyoPositionName')}" th:errors="*{daihyoPositionName}" class="error_mag_point">error</div>
+									</div>
+									<!--/* 担当者名（漢字） */-->
+									<div class="form-group col-md-4">
+										<input type="text" class="form-control" th:field="*{tantoName}" placeholder="漢字" maxlength="24">
+										<div th:if="${#fields.hasErrors('tantoName')}" th:errors="*{tantoName}" class="error_mag_point">error</div>
+									</div>
+								</div>
+								<div class="form-row">
+									<!-- 代表者（ふりがな） -->
+									<div class="form-group col-md-4">
+										<input type="text" class="form-control" th:field="*{daihyoNameKana}" placeholder="ふりがな" maxlength="64">
+										<div th:if="${#fields.hasErrors('daihyoNameKana')}" th:errors="*{daihyoNameKana}" class="error_mag_point">error</div>
+									</div>
+									<div class="form-group col-md-4"></div>
+									<!--/* 担当者名（ふりがな） */-->
+									<div class="form-group col-md-4">
+										<input type="text" class="form-control" th:field="*{tantoNameKana}" placeholder="ふりがな" maxlength="64">
+										<div th:if="${#fields.hasErrors('tantoNameKana')}" th:errors="*{tantoNameKana}" class="error_mag_point">error</div>
+									</div>
+								</div>
+							</div>
+							
+							<!--/* 旧商号 */-->
+							<div>
+								<!--/* 旧商号ラベル */-->
+								<div class="form-row">
+									<div class="form-group col-md-12 mb-0">
+										<label class="input_parts_label">旧商号</label>
+									</div>
+								</div>
+								<!--/* 旧商号 */-->
+								<div class="form-row">
+									<div class="form-group col-md-12">
+										<input type="text" class="form-control" th:field="*{oldHojinName}" maxlength="64">
+										<div th:if="${#fields.hasErrors('oldHojinName')}" th:errors="*{oldHojinName}" class="error_mag_point">error</div>
+									</div>
+								</div>
+							</div>
+						</div>
+						
+						<!--/* 弁護士 */-->
+						<div class="lawyerForm">
+							<div class="form-row">
+								<!--/* 氏名 */-->
+								<div class="form-group col-md-12 mb-0">
+									<label class="input_parts_label">名前</label>
+									<span class="mark_equired">必須</span>
+								</div>
+							</div>
+							
+							<!--/* 姓・名 */-->
+							<div class="form-row">
+								<!-- 姓 -->
+								<div class="form-group col-md-4">
+									<input type="text"class="form-control" th:field="*{customerNameSei}" placeholder="姓" maxlength="24">
+									<div th:if="${#fields.hasErrors('customerNameSei')}" th:errors="*{customerNameSei}" class="error_mag_point">error</div>
+								</div>
+								<!-- 名 -->
+								<div class="form-group col-md-4">
+									<input type="text"class="form-control" th:field="*{customerNameMei}" placeholder="名" maxlength="24">
+									<div th:if="${#fields.hasErrors('customerNameMei')}" th:errors="*{customerNameMei}" class="error_mag_point">error</div>
+								</div>
+							</div>
+							
+							<!--/* せい・めい */-->
+							<div class="form-row">
+								<!-- せい -->
+								<div class="form-group col-md-4">
+									<input type="text" class="form-control" th:field="*{customerNameSeiKana}" placeholder="せい" maxlength="64">
+									<div th:if="${#fields.hasErrors('customerNameSeiKana')}" th:errors="*{customerNameSeiKana}" class="error_mag_point">error</div>
+								</div>
+								<!-- めい -->
+								<div class="form-group col-md-4">
+									<input type="text" class="form-control" th:field="*{customerNameMeiKana}" placeholder="めい" maxlength="64">
+									<div th:if="${#fields.hasErrors('customerNameMeiKana')}" th:errors="*{customerNameMeiKana}" class="error_mag_point">error</div>
+								</div>
+							</div>
+						</div>
+					</div>
+					
+					<div class="kojinForm">
+<!--/*/		<th:block th:with="isEmpty=*{#strings.isEmpty(country) && #strings.isEmpty(language)}"> /*/-->
+						<!--/* 国籍・言語 */-->
+						<div class="mt-3">
+							<div class="mb-2">
+								<span data-toggle="collapse" data-target=".country" th:classappend="${isEmpty}? 'collapsed'">
+									<a href="javascript:void(0);" class="showIfTargetHidden" title="追加"><i class="fas fa-plus-square mr-2"></i>国籍／言語を追加</a>
+									<a href="javascript:void(0);" class="showIfTargetShown" title="削除"><i class="fas fa-minus mr-2"></i>国籍／言語を削除する</a>
+								</span>
+							</div>
+							<div class="country collapse clearOnHide" th:classappend="${!isEmpty}? 'show'">
+								<div class="form-row">
+									<div class="form-group col-md-12 mb-0">
+										<label class="input_parts_label">国籍／言語</label>
+									</div>
+								</div>
+								<div class="form-row">
+									<div class="form-group col-md-6">
+										<input type="text" class="form-control" th:field="*{country}" placeholder="国籍" maxlength="30">
+										<div th:if="${#fields.hasErrors('country')}" th:errors="*{country}" class="error_mag_point">error</div>
+									</div>
+									<div class="form-group col-md-6">
+										<input type="text" class="form-control" th:field="*{language}" placeholder="言語" maxlength="30">
+										<div th:if="${#fields.hasErrors('language')}" th:errors="*{language}" class="error_mag_point">error</div>
+									</div>
+								</div>
+							</div>
+						</div>
+<!--/*/		</th:block> /*/-->
+	
+<!--/*/				<th:block th:with="isEmpty=*{#strings.isEmpty(yago) && #strings.isEmpty(yagoKana)}"> /*/-->
+						<!--/* 屋号・通称名 */-->
+						<div>
+							<div>
+								<span data-toggle="collapse" data-target=".yago" th:classappend="${isEmpty}? 'collapsed'">
+									<a href="javascript:void(0);" class="showIfTargetHidden" title="追加"><i class="fas fa-plus-square mr-2"></i>屋号／通称名を追加</a>
+									<a href="javascript:void(0);" class="showIfTargetShown" title="削除"><i class="fas fa-minus mr-2"></i>屋号／通称名を削除する</a>
+								</span>
+							</div>
+							<div class="yago collapse clearOnHide" th:classappend="${!isEmpty}? 'show'">
+								<div class="form-row">
+									<div class="form-group col-md-12 mb-0">
+										<label class="input_parts_label">屋号／通称名</label>
+									</div>
+								</div>
+								<div class="form-row">
+									<div class="form-group col-md-6">
+										<input type="text" class="form-control" th:field="*{yago}" placeholder="漢字" maxlength="24">
+										<div th:if="${#fields.hasErrors('yago')}" th:errors="*{yago}" class="error_mag_point">error</div>
+									</div>
+									<div class="form-group col-md-6">
+										<input type="text" class="form-control" th:field="*{yagoKana}" placeholder="ふりがな" maxlength="64">
+										<div th:if="${#fields.hasErrors('yagoKana')}" th:errors="*{yagoKana}" class="error_mag_point">error</div>
+									</div>
+								</div>
+							</div>
+						</div>
+<!--/*/				</th:block> /*/-->
+					</div>
+				</div>
+	
+				<!--/* 右ブロック */-->
+				<div class="col-md-6">
+					<div class="detail_input_area">
+	
+						<!--/* 職業（個人用） */-->
+						<div class="form-row kojinForm">
+							<div class="form-group col-md-12">
+								<label class="input_parts_label">職業</label>
+								<input type="text"class="form-control" th:field="*{job}" placeholder="職業" maxlength="50">
+								<div th:if="${#fields.hasErrors('job')}" th:errors="*{job}" class="error_mag_point">error</div>
+							</div>
+						</div>
+	
+						<!--/* 勤務先（個人用） */-->
+						<div class="form-row kojinForm">
+							<div class="form-group col-md-12">
+								<label class="input_parts_label">勤務先</label>
+								<input type="text"class="form-control" th:field="*{workPlace}" placeholder="勤務先" maxlength="50">
+								<div th:if="${#fields.hasErrors('workPlace')}" th:errors="*{workPlace}" class="error_mag_point">error</div>
+							</div>
+						</div>
+	
+						<!--/* 部署（個人用） */-->
+						<div class="form-row kojinForm">
+							<div class="form-group col-md-12">
+								<label class="input_parts_label">部署</label>
+								<input type="text"class="form-control" th:field="*{bushoName}" placeholder="部署" maxlength="50">
+								<div th:if="${#fields.hasErrors('bushoName')}" th:errors="*{bushoName}" class="error_mag_point">error</div>
+							</div>
+						</div>
+	
+						<!--/* 事務所名（弁護士用） */-->
+						<div class="form-row lawyerForm">
+							<div class="form-group col-md-12">
+								<label class="input_parts_label">事務所名</label>
+								<input type="text"class="form-control" th:field="*{lawyerJimushoName}" placeholder="事務所名" maxlength="50">
+								<div th:if="${#fields.hasErrors('lawyerJimushoName')}" th:errors="*{lawyerJimushoName}" class="error_mag_point">error</div>
+							</div>
+						</div>
+	
+						<!--/* 部署・役職名（弁護士用） */-->
+						<div class="form-row lawyerForm">
+							<div class="form-group col-md-12">
+								<label class="input_parts_label">部署・役職名</label>
+								<input type="text"class="form-control" th:field="*{lawyerBushoName}" placeholder="部署・役職名" maxlength="50">
+								<div th:if="${#fields.hasErrors('lawyerBushoName')}" th:errors="*{lawyerBushoName}" class="error_mag_point">error</div>
+							</div>
+						</div>
+	
+						<!--/* 特記事項（個人、企業・団体、弁護士共通） */-->
+						<div class="form-row customerCommonForm">
+							<div class="form-group col-md-12">
+								<label class="input_parts_label">特記事項</label>
+								<textarea rows="5" class="form-control" th:field="*{remarks}" maxlength="3000"></textarea>
+								<div th:if="${#fields.hasErrors('remarks')}" th:errors="*{remarks}" class="error_mag_point">error</div>
+							</div>
+						</div>
+	
+						<!--/* 相談経路（個人、企業・団体共通） */-->
+						<div class="form-row kojinHojinForm">
+							<div class="form-group col-md-12 mb-0">
+								<label class="input_parts_label">相談経路</label>
+							</div>
+							<div class="form-group col-md-3">
+								<select class="form-control" th:field="*{sodanRoute}">
+									<option value="">-</option>
+									<option th:each="option : *{sodanRouteOptionList}"
+										th:value="${option.value}" th:text="${option.label}"></option>
+								</select>
+							</div>
+							<div class="form-group col-md-9">
+								<input type="text" class="form-control" th:field="*{sodanRemarks}" maxlength="500" placeholder="相談経路の詳細">
+								<div th:if="${#fields.hasErrors('sodanRemarks')}" th:errors="*{sodanRemarks}" class="error_mag_point">error</div>
+							</div>
+						</div>
+					</div>
+						
+					<!--/* ボタン */-->
+					<div class="text-right mt-4">
+						<!--/* 保存ボタン */-->
+						<button type="button" id="customerBasicSave" class="btn btn-info mr-3">
+							<i class="fas fa-check"></i>保存
+						</button>
+						<!--/* 閉じるボタン */-->
+						<button type="button" class="btn btn-light customerClose"
+							data-boundary="window" data-container="#personBasicInputFragment" data-toggle="tooltip" data-trigger="hover" title="編集モードを閉じる">
+							<i class="fas fa-times"></i>閉じる
+						</button>
+					</div>
+				</div>
+			</div>
+			<input type="hidden" id="customerTypeBeforeUpdate" th:field="*{customerTypeBeforeUpdate}">
+		</div>
+		
+	</form>
+</div>
+
+<!--/* 住所情報表示ブロック */-->
+<div th:fragment="personAddressViewFragment(personAddressViewForm)" id="personAddressViewFragment">
+
+	<!--/* スクリプト */-->
+	<script th:inline="javascript">
+	$(function() {
+		
+		<!--/* 共有の要素セットアップ処理 */-->
+		commonSetUpElement();
+		
+		<!--/* 住所選択の選択肢を差し込む（popoverのdata-content） */-->
+		$('#personAddressViewFragment #addAddressSelect')
+			.attr('data-content', $('#personAddressViewFragment #addAddressSelectContent').html())
+		
+		<!--/* 住所追加の選択肢クリック */-->
+		<!--/* 再描画を行った後に、追加用のフォームの表示を行う */-->
+		$('#personAddressViewFragment').on('click', '.addAddressSelectOption', function() {
+			
+			const isBaseAddressAdd = $(this).data('is-base-address');
+			<!--/* ViewFragmentの顧客種別を編集用フォームへ渡す */-->
+			const viewFormCustomerTypeCd = $('#personAddressViewFormCustomerTypeCd').val();
+			
+			let dataObj = {
+				isBaseAddress: isBaseAddressAdd,
+				viewFormCustomerTypeCd: viewFormCustomerTypeCd
+			}
+			
+			<!--/* 2重押下防止 */-->
+			if(ajaxRunning){
+				return false;
+			}
+			
+			ajaxRunning = true;
+			
+			<!--/* 住所情報を再描画し、描画後、登録（追加）フォームを表示する */-->
+			Promise.resolve(dataObj)
+				.then(renderAddressViewWhenInputAddressFunc)
+				.then(renderAddressRegistInputFormFunc)
+				.catch((errorObj) => {
+					<!--/* 異常系の対応は各処理側で行っており、全体共通での異常系の処理は現状ない */-->
+					console.log(errorObj);
+				})
+				.finally(() => {
+					ajaxRunning = false;
+				})
+		})
+		
+		<!--/* 住所情報の削除 */-->
+		$('#personAddressViewFragment .deleteAddress').on('click', function() {
+			
+			if(!confirm("住所情報を削除します。よろしいですか？")){
+				return false;
+			}
+			
+			<!--/* リクエストパラメータ */-->
+			let isBaseAddressVal = $(this).data('is-base-address');
+			let isTourokuAddressVal = $(this).data('is-touroku-address');
+			let isTransferAddressVal = $(this).data('is-transfer-address');
+			let oldAddressSeqVal = $(this).data('old-address-seq');
+			<!--/* ViewFragmentの顧客種別を編集用フォームへ渡す */-->
+			let viewFormCustomerTypeCdVal = $('#personAddressViewFormCustomerTypeCd').val();
+			
+			let dataObj = {
+				isBaseAddress: isBaseAddressVal,
+				isTourokuAddress: isTourokuAddressVal,
+				isTransferAddress: isTransferAddressVal,
+				oldAddressSeq: oldAddressSeqVal,
+				viewFormCustomerTypeCd: viewFormCustomerTypeCdVal
+			}
+			
+			<!--/* 2重押下防止 */-->
+			if(ajaxRunning){
+				return false;
+			}
+			
+			ajaxRunning = true;
+			
+			$.ajax({
+				url : 'deleteAddress',
+				type : "POST",
+				data : dataObj
+			})
+			.done(function(data, status, jqXHR) {
+				if (isAjaxProcSuccess(jqXHR)) {
+					<!--/* 処理成功 */-->
+					
+					<!--/* 親HTMLのID */-->
+					$('#personAddressFragmentWrap').html(data);
+					
+					const msg = getAjaxProcResutlMessage(jqXHR);
+					showInfoMessageForJs(msg);
+					
+				} else {
+					<!--/* 処理失敗 */-->
+					const errorMsg = getAjaxProcResutlMessage(jqXHR);
+					showErrorMessageForJs(errorMsg);
+				}
+			})
+			.fail(function(jqXHR, status, errorThrown) {
+				showErrorMessageForJs(/*[[#{E00014}]]*/ "削除に失敗しました。");
+			})
+			.always(function(){
+				ajaxRunning = false;
+			});
+		})
+
+		<!--/* 住所編集ボタンクリック */-->
+		<!--/* 編集用のフォームの表示を行う */-->
+		$('#personAddressViewFragment .editAddress').on('click', function() {
+			
+			let isBaseAddressVal = $(this).data('is-base-address');
+			let isTourokuAddressVal = $(this).data('is-touroku-address');
+			let isTransferAddressVal = $(this).data('is-transfer-address');
+			let oldAddressSeqVal = $(this).data('old-address-seq');
+			<!--/* ViewFragmentの顧客種別を編集用フォームへ渡す */-->
+			let viewFormCustomerTypeCdVal = $('#personAddressViewFormCustomerTypeCd').val();
+			
+			let dataObj = {
+				isBaseAddress: isBaseAddressVal,
+				isTourokuAddress: isTourokuAddressVal,
+				isTransferAddress: isTransferAddressVal,
+				oldAddressSeq: oldAddressSeqVal,
+				viewFormCustomerTypeCd: viewFormCustomerTypeCdVal
+			}
+			
+			<!--/* 2重押下防止 */-->
+			if(ajaxRunning){
+				return false;
+			}
+			
+			ajaxRunning = true;
+			
+			<!--/* 対象の編集フォームを表示する */-->
+			Promise.resolve(dataObj)
+				.then(renderAddressEditInputFormFunc)
+				.catch((errorObj) => {
+					<!--/* 異常系の対応は各処理側で行っており、全体共通での異常系の処理は現状ない */-->
+					console.log(errorObj);
+				})
+				.finally(() => {
+					ajaxRunning = false;
+				})
+		})
+		
+		<!--/* 備考 すべて見る */-->
+		$('#personAddressViewFragment .showAllAddressRemarks').on('click', function() {
+			const addressRowStatIndex = $(this).data('address-row-stat-index');
+			showAllAddressRemarks(addressRowStatIndex);
+		})
+		
+		<!--/* 住所の登録（追加）フォームの表示関数 */-->
+		const renderAddressRegistInputFormFunc = (dataObj) => {
+			return new Promise((resolve, reject) => {
+				
+				<!--/* オブジェクトのプロパティ値を取得 */-->
+				const {isBaseAddress, viewFormCustomerTypeCd} = dataObj;
+				
+				let requestData = {
+					isNewRegist: true,
+					isBaseAddress: isBaseAddress,
+					viewFormCustomerTypeCd: viewFormCustomerTypeCd
+				}
+				
+				<!--/* クリックされた要素の登録（追加）フォームを表示 */-->
+				<!--/* 2重押下防止対応はPromiseチェーンのルートで処理するため、チェーン内では行わない */-->
+				$.ajax({
+					url : 'getPersonAddressInputForm',
+					type : "GET",
+					data : requestData
+				})
+				.done(function(data, status, jqXHR) {
+					if (isAjaxProcSuccess(jqXHR)) {
+						// 新規登録行部分にHTML表示
+						$('#personAddressViewFragment #addressRowForNewRegist').html(data);
+						$('#personAddressViewFragment #addressRowForNewRegist .zipCode').focus();
+						
+						<!--/* Promiseチェーンの最後の処理となるため、引数データは渡さない */-->
+						return resolve();
+					} else {
+						<!--/* 処理失敗 */-->
+						const errorMsg = getAjaxProcResutlMessage(jqXHR);
+						showErrorMessageForJs(errorMsg);
+						
+						return reject();
+					}
+				})
+				.fail(function(jqXHR, status, errorThrown) {
+					showErrorMessageForJs(/*[[#{E00091}]]*/ "error");
+					
+					return reject();
+				})
+			});
+		}
+		
+		<!--/* 住所情報の編集フォームの表示関数 */-->
+		const renderAddressEditInputFormFunc = (dataObj) => {
+			return new Promise((resolve, reject) => {
+				
+				<!--/* オブジェクトのプロパティ値を取得 */-->
+				const {isBaseAddress, isTourokuAddress, isTransferAddress, oldAddressSeq, viewFormCustomerTypeCd} = dataObj;
+				
+				<!--/* クリックされた要素と同じ要素を再取得（前処理でHTMLが再描画されているため、新しいDOMから再取得を行う） */-->
+				let clickedElem;
+				if (oldAddressSeq) {
+					<!--/* 旧住所連番がある場合 -> 要素の検索に旧住所連番の属性を含む */-->
+					
+					clickedElem = $('#personAddressViewFragment .editAddress')
+						.filter('[data-is-base-address=' + isBaseAddress + ']')
+						.filter('[data-is-touroku-address=' + isTourokuAddress + ']')
+						.filter('[data-is-transfer-address=' + isTransferAddress + ']')
+						.filter('[data-old-address-seq=' + oldAddressSeq + ']');
+				} else {
+					<!--/* 旧住所連番がない場合 -> 旧住所連番の属性を持つ要素は検索対象から除外する */-->
+					
+					clickedElem = $('#personAddressViewFragment .editAddress:not([data-old-address-seq]')
+						.filter('[data-is-base-address=' + isBaseAddress + ']')
+						.filter('[data-is-touroku-address=' + isTourokuAddress + ']')
+						.filter('[data-is-transfer-address=' + isTransferAddress + ']');
+				}
+				
+				let requestData = {
+					isBaseAddress: isBaseAddress,
+					isTourokuAddress: isTourokuAddress,
+					isTransferAddress: isTransferAddress,
+					oldAddressSeq: oldAddressSeq,
+					viewFormCustomerTypeCd: viewFormCustomerTypeCd
+				}
+				
+				$.ajax({
+					url : 'getPersonAddressInputForm',
+					type : "GET",
+					data : requestData
+				})
+				.done(function(data, status, jqXHR) {
+					if (isAjaxProcSuccess(jqXHR)) {
+						<!--/* 対象行部分にHTML表示 */-->
+						$(clickedElem).closest('.addressRow').html(data)
+						
+						<!--/* Promiseチェーンの最後の処理となるため、引数データは渡さない */-->
+						return resolve();
+					} else {
+						// 処理失敗
+						const errorMsg = getAjaxProcResutlMessage(jqXHR);
+						showErrorMessageForJs(errorMsg);
+						
+						return reject();
+					}
+				})
+				.fail(function(jqXHR, status, errorThrown) {
+					showErrorMessageForJs(/*[[#{E00091}]]*/ "error");
+					
+					return reject();
+				})
+			});
+		}
+		
+		<!--/* 備考 すべて見る */-->
+		function showAllAddressRemarks(addressRowStatIndex) {
+			changeShowCloseAddressRemarks(addressRowStatIndex, true);
+		}
+		
+		<!--/* -->
+		/**
+		 * 備考の表示、閉じるを切り替える
+		 * 
+		 * @param {number} addressRowStatIndex - 表示を切り替える住所の行のインデックス番号
+		 * @param {boolean} toShow - true : 表示する false : 閉じる
+		 */
+		 <!-- */-->
+		function changeShowCloseAddressRemarks(addressRowStatIndex, toShow) {
+			
+			if (toShow) {
+				<!--/* 表示 */-->
+				
+				<!--/* 「すべて見る」部分のコンテンツを非表示 */-->
+				$('#showAllAddressRemarksWrap_' + addressRowStatIndex).addClass('hidden');
+				
+				<!--/* すべての備考部分のコンテンツを表示 */-->
+				$('#allAddressRemarksWrap_' + addressRowStatIndex).removeClass('hidden');
+				
+			} else {
+				<!--/* 閉じる */-->
+				<!--/* 閉じる操作は存在しない */-->
+			}
+		}
+
+	})
+	
+	</script>
+
+	<!--/* HTML */-->
+	<div th:object="${personAddressViewForm}">
+		<input type="hidden" id="personAddressViewFormCustomerTypeCd" th:value="*{customerType.cd}">
+		<section class="section_address">
+			<div class="section_header">
+				<div class="section_header__title">住所</div>
+				<div class="section_header__action">
+					<!--/* 住所追加の選択肢の枠部分 */-->
+					<!--/* 選択肢が存在する場合は表示 */-->
+					<th:block th:if="*{getAddAddressSelectOptions().size()} != 0">
+						<div id="addAddressSelect" class="d-inline-block stop-events outPutContainerClose" data-offset="80,0"
+							data-boundary="window" data-toggle="popover" data-placement="bottom" data-trigger="click" data-html="true" data-container="#personAddressViewFragment" data-content="">
+							<a href="javascript:void(0);" class="fs15"><i class="fas fa-plus-square mr-2"></i>住所を追加</a>
+						</div>
+					</th:block>
+					
+					<!--/* 住所追加の選択肢のコンテンツ（JSで差し込まれる） */-->
+					<!--/* ※popoverのdata-content部分に差し込まれるデータ */-->
+					<div id="addAddressSelectContent" class="hidden">
+						<ul class="popover_nav_list">
+							<th:block th:each="selectOption : *{getAddAddressSelectOptions()}">
+								<li class="addAddressSelectOption" th:data-is-base-address="${selectOption.baseAddressOption}"><i class="fas mr-3" th:classappend="${selectOption.baseAddressOption} ? 'fa-house-user':'fa-home'"></i>[[${selectOption.title}]]</li>
+							</th:block>
+						</ul>
+					</div>
+				</div>
+			</div>
+			<div class="section_body">
+				<div class="section_body__contents">
+				
+<!--/*/		<th:block th:if="*{personAddressRowDtoList.size() == 0}"> /*/-->
+					<div class="py-2 px-2">
+						<div id="addressRowForNewRegist" class="addressRow">
+							<span th:text="#{I00035('住所情報の登録')}">MSG_I00035</span>
+						</div>
+					</div>
+<!--/*/		</th:block> /*/-->
+
+<!--/*/		<th:block th:if="*{personAddressRowDtoList.size() > 0}"> /*/-->
+					<ul class="section_data__list">
+						<li class="list_haed p-0">
+							<div id="addressRowForNewRegist" class="addressRow"></div>
+						</li>
+						<li class="list_contents addressRow" th:each="addressRowDto, addressRowStat : *{personAddressRowDtoList}">
+							<div class="section_list_item_wrap">
+								<div class="section_list_item">
+									<div class="item_title_block align-items-start flex-wrap">
+										<!--/* 住所のタイプ */-->
+										<div class="item_title address_item_category">
+											<th:block th:if="${addressRowDto.baseAddress}" >
+												<!--/* 居住地 */-->
+												<i class="fas fa-house-user mr-2"></i>
+												<span th:text="${addressRowDto.getBaseAddressOnly()}"></span>
+											</th:block>
+											<th:block th:if="${!addressRowDto.baseAddress}">
+												<!--/* その他 */-->
+												<i class="fas fa-home mr-2"></i>
+												<span th:text="${addressRowDto.getBaseAddressOnly()}"></span>
+											</th:block>
+										</div>
+										<div class="address_item_val">
+											<div th:text="${addressRowDto.getZipCodeForDisp()}"></div>
+											<span>[[${addressRowDto.address1}]][[${addressRowDto.address2}]]</span>
+											<div class="align-self-start">
+												<!--/* 備考の表示 */-->
+												<div th:unless="${#strings.isEmpty(addressRowDto.remarks)}"
+													th:with="
+														initShowMaxCharCountAddressRemarks=29,
+														isOverCharCount=(${initShowMaxCharCountAddressRemarks} < ${#strings.length(addressRowDto.remarks)})">
+														
+													<!-- 文字数が多い場合の表示 -->
+													<th:block th:if="${isOverCharCount}">
+														<!-- 一部の備考文字のみ表示（すべて見るリンク） -->
+														<div th:id="|showAllAddressRemarksWrap_${addressRowStat.index}|">
+															<!-- 備考 -->
+															<span myth:nl2br="|${#strings.substring(addressRowDto.remarks,0,initShowMaxCharCountAddressRemarks)}|"></span>
+															<!-- すべて見るリンク -->
+															<p class="mb-0 text-left">
+																<a href="javascirpt:void(0);" onClick="return false;">
+																	<span class="showAllAddressRemarks" th:data-address-row-stat-index="${addressRowStat.index}">
+																		...すべて見る
+																	</span>
+																</a>
+															</p>
+														</div>
+														<!-- 全ての備考文字を表示（すべて見るリンククリックで表示する） -->
+														<div th:id="|allAddressRemarksWrap_${addressRowStat.index}|" class="hidden">
+															<!-- 備考 -->
+															<div>
+																<span myth:nl2br="${addressRowDto.remarks}"></span>
+															</div>
+														</div>
+													</th:block>
+														
+													<!-- 文字数が多くない場合の表示 -->
+													<th:block th:unless="${isOverCharCount}">
+														<!--  全ての備考文字を表示 -->
+														<div>
+															<!-- 備考 -->
+															<span myth:nl2br="${addressRowDto.remarks}"></span>
+														</div>
+													</th:block>
+												</div>
+											</div>
+											<!--/* 住民票・郵送先住所指定 */-->
+											<div class="d-flex flex-wrap address_option_text">
+												<div th:if="${not #strings.isEmpty(addressRowDto.getTourokuAddressOnly())}" class="mr-4">
+													<!--/* 住民票登録地 */-->
+													<i class="fas fa-check-square mr-2"></i><span th:text="${addressRowDto.getTourokuAddressOnly()}"></span>
+												</div>
+												<div th:if="${not #strings.isEmpty(addressRowDto.getTransferAddressOnly())}">
+													<!--/* 郵送先住所 */-->
+													<i class="fas fa-check-square mr-2"></i><span th:text="${addressRowDto.getTransferAddressOnly()}"></span>
+													<span class="mailing_method_label" th:text="|（郵送方法：${addressRowDto.getTransferTypeName()}）|"></span>
+												</div>
+											</div>
+											<!--/* 住民票・郵送先住所指定 end */-->
+										</div>
+										<div class="item_sub" th:id="'addressRowEditContainer_' + ${addressRowStat.index}">
+											<!--/* 編集ボタン */-->
+											<button type="button" class="btn btn-light btn_icon_only btn_icon_edit btn_no_border editAddress"
+												th:data-is-base-address="${addressRowDto.baseAddress}"
+												th:data-is-touroku-address="${addressRowDto.tourokuAddress}"
+												th:data-is-transfer-address="${addressRowDto.transferAddress}"
+												th:data-old-address-seq="${addressRowDto.oldAddressSeq}"
+												th:data-container="'#addressRowEditContainer_' + ${addressRowStat.index}" data-toggle="tooltip" title="編集" data-trigger="hover">
+												<i class="fas fa-edit"></i>
+											</button>
+											<!--/* 削除ボタン */-->
+											<button type="button" class="btn btn-light btn_icon_only btn_no_border deleteAddress"
+												th:data-is-base-address="${addressRowDto.baseAddress}"
+												th:data-is-touroku-address="${addressRowDto.tourokuAddress}"
+												th:data-is-transfer-address="${addressRowDto.transferAddress}"
+												th:data-old-address-seq="${addressRowDto.oldAddressSeq}"
+												th:data-container="'#addressRowEditContainer_' + ${addressRowStat.index}" data-toggle="tooltip" title="削除" data-trigger="hover">
+												<i class="far fa-trash-alt"></i>
+											</button>
+										</div>
+									</div>
+								</div>
+							</div>
+						</li>
+					</ul>
+				</div>
+<!--/*/		</th:block> /*/-->
+			</div>
+		</section>
+
+	</div>
+
+</div>
+
+
+
+<!--/* 住所情報編集ブロック */-->
+<div th:fragment="personAddressInputFragment" id="personAddressInputFragment" class="w-100">
+
+	<!--/* スクリプト */-->
+	<script th:inline="javascript">
+	$(function() {
+		
+		<!--/* 共有の要素セットアップ処理 */-->
+		commonSetUpElement();
+		
+		<!--/* 登録地（住民票登録地/登記簿登録地）として指定するチェック */-->
+		$('#personAddressInputFragment .tourokuAddressCheck').on('change', function(e) {
+			
+			if ($(this).prop('checked')) {
+				<!--/* チェックがつけられた場合 */-->
+				
+				const isAlreadyExistTourokuAddress = /*[[${personAddressInputForm.alreadyExistTourokuAddress}]]*/false;
+				if (isAlreadyExistTourokuAddress) {
+					<!--/* 他の住所で既に登録地が指定されている */-->
+					
+					<!--/* アラート表示 */-->
+					const isKojin = /*[[${personAddressInputForm.isKojin()}]]*/false;
+					if (isKojin) {
+						alert(/*[[#{I00124}]]*/"")
+					} else {
+						alert(/*[[#{I00125}]]*/"")
+					}
+				}
+			}
+		})
+		
+		<!--/* 郵送先住所として指定するチェック */-->
+		$('#personAddressInputFragment .transferAddressCheck').on('change', function(e) {
+			
+			if ($(this).prop('checked')) {
+				<!--/* チェックがつけられた場合 */-->
+				
+				const isAlreadyExistTransferAddress = /*[[${personAddressInputForm.alreadyExistTransferAddress}]]*/false;
+				if (isAlreadyExistTransferAddress) {
+					<!--/* 他の住所で既に郵送先住所が指定されている */-->
+					
+					<!--/* アラート表示 */-->
+					alert(/*[[#{I00126}]]*/"")
+				}
+				
+				<!--/* 郵送方法エリアを表示 */-->
+				$('#personAddressInputFragment .mailingTypeWrap').removeClass("hidden");
+			} else {
+				<!--/* 郵送方法エリアを非表示 */-->
+				$('#personAddressInputFragment .mailingTypeWrap').addClass("hidden");
+			}
+		})
+		
+		<!--/* 住所の編集を閉じる（表示モードの表示に切り替える） */-->
+		$('#personAddressInputFragment .editAddressClose').on('click', function() {
+			
+			<!--/* 2重押下防止 */-->
+			if(ajaxRunning){
+				return false;
+			}
+			ajaxRunning = true;
+			
+			const viewFormCustomerTypeCdVal = $('#viewFormCustomerType').val();
+			
+			let dataObj = {
+				viewFormCustomerTypeCd: viewFormCustomerTypeCdVal
+			};
+			
+			<!--/* 住所情報を再表示 */-->
+			Promise.resolve(dataObj)
+				.then(renderAddressViewWhenInputAddressFunc)
+				.catch((errorObj) => {
+					<!--/* 異常系の対応は各処理側で行っており、全体共通での異常系の処理は現状ない */-->
+					console.log(errorObj);
+				})
+				.finally(() => {
+					ajaxRunning = false;
+				})
+			
+		})
+		
+		<!--/* 住所情報の保存 */-->
+		$('#personAddressInputFragment .saveCustomerAddress').on('click', function() {
+			
+			<!--/* リクエストパラメータ */-->
+			const formData = $(this)
+				.closest('.personAddressInputForm')
+				.serializeArray();
+			
+			let $clickedElem = $(this)
+			
+			<!--/* 2重押下防止 */-->
+			if(ajaxRunning){
+				return false;
+			}
+			
+			ajaxRunning = true;
+			$.ajax({
+				url : 'saveCustomerAddress',
+				type : "POST",
+				data : formData
+			})
+			.done(function(data, status, jqXHR) {
+				if (isAjaxProcSuccess(jqXHR)) {
+					<!--/* 処理成功 */-->
+					
+					<!--/* 親HTMLのID */-->
+					$('#personAddressFragmentWrap').html(data);
+					
+					const msg = getAjaxProcResutlMessage(jqXHR);
+					showInfoMessageForJs(msg);
+					
+				} else {
+					<!--/* 処理失敗 */-->
+					
+					if (data) {
+						<!--/* HTMLのコンテンツが返却されている場合 */-->
+						<!--/* 対象行部分にHTML表示 */-->
+						$clickedElem.closest('.addressRow').html(data)
+					}
+					
+					const errorMsg = getAjaxProcResutlMessage(jqXHR);
+					showErrorMessageForJs(errorMsg);
+				}
+			})
+			.fail(function(jqXHR, status, errorThrown) {
+				showErrorMessageForJs(/*[[#{E00013}]]*/ "保存に失敗しました。");
+			})
+			.always(function(){
+				ajaxRunning = false;
+			});
+		})
+		
+	})
+	</script>
+
+	<!--/* HTML */-->
+	<form th:object="${personAddressInputForm}" class="personAddressInputForm">
+	
+		<div class="block_view_input">
+
+			<div class="form-row">
+				<!--/* フォームタイトルブロック */-->
+				<div class="col-md-12">
+	<th:block th:if="*{baseAddress}">
+					<div class="fs17"><i class="fas fa-house-user mr-2"></i>[[*{getBaseAddressTitle()}]]</div>
+	</th:block>
+	<th:block th:unless="*{baseAddress}">
+					<div class="fs17"><i class="fas fa-home mr-2"></i>[[*{getOtherAddressTitle()}]]</div>
+	</th:block>
+				</div>
+			</div>
+
+			<!--/* 住所入力 */-->
+			<div class="detail_input_area addressContainer">
+				<!--/* 住所 */-->
+				<div class="form-row">
+					<div class="form-group col-md-12 mb-0">
+						<label class="input_parts_label">住所</label>
+						<div class="d-flex">
+							<input type="text" th:field="*{address.zipCode}" class="form-control zipCode zipCodeFormat input_num_hyphen digit6"
+								placeholder="郵便番号" maxlength="8" autocomplete="off">
+							<button type="button" class="btn btn-outline-primary btn-sm searchAddress ml-2">住所検索</button>
+						</div>
+						<div th:if="${#fields.hasErrors('address.zipCode')}" th:errors="*{address.zipCode}" class="error_mag_point">error</div>
+					</div>
+				</div>
+				<div class="form-row">
+					<div class="form-group col-md-12 mb-0">
+						<input type="text" th:field="*{address.address1}" class="form-control address1 mt-2" placeholder="都道府県・市区町村" maxlength="128" autocomplete="off">
+						<div th:if="${#fields.hasErrors('address.address1')}" th:errors="*{address.address1}" class="error_mag_point">error</div>
+					</div>
+				</div>
+				<div class="form-row">
+					<div class="form-group col-md-12 mb-0">
+						<input type="text" th:field="*{address.address2}" class="form-control address2 mt-2" placeholder="番地・建物名" maxlength="128" autocomplete="off">
+						<div th:if="${#fields.hasErrors('address.address2')}" th:errors="*{address.address2}" class="error_mag_point">error</div>
+					</div>
+				</div>
+				<div class="form-row">
+					<div class="form-group col-md-12">
+						<textarea th:field="*{address.remarks}" rows="3" class="form-control mt-2" placeholder="備考" maxlength="500" autocomplete="off"></textarea>
+						<div th:if="${#fields.hasErrors('address.remarks')}" th:errors="*{address.remarks}" class="error_mag_point">error</div>
+					</div>
+				</div>
+				<div class="form-row">
+					<div class="form-group col-md-7 pt-2 mb-0">
+						<div class="ml-1" th:if="*{getTourokuAddressTitle() != null}">
+							<!--/* 住民票登録地 */-->
+							<label class="checkbox_btn">
+								<input type="checkbox" th:field="*{tourokuAddress}" class="checkbox_input tourokuAddressCheck">
+								<span class="checkbox_txt" th:text="*{getTourokuAddressTitle()} + 'に指定'">住民票登録地に指定</span>
+							</label>
+						</div>
+						<div class=" ml-1">
+							<!--/* 郵送先住所 */-->
+							<label class="checkbox_btn">
+								<input type="checkbox" th:field="*{transferAddress}" class="checkbox_input transferAddressCheck">
+								<span class="checkbox_txt" th:text="*{getTransferAddressTitle()} + 'に指定'">郵送先住所に指定</span>
+							</label>
+						</div>
+					</div>
+					<div class="form-group col-md-5 mailingTypeWrap" th:classappend="*{!transferAddress}? 'hidden'">
+						<label class="input_parts_label">郵送方法</label>
+						<select class="form-control digit8 w-100" th:field="*{mailingType}">
+							<option th:each="enum : ${T(jp.loioz.common.constant.CommonConstant$MailingType).values()}"
+								th:value="${enum.cd}" th:text="${enum.val}">郵送方法</option>
+						</select>
+					</div>
+				</div>
+				
+				<input type="hidden" th:field="*{customerType}">
+				<input type="hidden" th:field="*{baseAddress}">
+				<input type="hidden" th:field="*{oldAddressSeq}">
+				<input type="hidden" th:field="*{tourokuAddressBeforeUpdate}">
+				<input type="hidden" th:field="*{transferAddressBeforeUpdate}">
+				<input type="hidden" th:field="*{newRegist}">
+				<input type="hidden" th:field="*{viewFormCustomerType}">
+			</div>
+			
+			<!--/* ボタンブロック */-->
+			<div class="text-right">
+				<!--/* 住所 保存ボタン */-->
+				<button type="button" class="saveCustomerAddress btn btn-info btn-sm btn_icon_save mr-3"
+					data-boundary="window" data-container="#personAddressInputFragment" data-toggle="tooltip" data-trigger="hover" title="住所を保存">
+					<i class="fas fa-check"></i>保存
+				</button>
+			
+				<!--/* 閉じるボタン */-->
+				<button type="button" class="editAddressClose btn btn-light btn-sm btn_icon_close"
+					data-boundary="window" data-container="#personAddressInputFragment" data-toggle="tooltip" data-trigger="hover" title="閉じる">
+					<i class="fas fa-times"></i>閉じる
+				</button>
+			</div>
+			
+		</div>
+	
+	</form>
+</div>
+
+
+
+<!--/* 連絡先情報表示ブロック */-->
+<div th:fragment="personContactViewFragment(personContactViewForm)" id="personContactViewFragment">
+
+	<!--/* スクリプト */-->
+	<script th:inline="javascript">
+	$(function() {
+		
+		<!--/* 共有の要素セットアップ処理 */-->
+		commonSetUpElement();
+		
+		<!--/* 連絡先選択の選択肢を差し込む（popoverのdata-content） */-->
+		$('#personContactViewFragment #addContactSelect')
+			.attr('data-content', $('#personContactViewFragment #addContactSelectContent').html())
+		
+		<!--/* 連絡先追加の選択肢クリック */-->
+		<!--/* 再描画を行った後に、追加用のフォームの表示を行う */-->
+		$('#personContactViewFragment').on('click', '.addContactSelectOption', function() {
+			
+			const categoryCd = $(this).data('category-cd')
+			
+			let dataObj = {
+				category: categoryCd
+			}
+			
+			<!--/* 2重押下防止 */-->
+			if(ajaxRunning){
+				return false;
+			}
+			
+			ajaxRunning = true;
+			
+			<!--/* 連絡先情報を再描画し、描画後、登録（追加）フォームを表示する */-->
+			Promise.resolve(dataObj)
+				.then(renderContactViewFunc)
+				.then(renderContactRegistInputFormFunc)
+				.catch((errorObj) => {
+					<!--/* 異常系の対応は各処理側で行っており、全体共通での異常系の処理は現状ない */-->
+					console.log(errorObj);
+				})
+				.finally(() => {
+					ajaxRunning = false;
+				})
+		})
+		
+		<!--/* 連絡先削除ボタンクリック */-->
+		$('#personContactViewFragment .deleteContact').on('click', function() {
+			
+			if(!confirm("連絡先情報を削除します。よろしいですか？")){
+				return false;
+			}
+			
+			let categoryCd = $(this).data('contact-category-cd');
+			let contactSeq = $(this).data('contact-seq');
+			
+			let dataObj = {
+				categoryCd: categoryCd,
+				contactSeq: contactSeq
+			}
+			
+			<!--/* 2重押下防止 */-->
+			if(ajaxRunning){
+				return false;
+			}
+			
+			ajaxRunning = true;
+			
+			$.ajax({
+				url : 'deleteContact',
+				type : "POST",
+				data : dataObj
+			})
+			.done(function(data, status, jqXHR) {
+				if (isAjaxProcSuccess(jqXHR)) {
+					<!--/* 処理成功 */-->
+					
+					<!--/* 親HTMLのID */-->
+					$('#personContactFragmentWrap').html(data);
+					
+					const msg = getAjaxProcResutlMessage(jqXHR);
+					showInfoMessageForJs(msg);
+					
+				} else {
+					<!--/* 処理失敗 */-->
+					const errorMsg = getAjaxProcResutlMessage(jqXHR);
+					showErrorMessageForJs(errorMsg);
+				}
+			})
+			.fail(function(jqXHR, status, errorThrown) {
+				showErrorMessageForJs(/*[[#{E00014}]]*/ "削除に失敗しました。");
+			})
+			.always(function(){
+				ajaxRunning = false;
+			});
+		})
+
+		<!--/* 連絡先編集ボタンクリック */-->
+		<!--/* 編集用のフォームの表示を行う */-->
+		$('#personContactViewFragment .editContact').on('click', function() {
+			
+			let categoryCd = $(this).data('contact-category-cd');
+			let contactSeqVal = $(this).data('contact-seq');
+			
+			let dataObj = {
+				category: categoryCd,
+				contactSeq: contactSeqVal
+			}
+			
+			<!--/* 2重押下防止 */-->
+			if(ajaxRunning){
+				return false;
+			}
+			
+			ajaxRunning = true;
+			
+			<!--/* 対象の編集フォームを表示する */-->
+			Promise.resolve(dataObj)
+				.then(renderContactEditInputFormFunc)
+				.catch((errorObj) => {
+					<!--/* 異常系の対応は各処理側で行っており、全体共通での異常系の処理は現状ない */-->
+					console.log(errorObj);
+				})
+				.finally(() => {
+					ajaxRunning = false;
+				})
+		})
+		
+		<!--/* 連絡先情報の再表示関数 */-->
+		const renderContactViewFunc = (dataObj) => {
+			return new Promise((resolve, reject) => {
+				
+				<!--/* 連絡先情報の表示領域を再描画 */-->
+				<!--/* 2重押下防止対応はPromiseチェーンのルートで処理するため、チェーン内では行わない */-->
+				$.ajax({
+					url : 'getCustomerContactView',
+					type : "GET"
+				})
+				.done(function(data, status, jqXHR) {
+					if (isAjaxProcSuccess(jqXHR)) {
+						
+						<!--/* 再描画 */-->
+						<!--/* 親HTMLのID */-->
+						$('#personContactFragmentWrap').html(data);
+						
+						<!--/* 引数データは後続処理に渡す */-->
+						resolve(dataObj);
+					} else {
+						<!--/* 処理失敗 */-->
+						const errorMsg = getAjaxProcResutlMessage(jqXHR);
+						showErrorMessageForJs(errorMsg);
+						
+						reject();
+					}
+				})
+				.fail(function(jqXHR, status, errorThrown) {
+					showErrorMessageForJs(/*[[#{E00091}]]*/ "error");
+					
+					reject();
+				})
+			});
+		}
+		
+		<!--/* 連絡先の登録（追加）フォームの表示関数 */-->
+		const renderContactRegistInputFormFunc = (dataObj) => {
+			return new Promise((resolve, reject) => {
+				
+				<!--/* オブジェクトのプロパティ値を取得 */-->
+				const {category} = dataObj;
+				
+				let requestData = {
+					category: category,
+				}
+				
+				<!--/* クリックされた要素の登録（追加）フォームを表示 */-->
+				<!--/* 2重押下防止対応はPromiseチェーンのルートで処理するため、チェーン内では行わない */-->
+				$.ajax({
+					url : 'getPersonContactInputForm',
+					type : "GET",
+					data : requestData
+				})
+				.done(function(data, status, jqXHR) {
+					if (isAjaxProcSuccess(jqXHR)) {
+						<!--/* 新規登録行部分にHTML表示 */-->
+						$('#personContactViewFragment #contactRowForNewRegist').html(data);
+						$('#personContactViewFragment #contactRowForNewRegist #type').focus();
+						
+						<!--/* Promiseチェーンの最後の処理となるため、引数データは渡さない */-->
+						resolve();
+					} else {
+						<!--/* 処理失敗 */-->
+						const errorMsg = getAjaxProcResutlMessage(jqXHR);
+						showErrorMessageForJs(errorMsg);
+						
+						reject();
+					}
+				})
+				.fail(function(jqXHR, status, errorThrown) {
+					showErrorMessageForJs(/*[[#{E00091}]]*/ "error");
+					
+					reject();
+				})
+			});
+		}
+		
+		<!--/* 連絡先の編集フォームの表示関数 */-->
+		const renderContactEditInputFormFunc = (dataObj) => {
+			return new Promise((resolve, reject) => {
+				
+				<!--/* オブジェクトのプロパティ値を取得 */-->
+				const {category, contactSeq} = dataObj;
+				
+				<!--/* クリックされた要素と同じ要素を再取得（前処理でHTMLが再描画されているため、新しいDOMから再取得を行う） */-->
+				const clickedElem = $('#personContactViewFragment .editContact')
+					.filter('[data-contact-category-cd=' + category + ']')
+					.filter('[data-contact-seq=' + contactSeq + ']');
+				
+				let requestData = {
+					category: category,
+					contactSeq: contactSeq
+				}
+				
+				<!--/* クリックされた要素の編集フォームを表示 */-->
+				<!--/* 2重押下防止対応はPromiseチェーンのルートで処理するため、チェーン内では行わない */-->
+				$.ajax({
+					url : 'getPersonContactInputForm',
+					type : "GET",
+					data : requestData
+				})
+				.done(function(data, status, jqXHR) {
+					if (isAjaxProcSuccess(jqXHR)) {
+						<!--/* 対象行部分にHTML表示 */-->
+						$(clickedElem).closest('.contactRow').html(data)
+						
+						<!--/* Promiseチェーンの最後の処理となるため、引数データは渡さない */-->
+						resolve();
+					} else {
+						<!--/* 処理失敗 */-->
+						const errorMsg = getAjaxProcResutlMessage(jqXHR);
+						showErrorMessageForJs(errorMsg);
+						
+						reject();
+					}
+				})
+				.fail(function(jqXHR, status, errorThrown) {
+					showErrorMessageForJs(/*[[#{E00091}]]*/ "error");
+					
+					reject();
+				})
+			});
+		}
+		
+		<!--/* 電話連絡削除ボタンクリック */-->
+		$('#personContactViewFragment .deleteAllowType').on('click', function() {
+			
+			if(!confirm("電話連絡情報を削除します。よろしいですか？")) {
+				return false;
+			}
+			
+			<!--/* 2重押下防止 */-->
+			if(ajaxRunning){
+				return false;
+			}
+			
+			ajaxRunning = true;
+			
+			$.ajax({
+				url : 'deleteAllowType',
+				type : "POST"
+			})
+			.done(function(data, status, jqXHR) {
+				if (isAjaxProcSuccess(jqXHR)) {
+					<!--/* 処理成功 */-->
+					
+					<!--/* 親HTMLのID */-->
+					$('#personContactFragmentWrap').html(data);
+					
+					const msg = getAjaxProcResutlMessage(jqXHR);
+					showInfoMessageForJs(msg);
+					
+				} else {
+					<!--/* 処理失敗 */-->
+					const errorMsg = getAjaxProcResutlMessage(jqXHR);
+					showErrorMessageForJs(errorMsg);
+				}
+			})
+			.fail(function(jqXHR, status, errorThrown) {
+				showErrorMessageForJs(/*[[#{E00014}]]*/ "削除に失敗しました。");
+			})
+			.always(function(){
+				ajaxRunning = false;
+			});
+		})
+
+		<!--/* 電話連絡編集ボタンクリック */-->
+		$('#personContactViewFragment .editAllowType').on('click', function() {
+			
+			<!--/* 2重押下防止 */-->
+			if(ajaxRunning){
+				return false;
+			}
+			ajaxRunning = true;
+			
+			<!--/* 連絡先情報を再描画し、描画後、対象の編集フォームを表示する */-->
+			Promise.resolve()
+				.then(renderContactViewFunc)
+				.then(renderAllowTypeEditInputFormFunc)
+				.catch((errorObj) => {
+					<!--/* 異常系の対応は各処理側で行っており、全体共通での異常系の処理は現状ない */-->
+					console.log(errorObj);
+				})
+				.finally(() => {
+					ajaxRunning = false;
+				})
+		})
+
+		<!--/* 電話連絡の編集フォームの表示関数 */-->
+		function renderAllowTypeEditInputFormFunc(dataObj) {
+			return new Promise((resolve, reject) => {
+				
+				<!--/* 2重押下防止対応はPromiseチェーンのルートで処理するため、チェーン内では行わない */-->
+				$.ajax({
+					url : 'getPersonAllowTypeInputForm',
+					type : "GET"
+				})
+				.done(function(data, status, jqXHR) {
+					if (isAjaxProcSuccess(jqXHR)) {
+						<!--/* 対象部分にHTML表示 */-->
+						$('#personContactViewFragment #editAllowTypeArea').html(data)
+						
+						<!-- /* ツールチップを全て消し、再設定 */ -->
+						$('.tooltip').remove();
+						commonSetUpElement();
+						
+						<!--/* Promiseチェーンの最後の処理となるため、引数データは渡さない */-->
+						resolve();
+					} else {
+						<!--/* 処理失敗 */-->
+						const errorMsg = getAjaxProcResutlMessage(jqXHR);
+						showErrorMessageForJs(errorMsg);
+						
+						reject();
+					}
+				})
+				.fail(function(jqXHR, status, errorThrown) {
+					showErrorMessageForJs(/*[[#{E00091}]]*/ "error");
+					
+					reject();
+				});
+			});
+		}
+
+	})
+	
+	</script>
+
+	<!--/* HTML */-->
+	<div th:object="${personContactViewForm}">
+
+		<section class="section_contact">
+			<div class="section_header">
+				<div class="section_header__title">連絡先</div>
+				<div class="section_header__action">
+					<!--/* 連絡先追加の選択肢の枠部分 */-->
+					<!--/* 選択肢が存在する場合は表示 */-->
+					<th:block th:if="*{getAddContacSelectOptions().size()} != 0">
+						<div id="addContactSelect" class="d-inline-block stop-events outPutContainerClose" data-offset="40,0"
+							data-boundary="window" data-toggle="popover" data-placement="bottom" data-trigger="click" data-html="true" data-container="#personContactViewFragment" data-content="">
+							<a href="javascript:void(0);" class="fs15"><i class="fas fa-plus-square mr-2"></i>連絡先を追加</a>
+						</div>
+					</th:block>
+					
+					<!--/* 連絡先追加の選択肢のコンテンツ（JSで差し込まれる） */-->
+					<!--/* ※popoverのdata-content部分に差し込まれるデータ */-->
+					<div id="addContactSelectContent" class="hidden">
+						<ul class="popover_nav_list">
+							<th:block th:each="selectOption : *{getAddContacSelectOptions()}">
+								<li th:if="${selectOption.category} == ${T(jp.loioz.common.constant.CommonConstant$ContactCategory).TEL}" class="addContactSelectOption" th:data-category-cd="${selectOption.category.getCd()}"><i class="fas fa-phone mr-3"></i>[[${selectOption.title} ?: '電話番号']]</li>
+								<li th:if="${selectOption.category} == ${T(jp.loioz.common.constant.CommonConstant$ContactCategory).FAX}" class="addContactSelectOption" th:data-category-cd="${selectOption.category.getCd()}"><i class="fas fa-fax mr-3"></i>[[${selectOption.title} ?: 'FAX番号']]</li>
+								<li th:if="${selectOption.category} == ${T(jp.loioz.common.constant.CommonConstant$ContactCategory).EMAIL}" class="addContactSelectOption" th:data-category-cd="${selectOption.category.getCd()}"><i class="far fa-envelope mr-3"></i>[[${selectOption.title} ?: 'メールアドレス']]</li>
+							</th:block>
+						</ul>
+					</div>
+				</div>
+			</div>
+			<div class="section_body">
+				<div class="section_body__contents">
+					<!--/* 連絡先の備考 */-->
+					<label class="side_parts_label mt-2 pl-2">備考</label>
+					<div id="editAllowTypeArea" class="allow_type_block_wrapper">
+						<th:block th:if="*{allowType == null && allowTypeRemarks == null}">
+							<div class="editAllowType allow_type_block"
+								data-container="#editAllowTypeArea" data-toggle="tooltip" title="編集" data-trigger="hover">(記載なし)</div>
+						</th:block>
+						<th:block th:unless="*{allowType == null && allowTypeRemarks == null}">
+						<div class="d-flex editAllowType allow_type_block"
+							data-container="#editAllowTypeArea" data-toggle="tooltip" title="編集" data-trigger="hover">
+							<div th:if="*{allowType != null}">
+								<span class="badge badge-pill list_attr mr-3" 
+									th:classappend="${T(jp.loioz.common.constant.CommonConstant$AllowType).DENY == personContactViewForm.allowType} ? 'badge_red' : 'badge_cyan' "
+									th:text="*{allowType.val}"></span>
+							</div>
+							<div myth:nl2br="*{allowTypeRemarks}">夕方は連絡OK</div>
+						</div>
+						</th:block>
+					</div>
+					<!--/* 連絡先情報が無い場合はメッセージを表示 */-->
+					<th:block th:if="*{contactList.size() == 0}">
+						<div class="py-3 pl-2 contactRow">
+							<div id="contactRowForNewRegist" class="contactRow">
+								<span th:text="#{I00035('連絡先情報の登録')}">連絡先情報の登録がありません。</span>
+							</div>
+						</div>
+					</th:block>
+					
+					<th:block th:if="*{contactList.size() > 0}">
+					<ul class="section_data__list">
+						<li id="contactRowForNewRegist" class="contactRow"></li>
+						<li class="list_contents contactRow" th:each="contactDto, contactStat : *{contactList}">
+							<div class="section_list_item_wrap">
+								<div class="section_list_item">
+									<div class="item_title_block">
+										<!--/* 連絡先タイプ */-->
+										<div class="item_title contract_item_category text-nowrap">
+											<th:block th:if="${contactDto.category} == ${T(jp.loioz.common.constant.CommonConstant$ContactCategory).TEL}">
+												<i class="fas fa-phone-alt mr-2"></i>電話番号
+											</th:block>
+											<th:block th:if="${contactDto.category} == ${T(jp.loioz.common.constant.CommonConstant$ContactCategory).FAX}">
+												<i class="fas fa-fax mr-2"></i>FAX番号
+											</th:block>
+											<th:block th:if="${contactDto.category} == ${T(jp.loioz.common.constant.CommonConstant$ContactCategory).EMAIL}">
+												<i class="far fa-envelope mr-2"></i>メールアドレス
+											</th:block>
+										</div>
+										<div class="contract_item_priority">
+											<!--/* 優先の場合 */-->
+											<span class="contact_priority_mark" th:if="${contactDto.yusenFlg}">優先</span>
+										</div>
+										<!--/* 連絡先タイプ */-->
+										<div class="contract_item_type">
+											<span th:text="${contactDto.type} ? ${contactDto.type.getVal()} : ''">勤務先</span>
+										</div>
+										<!--/* 電話番号、FAX番号、メールアドレスを表示 */-->
+										<div class="contract_item_val">
+											<span th:text="${contactDto.value}">0120-123-456</span>
+										</div>
+										<!--/* 備考 */-->
+										<div class="contract_item_remarks">
+											<span th:text="${contactDto.remarks}">備考</span>
+										</div>
+										<div class="item_sub" th:id="'contactEditContainer_' + ${contactStat.index}">
+											<!--/* 編集ボタン */-->
+											<button type="button" class="btn btn-light btn_icon_edit btn_icon_only btn_no_border editContact"
+												th:data-contact-category-cd="${contactDto.category.getCd()}"
+												th:data-contact-seq="${contactDto.contactSeq}"
+												th:data-container="'#contactEditContainer_' + ${contactStat.index}" data-toggle="tooltip" title="編集" data-trigger="hover">
+												<i class="fas fa-edit"></i>
+											</button>
+											<!--/* 削除ボタン */-->
+											<button type="button" class="btn btn-light btn_icon_only btn_no_border deleteContact"
+												th:data-contact-category-cd="${contactDto.category.getCd()}"
+												th:data-contact-seq="${contactDto.contactSeq}"
+												th:data-container="'#contactEditContainer_' + ${contactStat.index}" data-toggle="tooltip" title="削除" data-trigger="hover">
+												<i class="far fa-trash-alt"></i>
+											</button>
+										</div>
+									</div>
+								</div>
+							</div>
+						</li>
+					</ul>
+					</th:block>
+				</div>
+			</div>
+		</section>
+	</div>
+
+</div>
+
+
+<!--/* 連絡先情報編集ブロック */-->
+<div th:fragment="personContactInputFragment" id="personContactInputFragment" class="w-100">
+
+	<!--/* スクリプト */-->
+	<script th:inline="javascript">
+	$(function() {
+		
+		<!--/*  共有の要素セットアップ処理 */-->
+		commonSetUpElement();
+		
+		<!--/* 「優先」チェック */-->
+		$('#personContactInputFragment .yusenCheck').on('change', function(e) {
+			
+			if ($(this).prop('checked')) {
+				<!--/* チェックがつけられた場合 */-->
+				
+				const alreadySettingYusenFlg = /*[[${personContactInputForm.alreadySettingYusenFlg}]]*/false;
+				if (alreadySettingYusenFlg) {
+					<!--/* 同じカテゴリの連絡先データがすでに「優先」選択をしている場合 */-->
+					
+					<!--/* アラート表示 */-->
+					alert(/*[[#{I00127(${personContactInputForm.category.getVal()})}]]*/"")
+				}
+			}
+		})
+		
+		<!--/* 連絡先の編集を閉じる（表示モードの表示に切り替える） */-->
+		$('#personContactInputFragment .editContactClose').on('click', function() {
+			
+			<!--/* 2重押下防止 */-->
+			if(ajaxRunning){
+				return false;
+			}
+			
+			ajaxRunning = true;
+			$.ajax({
+				url : 'getCustomerContactView',
+				type : "GET"
+			})
+			.done(function(data, status, jqXHR) {
+				if (isAjaxProcSuccess(jqXHR)) {
+					<!--/* 親HTMLのID */-->
+					$('#personContactFragmentWrap').html(data);
+					
+				} else {
+					<!--/* 処理失敗 */-->
+					const errorMsg = getAjaxProcResutlMessage(jqXHR);
+					showErrorMessageForJs(errorMsg);
+				}
+			})
+			.fail(function(jqXHR, status, errorThrown) {
+				showErrorMessageForJs(/*[[#{E00091}]]*/ "error");
+			})
+			.always(function(){
+				ajaxRunning = false;
+			});
+			
+		})
+		
+		<!--/* 連絡先情報の保存 */-->
+		$('#personContactInputFragment .savePersonContact').on('click', function() {
+			
+			<!--/* リクエストパラメータ */-->
+			const formData = $(this)
+				.closest('.personContactInputForm')
+				.serializeArray();
+			
+			let $clickedElem = $(this)
+			
+			<!--/* 2重押下防止 */-->
+			if(ajaxRunning){
+				return false;
+			}
+			
+			ajaxRunning = true;
+			$.ajax({
+				url : 'savePersonContact',
+				type : "POST",
+				data : formData
+			})
+			.done(function(data, status, jqXHR) {
+				if (isAjaxProcSuccess(jqXHR)) {
+					<!--/* 処理成功 */-->
+					
+					<!--/* 親HTMLのID */-->
+					$('#personContactFragmentWrap').html(data);
+					
+					const msg = getAjaxProcResutlMessage(jqXHR);
+					showInfoMessageForJs(msg);
+					
+				} else {
+					<!--/* 処理失敗 */-->
+					
+					if (data) {
+						<!--/* HTMLのコンテンツが返却されている場合 */-->
+						<!--/* 対象行部分にHTML表示 */-->
+						$clickedElem.closest('.contactRow').html(data)
+					}
+					
+					const errorMsg = getAjaxProcResutlMessage(jqXHR);
+					showErrorMessageForJs(errorMsg);
+				}
+			})
+			.fail(function(jqXHR, status, errorThrown) {
+				showErrorMessageForJs(/*[[#{E00013}]]*/ "保存に失敗しました。");
+			})
+			.always(function(){
+				ajaxRunning = false;
+			});
+		})
+	
+	})
+	</script>
+
+	<!--/* HTML */-->
+	<form th:object="${personContactInputForm}" class="personContactInputForm">
+	
+		<div class="block_view_input block_view_input_row pb-3">
+
+			<!--/* 連絡先入力 */-->
+			<div class="detail_input_area">
+				<div class="form-row">
+					<div class="form-group col-12 mb-1">
+						<label class="input_parts_label" th:if="*{category} == ${T(jp.loioz.common.constant.CommonConstant$ContactCategory).TEL}"><i class="fas fa-phone mr-2"></i>[[*{getInputFormTitle()} ?: '電話番号']]</label>
+						<label class="input_parts_label" th:if="*{category} == ${T(jp.loioz.common.constant.CommonConstant$ContactCategory).FAX}"><i class="fas fa-fax mr-2"></i>[[*{getInputFormTitle()} ?: 'FAX番号']]</label>
+						<label class="input_parts_label" th:if="*{category} == ${T(jp.loioz.common.constant.CommonConstant$ContactCategory).EMAIL}"><i class="far fa-envelope mr-2"></i>[[*{getInputFormTitle()} ?: 'メールアドレス']]</label>
+					</div>
+				</div>
+
+				<!--/* 連絡先情報 */-->
+				<div class="form-row">
+					<div class="form-group col-auto">
+						<select class="form-control digit8 mr-2" th:field="*{type}">
+							<th:block th:each="option : *{getContactTypeSelectOptions()}">
+								<option th:value="${option.type} ? ${option.type.getCd()} : ''" th:text="${option.title}"></option>
+							</th:block>
+						</select>
+					</div>
+					<div class="form-group col-auto">
+						<input th:if="*{category} == ${T(jp.loioz.common.constant.CommonConstant$ContactCategory).TEL}" type="tel"
+							th:field="*{valueTel}" class="form-control input_num_hyphen digit9" th:attr="placeholder=*{getCategoryTitle()} ?: '電話番号'" maxlength="13" autocomplete="off">
+						<input th:if="*{category} == ${T(jp.loioz.common.constant.CommonConstant$ContactCategory).FAX}" type="tel"
+							th:field="*{valueFax}" class="form-control input_num_hyphen digit9" th:attr="placeholder=*{getCategoryTitle()} ?: 'FAX番号'" maxlength="13" autocomplete="off">
+						<input th:if="*{category} == ${T(jp.loioz.common.constant.CommonConstant$ContactCategory).EMAIL}" type="email"
+							th:field="*{valueMail}" class="form-control input_half digit20" th:attr="placeholder=*{getCategoryTitle()} ?: 'メールアドレス'" maxlength="256" autocomplete="off">
+						
+						<div th:if="${#fields.hasErrors('valueTel')}" th:errors="*{valueTel}" class="error_mag_point">error</div>
+						<div th:if="${#fields.hasErrors('valueFax')}" th:errors="*{valueFax}" class="error_mag_point">error</div>
+						<div th:if="${#fields.hasErrors('valueMail')}" th:errors="*{valueMail}" class="error_mag_point">error</div>
+						
+						<!-- Enter key対応のダミー -->
+						<input type="text" name="dummy" style="display:none;">
+					</div>
+					<div class="form-group col-auto">
+						<div class="priority_check_container digit4">
+							<input th:id="'priorityCheck_' + *{contactSeq}" class="check yusenCheck" type="checkbox" name="yusenFlg" th:checked="*{yusenFlg}">
+							<label th:for="'priorityCheck_' + *{contactSeq}" class="label">優先</label>
+						</div>
+					</div>
+					<div class="form-group col-auto">
+						<input type="text" th:field="*{remarks}" class="form-control digit25" placeholder="備考" maxlength="100" autocomplete="off">
+						<div th:if="${#fields.hasErrors('remarks')}" th:errors="*{remarks}" class="error_mag_point">error</div>
+					</div>
+				</div>
+			</div>
+			
+			<input type="hidden" th:field="*{contactSeq}">
+			<input type="hidden" th:field="*{category}">
+			
+			<div class="text-right">
+				<!--/* 連絡先 保存ボタン */-->
+				<button type="button" class="savePersonContact btn btn-info btn-sm mr-3"
+					data-boundary="window" data-container="#personContactInputFragment" data-toggle="tooltip" data-trigger="hover" title="保存">
+					<i class="fas fa-check"></i>保存
+				</button>
+				<!--/* 閉じるボタン */-->
+				<button type="button" class="editContactClose btn btn-light btn-sm"
+					data-boundary="window" data-container="#personContactInputFragment" data-toggle="tooltip" data-trigger="hover" title="閉じる">
+					<i class="fas fa-times"></i>閉じる
+				</button>
+			</div>
+			
+		</div>
+	
+	</form>
+</div>
+
+
+
+<!--/* 電話連絡情報編集ブロック */-->
+<div th:fragment="personAllowTypeInputFragment" id="personAllowTypeInputFragment">
+
+	<!--/* スクリプト */-->
+	<script th:inline="javascript">
+	$(function() {
+		
+		<!--/*  共有の要素セットアップ処理 */-->
+		commonSetUpElement();
+		
+		<!--/* 連絡先の編集を閉じる（表示モードの表示に切り替える） */-->
+		$('#personAllowTypeInputFragment .editAllowTypeClose').on('click', function() {
+			
+			<!--/* 2重押下防止 */-->
+			if(ajaxRunning){
+				return false;
+			}
+			
+			ajaxRunning = true;
+			$.ajax({
+				url : 'getCustomerContactView',
+				type : "GET"
+			})
+			.done(function(data, status, jqXHR) {
+				if (isAjaxProcSuccess(jqXHR)) {
+					<!--/* 親HTMLのID */-->
+					$('#personContactFragmentWrap').html(data);
+					
+				} else {
+					<!--/* 処理失敗 */-->
+					const errorMsg = getAjaxProcResutlMessage(jqXHR);
+					showErrorMessageForJs(errorMsg);
+				}
+			})
+			.fail(function(jqXHR, status, errorThrown) {
+				showErrorMessageForJs(/*[[#{E00091}]]*/ "error");
+			})
+			.always(function(){
+				ajaxRunning = false;
+			});
+			
+		})
+		
+		<!--/* 電話連絡情報の保存 */-->
+		$('#personAllowTypeInputFragment .savePersonAllowType').on('click', function() {
+			
+			<!--/* リクエストパラメータ */-->
+			const formData = $(this)
+				.closest('.personAllowTypeInputForm')
+				.serializeArray();
+			
+			let $clickedElem = $(this)
+			
+			<!--/* 2重押下防止 */-->
+			if(ajaxRunning){
+				return false;
+			}
+			
+			ajaxRunning = true;
+			$.ajax({
+				url : 'savePersonAllowType',
+				type : "POST",
+				data : formData
+			})
+			.done(function(data, status, jqXHR) {
+				if (isAjaxProcSuccess(jqXHR)) {
+					<!--/* 処理成功 */-->
+					
+					<!--/* 親HTMLのID */-->
+					$('#personContactFragmentWrap').html(data);
+					const msg = getAjaxProcResutlMessage(jqXHR);
+					showInfoMessageForJs(msg);
+					
+				} else {
+					<!--/* 処理失敗 */-->
+					
+					if (data) {
+						<!--/* HTMLのコンテンツが返却されている場合 */-->
+						<!--/* 対象行部分にHTML表示 */-->
+						$clickedElem.closest('.contactRow').html(data)
+					}
+					
+					const errorMsg = getAjaxProcResutlMessage(jqXHR);
+					showErrorMessageForJs(errorMsg);
+				}
+			})
+			.fail(function(jqXHR, status, errorThrown) {
+				showErrorMessageForJs(/*[[#{E00013}]]*/ "保存に失敗しました。");
+			})
+			.always(function(){
+				ajaxRunning = false;
+			});
+		})
+
+	})
+	</script>
+
+	<!--/* HTML */-->
+	<form th:object="${personAllowTypeInputForm}" class="personAllowTypeInputForm">
+
+		<div class="block_view_input block_view_input_row pb-3">
+
+			<!--/* 電話連絡入力 */-->
+			<div class="detail_input_area">
+				<!--/* 連絡先情報 */-->
+				<div class="form-row mt-2">
+					<div class="form-group col-md-2">
+						<!--/* 電話連絡可否 */-->
+						<select class="form-control digit9" th:field="*{allowType}">
+							<option value="">-</option>
+							<option th:each="enum : ${T(jp.loioz.common.constant.CommonConstant$AllowType).values()}"
+								th:value="${enum.cd}" th:text="${enum.val}">可</option>
+						</select>
+					</div>
+					<div class="form-group col-md-10">
+						<textarea rows="2" class="form-control" th:field="*{allowTypeRemarks}" placeholder="備考" maxlength="500"></textarea>
+						<div th:if="${#fields.hasErrors('allowTypeRemarks')}" th:errors="*{allowTypeRemarks}" class="error_mag_point">error</div>
+					</div>
+				</div>
+				<div class="text-right">
+					<!--/* 保存ボタン */-->
+					<button type="button" class="savePersonAllowType btn btn-info btn-sm mr-3"
+						data-boundary="window" data-container="#personAllowTypeInputFragment" data-toggle="tooltip" data-trigger="hover" title="保存">
+						<i class="fas fa-check"></i>保存
+					</button>
+					<!--/* 閉じるボタン */-->
+					<button type="button" class="editAllowTypeClose btn btn-light btn-sm"
+						data-boundary="window" data-container="#personAllowTypeInputFragment" data-toggle="tooltip" data-trigger="hover" title="閉じる">
+						<i class="fas fa-times"></i>閉じる
+					</button>
+				</div>
+			</div>
+		</div>
+	</form>
+</div>
+
+
+
+<!--/* 口座情報表示ブロック */-->
+<div th:fragment="personKozaViewFragment(personKozaViewForm)" id="personKozaViewFragment">
+
+	<!--/* スクリプト */-->
+	<script th:inline="javascript">
+	$(function() {
+		
+		<!--/* 共有の要素セットアップ処理 */-->
+		commonSetUpElement();
+		
+		<!--/* 口座情報追加のクリック */-->
+		<!--/* 追加用のフォームの表示を行う */-->
+		$('#personKozaViewFragment #addKoza').on('click', function() {
+			
+			<!--/* 口座情報追加フォーム表示では、特にデータは必要ないので空とする */-->
+			let dataObj = {}
+			
+			<!--/* 2重押下防止 */-->
+			if(ajaxRunning){
+				return false;
+			}
+			
+			ajaxRunning = true;
+			
+			<!--/* 登録（追加）フォームを表示する */-->
+			Promise.resolve(dataObj)
+				.then(renderKozaRegistInputFormFunc)
+				.catch((errorObj) => {
+					<!--/* 異常系の対応は各処理側で行っており、全体共通での異常系の処理は現状ない */-->
+					console.log(errorObj);
+				})
+				.finally(() => {
+					ajaxRunning = false;
+				})
+		})
+		
+		<!--/* 口座削除ボタンクリック */-->
+		$('#personKozaViewFragment .deleteKoza').on('click', function() {
+			
+			if(!confirm("精算口座情報を削除します。よろしいですか？")){
+				return false;
+			}
+
+			<!--/* 口座情報の再表示、編集フォーム表示では、特にデータは必要ないので空とする */-->
+			let dataObj = {}
+			
+			<!--/* 2重押下防止 */-->
+			if(ajaxRunning){
+				return false;
+			}
+			
+			ajaxRunning = true;
+			
+			$.ajax({
+				url : 'deleteKoza',
+				type : "GET"
+			})
+			.done(function(data, status, jqXHR) {
+				if (isAjaxProcSuccess(jqXHR)) {
+					<!--/* 新規登録行部分にHTML表示 */-->
+					$('#personKozaFragmentWrap').html(data);
+					
+					const msg = getAjaxProcResutlMessage(jqXHR);
+					showInfoMessageForJs(msg);
+					
+				} else {
+					<!--/* 処理失敗 */-->
+					const errorMsg = getAjaxProcResutlMessage(jqXHR);
+					showErrorMessageForJs(errorMsg);
+				}
+			})
+			.fail(function(jqXHR, status, errorThrown) {
+				showErrorMessageForJs(/*[[#{E00091}]]*/ "error");
+			})
+			.always(function(){
+				ajaxRunning = false;
+			});
+
+		});
+
+		<!--/* 口座編集ボタンクリック */-->
+		<!--/* 編集用のフォームの表示を行う */-->
+		$('#personKozaViewFragment .editKoza').on('click', function() {
+			
+			<!--/* 口座情報の編集フォーム表示では、特にデータは必要ないので空とする */-->
+			let dataObj = {}
+			
+			<!--/* 2重押下防止 */-->
+			if(ajaxRunning){
+				return false;
+			}
+			
+			ajaxRunning = true;
+			
+			<!--/* 対象の編集フォームを表示する */-->
+			Promise.resolve(dataObj)
+				.then(renderKozaEditInputFormFunc)
+				.catch((errorObj) => {
+					<!--/* 異常系の対応は各処理側で行っており、全体共通での異常系の処理は現状ない */-->
+					console.log(errorObj);
+				})
+				.finally(() => {
+					ajaxRunning = false;
+				})
+		})
+		
+		<!--/* 備考 すべて見る */-->
+		$('#personKozaViewFragment .showAllKozaRemarks').on('click', function() {
+			showAllKozaRemarks();
+		})
+		
+		<!--/* 備考 すべて見る */-->
+		function showAllKozaRemarks() {
+			changeShowCloseKozaRemarks(true);
+		}
+		
+		<!--/* -->
+		/**
+		 * 備考の表示、閉じるを切り替える
+		 * 
+		 * @param {boolean} toShow - true : 表示する false : 閉じる
+		 */
+		 <!-- */-->
+		function changeShowCloseKozaRemarks(toShow) {
+			
+			if (toShow) {
+				<!--/* 表示 */-->
+				
+				<!--/* 「すべて見る」部分のコンテンツを非表示 */-->
+				$('#showAllKozaRemarksWrap').addClass('hidden');
+				
+				<!--/* すべての備考部分のコンテンツを表示 */-->
+				$('#allKozaRemarksWrap').removeClass('hidden');
+				
+			} else {
+				<!--/* 閉じる */-->
+				<!--/* 閉じる操作は存在しない */-->
+			}
+		}
+		
+		<!--/* 口座情報の再表示関数 */-->
+		const renderKozaViewFunc = (dataObj) => {
+			return new Promise((resolve, reject) => {
+				
+				<!--/* 口座情報の表示領域を再描画 */-->
+				<!--/* 2重押下防止対応はPromiseチェーンのルートで処理するため、チェーン内では行わない */-->
+				$.ajax({
+					url : 'getCustomerKozaView',
+					type : "GET"
+				})
+				.done(function(data, status, jqXHR) {
+					if (isAjaxProcSuccess(jqXHR)) {
+						
+						// 再描画
+						// 親HTMLのID
+						$('#personKozaFragmentWrap').html(data);
+						
+						<!--/* 引数データは後続処理に渡す */-->
+						return resolve(dataObj);
+					} else {
+						// 処理失敗
+						const errorMsg = getAjaxProcResutlMessage(jqXHR);
+						showErrorMessageForJs(errorMsg);
+						
+						return reject();
+					}
+				})
+				.fail(function(jqXHR, status, errorThrown) {
+					showErrorMessageForJs(/*[[#{E00091}]]*/ "error");
+					
+					return reject();
+				})
+			});
+		}
+		
+		<!--/* 口座情報の登録（追加）フォームの表示関数 */-->
+		const renderKozaRegistInputFormFunc = (dataObj) => {
+			return new Promise((resolve, reject) => {
+				
+				let requestData = {
+					isNewRegist: true
+				}
+				
+				<!--/* クリックされた要素の登録（追加）フォームを表示 */-->
+				<!--/* 2重押下防止対応はPromiseチェーンのルートで処理するため、チェーン内では行わない */-->
+				$.ajax({
+					url : 'getPersonKozaInputForm',
+					type : "GET",
+					data : requestData
+				})
+				.done(function(data, status, jqXHR) {
+					if (isAjaxProcSuccess(jqXHR)) {
+						// 新規登録行部分にHTML表示
+						$('#personKozaViewFragment #kozaRowForNewRegist').html(data);
+						$('#personKozaViewFragment #kozaRowForNewRegist #ginkoName').focus();
+						
+						<!--/* 画面の位置を移動 */-->
+						const pos = $('#ginkoName').offset().top - 100;
+						$('html').animate({scrollTop:pos});
+						
+						<!--/* Promiseチェーンの最後の処理となるため、引数データは渡さない */-->
+						return resolve();
+					} else {
+						// 処理失敗
+						const errorMsg = getAjaxProcResutlMessage(jqXHR);
+						showErrorMessageForJs(errorMsg);
+						
+						return reject();
+					}
+				})
+				.fail(function(jqXHR, status, errorThrown) {
+					showErrorMessageForJs(/*[[#{E00091}]]*/ "error");
+					
+					return reject();
+				})
+			});
+		}
+		
+		<!--/* 口座情報の編集フォームの表示関数 */-->
+		const renderKozaEditInputFormFunc = (dataObj) => {
+			return new Promise((resolve, reject) => {
+				
+				<!--/* クリックされた要素と同じ要素を再取得（前処理でHTMLが再描画されているため、新しいDOMから再取得を行う） */-->
+				<!--/* 現状、口座情報は1つしか登録できないので、取得される要素は必ず1つとなる*/-->
+				const $clickedElem = $('#personKozaViewFragment .editKoza')
+				
+				<!--/* クリックされた要素の編集フォームを表示 */-->
+				<!--/* 2重押下防止対応はPromiseチェーンのルートで処理するため、チェーン内では行わない */-->
+				$.ajax({
+					url : 'getPersonKozaInputForm',
+					type : "GET"
+				})
+				.done(function(data, status, jqXHR) {
+					if (isAjaxProcSuccess(jqXHR)) {
+						// 対象行部分にHTML表示
+						$clickedElem.closest('.kozaRow').html(data)
+						
+						<!--/* Promiseチェーンの最後の処理となるため、引数データは渡さない */-->
+						return resolve();
+					} else {
+						// 処理失敗
+						const errorMsg = getAjaxProcResutlMessage(jqXHR);
+						showErrorMessageForJs(errorMsg);
+						
+						return reject();
+					}
+				})
+				.fail(function(jqXHR, status, errorThrown) {
+					showErrorMessageForJs(/*[[#{E00091}]]*/ "error");
+					
+					return reject();
+				})
+			});
+		}
+
+	})
+	
+	</script>
+
+	<!--/* HTML */-->
+	<div th:object="${personKozaViewForm}">
+
+		<section class="section_koza">
+			<div class="section_header">
+				<div class="section_header__title">精算口座</div>
+				<div class="section_header__action">
+					<!--/* 精算口座が未登録の場合：表示 */-->
+					<th:block th:if="*{koza} == null">
+						<a href="javascript:void(0);" class="fs15" id="addKoza"><i class="fas fa-plus-square mr-2"></i>精算口座を追加</a>
+					</th:block>
+				</div>
+			</div>
+			<div class="section_body">
+				<div class="section_body__contents">
+				
+<!--/*/		<th:block th:if="*{koza} == null"> /*/-->
+					<div class="py-2 px-2">
+						<div id="kozaRowForNewRegist" class="kozaRow">
+							<span th:text="#{I00035('精算口座の登録')}">MSG_I00035</span>
+						</div>
+					</div>
+<!--/*/		</th:block> /*/-->
+					
+<!--/*/		<th:block th:unless="*{koza} == null"> /*/-->
+					<ul class="section_data__list kozaRow">
+						<li class="list_contents" th:unless="*{koza} == null">
+							<!--/* 精算口座が登録済みの場合：表示 */-->
+							<div class="section_list_item_wrap">
+								<div class="section_list_item">
+									<div class="item_title_block">
+										<div class="item_title">
+											<!--/* 銀行名、支店名、支店No */-->
+											<span th:text="*{koza.ginkoName}"></span>
+											<span th:text="*{koza.shitenName}"></span>
+											<span th:text="*{koza.shitenNo} ? '（' + *{koza.shitenNo} + '）' : ''"></span>
+											<div>
+												<span th:text="*{koza.kozaType} ? *{koza.kozaType.getVal()} : ''"></span>
+												<span th:text="*{koza.kozaNo}"></span>
+												<span th:text="*{koza.kozaName}"></span>
+												<span th:text="*{koza.kozaNameKana} ? '（' + *{koza.kozaNameKana} + '）' : ''"></span>
+											</div>
+										</div>
+										<div class="item_sub"  id="kozaEditContainer">
+											<!--/* 編集ボタン */-->
+											<button type="button" class="btn btn-light btn_icon_edit btn_icon_only btn_no_border editKoza"
+												data-container="#kozaEditContainer" data-toggle="tooltip" title="編集" data-trigger="hover">
+												<i class="fas fa-edit"></i>
+											</button>
+											<!--/* 削除ボタン */-->
+											<button type="button" class="btn btn-light btn_icon_only btn_no_border deleteKoza"
+												data-container="#kozaDeleteContainer" data-toggle="tooltip" title="削除" data-trigger="hover">
+												<i class="far fa-trash-alt"></i>
+											</button>
+										</div>
+									</div>
+									<!--/* 備考 */-->
+									<div class="item_content_block px-3">
+										<div class="align-self-start pt-1">
+											<!--/* 備考の表示 */-->
+											<div th:unless="*{#strings.isEmpty(koza.kozaRemarks)}"
+												th:with="
+													kozaRemarks=*{koza.kozaRemarks},
+													initShowMaxCharCountKozaRemarks=60,
+													isOverCharCount=(${initShowMaxCharCountKozaRemarks} < ${#strings.length(kozaRemarks)})">
+												
+												<!-- 文字数が多い場合の表示 -->
+												<th:block th:if="${isOverCharCount}">
+													<!-- 一部の備考文字のみ表示（すべて見るリンク） -->
+													<div id="showAllKozaRemarksWrap">
+														<!-- 備考 -->
+														<span myth:nl2br="|${#strings.substring(kozaRemarks,0,initShowMaxCharCountKozaRemarks)}|"></span>
+														<!-- すべて見るリンク -->
+														<p class="mb-0 text-left">
+															<a href="javascirpt:void(0);" onClick="return false;">
+																<span class="showAllKozaRemarks">
+																	...すべて見る
+																</span>
+															</a>
+														</p>
+													</div>
+													<!-- 全ての備考文字を表示（すべて見るリンククリックで表示する） -->
+													<div id="allKozaRemarksWrap" class="hidden">
+														<!-- 備考 -->
+														<div>
+															<span myth:nl2br="${kozaRemarks}"></span>
+														</div>
+													</div>
+												</th:block>
+												
+												<!-- 文字数が多くない場合の表示 -->
+												<th:block th:unless="${isOverCharCount}">
+													<!--  全ての備考文字を表示 -->
+													<div>
+														<!-- 備考 -->
+														<span myth:nl2br="${kozaRemarks}"></span>
+													</div>
+												</th:block>
+											</div>
+										</div>
+									</div>
+								</div>
+							</div>
+						</li>
+					</ul>
+				</div>
+			</div>
+		</section>
+	</div>
+</div>
+
+<!--/* 口座情報編集ブロック */-->
+<div th:fragment="personKozaInputFragment" id="personKozaInputFragment" class="w-100">
+
+	<!--/* スクリプト */-->
+	<script th:inline="javascript">
+	$(function() {
+		
+		<!--/* 共有の要素セットアップ処理 */-->
+		commonSetUpElement();
+		
+		<!--/* 自動入力 */-->
+		<!--/* 口座名義(カナ) */-->
+		$.fn.autoKana('#personKozaInputFragment #kozaName', '#personKozaInputFragment #kozaNameKana', {
+			katakana : true
+		});
+		
+		<!--/* 口座の編集を閉じる（表示モードの表示に切り替える） */-->
+		$('#personKozaInputFragment .editKozaClose').on('click', function() {
+			
+			<!--/* 2重押下防止 */-->
+			if(ajaxRunning){
+				return false;
+			}
+			
+			ajaxRunning = true;
+			
+			$.ajax({
+				url : 'getCustomerKozaView',
+				type : "GET"
+			})
+			.done(function(data, status, jqXHR) {
+				if (isAjaxProcSuccess(jqXHR)) {
+					<!--/* 親HTMLのID */-->
+					$('#personKozaFragmentWrap').html(data);
+					
+				} else {
+					<!--/* 処理失敗 */-->
+					const errorMsg = getAjaxProcResutlMessage(jqXHR);
+					showErrorMessageForJs(errorMsg);
+				}
+			})
+			.fail(function(jqXHR, status, errorThrown) {
+				showErrorMessageForJs(/*[[#{E00091}]]*/ "error");
+			})
+			.always(function(){
+				ajaxRunning = false;
+			});
+		})
+		
+		<!--/* 口座情報の保存 */-->
+		$('#personKozaInputFragment .savePersonKoza').on('click', function() {
+			
+			<!--/* リクエストパラメータ */-->
+			const formData = $(this)
+				.closest('.personKozaInputForm')
+				.serializeArray();
+			
+			let $clickedElem = $(this)
+			
+			<!--/* 2重押下防止 */-->
+			if(ajaxRunning){
+				return false;
+			}
+			
+			ajaxRunning = true;
+			$.ajax({
+				url : 'savePersonKoza',
+				type : "POST",
+				data : formData
+			})
+			.done(function(data, status, jqXHR) {
+				if (isAjaxProcSuccess(jqXHR)) {
+					<!-- 処理成功 */-->
+					
+					<!-- 親HTMLのID */-->
+					$('#personKozaFragmentWrap').html(data);
+					
+					const msg = getAjaxProcResutlMessage(jqXHR);
+					showInfoMessageForJs(msg);
+					
+				} else {
+					<!-- 処理失敗 */-->
+					
+					if (data) {
+						<!-- HTMLのコンテンツが返却されている場合 */-->
+						<!-- 対象行部分にHTML表示 */-->
+						$clickedElem.closest('.kozaRow').html(data)
+					}
+					
+					const errorMsg = getAjaxProcResutlMessage(jqXHR);
+					showErrorMessageForJs(errorMsg);
+				}
+			})
+			.fail(function(jqXHR, status, errorThrown) {
+				showErrorMessageForJs(/*[[#{E00013}]]*/ "保存に失敗しました。");
+			})
+			.always(function(){
+				ajaxRunning = false;
+			});
+		})
+		
+	})
+	</script>
+
+	<!--/* HTML */-->
+	<form th:object="${personKozaInputForm}" class="personKozaInputForm">
+	
+		<!--/* 精算口座を追加、編集ボタンで表示 */-->
+		<div class="block_view_input">
+			<!--/* 精算口座入力 */-->
+			<div class="detail_input_area">
+				<div class="row">
+					<div class="col-6 pr-2">
+						<div class="form-row">
+							<!--/* 金融機関名 */-->
+							<div class="form-group col-md-12 mb-2">
+								<label class="input_parts_label">金融機関名</label>
+								<input type="text" class="form-control" th:field="*{ginkoName}" size="20" maxlength="20" placeholder="名称" tabindex="1">
+								<div th:if="${#fields.hasErrors('ginkoName')}" th:errors="*{ginkoName}" class="error_mag_point">error</div>
+							</div>
+						</div>
+						<div class="form-row">
+							<!--/* 支店番号 */-->
+							<div class="form-group col-md-3">
+								<input type="text" class="form-control inputNumberOnly" th:field="*{shitenNo}" maxlength="6" placeholder="支店番号" tabindex="2">
+								<div th:if="${#fields.hasErrors('shitenNo')}" th:errors="*{shitenNo}" class="error_mag_point">error</div>
+							</div>
+							<!--/* 支店名 */-->
+							<div class="form-group col-md-9">
+								<input type="text" class="form-control" th:field="*{shitenName}" maxlength="20" placeholder="支店名" tabindex="3">
+								<div th:if="${#fields.hasErrors('shitenName')}" th:errors="*{shitenName}" class="error_mag_point">error</div>
+							</div>
+						</div>
+					</div>
+					<div class="col-6 pl-2">
+						<div class="form-row">
+							<!--/* 口座種類 */-->
+							<div class="form-group col-md-5 mb-2">
+								<label class="input_parts_label">口座情報</label>
+								<select class="form-control" th:field="*{kozaType}" tabindex="4">
+									<th:block th:each="option : *{getKozaTypeSelectOptions()}">
+										<option th:value="${option.type} ? ${option.type.getCd()} : '' " th:text="${option.title}"></option>
+									</th:block>
+								</select>
+								<div th:if="${#fields.hasErrors('kozaNo')}" th:errors="*{kozaNo}" class="error_mag_point">error</div>
+							</div>
+							<!--/* 口座名義 */-->
+							<div class="form-group col-md-7 mb-2">
+								<label class="input_parts_label">口座名義</label>
+								<input type="text" class="form-control" th:field="*{kozaName}" placeholder="漢字" maxlength="30" tabindex="6">
+								<div th:if="${#fields.hasErrors('kozaName')}" th:errors="*{kozaName}" class="error_mag_point">error</div>
+							</div>
+						</div>
+						<div class="form-row">
+							<!--/* 口座番号 */-->
+							<div class="form-group col-md-5">
+								<input type="text" class="form-control inputNumberOnly" th:field="*{kozaNo}" maxlength="9" placeholder="口座番号" tabindex="5">
+								<div th:if="${#fields.hasErrors('kozaType')}" th:errors="*{kozaType}" class="error_mag_point">error</div>
+							</div>
+							<!--/* 口座名義カナ */-->
+							<div class="form-group col-md-7">
+								<input type="text" class="form-control" th:field="*{kozaNameKana}" placeholder="フリガナ" maxlength="30" tabindex="7">
+								<div th:if="${#fields.hasErrors('kozaNameKana')}" th:errors="*{kozaNameKana}" class="error_mag_point">error</div>
+							</div>
+						</div>
+					</div>
+					<div class="col-12">
+						<div class="form-row">
+							<!--/* 備考 */-->
+							<div class="form-group col-md-12">
+								<label class="input_parts_label">備考</label>
+								<textarea rows="3" class="form-control" th:field="*{kozaRemarks}" maxlength="500" tabindex="8"></textarea>
+								<div th:if="${#fields.hasErrors('kozaRemarks')}" th:errors="*{kozaRemarks}" class="error_mag_point">error</div>
+							</div>
+						</div>
+					</div>
+				</div>
+				<!--/* ボタンブロック */-->
+				<div class="text-right">
+					<!--/* 精算口座 保存ボタン */-->
+					<button type="button" class="savePersonKoza btn btn-info btn-sm mr-3"
+						data-boundary="window" data-container="#personKozaInputFragment" data-toggle="tooltip" data-trigger="hover" title="保存">
+						<i class="fas fa-check"></i>保存
+					</button>
+					<!--/* 閉じるボタン */-->
+					<button type="button" class="editKozaClose btn btn-light btn-sm"
+						data-boundary="window" data-container="#personKozaInputFragment" data-toggle="tooltip" data-trigger="hover" title="閉じる">
+						<i class="fas fa-times"></i>閉じる
+					</button>
+				</div>
+			</div>
+			<input type="hidden" th:field="*{newRegist}">
+		</div>
+	</form>
+</div>
+
+
+
+<!--/* 案件情報表示ブロック */-->
+<div th:fragment="customerAnkenViewFragment(customerAnkenViewForm)" id="customerAnkenViewFragment" class="mb-4">
+
+	<!--/* 案件登録モーダルを扱うので共通JS定義 */-->
+	<script type="text/javascript" th:replace="common/mvc/ankenCustomer/ankenRegist::ankenRegistModalFragmentObjJs"></script>
+
+	<!--/* スクリプト */-->
+	<script th:inline="javascript">
+	$(function() {
+		
+		<!-- 共有の要素セットアップ処理 -->
+		commonSetUpElement();
+		
+		<!--/* 案件登録モーダル */-->
+		const $ankenRegistModal = $("#customerAnkenViewFragment #ankenRegistModal");
+		$ankenRegistModal.on("show.bs.modal", function() {
+			
+			<!--/* 案件の登録処理 */-->
+			benzo.global.fragment.ankenRegistModalFragmentObj.setUpObj.registAction = function(triggerBtn) {
+				let param = benzo.global.fragment.ankenRegistModalFragmentObj.paramObj.getRegistFormParams($ankenRegistModal);
+				let url = /*[[@{/common/mvc/ankencustomer/registAnken}]]*/"";
+				if (ajaxRunning) {
+					return false;
+				}
+				ajaxRunning = true;
+				$.ajax({
+					type : "POST",
+					url : url,
+					data : param,
+					dataType : "html",
+				})
+				.done(function(data, status, jqXHR) {
+					if (getAjaxProcResutl(jqXHR) == /*[[${T(jp.loioz.app.common.mvc.ankenCustomer.controller.AnkenRegistCommonController).HEADER_VALUE_OF_AJAX_PROC_RESULT_ANKEN_REGIST_REDIRECT}]]*/'100') {
+						alert(/*[[#{I00020('案件')}]]*/"error");
+						window.location.href = getAjaxProcResutlMessage(jqXHR);
+					} else {
+						if (data) {
+							$ankenRegistModal.find(".ankenRegistModalFragmentWrap").html(data);
+						}
+						const errorMsg = getAjaxProcResutlMessage(jqXHR);
+						showErrorMessage(errorMsg, $ankenRegistModal);
+					}
+				})
+				.fail(function(jqXHR, status, errorThrown) {
+					const errorMsg = /*[[#{E00091}]]*/ "error";
+					showErrorMessage(errorMsg, $ankenRegistModal);
+				})
+				.always(function(){
+					ajaxRunning = false;
+				});
+			};
+			
+			<!--/* 登録モーダルの初期レンダリング処理 */-->
+			benzo.global.fragment.ankenRegistModalFragmentObj.setUpObj.initRenderRegistViewAction = function(triggerBtn) {
+				if (ajaxRunning) {
+					return false;
+				}
+				ajaxRunning = true;
+				Promise.resolve()
+					.then(() => initRenderRegistViewAction())
+					.catch((errors) => console.log(errors))
+					.finally(() => ajaxRunning = false);
+			};
+			
+			<!--/* 検索モーダルの登録処理 */-->
+			benzo.global.fragment.ankenRegistModalFragmentObj.setUpObj.searchRegistAction = function(triggerBtn) {
+				if (ajaxRunning) {
+					return false;
+				}
+				
+				const params = benzo.global.fragment.ankenRegistModalFragmentObj.paramObj.getSearchResultFormParams($ankenRegistModal);
+				ajaxRunning = true;
+				Promise.resolve()
+					.then(() => _registFn(params))
+					.catch((errors) => console.log(errors))
+					.finally(() => ajaxRunning = false);
+				
+				function _registFn(registParams) {
+					return new Promise((resolve, reject) => {
+						const ankenId = registParams.find((v) => v.name === "ankenId")["value"];
+						if (!confirm("【案-" + ankenId +"】　を登録しますか？")) {
+							return resolve(); // 正常終了
+						}
+						const url = /*[[@{/common/mvc/ankencustomer/registSearchResultAnken}]]*/"";
+						$.ajax({
+							type : "POST",
+							url : url,
+							data : registParams,
+							dataType : "html"
+						})
+						.done(function(result, status, jqXHR) {
+							if (getAjaxProcResutl(jqXHR) == /*[[${T(jp.loioz.app.common.mvc.ankenCustomer.controller.AnkenRegistCommonController).HEADER_VALUE_OF_AJAX_PROC_RESULT_ANKEN_REGIST_REDIRECT}]]*/'100') {
+								alert(/*[[#{I00020('案件')}]]*/"error");
+								window.location.href = getAjaxProcResutlMessage(jqXHR);
+							} else {
+								const errorMsg = getAjaxProcResutlMessage(jqXHR);
+								showErrorMessage(errorMsg, $ankenRegistModal);
+								return reject(errorMsg);
+							}
+						})
+						.fail(function(jqXHR, status, errorThrown) {
+							showErrorMessage(/*[[#{E00091}]]*/ "error", $ankenRegistModal);
+							return reject(jqXHR, status, errorThrown)
+						});
+					});
+				};
+				
+			};
+			
+			<!--/* 検索モーダルの検索処理 */-->
+			benzo.global.fragment.ankenRegistModalFragmentObj.setUpObj.searchRenderPromise = function(triggerBtn) {
+				return new Promise((resolve, reject) => {
+					const params = benzo.global.fragment.ankenRegistModalFragmentObj.paramObj.getSearchFormParams($ankenRegistModal);
+					const url = /*[[@{/common/mvc/ankencustomer/getAnkenSearchModalFragment}]]*/"";
+					$.ajax({
+						type : "GET",
+						url : url,
+						data : params,
+						dataType : "html"
+					})
+					.done(function(result, status, jqXHR) {
+						if (isAjaxProcSuccess(jqXHR)) {
+							<!--/* 処理成功 */-->
+							$ankenRegistModal.find(".ankenRegistModalFragmentWrap").html(result);
+							return resolve();
+						} else {
+							const errorMsg = getAjaxProcResutlMessage(jqXHR);
+							showErrorMessageForJs(errorMsg);
+							return reject(errorMsg);
+						}
+					})
+					.fail(function(jqXHR, status, errorThrown) {
+						showErrorMessageForJs(/*[[#{E00091}]]*/ "error");
+						return reject(jqXHR, status, errorThrown)
+					});
+				});
+			};
+			
+			<!--/* 検索モーダルの初期レンダリング処理 */-->
+			benzo.global.fragment.ankenRegistModalFragmentObj.setUpObj.initRenderSearchViewAction = function(triggerBtn) {
+				if (ajaxRunning) {
+					return false;
+				}
+				ajaxRunning = true;
+				Promise.resolve()
+					.then(() => initRenderSearchViewAction())
+					.catch((errors) => console.log(errors))
+					.finally(() => ajaxRunning = false);
+			};
+			
+		});
+		
+		<!--/* 案件追加モーダルの初期レンダリング処理 */-->
+		function initRenderRegistViewAction() {
+			return new Promise((resolve, reject) => {
+				let initRenderRegistViewParams = Object.assign({}, benzo.global.fragment.ankenRegistModalFragmentObj.initRenderRegistViewParams);
+				const personId = initRenderRegistViewParams["personId"];
+				const url = /*[[@{/common/mvc/ankencustomer/getAnkenRegistModalFragment}]]*/"";
+				
+				const param = {
+						"personId": personId,
+				};
+				
+				$.ajax({
+					type : "GET",
+					url : url,
+					data : param,
+					dataType : "html"
+				})
+				.done(function(result, status, jqXHR) {
+					if (isAjaxProcSuccess(jqXHR)) {
+						<!--/* 処理成功 */-->
+						$ankenRegistModal.find(".ankenRegistModalFragmentWrap").html(result);
+						return resolve();
+					} else {
+						const errorMsg = getAjaxProcResutlMessage(jqXHR);
+						showErrorMessageForJs(errorMsg);
+						return reject(errorMsg);
+					}
+				})
+				.fail(function(jqXHR, status, errorThrown) {
+					showErrorMessageForJs(/*[[#{E00091}]]*/ "error");
+					return reject([jqXHR, status, errorThrown]);
+				});
+			});
+		};
+		
+		<!--/* 案件検索モーダルの初期レンダリング処理 */-->
+		function initRenderSearchViewAction() {
+			return new Promise((resolve, reject) => {
+				let initRenderSearchViewParams = Object.assign({}, benzo.global.fragment.ankenRegistModalFragmentObj.initRenderSearchViewParams);
+				const personId = initRenderSearchViewParams["personId"];
+				const params = [
+					{"name": "personId", "value": personId},
+				];
+				
+				const url = /*[[@{/common/mvc/ankencustomer/getAnkenSearchModalFragment}]]*/"";
+				$.ajax({
+					type : "GET",
+					url : url,
+					data : params,
+					dataType : "html"
+				})
+				.done(function(result, status, jqXHR) {
+					if (isAjaxProcSuccess(jqXHR)) {
+						<!--/* 処理成功 */-->
+						$ankenRegistModal.find(".ankenRegistModalFragmentWrap").html(result);
+						return resolve();
+					} else {
+						const errorMsg = getAjaxProcResutlMessage(jqXHR);
+						showErrorMessageForJs(errorMsg);
+						return reject(errorMsg);
+					}
+				})
+				.fail(function(jqXHR, status, errorThrown) {
+					showErrorMessageForJs(/*[[#{E00091}]]*/ "error");
+					return reject(jqXHR, status, errorThrown)
+				});
+			});
+		};
+		
+		<!-- 案件登録モーダル表示 -->
+		$('#customerAnkenViewFragment .registAnken').on('click', function() {
+			
+			if (ajaxRunning) {
+				return false
+			}
+			const personId = /*[[${customerAnkenViewForm.customerId.longValue()}]]*/null;
+			
+			<!--/* 新規登録モーダル初期表示用のパラメータをメモリに保持しておく */-->
+			benzo.global.fragment.ankenRegistModalFragmentObj.initRenderRegistViewParams = {
+					"personId": personId,
+			};
+			
+			<!--/* 検索モーダル初期表示用のパラメータをメモリに保持しておく */-->
+			benzo.global.fragment.ankenRegistModalFragmentObj.initRenderSearchViewParams = {
+					"personId": personId,
+			};
+			
+			ajaxRunning = true;
+			Promise.resolve()
+				.then(() => initRenderRegistViewAction())
+				.then(() => $ankenRegistModal.modal("show"))
+				.catch((errors) => console.log(errors))
+				.finally(() => ajaxRunning = false);
+		});
+		
+		<!-- 案件情報表示 -->
+		$('#customerAnkenViewFragment .ankenEdit').on('click', function(){
+			window.location.href = $(this).attr('data-url');
+		});
+		
+		<!-- 完了済みも表示チェックボックス変更時 -->
+		$('#customerAnkenViewFragment #viewAllAnkenListCheck').change(function() {
+			const allAnkenFlg = $('#customerAnkenViewFragment #viewAllAnkenListCheck').prop('checked');
+			const customerId = /*[[${customerAnkenViewForm.customerId.longValue()}]]*/null;
+			
+			let dataObj = {
+					allAnkenFlg : allAnkenFlg,
+					customerId : customerId
+			}
+			
+			<!--/* 名簿の案件情報表示フォームの再表示 */-->
+			Promise.resolve(dataObj)
+				.then(renderCustomerAnkenViewFunc)
+				.catch((errorObj) => {
+					<!--/* 異常系の対応は各処理側で行っており、全体共通での異常系の処理は現状ない */-->
+					console.log(errorObj);
+				})
+		});
+		
+		<!--/* 「案件情報」の「完了済みも表示」チェックの付け外し処理（ブラウザバック時、チェックボックスの値を保持するかブラウザごとに異なるためJavaScriptで設定する） */-->
+		const allAnkenListFlg = /*[[${customerAnkenViewForm.allAnkenList}]]*/"";
+		if (allAnkenListFlg) {
+			if (!$('.allAnkenList').prop("checked")) {
+				$('.allAnkenList').prop("checked", true).change();
+			}
+		} else {
+			if ($('.allAnkenList').prop("checked")) {
+				$('.allAnkenList').prop("checked", false).change();
+			}
+		}
+		
+	})
+	
+	</script>
+
+	<!--/* 案件セレクション */-->
+	<section class="section_card section_anken" th:object="${customerAnkenViewForm}">
+		<div class="section_block_header">
+			<div class="section_block_title">
+				<span class="mr-3">案件情報</span>
+				<label class="check_area checkbox_btn">
+					<input type="checkbox" id="viewAllAnkenListCheck" class="checkbox_input allAnkenList" th:checked="*{allAnkenList}">
+					<span class="checkbox_txt">完了済みも表示</span>
+				</label>
+			</div>
+			<div class="section_block_action">
+				<a href="javascript:void(0);" class="registAnken fs15">
+					<i class="fas fa-plus-square mr-2"></i>案件を追加
+				</a>
+			</div>
+		</div>
+		<div class="section_block_body">
+	<th:block th:if="*{ankenList.size() == 0}">
+			<div class="no_data_msg">
+				<span th:text="#{I00035('案件')}">MSG_I00035</span>
+			</div>
+	</th:block>
+
+	<!--/* 案件情報一覧 */-->
+	<th:block th:if="*{ankenList.size() > 0}">
+			<div class="section_card_list_frame hover_scroll">
+				<ul class="section_card_list card_anken_list">
+					<li th:each="anken : *{ankenList}" th:object="${anken}" class="ankenEdit section_card_item_wrap"
+						th:data-url="@{/user/ankenManagement/edit/{ankenId}/{personId}/(ankenId=*{ankenId.asLong()}, personId=${personId})}">
+						<div class="section_card_list_item mt-2">
+							<div class="item_title">
+								<!--/* 画像 */-->
+								<div class="item_title__img">
+									<!--/* 案件属性ラベル */-->
+									<div th:class="|case_image_wrapper${anken.ankenType?.cd}|">
+										<img class="img-thumbnail case_img_sm" th:src="@{/img/case_type{typeCd}.svg(typeCd=${anken.ankenType?.cd})}">
+									</div>
+								</div>
+								<div class="fs12 fc_sub my-auto">
+									<!--/* 案件名 */-->
+									<div class="fs19 fw600 fc_main py-1" th:text="*{ankenName}"></div>
+									<div>
+										<!--/* 案件ID */-->
+										<span class="app_id_link case_link fs12 py-1 mr-2" th:text="|案件ID：*{ankenId.asLong()}|"></span>
+										<span class="fs12 mr-2">
+	<!--/* 案件区分 */-->
+	<!--/* 事務所 */-->
+	<th:block th:if="${T(jp.loioz.common.constant.CommonConstant$AnkenType).JIMUSHO.equals(anken.ankenType)}">
+											<i class="far fa-building"></i>
+	</th:block>
+	<!--/* 個人 */-->
+	<th:block th:if="${T(jp.loioz.common.constant.CommonConstant$AnkenType).KOJIN.equals(anken.ankenType)}">
+											<i class="fas fa-briefcase"></i>
+	</th:block>
+											<!--/* 案件種別 */-->
+											<span th:text="${anken.ankenType?.val}"></span>
+										</span>
+										<span class="fs12">
+											<!--/* 案件ステータス */-->
+											<i th:class="|fas fa-circle fa-xs anken_status_*{ankenStatus}|"></i>
+											<span th:text="*{ankenStatusName}"></span>
+										</span>
+									</div>
+								</div>
+							</div>
+							
+							<!--/* 案件詳細（顧客、相手方など） */--> 
+							<div class="item_content_block">
+								<div class="data_block w-100">
+									<!--/* row */-->
+									<div class="row my-2">
+										<!--/* 顧客側 */-->
+										<div class="col-sm-6">
+											<div>
+												<span class="badge badge-pill badge_square_sm mnw50 py-1 badge_blue">顧客</span>
+												<div class="char_ellipsis">
+													<span class="data_content" th:text="${anken.getCustomerName({personId})}"></span>
+												</div>
+											</div>
+										</div>
+										<!--/* 顧客側 end */-->
+										
+										<!--/* 相手方側 */-->
+										<div class="col-sm-6">
+		<!--/* 民事分野 */-->
+		<th:block th:if="${T(jp.loioz.common.constant.CommonConstant$BunyaType).MINJI.equalsByCode(anken.bunyaType)}">
+											<div>
+												<span class="badge badge-pill badge_square_sm mnw50 py-1 badge_green">相手方</span>
+			<th:block th:if="*{aitegataList.size() == 0}">
+													<div class="sub_text">-</div>
+			</th:block>
+			<th:block th:if="*{aitegataList.size() > 0}">
+													<div class="char_ellipsis">
+														<span class="data_content" th:text="${anken.getAitegataName({personId})}"></span>
+													</div>
+			</th:block>
+											</div>
+		</th:block>
+		<!--/* 民事分野 end */-->
+		
+		<!--/* 刑事分野 */-->
+		<th:block th:if="${T(jp.loioz.common.constant.CommonConstant$BunyaType).KEIJI.equalsByCode(anken.bunyaType)}">
+											<div>
+												<span class="badge badge-pill badge_square_sm mnw50 py-1 badge_green">被害者</span>
+			<th:block th:if="*{higaishaList.size() == 0}">
+													<div class="sub_text">-</div>
+			</th:block>
+			<th:block th:if="*{higaishaList.size() > 0}">
+													<div class="char_ellipsis">
+														<span class="data_content" th:text="${anken.getHigaishaName({personId})}"></span>
+													</div>
+			</th:block>
+											</div>
+		</th:block>
+		<!--/* 刑事分野 end */-->
+										</div>
+										<!--/* 相手方側 end */-->
+									</div>
+									<!--/* row end */-->
+								</div>
+							</div>
+							<!--/* 案件詳細（顧客、相手方など）end */-->
+						</div>
+					</li>
+					<!--/* 案件一覧 end */-->
+				</ul>
+			</div>
+	</th:block>
+	<!--/* 案件情報一覧 end */-->
+		</div>
+		<div class="section_block_footer">
+		</div>
+		
+		<!--/* モーダル */-->
+		<div>
+	<th:block th:if="${personId}">
+			<!--/* 案件検索モーダル テンプレート */-->
+			<div id="ankenRegistModal" class="modal fade" tabindex="-1" role="dialog" aria-hidden="true" data-backdrop="static">
+				<div class="modal-dialog modal-dialog-centered resizeToggleClassTarget" role="document">
+					<div class="modal-content">
+						<div class="ankenRegistModalFragmentWrap" style="display:contents;"></div>
+					</div>
+				</div>
+			</div>
+	</th:block>
+		</div>
+	</section>
+</div>
+
+
+
+<!--/* 関与案件情報表示ブロック */-->
+<div th:fragment="relatedAnkenViewFragment(relatedAnkenViewForm)" id="relatedAnkenViewFragment">
+
+	<!--/* スクリプト */-->
+	<script th:inline="javascript">
+	$(function() {
+		
+		<!-- 共有の要素セットアップ処理 -->
+		commonSetUpElement();
+		
+		<!-- 案件情報表示 -->
+		$('#relatedAnkenViewFragment .ankenEdit').on('click', function(){
+			window.location.href = $(this).attr('data-url');
+		});
+
+		<!-- 完了済みも表示チェックボックス変更時 -->
+		$('#relatedAnkenViewFragment #viewAllAnkenListCheck').change(function() {
+			const allAnkenFlg = $('#relatedAnkenViewFragment #viewAllAnkenListCheck').prop('checked');
+			const customerId = /*[[${relatedAnkenViewForm.customerId.longValue()}]]*/null;
+			$.ajax({
+				type : "GET",
+				url : "getRelatedAnkenView",
+				data : {
+					'isAllAnkenList' : allAnkenFlg,
+					'customerId' : customerId
+					},
+				dataType: 'html',
+			})
+			.done(function(data, status, jqXHR) {
+				if (isAjaxProcSuccess(jqXHR)) {
+					<!-- 親HTMLのID -->
+					$('#relatedAnkenFragmentWrap').html(data);
+					
+				} else {
+					<!-- 処理失敗 -->
+					const errorMsg = getAjaxProcResutlMessage(jqXHR);
+					showErrorMessageForJs(errorMsg);
+				}
+			})
+			.fail(function(jqXHR, status, errorThrown) {
+				showErrorMessageForJs(/*[[#{E00091}]]*/ "error");
+			});
+		});
+		
+		<!--/* 「関与案件」の「完了済みも表示」チェックの付け外し処理（ブラウザバック時、チェックボックスの値を保持するかブラウザごとに異なるためJavaScriptで設定する） */-->
+		const allRelatedAnkenListFlg = /*[[${relatedAnkenViewForm.allAnkenList}]]*/"";
+		if (allRelatedAnkenListFlg) {
+			if (!$('.allRelatedAnkenList').prop("checked")) {
+				$('.allRelatedAnkenList').prop("checked", true).change();
+			}
+		} else {
+			if ($('.allRelatedAnkenList').prop("checked")) {
+				$('.allRelatedAnkenList').prop("checked", false).change();
+			}
+		}
+		
+	})
+	
+	</script>
+
+	<!--/* 案件 section */-->
+	<section class="section_card section_anken" th:object="${relatedAnkenViewForm}">
+		<div class="section_block_header">
+			<div class="section_block_title">
+				<span class="mr-3">関与案件</span>
+				<label class="check_area checkbox_btn">
+					<input type="checkbox" id="viewAllAnkenListCheck" class="checkbox_input allRelatedAnkenList" th:checked="*{allAnkenList}">
+					<span class="checkbox_txt">完了済みも表示</span>
+				</label>
+			</div>
+		</div>
+		<div class="section_block_body kanyosha_list">
+	<th:block th:if="*{ankenList.size() == 0}">
+			<div class="no_data_msg">
+				<span th:text="#{I00035('案件')}">MSG_I00035</span>
+			</div>
+	</th:block>
+		
+	<!--/* 関与案件情報一覧 */-->
+	<th:block th:if="*{ankenList.size() > 0}">
+			<div class="section_card_list_frame hover_scroll">
+				<!--/* 関与案件情報一覧 */-->
+				<ul class="section_card_list card_anken_list">
+					<li th:each="anken : *{ankenList}" th:object="${anken}" class="ankenEdit section_card_item_wrap"
+						th:data-url="@{/user/ankenManagement/edit/{ankenId}/{personId}/(ankenId=*{ankenId.asLong()}, personId=${personId})}">
+						<div class="section_card_list_item">
+							<div class="relation_desc">
+								<span class="relation_desc__text">
+									<i class="fas fa-user-check"></i>
+		<th:block th:if="${anken.existsAitegata({personId})}">[[${anken.getAitegataTitleLabel({personId})}]]</th:block><!-- 相手方 -->
+		<th:block th:if="${anken.existsKyohansha({personId})}">[[${anken.getKyohanshaTitleLabel({personId})}]]</th:block><!-- 共犯者 -->
+		<th:block th:if="${anken.existsHigaisha({personId})}">[[${anken.getHigaishaTitleLabel({personId})}]]</th:block><!-- 被害者 -->
+		<th:block th:if="${anken.existsTojishaKanyosha({personId})}">[[${anken.getTojishaKanyoshaTitleLabel({personId})}]]</th:block><!-- 関与者 -->
+									</span><span class="fs13 ml-1">として登録されています</span>
+							</div>
+							<div class="item_title">
+								<!--/* 画像 */-->
+								<div class="item_title__img">
+									
+									<!--/* 案件属性ラベル */-->
+									<div th:class="|case_image_wrapper${anken.ankenType?.cd}|">
+										<img class="img-thumbnail case_img_sm" th:src="@{/img/case_type{typeCd}.svg(typeCd=${anken.ankenType?.cd})}">
+									</div>
+								</div>
+								<div class="fc_sub my-auto">
+									<!--/* 案件名 */-->
+									<div class="fs19 fw600 fc_main py-1" th:text="*{ankenName}"></div>
+									<div>
+										<!--/* 案件ID */-->
+										<span class="app_id_link case_link fs12 py-1 mr-2" th:text="|案件ID：*{ankenId.asLong()}|"></span>
+										<span class="fs12 mr-2">
+	<!--/* 案件区分 */-->
+	<!--/* 事務所 */-->
+	<th:block th:if="${T(jp.loioz.common.constant.CommonConstant$AnkenType).JIMUSHO.equals(anken.ankenType)}">
+										<i class="far fa-building"></i>
+	</th:block>
+	<!--/* 個人 */-->
+	<th:block th:if="${T(jp.loioz.common.constant.CommonConstant$AnkenType).KOJIN.equals(anken.ankenType)}">
+											<i class="fas fa-briefcase"></i>
+	</th:block>
+											<!--/* 案件種別 */-->
+											<span th:text="${anken.ankenType?.val}"></span>
+										</span>
+										<span class="fs12">
+											<!--/* 案件ステータス */-->
+											<i th:if="*{CompAnken}" th:class="|fas fa-circle fa-xs anken_status_*{ankenStatus}|"></i>
+											<span th:text="*{ankenStatusName}"></span>
+										</span>
+									</div>
+								</div>
+							</div>
+							<div class="item_content_block">
+								<div class="data_block w-100">
+									<!--/* row */-->
+									<div class="row my-2">
+										<!--/* 顧客側 */-->
+										<div class="col-sm-6">
+											<div>
+												<span class="badge badge-pill badge_square_sm mnw50 py-1 badge_blue">顧客</span>
+		<th:block th:if="*{customerList.size() == 0}">
+												<div class="sub_text">-</div>
+		</th:block>
+		<th:block th:if="*{customerList.size() > 0}">
+												<div class="char_ellipsis">
+													<span class="data_content" th:text="${anken.getCustomerName({personId})}"></span>
+												</div>
+		</th:block>
+											</div>
+										</div>
+										<!--/* 顧客側 end */-->
+										
+										<!--/* 相手側 */-->
+										<div class="col-sm-6">
+		<!--/* 民事 */-->
+		<th:block th:if="${T(jp.loioz.common.constant.CommonConstant$BunyaType).MINJI.equalsByCode(anken.bunyaType)}">
+											<div>
+												<span class="badge badge-pill badge_square_sm mnw50 py-1 badge_green">相手方</span>
+			<th:block th:if="*{aitegataList.size() == 0}">
+												<div class="sub_text">-</div>
+			</th:block>
+			<th:block th:if="*{aitegataList.size() > 0}">
+												<div class="char_ellipsis">
+													<span class="data_content" th:text="${anken.getAitegataName({personId})}"></span>
+												</div>
+			</th:block>
+											</div>
+		</th:block>
+		<!--/* 民事 end */-->
+		
+		<!--/* 刑事 */-->
+		<th:block th:if="${T(jp.loioz.common.constant.CommonConstant$BunyaType).KEIJI.equalsByCode(anken.bunyaType)}">
+											<div>
+												<span class="badge badge-pill badge_square_sm mnw50 py-1 badge_green">被害者</span>
+			<th:block th:if="*{higaishaList.size() == 0}">
+												<div class="sub_text">-</div>
+			</th:block>
+			<th:block th:if="*{higaishaList.size() > 0}">
+												<div class="char_ellipsis">
+													<span class="data_content" th:text="${anken.getHigaishaName({personId})}"></span>
+												</div>
+			</th:block>
+											</div>
+		</th:block>
+		<!--/* 刑事 end */-->
+										</div>
+										<!--/* 相手側 end */-->
+										
+									</div>
+									<!--/* row end */-->
+								</div>
+							</div>
+						</div>
+					</li>
+				</ul>
+			</div>
+	</th:block>
+	<!--/* 案件情報一覧 end */-->
+		</div>
+			
+		<!--/* モーダル */-->
+		<div>
+	<th:block th:if="${personId}">
+			<!-- 案件登録モーダル -->
+			<div id="registAnkenModal" class="modal fade" tabindex="-1" role="dialog" aria-hidden="true" data-backdrop="static">
+				<div class="modal-dialog modal-dialog-centered" role="document">
+					<div class="modal-content">
+						<div class="registAnkenBody"></div>
+					</div>
+				</div>
+			</div>
+	
+			<!-- 案件検索モーダル -->
+			<div id="searchAnkenModal" class="modal fade" tabindex="-1" role="dialog" aria-hidden="true" data-backdrop="static">
+				<div class="modal-dialog modal-dialog-centered modal_ankenSearch" role="document">
+					<div class="modal-content">
+						<div class="searchAnkenBody"></div>
+					</div>
+				</div>
+			</div>
+	</th:block>
+		</div>
+	</section>
+	<!--/* 案件 section end */-->
+</div>
+
+
+
+<!--/* 予定情報表示ブロック */-->
+<div th:fragment="personScheduleListViewFragment(personScheduleListViewForm)" id="personScheduleListViewFragment" th:object="${personScheduleListViewForm}">
+	<script type="text/javascript" th:inline="javascript">
+	$(function() {
+		<!--/* 共有の要素セットアップ処理*/-->
+		commonSetUpElement();
+		
+		const $personScheduleListViewFragment = $("#personScheduleListViewFragment");
+		let modal = benzo.global.scheduleModal.modal;
+		
+		<!--/* 画面読込時に名簿案件ステータスの予定データを取得 */-->
+		const isAllTimeScheduleList = /*[[${personScheduleListViewForm.AllTimeScheduleList}]]*/false;
+		const scheduleListSize = /*[[${personScheduleListViewForm.scheduleList.size()}]]*/0;
+		if (scheduleListSize) {
+			$.ajax({
+				type : "GET",
+				url : /*[[(@{getPersonScheduleDetails})]]*/ "/",
+				data : {
+					"isAllTimeScheduleList": isAllTimeScheduleList
+				},
+				dataType : "json"
+			})
+			.done(function(result) {
+				<!--/* 予定キャッシュに予定データを追加 */-->
+				$.extend(scheduleCache, result);
+				<!--/* 予定登録モーダル表示ボタンの設定 */-->
+				setupModalButton();
+			})
+			.fail(function() {
+			});
+		} else {
+			<!--/* 予定登録モーダル表示ボタンの設定 */-->
+			setupModalButton();
+		}
+		
+		function setupModalButton() {
+			<!--/* モーダルを開く */-->
+			$personScheduleListViewFragment.on("click",".openScheduleModal", function(){
+				<!--/* 保存処理を上書き */-->
+				setupSaveAction()
+				
+				<!--/* 予定表データを取得 */-->
+				let scheduleData = {};
+				let scheduleSeq = $(this).data("scheduleSeq");
+				let modalConfig = {};
+				if(!scheduleSeq){
+					<!--/* 新規 */-->
+					modalConfig.isCreate = true;
+					scheduleData = $.extend(true, {}, benzo.global.scheduleModal.emptyScheduleData);
+
+					let defDateSetting = benzo.global.scheduleModal.getDefaultDateForOther();
+					scheduleData.dateFrom = defDateSetting.dateFrom;
+					scheduleData.dateTo = defDateSetting.dateFrom;
+					scheduleData.hourFrom = defDateSetting.hourFrom;
+					scheduleData.timeFrom = defDateSetting.timeFrom;
+					scheduleData.hourTo = defDateSetting.hourTo;
+					scheduleData.timeTo = defDateSetting.timeTo;
+
+					scheduleData.member = [
+						/*[[${T(jp.loioz.common.utility.SessionUtils).getLoginAccountSeq()}]]*/""
+					];
+
+					scheduleData.customerId = /*[[*{customerId.asLong()}]]*/"";
+					scheduleData.customerIdDisp = /*[[*{customerId.toString()}]]*/"";
+					scheduleData.customerName = /*[[*{customerName}]]*/"";
+
+				} else {
+					<!--/* 編集 */-->
+					modalConfig.isUpdate = true;
+					scheduleData = $.extend(true, {}, benzo.global.scheduleModal.emptyScheduleData, scheduleCache[scheduleSeq]);
+					
+					if (scheduleData.ankenId) {
+						<!--/* 案件主担当の設定 */-->
+						benzo.global.scheduleModal.setAnkenMain(scheduleData.ankenId);
+						<!--/* 案件担当者のプルダウンを設定 */-->
+						benzo.global.scheduleModal.setUpAnkenTantoOption(scheduleData.ankenId);
+					}
+				}
+
+				<!--/* モーダルを表示 */-->
+				benzo.global.scheduleModal.openModal(scheduleData, modalConfig);
+
+				<!--/* 無効アカウントを選択肢から外し、hidden化 */-->
+				if (modalConfig.isCreate) {
+					modal.find(".memberList .member[data-enabled=false]").addClass("hidden");
+					modal.find(".memberList .member[data-enabled=false]").trigger("click");
+				}
+			});
+		}
+		
+		<!--/* 保存処理 */-->
+		function setupSaveAction() {
+			benzo.global.scheduleModal.saveAction = function(triggerBtn) {
+				if(ajaxRunning){
+					return false;
+				}
+				let button = $(triggerBtn);
+				if(button.is(".deleteButton")){
+					if(!confirm("この予定を削除します。よろしいですか？")){
+						return false;
+					}
+				}
+				ajaxRunning = true;
+				Promise.resolve()
+					.then(() => beforeCheck(button)) // 保存前チェック
+					.then(() => saveAjax(button)) // 保存処理
+					.then(() => renderPersonScheduleListViewFragment())
+					.catch((errors) => {console.log(errors);})
+					.finally(() => {ajaxRunning = false;});
+				
+				<!--/* 内部関数 : 保存前チェック */-->
+				function beforeCheck(triggerBtn) {
+					if(triggerBtn.is(".deleteButton")){
+						<!--/* 削除時は確認処理が不要なので成功として扱う */-->
+						return Promise.resolve();
+					}
+					return new Promise((resolve, reject) => {
+						$.ajax({
+							type : "POST",
+							url : /*[[(@{/user/schedule/needConfirm})]]*/ "/",
+							data : benzo.global.scheduleModal.getModalFormParams(),
+							dataType : "json"
+						}).done(function(checked) {
+							if(checked.needConfirm &&!confirm(checked.message)){
+								return reject(["処理がキャンセルされました。"]);
+							}
+							return resolve();
+						}).fail(function(jqXHR, textStatus, errorThrown) {
+							const errorMsg = /*[[#{E00091}]]*/ "error";
+							showErrorMessageForJs(errorMsg);
+							return reject([jqXHR, textStatus, errorThrown]);
+						});
+					});
+				};
+				
+				<!--/* 内部関数 : 保存 */-->
+				function saveAjax(triggerBtn) {
+					return new Promise((resolve, reject) => {
+						$.ajax({
+							type : "POST",
+							url : button.data("url"),
+							data : benzo.global.scheduleModal.getModalFormParams(),
+							dataType: 'json',
+						}).done(function(result) {
+							if(result.succeeded){
+								<!--/* modal('hide')だと共通の処理が発火しないので、クリック連動で閉じる */-->
+								modal.find(".closeButton").trigger("click"); 
+								showInfoMessageForJs(result.message, modal);
+								return resolve();
+							} else {
+								showErrorMessage(result.message, modal, result.errors);
+								return reject([result.message]);
+							}
+						}).fail(function() {
+							const errorMsg = /*[[#{E00091}]]*/ "error";
+							showErrorMessageForJs(errorMsg);
+							return reject([jqXHR, textStatus, errorThrown]);
+						});
+					});
+				};
+			};
+		};
+		
+		<!--/* 名簿の予定一覧のレンダリング処理 */-->
+		function renderPersonScheduleListViewFragment() {
+			return new Promise((resolve, reject) => {
+				const $allTimeScheduleList = $personScheduleListViewFragment.find('.allTimeScheduleList')
+				const param = {
+					isAllTimeScheduleList: $allTimeScheduleList.prop("checked"),
+				}
+				$.ajax({
+					type : "GET",
+					url : "getPersonScheduleListView",
+					data : param,
+					dataType: 'html',
+				})
+				.done(function(data, status, jqXHR) {
+					if (isAjaxProcSuccess(jqXHR)) {
+						<!--/* 親HTMLのID */-->
+						$('#personScheduleListFragmentWrap').html(data);
+						
+					} else {
+						<!--/* 処理失敗 */-->
+						const errorMsg = getAjaxProcResutlMessage(jqXHR);
+						showErrorMessageForJs(errorMsg);
+					}
+					
+					return resolve();
+				})
+				.fail(function(jqXHR, status, errorThrown) {
+					showErrorMessageForJs(/*[[#{E00091}]]*/ "error");
+					
+					return reject();
+				});
+				
+			});
+		};
+		
+		<!--/* 過去予定の表示切り替え */-->
+		$personScheduleListViewFragment.on('change', '.allTimeScheduleList', function() {
+			if(ajaxRunning){
+				return false;
+			}
+			ajaxRunning = true;
+			renderPersonScheduleListViewFragment()
+				.finally(() => {ajaxRunning = false;});
+		});
+		
+		<!--/* 「直近の予定」の「過去の予定も表示」チェックの付け外し処理（ブラウザバック時、チェックボックスの値を保持するかブラウザごとに異なるためJavaScriptで設定する） */-->
+		const allTimeScheduleListFlg = /*[[*{AllTimeScheduleList}]]*/"";
+		if (allTimeScheduleListFlg) {
+			if (!$('.allTimeScheduleList').prop("checked")) {
+				$('.allTimeScheduleList').prop("checked", true).change();
+			}
+		} else {
+			if ($('.allTimeScheduleList').prop("checked")) {
+				$('.allTimeScheduleList').prop("checked", false).change();
+			}
+		}
+		
+	});
+	</script>
+	
+	<!--/* 予定ブロック */-->
+	<section class="section_card section_yotei">
+		<div class="section_block_header">
+			<div class="section_block_title">
+				<span class="mr-3">直近の予定</span>
+				<label class="check_area checkbox_btn">
+					<input type="checkbox" class="checkbox_input allTimeScheduleList" th:checked="*{AllTimeScheduleList}">
+					<span class="checkbox_txt">過去の予定も表示</span>
+				</label>
+			</div>
+			<div class="section_block_action">
+				<a href="javascript:void(0);" class="fs15 openScheduleModal"><i class="fas fa-plus-square mr-2"></i>予定を追加</a>
+			</div>
+		</div>
+		<div class="section_block_body">
+			<th:block th:if="*{scheduleList.size() == 0}">
+				<div class="no_data_msg">
+					<span th:text="#{I00035('予定')}">表示できる予定がありません。</span>
+				</div>
+			</th:block>
+
+			<!--/* 予定一覧 */-->
+			<th:block th:if="*{scheduleList.size() > 0}">
+				<ul class="section_card_list card_yotei_list">
+					<li th:each="schedule : *{scheduleList}" th:data-seq="${schedule.scheduleSeq}"
+						class="openScheduleModal" th:data-schedule-seq="${schedule.scheduleSeq}">
+						<div>
+							<h3 class="cal_subject cal_customer" th:classappend="${schedule.isKakoYotei()} ? 'kako_yotei' : ''" th:text="${schedule.subject}"></h3>
+						</div>
+						<div class="yotei_date">
+							<th:block th:if="${schedule.allDay}">
+								<i class="far fa-calendar-alt mr-3"></i>
+								<span th:text="${schedule.getDispAllDayDate()}"></span>
+								<th:block th:if="${schedule.allDayPeriodIsOneDay()}">
+									<span class="icon_syujitsu_char small ml-1">終日</span>
+								</th:block>
+							</th:block>
+							<th:block th:unless="${schedule.allDay}">
+								<i class="far fa-calendar-alt mr-3"></i>
+								<span th:text="${schedule.getDispDateTimeFrom()}"></span>
+								<span> ～ </span>
+								<span th:text="${schedule.getDispDateTimeTo()}"></span>
+							</th:block>
+						</div>
+						<div class="yotei_place">
+							<i class="fas fa-map-marker-alt mr-3"></i>
+							<span th:text="${schedule.place}"></span>
+						</div>
+						<div class="yotei_account">
+							<i class="fas fa-user mr-3" th:if="${schedule.accountNameList?.size() <=1}"></i>
+							<i class="fas fa-users mr-2" th:if="${schedule.accountNameList?.size() > 1}"></i>
+							<span th:each="name, i : ${schedule.accountNameList}" th:text="${i.first} ? ${name}:_"></span>
+							<span th:if="${schedule.accountNameList?.size() > 1}" th:text="| 外${schedule.accountNameList?.size() - 1}名|"></span>
+						</div>
+					</li>
+				</ul>
+			</th:block>
+		</div>
+	</section>
+	
+	<!--/* 予定一覧 end */-->
+	
+</div>
+
+</body>
+</html>

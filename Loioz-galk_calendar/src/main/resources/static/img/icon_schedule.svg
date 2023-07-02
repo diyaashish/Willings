@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="17.898" height="15" viewBox="0 0 17.898 15">
+  <g id="icon_schedule" transform="translate(-0.5 -0.5)">
+    <path id="sch8" d="M14.562,14.5H4.31A2.843,2.843,0,0,1,1.5,11.635V4.365A2.843,2.843,0,0,1,4.31,1.5H14.588A2.843,2.843,0,0,1,17.4,4.365v7.3A2.859,2.859,0,0,1,14.562,14.5Z" fill="none" stroke="#fff" stroke-miterlimit="10" stroke-width="2"/>
+    <line id="sch7" x2="15.746" transform="translate(1.754 4.949)" fill="none" stroke="#fff" stroke-miterlimit="10" stroke-width="1"/>
+    <line id="sch6" x2="15.746" transform="translate(1.754 7.867)" fill="none" stroke="#fff" stroke-miterlimit="10" stroke-width="1"/>
+    <line id="sch5" x2="15.746" transform="translate(1.754 10.786)" fill="none" stroke="#fff" stroke-miterlimit="10" stroke-width="1"/>
+    <line id="sch4" y2="12.746" transform="translate(4.882 1.627)" fill="none" stroke="#fff" stroke-miterlimit="10" stroke-width="1"/>
+    <line id="sch3" y2="9.151" transform="translate(8.082 5.095)" fill="none" stroke="#fff" stroke-miterlimit="10" stroke-width="1"/>
+    <line id="sch2" y2="9.151" transform="translate(11.308 5.095)" fill="none" stroke="#fff" stroke-miterlimit="10" stroke-width="1"/>
+    <line id="sch1" y2="9.151" transform="translate(14.577 5.095)" fill="none" stroke="#fff" stroke-miterlimit="10" stroke-width="1"/>
+  </g>
+</svg>

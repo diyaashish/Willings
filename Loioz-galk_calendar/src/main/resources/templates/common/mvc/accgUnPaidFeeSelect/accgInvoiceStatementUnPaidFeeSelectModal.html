@@ -1,0 +1,152 @@
+ <!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+<meta charset="utf-8" />
+</head>
+<body>
+
+<!--/* 本処理は、モーダルを扱うFragment領域で定義する */-->
+<script type="text/javascript" th:inline="javascript" th:fragment="accgInvoiceStatementUnPaidFeeSelectModalFragmentJs">
+	benzo.global.fragment.accgInvoiceStatementUnPaidFeeSelectModalFragmentObj = {
+		<!--/* 呼び出し元で定義が可能な処理 */-->
+		setUpObj : {
+			
+			<!--/* 追加処理 */-->
+			unPaidFeeAddAction: () => {
+				throw new Error('unPaidFeeAddActionのセットアップ処理がされていません');
+			},
+		},
+		
+		<!--/* フラグメントのパラメータに関連する処理 */-->
+		paramObj : {
+			<!--/* 未精算報酬の報酬SEQ取得処理 */-->
+			getUnPaidFeeSeqArray: () => {
+				const unPaidFeeSeqArray = $("#accgInvoiceStatementUnPaidFeeSelectModalFragment").find(".targetCheck:checked").map(function(){
+					return Number($(this).data('feeSeq'));
+				}).get();
+				return unPaidFeeSeqArray;
+			} ,
+		},
+		
+		<!--/* 
+			本フラグメント以外でも扱う処理
+			基本的には書き換えを行わない。
+		*/-->
+		commonFn : {
+		},
+	};
+</script>
+<!--/* 本処理は、モーダルを扱うFragment領域で定義する end */-->
+
+<!--/* 未精算報酬選択モーダル */-->
+<div id="accgInvoiceStatementUnPaidFeeSelectModalFragment" th:fragment="accgInvoiceStatementUnPaidFeeSelectModalFragment" th:object="${accgInvoiceStatementUnPaidFeeSelectForm}">
+	<script type="text/javascript" th:inline="javascript">
+		$(function() {
+			let ajaxRunning = false;
+			
+			<!--/* 共有の要素セットアップ処理 */-->
+			commonSetUpElement("#accgInvoiceStatementUnPaidFeeSelectModalFragment");
+			
+			const accgInvoiceStatementUnPaidFeeSelectModalFragment = $('#accgInvoiceStatementUnPaidFeeSelectModalFragment');
+			
+			<!--/* モーダル閉じる時設定 */-->
+			const $accgInvoiceStatementUnPaidFeeSelectModalFragment = $("#accgInvoiceStatementUnPaidFeeSelectModalFragment");
+			const $accgInvoiceStatementUnPaidFeeSelectModal = $accgInvoiceStatementUnPaidFeeSelectModalFragment.closest(".modal");
+			const $accgInvoiceStatementUnPaidFeeSelectModalFragmentWrap = $accgInvoiceStatementUnPaidFeeSelectModal.find(".accgInvoiceStatementUnPaidFeeSelectModalFragmentWrap");
+			
+			<!--/* チェックボックス全選択・全解除 */-->
+			accgInvoiceStatementUnPaidFeeSelectModalFragment.on('click', '.checkBoxAllCheck', function(){
+				$("#accgInvoiceStatementUnPaidFeeSelectModalFragment").find('.targetCheck').prop("checked", $(this).prop("checked"));
+			});
+			
+			<!--/* 「登録する」ボタン押下処理 */-->
+			accgInvoiceStatementUnPaidFeeSelectModalFragment.on("click", ".regist", function(e) {
+				const unPaidFeeSeqArray = $("#accgInvoiceStatementUnPaidFeeSelectModalFragment").find(".targetCheck:checked").map(function(){
+					return Number($(this).data('feeSeq'));
+				}).get();
+				if (!unPaidFeeSeqArray.length) {
+					<!--/* チェックが無い場合は処理終了 */-->
+					$(".checkError").removeClass("hidden");
+					return false;
+				}
+				benzo.global.fragment.accgInvoiceStatementUnPaidFeeSelectModalFragmentObj.setUpObj.unPaidFeeAddAction(e);
+			});
+			
+			<!--/* モーダルを閉じたときの処理 */-->
+			$accgInvoiceStatementUnPaidFeeSelectModalFragment.off("hidden.bs.modal.commonHiddenAction");
+			$accgInvoiceStatementUnPaidFeeSelectModalFragment.one("hidden.bs.modal.commonHiddenAction", function(){
+				$accgInvoiceStatementUnPaidFeeSelectModalFragmentWrap.html("");
+			});
+		});
+	</script>
+	
+	<div class="modal-header">
+		<h2 class="modalheader_title" id="accountSelectionTitle">未精算の報酬選択</h2>
+	</div>
+	
+	<form>
+		<div class="modal-body">
+			<div class="errorMessageArea error_msg_js checkError hidden">
+				<i class="fas fa-exclamation-triangle mr-2"></i>
+				<span class="msgText" role="alert">一覧の報酬をチェックしてください。</span>
+			</div>
+			<div class="header_fixed_table_wrapper table_un_paid_fee_add mt-4">
+				<table class="table table_standard table-sm table_fixed table-hover">
+					<thead>
+						<tr>
+							<th class="col_10">
+								<label class="checkbox_btn no_text">
+									<input type="checkbox" class="checkbox_input checkBoxAllCheck">
+									<span class="checkbox_txt"></span>
+								</label>
+							</th>
+							<th class="col_30">項目</th>
+							<th class="col_15">発生日</th>
+							<th class="col_20 text-right">報酬額(税込)</th>
+							<th class="col_30">摘要</th>
+						</tr>
+					</thead>
+					<tbody>
+						<!--/*/ <th:block th:if="*{#lists.isEmpty(unPaidFeeList)}"> /*/-->
+							<tr>
+								<td colspan="5" class="no_data col_no_data"><span>未精算の報酬がありません。</span></td>
+							</tr>
+						<!--/*/ </th:block> /*/-->
+						
+						<tr class="" th:each="data : *{unPaidFeeList}" data-click-sync-for-descendants=".targetCheck">
+							<td>
+								<label class="checkbox_btn no_text">
+									<input type="checkbox" class="checkbox_input targetCheck" th:checked="${data.checked}" th:data-fee-seq="${data.feeSeq}">
+									<span class="checkbox_txt"></span>
+								</label>
+							</td>
+							<td>
+								<div class="char_ellipsis" th:text="${data.feeItemName}">着手金</div>
+								<div th:if="${data.timeCharge}">
+									<i class="fas fa-check-square fs14 mr-2 text-primary"></i><span class="fs13">タイムチャージ報酬</span>
+								</div>
+							</td>
+							<td>
+								<span th:text="${#strings.isEmpty(data.feeDate)} ? '-' : ${data.feeDate}"></span>
+							</td>
+							<td class="text-right">
+								<span class="fs15" th:text="${#strings.isEmpty(data.feeAmountTaxIn)} ? '-' : ${data.afterWithholdingTax}">110,000</span>
+							</td>
+							<td>
+								<div class="char_ellipsis" th:text="${#strings.isEmpty(data.sumText)} ? '-' : ${data.sumText}"></div>
+							</td>
+						</tr>
+					</tbody>
+				</table>
+			</div>
+		</div>
+		
+		<div class="modal-footer">
+			<button type="button" class="btn btn-primary regist mr-3" data-dismiss="modal">選択した報酬を反映...</button>
+			<button type="button" class="btn btn-light" data-dismiss="modal" name="cancel"><i class="fas fa-times"></i>閉じる</button>
+		</div>
+	</form>
+</div>
+
+</body>
+</html>

@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+		xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+		layout:decorator="commonLayout">
+<head>
+<meta charset="utf-8" />
+</head>
+<body>
+
+	<!-- 口座情報編集モーダル -->
+	<div th:fragment="ginkoKozaEdit" th:object="${ginkoKozaEditForm}">
+		<div class="modal-header">
+			<h2 class="modalheader_title">口座情報登録</h2>
+		</div>
+		<div class="modal-body">
+			<!-- メッセージ表示領域 -->
+			<div th:replace="common/messageArea::jsMessageArea"></div>
+
+			<!-- 入力エリア -->
+			<div class="modal_input_area">
+				<!-- 表示名 -->
+				<div class="form-row">
+					<div class="form-group col-md-12">
+						<label class="input_parts_label">表示名</label>
+						<span class="mark_equired">必須</span>
+						<input type="text" id="label_name" class="form-control" th:field="*{kozaDto.labelName}" maxlength ="30">
+						<div class="error_mag_point hidden" id="itemMsg_kozaDto.labelName"></div>
+					</div>
+				</div>
+				<!-- 表示名 end -->
+
+				<!-- 金融機関名 -->
+				<div class="form-row">
+					<div class="form-group col-md-12">
+						<label class="input_parts_label">金融機関名</label>
+						<input type="text" id="ginko_name" class="form-control" th:field="*{kozaDto.ginkoName}" maxlength ="20">
+						<div class="error_mag_point hidden" id="itemMsg_kozaDto.ginkoName"></div>
+					</div>
+				</div>
+				<!-- 金融機関名 end -->
+
+				<div class="form-row">
+					<!-- 支店番号 -->
+					<div class="form-group col-md-3">
+						<label class="input_parts_label">支店番号</label>
+						<input type="text" class="form-control input_number_only" maxlength="6" id="shitenNo" th:field="*{kozaDto.shitenNo}">
+						<div class="error_mag_point hidden" id="itemMsg_kozaDto.shitenNo"></div>
+					</div>
+					<!-- 支店名 -->
+					<div class="form-group col-md-9">
+						<label class="input_parts_label">支店名</label>
+						<input type="text" class="form-control" id="shitenName" th:field="*{kozaDto.shitenName}" maxlength="20">
+						<div class="error_mag_point hidden" id="itemMsg_kozaDto.shitenName"></div>
+					</div>
+				</div>
+
+				<div class="form-row">
+					<!-- 口座種類 -->
+					<div class="form-group col-md-3">
+						<label class="input_parts_label">口座種類</label>
+						<select class="form-control" th:field="*{kozaDto.kozaType}">
+							<option value="">-</option>
+							<option th:each="enum : ${T(jp.loioz.common.constant.CommonConstant$KozaType).values()}"
+								th:value="${enum.cd}" th:text="${enum.val}"></option>
+						</select>
+						<div class="error_mag_point hidden" id="itemMsg_kozaDto.kozaType"></div>
+					</div>
+					<!-- 口座番号 -->
+					<div class="form-group col-md-9">
+						<label class="input_parts_label">口座番号</label>
+						<input type="text" class="form-control input_number_only" maxlength="9" id="kozaNo" th:field="*{kozaDto.kozaNo}">
+						<div class="error_mag_point hidden" id="itemMsg_kozaDto.kozaNo"></div>
+					</div>
+				</div>
+
+				<div class="form-row">
+					<div class="form-group col-md-12 mb-0">
+						<label class="input_parts_label">口座名義</label>
+					</div>
+					<!--/* 漢字 */-->
+					<div class="form-group col-md-12 mb-1">
+						<input type="text" class="form-control" data-target="kozaNameKana" placeholder="漢字" id="kozaName" th:field="*{kozaDto.kozaName}">
+						<div class="error_mag_point hidden" id="itemMsg_kozaDto.kozaName"></div>
+					</div>
+				</div>
+				<div class="form-row">
+					<!--/* フリガナ */-->
+					<div class="form-group col-md-12">
+						<input type="text" id="kozaNameKana" class="form-control mt-2" placeholder="フリガナ" th:field="*{kozaDto.kozaNameKana}">
+						<div class="error_mag_point hidden" id="itemMsg_kozaDto.kozaNameKana"></div>
+					</div>
+				</div>
+				
+				<div class="form-row">
+					<div class="form-group col-md-12">
+						<div>
+							<label class="checkbox_btn">
+								<input type="checkbox" class="checkbox_input" th:field="*{kozaDto.DefaultUse}" th:data-current="*{kozaDto.DefaultUse}">
+								<span class="checkbox_txt">既定の口座情報として使う</span>
+							</label>
+						</div>
+					</div>
+				</div>
+				
+				<input type="hidden" th:field="*{kozaDto.ginkoAccountSeq}">
+				<input type="hidden" th:field="*{kozaDto.branchNo}">
+				
+			</div>
+		</div>
+
+		<div class="modal-footer">
+			<button th:if="*{!isNew}" type="button" class="btn btn-light mr-auto" name="delete"><i class="far fa-trash-alt"></i>削除</button>
+			<button th:if="*{isNew}"type="button" class="btn btn-info save" name="regist" ><i class="fas fa-check"></i>登録</button>
+			<button th:if="*{isNew == false and isDeleted == false}" type="button" class="btn btn-info save"  name="update" ><i class="fas fa-check"></i>保存</button>
+			<button type="button" class="btn btn-light" data-dismiss="modal"><i class="fas fa-times"></i>閉じる</button>
+		</div>
+
+	</div>
+	<!-- 口座情報編集モーダル end -->
+
+</body>
+</html>

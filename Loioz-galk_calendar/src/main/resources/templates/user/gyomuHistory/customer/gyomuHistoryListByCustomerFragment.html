@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+	<meta charset="utf-8" />
+</head>
+<body>
+
+
+
+<!--/* 業務履歴1レコードフラグメント HTML */-->
+<tr th:id="|gyomuHistoryData${history.gyomuHistorySeq}|" th:fragment="gyomuHistoryListRowByCustomerFragment(history, customerId)"
+	class="openGyomuHistoryModal"
+	data-target="#selectGyomuHistoryModal" data-toggle="modal"
+	th:classappend="(${history.important} ? 'row_important' : '') +' ' + (${history.kotei} ? 'is_lock' : '')"
+	th:data-gyomu_history_seq="${history.gyomuHistorySeq}"
+	th:data-customer_id="${customerId}">
+
+
+	<!--/*
+		通常フラグメント定義では先頭に<script>タグを記載するが、このフラグメントのようなtrタグについてはtr>tdの構造を想定した疑似要素の利用ケースがあるが、
+		<script>タグを記載すると:first-childなどの疑似要素が効かなくなるため<script>タグの記載を行わない。
+		フラグメント読込み後に初期化が必要な場合は別途行う必要がある。
+	*/-->
+
+
+		<!--/* HTML */-->
+		<td th:text ="${#temporals.format(history.supportedAt, 'yyyy/M/d(EEE) HH:mm')}"></td>
+		<td th:text ="${history.subject}">タイトル</td>
+		<td class="with_line_breaks" myth:nl2br ="${history.mainText}">本文</td>
+		
+		<!--/* 案件情報 */-->
+		<td class="stop-events">
+	<th:block th:if="${history.transitionType == T(jp.loioz.common.constant.CommonConstant$TransitionType).CUSTOMER}">
+		<th:block th:each="anken : ${history.children}">
+			<div class="mb-1 char_ellipsis" data-toggle="tooltip" data-trigger="hover" data-original-title="案件ダッシュボードへ">
+				<a th:if="${anken.ankenId}" class="relation_link" th:href= "@{/user/ankenDashboard/{ankenId}/(ankenId=${anken.ankenId.asLong()})}">
+					<i class="fas fa-hashtag mr-1"></i><span th:text="${anken.labelName}">案件名</span>
+					<span class="sub_text" th:text="|	&#40;${anken.ankenId}&#41;|"></span>
+				</a>
+			</div>
+		</th:block>
+	</th:block>
+	
+	<!--/* 履歴登録元が案件の場合 */-->
+	<th:block th:if="${history.transitionType == T(jp.loioz.common.constant.CommonConstant$TransitionType).ANKEN}">
+			<span>-</span>
+	</th:block>
+	
+		</td>
+	
+		<td class="stop-events">
+			<div class="btn_action_group">
+				<!--/* 送信 */-->
+				<th:block th:if="${T(jp.loioz.common.utility.SessionUtils).canUsePlanFunc(T(jp.loioz.common.constant.plan.PlanConstant$PlanFuncRestrict).PF0001)}">
+					<button type="button" class="btn btn_icon_only_send " th:classappend="${!history.SentDengon} ? 'btn-primary sendMsg' : 'btn-secondary createMsg' "
+						data-target="#dengonCreateModal" th:data-gyomu-history-seq="${history.gyomuHistorySeq}"
+						data-boundary="window" data-container="#gyomuhistoryList" data-toggle="tooltip"
+						data-trigger="hover" th:title="${!history.SentDengon} ? 'メッセージを作成' : '送信済みメッセージを確認' ">
+						<i class="fas fa-paper-plane"></i>
+					</button>
+				</th:block>
+				
+				<!--/* 重要 */-->
+				<button class="btn btn-sm importantFlg" th:classappend="${history.Important} ? 'btn-outline-danger checked' : 'btn-light' "
+					th:data-gyomu-history-seq="${history.gyomuHistorySeq}"
+					data-boundary="window" data-container="#gyomuhistoryList" data-toggle="tooltip"
+					data-trigger="hover" th:title="${history.Important} ? '重要を外す' : '重要にする' ">重要
+				</button>
+			</div>
+			
+		</td>
+
+	<!--/* 履歴登録元 */-->
+		<td class="stop-events">
+	<th:block th:if="${history.transitionType == T(jp.loioz.common.constant.CommonConstant$TransitionType).CUSTOMER}">
+			<div class="mb-1 char_ellipsis">
+				<a class="relation_link" th:unless="${customerId.equals(history.customerId.asLong())}"
+					th:href= "@{/user/gyomuHistory/customer/list(transitionCustomerId=${history.customerId.asLong()})}">
+					<i class="fas fa-hashtag mr-1"></i><span th:text="${history.customerName}">名前</span>
+					<span class="sub_text" th:text="|	&#40;${history.customerId}&#41;|"></span>
+				</a>
+			</div>
+			
+		<!--/* 自名簿側の業務履歴 */-->
+		<th:block th:if="${customerId.equals(history.customerId.asLong())}">
+				<span>-</span>
+		</th:block>
+			
+	</th:block>
+
+	<th:block th:if="${history.transitionType == T(jp.loioz.common.constant.CommonConstant$TransitionType).ANKEN}">
+		<th:block th:each="anken : ${history.children}">
+				<div class="mb-1 char_ellipsis" data-toggle="tooltip" data-trigger="hover" data-original-title="案件の業務履歴へ">
+					<a class="transitionId relation_link" th:data-anken-id ="${anken.ankenId.asLong()}" th:href= "@{/user/gyomuHistory/anken/fromCustomer(transitionAnkenId=${anken.ankenId.asLong()})}">
+						<i class="fas fa-hashtag mr-1"></i><span th:text="${anken.labelName}"></span>
+					</a>
+					<span class="sub_text" th:text="|	&#40;${anken.ankenId}&#41;|"></span>
+				</div>
+		</th:block>
+	</th:block>
+	</td>
+
+</tr>
+
+
+
+</body>
+</html>

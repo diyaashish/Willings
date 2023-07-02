@@ -1,0 +1,1 @@
+DELETE FROM t_accg_record_detail_over_payment;

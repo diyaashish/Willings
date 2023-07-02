@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+	xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+	layout:decorator="commonLayout">
+<head>
+	<meta charset="utf-8" />
+</head>
+<body>
+	<div th:fragment="select-modal" class="select-modal">
+		<div th:object="${roomEditForm}">
+			<div class="modal-header">
+				<h2 class="modalheader_title" th:text="*{isNew()} ? '施設登録' : '施設編集'"></h2>
+			</div>
+			<div class="modal-body">
+				<div th:replace="common/messageArea::jsMessageArea"></div>
+				<form id="editForm">
+					<input type="hidden" th:field="*{roomEditData.roomId}">
+					<input type="hidden" th:field="*{roomEditData.versionNo}">
+					<!-- 入力エリア -->
+					<div class="modal_input_area">
+						<!-- 名称 -->
+						<div class="form-row">
+							<div class="form-group col-md-12">
+								<label class="input_parts_label" for="input-roomName">名称</label>
+								<span class="mark_equired">必須</span>
+								<input type="text" class="form-control" id="input-roomName" th:field="*{roomEditData.roomName}" maxlength="64">
+								<!-- Enter key対応のダミー -->
+								<input type="text" name="dummy" style="display:none;">
+								<div class="error_mag_point hidden" id="itemMsg_roomEditData.roomName"></div>
+							</div>
+						</div>
+						<!-- 名称 end -->
+					</div>
+				</form>
+			</div>
+			<div class="modal-footer">
+				<button th:if="*{!isNew()}" type="button" class="btn btn-light mr-auto" id="delete"><i class="far fa-trash-alt"></i>削除</button>
+				<button th:if="*{isNew()}" type="button" class="btn btn-info" id="regist"><i class="fas fa-check"></i>登録</button>
+				<button  th:if="*{!isNew()}" type="button" class="btn btn-info" id="update"><i class="fas fa-check"></i>保存</button>
+				<button type="button" class="btn btn-light" data-dismiss="modal"><i class="fas fa-times"></i>閉じる</button>
+			</div>
+		</div>
+	</div>
+</body>
+</html>

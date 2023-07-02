@@ -1,0 +1,871 @@
+@charset "UTF-8";
+
+/********************************************************
+ * 非ログイン共通 CSS
+********************************************************/
+
+/* 非ログイン時のヘッダー */
+.tenant_no_login_header {
+	padding: 12px 0;
+	width: 100%;
+	position: fixed;
+	z-index: 1000;
+	background-color: #fff;
+	border-bottom: 3px solid var(--loioz-blue);
+}
+.tenant_no_login_header .header_inner {
+	width: 100%;
+	max-width: calc(var(--inner-width) + (var(--outer-padding) * 2));
+	margin: 0 auto;
+	padding: 0 var(--outer-padding);
+	display: flex;
+	-webkit-box-align: center;
+	-ms-flex-align: center;
+	align-items: center;
+	-webkit-box-pack: justify;
+	-ms-flex-pack: justify;
+	justify-content: space-between;
+}
+/* loiozロゴ */
+.tenant_no_login_header .header_inner .loioz_logo {
+	height: auto;
+	max-width: 100%;
+	vertical-align: bottom;
+	-webkit-backface-visibility: hidden;
+	backface-visibility: hidden;
+}
+/* HPコンテンツ */
+.loioz_hp_contetns {
+	padding-top: 60px;
+	padding-bottom: 100px;
+}
+/* HPのタイトル帯 */
+.main_title {
+	padding: 64px 0;
+	background: var(--loioz-blue);
+	color: #fff;
+}
+.main_title .title_inner {
+	text-align: center;
+}
+.main_title .title_inner > h1 {
+	font-weight: 700;
+	font-size: 3.2rem;
+	line-height: 52px;
+	text-align: center;
+	letter-spacing: 1px;	
+}
+
+/******** 【画面】無料トライアル申し込み（HP） ********/
+/* HPのパンくず */
+.loioz_hp_contetns .loioz_hp_breadcrumb {
+	width: 100%;
+	padding: 16px 0 18px;
+	line-height: 1;
+}
+.loioz_hp_contetns .loioz_hp_breadcrumb .loioz_hp_breadcrumb_inner {
+	max-width: calc(var(--inner-width) + (var(--outer-padding) * 2));
+	padding: 0 40px;
+	padding: 0 var(--outer-padding);
+	width: 100%;
+	margin: 0 auto;
+	font-size: 1.6rem;
+}
+.loioz_hp_contetns a {
+	color: var(--loioz-blue);
+}
+/* HPのsection */
+.loioz_hp_contetns .section {
+	padding: 40px var(--outer-padding);
+}
+.loioz_hp_contetns .section_light_blue {
+	background: #effbff;
+}
+.loioz_hp_contetns .section .section_inner {
+	max-width: var(--content-width);
+	width: 100%;
+	margin: 0 auto;
+}
+.loioz_hp_contetns .section .section_inner .section_title {
+	font-size: 2.8rem;
+	line-height: 42px;
+	font-weight: 700;
+	text-align: center;
+	position: relative;
+	padding-bottom: 40px;
+}
+.loioz_hp_contetns .section .section_inner .section_title:before {
+	content: "";
+	height: 8px;
+	width: 112px;
+	border-radius: 10px;
+	background: var(--loioz-blue);
+	position: absolute;
+	bottom: 0;
+	left: 50%;
+	-webkit-transform: translateX(-50%);
+	transform: translateX(-50%);
+}
+/* HPのsection_desc */
+.loioz_hp_contetns .section .section_inner .section_desc {
+	margin-top: 40px;
+	margin-left: auto;
+	margin-right: auto;
+	font-size: 1.6rem;
+	text-align: center;
+	padding: 0 10px;
+}
+.loioz_hp_contetns .section .section_inner .section_desc > p {
+	margin-bottom: 0;
+}
+/* HPのsection_content */
+.loioz_hp_contetns .section .section_inner .section_content {
+	padding: 40px 0;
+}
+
+/********* メールアドレス入力ブロック ********/
+.mail_block {
+	margin: auto;
+	padding: 0 30px;
+}
+/* メールアドレス テキストボックス */
+.input-group>.form-control.mail_input_text {
+	max-width: 375px;
+	border-right: 0px;
+	border-radius: 4px 0 0 4px;
+	font-size: 1.6rem;
+	padding: 15px 10px;
+}
+.input-group>.form-control.mail_input_text::placeholder {
+	font-size: 1.4rem;
+}
+/* 申し込みボタン */
+.btn_and_form_text {
+	border: none !important;
+	border-radius: 0 4px 4px 0;
+	border-style: none !important;
+	border-width: 0px !important;
+	height: 32px;
+	font-size: 1.2rem;
+}
+/* 申し込みボタン 色 */
+.btn_primary {
+	background-color: #DE3D64;
+	border-color: #DE3D64;
+	color: #fff !important;
+}
+/* 入力補助文言（上部） */
+.mail_support_text {
+	font-size: 1.5rem;
+	font-weight: 700;
+	color: var(--text-color-sub);
+	margin-bottom: 5px;
+}
+/* 入力補助文言（下部） */
+.mail_sub_text {
+	padding: 10px 0;
+	font-size: 1.3rem;
+	color: #969696;
+}
+/* PC画像 */
+.loioz_pc_block {
+	text-align: right;
+	padding: 0 15px;
+}
+.loioz_pc_block:after {
+	white-space: pre;
+	content: "14日間\a無料";
+	text-align: center;
+	line-height: 1;
+	color: var(--white);
+	font-weight: 600;
+	font-size: 1.8rem;
+	padding: 35px 23px;
+	border-radius: 55px;
+	background-color: var(--loioz-blue);
+	position: absolute;
+	top: 20px;
+	right: -17px;
+}
+img.loioz_pc {
+	width: 280px;
+	height: 165px;
+}
+
+/*********** ご利用開始までの流れ ***********/
+/* 共通メッセージ（INFO、WRAN、ERROR）*/
+.info_msg_view {
+	align-items: flex-start;
+	background-color: rgba(231, 243, 255);
+	border-radius: 5px;
+	color: #004085;
+	display: flex;
+	font-size: 1.4rem;
+	font-weight: 600;
+	margin: 0 auto 5px;
+	line-height: 1.1;
+	padding: 9px 15px;
+	width: 95%;
+}
+.warn_msg_view {
+	align-items: flex-start;
+	background-color: rgba(255,243,205);
+	border-radius: 5px;
+	color: #856404;
+	display: flex;
+	font-size: 1.4rem;
+	font-weight: 600;
+	margin: 0 auto 5px;
+	padding: 9px 15px;
+	line-height: 1.1;
+	width: 95%;
+}
+.error_msg_view {
+	align-items: flex-start;
+	background-color: rgba(252,221,221);
+	border-radius: 5px;
+	color: var(--lz-red-600);
+	display: flex;
+	font-size: 1.4rem;
+	font-weight: 600;
+	margin: 0 auto 5px;
+	padding: 9px 15px;
+	line-height: 1.1;
+	width: 95%;
+}
+
+/* 申し込みSTEP */
+.section_content.use_step,
+.section_content.use_trial,
+.section_content.send_mail {
+	max-width: var(--inner-width);
+	margin-left: auto;
+	margin-right: auto;
+} 
+.use_step .step_nav {
+	font-size: 2rem;
+	font-weight: 700;
+	text-align: center;
+}
+.use_step .step_text {
+	font-size: 1.5rem;
+	font-weight: 700;
+	text-align: center;
+}
+.use_step .step_nav .hp_text_point {
+	font-size: 2.5rem;
+	line-height: 1;
+}
+.use_step .step_summary {
+	border-left: 4px solid #969696;
+	border-right: 4px solid #969696;
+	padding: 3px 0;
+	margin: 30px 0 5px;
+}
+.summary_border {
+	display: flex;
+	justify-content: space-between;
+	background-image: url(../img/icon_border.png);
+	background-position: left;
+	background-size: 100% 4px;
+	background-repeat: no-repeat;
+}
+.step_img {
+	height: 120px;
+	text-align: center;
+}
+.summary_text {
+	font-size: 2.3rem;
+	color: var(--loioz-blue);
+	z-index: 1;
+	background-color: #EFFBFF;
+	padding: 4px 20px;
+	line-height: 1;
+	border-radius: 5px;
+	font-weight: 700;
+	display: inline-block;
+	margin: auto;
+}
+/* 申し込みSTEP1-5 */
+.loioz_step1 {
+	background-image: url(/img/nav_step1.png);
+	background-repeat: no-repeat;
+	background-position: 20px 4px;
+	background-size: 110px;
+	height: 100px;
+}
+.step_arrow {
+  position: relative;
+  display: inline-block;
+  padding-left: 20px;
+  color: #333;
+  text-decoration: none;
+}
+.step_arrow:after {
+	content: "";
+	width: 23px;
+	height: 25px;
+	border: 0;
+	border-top: solid 3px var(--bor-color-main);
+	border-right: solid 3px var(--bor-color-main);
+	position: absolute;
+	top: 41%;
+	right: 0;
+	margin-top: -4px;
+	transform: rotate(40deg);
+}
+.loioz_step2 {
+	background-image: url(/img/nav_step2.png);
+	background-repeat: no-repeat;
+	background-position: 41px 4px;
+	background-size: 103px;
+	height: 100px;
+}
+.loioz_step3 {
+	background-image: url(/img/nav_step3.png);
+	background-repeat: no-repeat;
+	background-position: 43px 3px;
+	background-size: 100px;
+	height: 100px;
+}
+.loioz_step4 {
+	background-image: url(/img/nav_step4.png);
+	background-repeat: no-repeat;
+	background-position: 40px 4px;
+	background-size: 89px;
+	height: 100px;
+}
+.loioz_step5 {
+	background-image: url(/img/nav_step5.png);
+	background-repeat: no-repeat;
+	background-position: 47px 12px;
+	background-size: 75px;
+	height: 100px;
+}
+
+/*** 無料トライアルでお試しいただけること *****/
+.use_trial .info_card {
+	border: 1px solid var(--loioz-blue);
+	border-radius: 8px;
+	padding: 15px 10px;
+	margin-top: 10px;
+	height: fit-content;
+	min-height: 345px;
+}
+.use_trial .info_title {
+	font-size: 2rem;
+	color: var(--loioz-blue);
+	font-weight: 700;
+	text-align: center;
+}
+.use_trial .info_img {
+	height: 150px;
+}
+/* 画像 */
+.use_trial .img_trial1 {
+	background-image: url(/img/use_trial1.png);
+	background-repeat: no-repeat;
+	background-position: center;
+	background-size: 165px;
+}
+.use_trial .img_trial2 {
+	background-image: url(/img/use_trial2.png);
+	background-repeat: no-repeat;
+	background-position: center;
+	background-size: 195px;
+}
+.use_trial .img_trial3 {
+	background-image: url(/img/use_trial3.png);
+	background-repeat: no-repeat;
+	background-position: center;
+	background-size: 115px;
+}
+.use_trial .img_trial4 {
+	background-image: url(/img/use_trial4.png);
+	background-repeat: no-repeat;
+	background-position: center;
+	background-size: 95px;
+}
+
+
+/******** 【画面】無料トライアルメール送信完了 ********/
+.send_mail .send_message {
+	font-size: 1.8rem;
+}
+.send_mail .contact_block {
+	font-size: 1.8rem;
+	margin-top: 25px;
+	text-align: center;
+}
+.send_mail .contact_block p {
+	margin-bottom: 0.5rem;
+}
+.contact_block > .tel {
+	font-size: 3.5rem;
+	color: var(--loioz-blue);
+	font-weight: 600;
+}
+.contact_block > .tel_time {
+}
+.contact_block > .mail_form {
+	margin-top: 25px;
+}
+.mail_form > a.contact_link {
+	color: var(--white);
+	text-decoration: none;
+	background-color: var(--lz-yellow);
+	border-radius: 5px;
+	padding: 2px 30px;
+}
+
+/******** 【画面】事務所-アカウント情報入力 ********/
+/** 情報入力エリア */
+.section_content .detail_input_area {
+	padding: 0 10px;
+}
+/** ステップ */
+.stepBar {
+	position: relative;
+	list-style: none;
+	margin: 10px auto 20px;
+	padding: 0;
+	text-align: center;
+	width: 95%;
+	overflow: hidden;
+	*zoom: 1;
+}
+.stepBar .step {
+	position: relative;
+	float: left;
+	display: inline-block;
+	line-height: 40px;
+	padding: 0 40px 0 20px;
+	background-color: #eee;
+	-moz-box-sizing: border-box;
+	-webkit-box-sizing: border-box;
+	box-sizing: border-box;
+}
+.stepBar .step:before, .stepBar .step:after {
+	position: absolute;
+	left: -15px;
+	display: block;
+	content: '';
+	background-color: #eee;
+	border-left: 4px solid #FFF;
+	width: 20px;
+	height: 20px;
+}
+.stepBar .step:after {
+	top: 0;
+	-moz-transform: skew(30deg);
+	-ms-transform: skew(30deg);
+	-webkit-transform: skew(30deg);
+	transform: skew(30deg);
+}
+.stepBar .step:before {
+	bottom: 0;
+	-moz-transform: skew(-30deg);
+	-ms-transform: skew(-30deg);
+	-webkit-transform: skew(-30deg);
+	transform: skew(-30deg);
+}
+.stepBar .step:first-child {
+	-moz-border-radius-topleft: 4px;
+	-webkit-border-top-left-radius: 4px;
+	border-top-left-radius: 4px;
+	-moz-border-radius-bottomleft: 4px;
+	-webkit-border-bottom-left-radius: 4px;
+	border-bottom-left-radius: 4px;
+}
+.stepBar .step:first-child:before, .stepBar .step:first-child:after {
+	content: none;
+}
+.stepBar .step:last-child {
+	-moz-border-radius-topright: 4px;
+	-webkit-border-top-right-radius: 4px;
+	border-top-right-radius: 4px;
+	-moz-border-radius-bottomright: 4px;
+	-webkit-border-bottom-right-radius: 4px;
+	border-bottom-right-radius: 4px;
+}
+.stepBar .step.current {
+	color: #FFF;
+	background-color: var(--loioz-blue);
+}
+.stepBar .step.current:before, .stepBar .step.current:after {
+	background-color: var(--loioz-blue);
+}
+.stepBar.step2 .step {width: 50%;}
+.stepBar.step3 .step {width: 33.333%;}
+.stepBar.step4 .step {width: 25%;}
+.stepBar.step5 .step {	width: 20%;}
+
+/* テナントURLエリア */
+.tenant_url {
+	background-color: var(--bg-color-view);
+	padding: 20px 0;
+	font-size: 2.3rem;
+	text-align: center;
+}
+.mark_equired {
+	display: inline-block;
+	border-radius: 10px;
+	color: var(--white);
+	background-color: var(--lz-red-500);
+	font-weight: normal;
+	font-size: 1rem;
+	line-height: 1.6;
+	vertical-align: text-top;
+	text-align: center;
+	width: 40px;
+	height: 15px;
+	margin-left: 5px;
+}
+
+
+/******** 【画面】ログイン・パスワード忘れ・招待アカウント登録 ********/
+.body_one_block {
+	background-color: var(--bg-color-view);
+	height: 100%;
+	border-top: 7px solid var(--loioz-blue);
+}
+.body_one_block main {
+	width: 100%;
+}
+/* ログイン・パスワードリセット */
+.login_form, .password_reset_form {
+	width: 100%;
+	max-width: 470px;
+	margin: 30px auto 0;
+	padding: 0 10px;
+}
+/* 招待アカウント登録 */
+.invited_account_login_form {
+	width: 100%;
+	max-width: 640px;
+	margin: 30px auto 0;
+	padding: 0 10px;
+}
+.invited_account_login_form.verification_error {
+	max-width: initial;
+}
+/* bootstrap */
+.login_form .card-header, .login_form .card-footer,
+.password_reset_form .card-header, .password_reset_form .card-footer {
+	background-color: var(--white);
+	padding: 15px 23px;
+}
+.invited_account_login_form .card-header {
+	background-color: var(--white);
+	padding: 10px 23px;
+}
+.login_form .card-body {
+	padding: 20px 25px 35px;
+}
+.invited_account_login_form .card-body {
+	padding: 15px 25px 20px;
+}
+.password_reset_form .card-body {
+	padding: 20px 20px 35px;
+}
+.login_form .form-control {
+	height: 35px;
+	font-size: 1.6rem;
+}
+.password_reset_form .form-control {
+	height: 28px;
+	font-size: 1.4rem;
+}
+.login_form .form-control::placeholder,
+.password_reset_form .form-control::placeholder {
+	font-size: 1.4rem;
+}
+.card_title {
+	font-size: 2.4rem;
+	margin: auto 0;
+	padding: 13px 0 0;
+}
+.loioz_logo {
+	text-align: center;
+}
+.loioz_logo > img {
+	margin: 0 auto 18px;
+	width: 165px;
+	height: 42px;
+}
+.login_form .input_nav,
+.password_reset_form .input_nav {
+	white-space: normal;
+}
+.login_form label,
+.password_reset_form label {
+	font-size: 1.5rem;
+	height: 28px;
+}
+.form_action {
+	margin:10px 0 0;
+}
+.form_action button {
+	width: 100%;
+	padding: 10px;
+	font-weight: 600;
+	font-size: 1.5rem;
+}
+/* ログイン画面のアイコン */
+.login_form .input-group-text {
+	padding: .375rem 1.25rem;
+	font-size: 1.7rem;
+	color: var(--text-color-sub);
+}
+/* アカウントID保存チェック */
+.login_form .checkbox_btn {
+	position: relative;
+	padding: 2px 0 2px 24px;
+}
+.login_form .checkbox_btn .checkbox_txt {
+	color: var(--text-color-gray);
+}
+.login_form .checkbox_btn .checkbox_input:checked ~ .checkbox_txt {
+	color: var(--text-color-sub);
+}
+/* ログイン画面エラーメッセージ */
+.error_msg_login {
+	background-color: #FCD6D6;
+	color: #9E0002;
+	margin: 0 0 10px 0;
+	padding: 5px 15px 5px 28px;
+	border-radius: 4px;
+	background-image: url("../img/icon_error.svg");
+	background-repeat: no-repeat;
+	background-position: 6px 8px;
+	text-align: left;
+}
+
+/******** 【画面】招待アカウント登録 ********/
+/* エラーメッセージ上書き */
+.invited_account_login_form .error_msg_edit {
+	margin-top: 0;
+	margin-right: 0;
+	margin-left: 0;
+}
+
+/******** 【画面】プレログイン ********/
+.pre_login_form button:disabled {
+	cursor: default;
+}
+.pre_login_form .errorMessageArea .error_msg_edit {
+	/* error_msg_edit のスタイルを一部上書き */
+	margin: 0px 0px 10px 0px;
+}
+
+/************** 汎用スタイル ***************/
+/* 強調色 */
+.hp_text_point {
+	color: var(--lz-yellow);
+}
+/* フッターcopyright  */
+footer .copyright {
+	background: var(--loioz-blue);
+	color: #fff;
+	text-align: center;
+	padding: 16px;
+	font-size: 1.4rem;
+}
+/* お試し開始ボタン */
+.btn_loioz_start {
+	background-color: var(--danger);
+	border-color: var(--danger);
+	color: #fff !important;
+	padding: 5px 65px;
+	font-size: 1.6rem;
+}
+/*非対応ブラウザエラーメッセージ*/
+.error_msg_browser {
+	margin: 20px 10px;
+	border-radius: 4px;
+	text-align: left;
+	font-size: small;
+}
+
+/* 推奨ブラウザエラー */
+.error_msg_browser_tenant {
+	margin: 20px auto;
+	border-radius: 4px;
+	background: #fdffe0;
+	max-width: 440px;
+	padding: 10px 0;
+	color: var(--text-color-sub);
+	font-size: 1.5rem;
+}
+/* テナント情報入力ナビゲーション */
+.tenant_input_nav {
+	max-width: var(--inner-width-tenant);
+	margin: 0 auto;
+}
+/* テナント登録のボタンブロック */
+.tenant_action_block {
+	margin-top: 10px;
+	text-align: right;
+}
+
+/* 共通メッセージ（INFO、WRAN、ERROR）*/
+.info_msg_js {
+	align-items: flex-start;
+	background-color: rgba(231, 243, 255);
+	border-radius: 3px;
+	color: #004085;
+	display: flex;
+	font-size: 1.4rem;
+	font-weight: 600;
+	margin: 5px auto;
+	padding: 9px 10px;
+	line-height: 1.1;
+}
+.warn_msg_js {
+	align-items: flex-start;
+	background-color: rgba(255,243,205);
+	border-radius: 3px;
+	color: #856404;
+	display: flex;
+	font-size: 1.4rem;
+	font-weight: 600;
+	margin: 5px auto;
+	padding: 9px 10px;
+	line-height: 1.1;
+}
+.error_msg_js {
+	align-items: flex-start;
+	background-color: rgba(252,221,221);
+	border-radius: 3px;
+	color: var(--lz-red-600);
+	display: flex;
+	font-size: 1.4rem;
+	font-weight: 600;
+	margin: 5px auto;
+	padding: 9px 10px;
+	line-height: 1.1;
+}
+
+
+/********************************************************
+ * @media 横幅（指定値以下）
+********************************************************/
+@media (max-width: 450px) {
+	.tenant_no_login_header .header_inner {
+		padding: 0 15px;
+	}
+	.main_title {
+		padding: 30px 0;
+	}
+	.loioz_hp_breadcrumb_inner {
+		display: none;
+	}
+	.main_title .title_inner > h1 {
+		font-size: 2.2rem;
+		line-height: 1;
+	}
+	.loioz_hp_contetns .section {
+		padding: 0 15px;
+	}
+	.loioz_hp_contetns .section .section_inner .section_title {
+		font-size: 2.3rem;
+		line-height: 30px;
+		padding: 20px 15px;
+	}
+	.loioz_hp_contetns .section .section_inner .section_desc {
+		margin-top: 30px;
+		font-size: 1.2rem;
+		padding: 0 5px 0 10px;
+		text-align: left;
+	}
+	.loioz_hp_contetns .section .section_inner .section_content {
+		padding: 20px 0;
+	}
+	.form-inline .form-control.mail_input_text {
+		border-radius: 4px;
+		border-right: 1px solid #ced4da;
+		width: 100%;
+	}
+	.form-inline .form-control.mail_input_text.is-invalid {
+		border-right: 1px solid #dc3545;
+	}
+	.mail_block {
+		padding: 0 20px;
+		margin-top: 15px;
+	}
+	.mail_support_text {
+		font-size: 1.3rem;
+		margin-bottom: 3px;
+	}
+	.loioz_pc_block {
+		text-align: center;
+	}
+	.loioz_pc_block:after {
+		white-space: pre;
+		content: "最大60日\a無料";
+		text-align: center;
+		line-height: 1;
+		color: var(--white);
+		font-weight: 600;
+		font-size: 1.3rem;
+		padding: 25px 8px;
+		border-radius: 55px;
+		background-color: var(--loioz-blue);
+		position: absolute;
+		top: 20px;
+		right: 70px;
+	}
+	img.loioz_pc {
+		width: 230px;
+		height: 135px;
+	}
+	.btn_and_form_text {
+		border-radius: 4px;
+		margin: 10px auto;
+	}
+	.mail_input {
+		text-align: center;
+	}
+	.use_step .step_summary,
+	.use_step .summary_border {
+		display: none;
+	}
+	.loioz_step1 {
+		background-position: 102px 0;
+	}
+	.loioz_step2 {
+		background-position: 122px -5px;
+	}
+	.loioz_step3 {
+		background-position: 126px -1px;
+	}
+	.loioz_step4 {
+		background-position: 124px -3px;
+	}
+	.loioz_step5 {
+		background-position: 134px 4px;
+	}
+	.step_img {
+		height: 85px;
+	}
+	.step_arrow:after {
+		width: 23px;
+		height: 23px;
+		top: 80%;
+		right: 46.5%;
+		margin-top: 0;
+		transform: rotate(135deg);
+	}
+	.use_step .step_text {
+		margin-bottom: 57px;
+	}
+	.stepBar.step3 .step {
+		width: 100%;
+		text-align: left;
+		margin-bottom: 5px;
+	}
+	.tenant_url {
+		padding: 15px 0;
+		font-size: 1.6rem;
+	}
+}

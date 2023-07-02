@@ -1,0 +1,361 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+	<meta charset="utf-8" />
+</head>
+<body>
+
+
+<!--/* 案件情報／名簿情報メニュー */-->
+<div th:fragment="ankenListMenu" class="nav_sidebar_user" id="ankenListMenu">
+
+	<!--/* スクリプト */-->
+	<script type="text/javascript" th:inline="javascript">	
+
+	$(function() {
+
+		<!--/* 案件メニュークリック時処理 */-->
+		$('#ankenListMenu').on("click", ".ankenListMenu", function() {
+			const selectedAnkenListMenu = $(this).data("tab");
+			$(".ankenListMenu").removeClass("selected");
+			$(this).addClass("selected");
+
+			<!--/* 画面ごとの処理 */-->
+			const allAnken = /*[[${T(jp.loioz.common.constant.CommonConstant$AnkenListMenu).All_ANKEN_LIST.cd}]]*/ '';
+			const myAnken = /*[[${T(jp.loioz.common.constant.CommonConstant$AnkenListMenu).MY_ANKEN_LIST.cd}]]*/ '';
+			const advisorAnken = /*[[${T(jp.loioz.common.constant.CommonConstant$AnkenListMenu).ADVISOR_ANKEN_LIST.cd}]]*/ '';
+			const minjiSaiban = /*[[${T(jp.loioz.common.constant.CommonConstant$AnkenListMenu).MINJI_SAIBAN_LIST.cd}]]*/ '';
+			const keijiSaiban = /*[[${T(jp.loioz.common.constant.CommonConstant$AnkenListMenu).KEIJI_SAIBAN_LIST.cd}]]*/ '';
+			switch (selectedAnkenListMenu) {
+				case allAnken:
+					Promise.resolve()
+						<!--/* 検索処理 */-->
+						.then(() => selectAllAnkenListMenu(selectedAnkenListMenu))
+						<!--/* 検索条件表示 */-->
+						.then(() => renderAnkenSearchFormFragmentFromMenu(selectedAnkenListMenu))
+					break;
+				case myAnken:
+					Promise.resolve()
+						<!--/* 検索処理 */-->
+						.then(() => selectMyAnkenListMenu(selectedAnkenListMenu))
+						<!--/* 検索条件表示 */-->
+						.then(() => renderAnkenSearchFormFragmentFromMenu(selectedAnkenListMenu))
+					break;
+				case advisorAnken:
+					Promise.resolve()
+						<!--/* 検索処理 */-->
+						.then(() => selectAdvisorAnkenListMenu(selectedAnkenListMenu))
+						<!--/* 検索条件表示 */-->
+						.then(() => renderAnkenSearchFormFragmentFromMenu(selectedAnkenListMenu))
+					break;
+				case minjiSaiban:
+					Promise.resolve()
+						<!--/* 検索処理 */-->
+						.then(() => selectMinjiSaibanListMenu(selectedAnkenListMenu))
+						<!--/* 検索条件表示 */-->
+						.then(() => renderAnkenSearchFormFragmentFromMenu(selectedAnkenListMenu))
+					break;
+				case keijiSaiban:
+					Promise.resolve()
+						<!--/* 検索処理 */-->
+						.then(() => selectKeijiSaibanListMenu(selectedAnkenListMenu))
+						<!--/* 検索条件表示 */-->
+						.then(() => renderAnkenSearchFormFragmentFromMenu(selectedAnkenListMenu))
+					break;
+				default:
+			} 
+		});
+
+		<!--/* サイドメニューからすべての案件一覧画面検索処理 */-->
+		function selectAllAnkenListMenu(selectedAnkenListMenu) {
+
+			return new Promise((resolve, reject) => {
+				<!--/* パラメータ */-->
+				const formData = [];
+				formData.push({name: "selectedAnkenListMenu", value: selectedAnkenListMenu});
+
+				<!--/* 案件一覧画面検索処理 */-->
+				$.ajax({
+					url : "/user/ankenList/selectAllAnkenListMenu",
+					type : "GET",
+					data : formData,
+					dataType: 'html',
+				}).done(function(data, status, jqXHR) {
+					<!--/* ツールチップを非表示にする */-->
+					$('[data-toggle="tooltip"]').tooltip('hide');
+					<!-- /* 一覧フラグメント更新 */ -->
+					$('#ankenListViewFragmentWrap').replaceWith($(data).find("#ankenListViewFragmentWrap"));
+					<!-- /* ページングフラグメント更新 */ -->
+					$('#ankenListPagerWrap').replaceWith($(data).find("#ankenListPagerWrap"));
+					return resolve();
+				}).fail(function() {
+					showErrorMessageForJs(/*[[#{E00059}]]*/ "データの取得に失敗しました。");
+					return reject();
+				}).always(function() {
+				});	
+			});
+		}
+
+		<!--/* サイドメニューから自分の担当案件一覧画面検索処理 */-->
+		function selectMyAnkenListMenu(selectedAnkenListMenu) {
+
+			return new Promise((resolve, reject) => {
+				<!--/* パラメータ */-->
+				const formData = [];
+				formData.push({name: "selectedAnkenListMenu", value: selectedAnkenListMenu});
+
+				<!--/* サイドメニューから画面を表示する場合は、ログインユーザのアカウントタイプによって検索条件の担当弁護士、担当事務をログインユーザに設定しなおす */-->
+				const lawyer = /*[[${T(jp.loioz.common.constant.CommonConstant$AccountType).LAWYER.cd}]]*/ '';
+				const jimu = /*[[${T(jp.loioz.common.constant.CommonConstant$AccountType).JIMU.cd}]]*/ '';
+				const other = /*[[${T(jp.loioz.common.constant.CommonConstant$AccountType).OTHER.cd}]]*/ '';
+				const loginUserAccountType = /*[[${T(jp.loioz.common.utility.SessionUtils).getAccountType()}]]*/null;
+				const myAccountSeq = /*[[${T(jp.loioz.common.utility.SessionUtils).getLoginAccountSeq()}]]*/null;
+				switch (loginUserAccountType) {
+					case lawyer:
+						formData.push({name: "myAnkenListSearchForm.tantoLaywer", value: myAccountSeq});
+						break;
+					case jimu:
+						formData.push({name: "myAnkenListSearchForm.tantoJimu", value: myAccountSeq});
+						break;
+					case other:
+						<!--/* その他アカウントの場合はセットしない */-->
+						break;
+					default:
+				}
+
+				<!--/* 案件一覧画面検索処理 */-->
+				$.ajax({
+					url : "/user/ankenList/selectMyAnkenListMenu",
+					type : "GET",
+					data : formData,
+					dataType: 'html',
+				}).done(function(data, status, jqXHR) {
+					<!--/* ツールチップを非表示にする */-->
+					$('[data-toggle="tooltip"]').tooltip('hide');
+					<!-- /* 一覧フラグメント更新 */ -->
+					$('#ankenListViewFragmentWrap').replaceWith($(data).find("#ankenListViewFragmentWrap"));
+					<!-- /* ページングフラグメント更新 */ -->
+					$('#ankenListPagerWrap').replaceWith($(data).find("#ankenListPagerWrap"));
+					return resolve();
+				}).fail(function() {
+					showErrorMessageForJs(/*[[#{E00059}]]*/ "データの取得に失敗しました。");
+					return reject();
+				}).always(function() {
+				});
+			});
+		}
+
+		<!--/* サイドメニューから顧問案件一覧画面検索処理 */-->
+		function selectAdvisorAnkenListMenu(selectedAnkenListMenu) {
+
+			return new Promise((resolve, reject) => {
+				<!--/* パラメータ */-->
+				const formData = [];
+				formData.push({name: "selectedAnkenListMenu", value: selectedAnkenListMenu});
+
+				<!--/* サイドメニューから画面を表示する場合は、分野を「顧問」に設定しなおす */-->
+				<!--/* 分野Enum削除のため顧問に対応するbunyaIdを固定で設定*/-->
+				const advisor = '8';
+				formData.push({name: "advisorAnkenListSearchForm.bunya", value: advisor});
+
+				<!--/* サイドメニューから画面を表示する場合は、ログインユーザのアカウントタイプによって検索条件の担当弁護士、担当事務をログインユーザに設定しなおす */-->
+				const lawyer = /*[[${T(jp.loioz.common.constant.CommonConstant$AccountType).LAWYER.cd}]]*/ '';
+				const jimu = /*[[${T(jp.loioz.common.constant.CommonConstant$AccountType).JIMU.cd}]]*/ '';
+				const other = /*[[${T(jp.loioz.common.constant.CommonConstant$AccountType).OTHER.cd}]]*/ '';
+				const loginUserAccountType = /*[[${T(jp.loioz.common.utility.SessionUtils).getAccountType()}]]*/null;
+				const myAccountSeq = /*[[${T(jp.loioz.common.utility.SessionUtils).getLoginAccountSeq()}]]*/null;
+				switch (loginUserAccountType) {
+					case lawyer:
+						formData.push({name: "advisorAnkenListSearchForm.tantoLaywer", value: myAccountSeq});
+						break;
+					case jimu:
+						formData.push({name: "advisorAnkenListSearchForm.tantoJimu", value: myAccountSeq});
+						break;
+					case other:
+						<!--/* その他アカウントの場合はセットしない */-->
+						break;
+					default:
+				}
+
+				<!--/* 案件一覧画面検索処理 */-->
+				$.ajax({
+					url : "/user/ankenList/selectAdvisorAnkenListMenu",
+					type : "GET",
+					data : formData,
+					dataType: 'html',
+				}).done(function(data, status, jqXHR) {
+					<!--/* ツールチップを非表示にする */-->
+					$('[data-toggle="tooltip"]').tooltip('hide');
+					<!-- /* 一覧フラグメント更新 */ -->
+					$('#ankenListViewFragmentWrap').replaceWith($(data).find("#ankenListViewFragmentWrap"));
+					<!-- /* ページングフラグメント更新 */ -->
+					$('#ankenListPagerWrap').replaceWith($(data).find("#ankenListPagerWrap"));
+					return resolve();
+				}).fail(function() {
+					showErrorMessageForJs(/*[[#{E00059}]]*/ "データの取得に失敗しました。");
+					return reject();
+				}).always(function() {
+				});
+			});
+		}
+
+		<!--/* サイドメニューから案件一覧画面検索条件フラグメント再表示 */-->
+		function renderAnkenSearchFormFragmentFromMenu(selectedAnkenListMenu) {
+
+			return new Promise((resolve, reject) => {
+				<!--/* パラメータ */-->
+				const formData = [];
+				formData.push({name: "selectedAnkenListMenu", value: selectedAnkenListMenu});
+
+				<!--/* 案件検索条件フラグメント表示処理 */-->
+				renderAnkenSearchFormFragment(formData);
+				return resolve();
+			});
+		}
+
+		<!--/* サイドメニューから民事裁判一覧画面検索処理 */-->
+		function selectMinjiSaibanListMenu(selectedAnkenListMenu) {
+
+			return new Promise((resolve, reject) => {
+				<!--/* パラメータ */-->
+				const formData = [];
+				formData.push({name: "selectedAnkenListMenu", value: selectedAnkenListMenu});
+
+				<!--/* 裁判一覧画面検索処理 */-->
+				$.ajax({
+					url : "/user/ankenList/selectMinjiSaibanListMenu",
+					type : "GET",
+					data : formData,
+					dataType: 'html',
+				}).done(function(data, status, jqXHR) {
+					<!--/* ツールチップを非表示にする */-->
+					$('[data-toggle="tooltip"]').tooltip('hide');
+					<!-- /* 一覧フラグメント更新 */ -->
+					$('#ankenListViewFragmentWrap').replaceWith($(data).find("#ankenListViewFragmentWrap"));
+					<!-- /* ページングフラグメント更新 */ -->
+					$('#ankenListPagerWrap').replaceWith($(data).find("#ankenListPagerWrap"));
+					return resolve();
+				}).fail(function() {
+					showErrorMessageForJs(/*[[#{E00059}]]*/ "データの取得に失敗しました。");
+					return reject();
+				}).always(function() {
+				});
+			});
+		}
+
+		<!--/* サイドメニューから刑事裁判一覧画面検索処理 */-->
+		function selectKeijiSaibanListMenu(selectedAnkenListMenu) {
+
+			return new Promise((resolve, reject) => {
+				<!--/* パラメータ */-->
+				const formData = [];
+				formData.push({name: "selectedAnkenListMenu", value: selectedAnkenListMenu});
+
+				<!--/* 裁判一覧画面検索処理 */-->
+				$.ajax({
+					url : "/user/ankenList/selectKeijiSaibanListMenu",
+					type : "GET",
+					data : formData,
+					dataType: 'html',
+				}).done(function(data, status, jqXHR) {
+					<!--/* ツールチップを非表示にする */-->
+					$('[data-toggle="tooltip"]').tooltip('hide');
+					<!-- /* 一覧フラグメント更新 */ -->
+					$('#ankenListViewFragmentWrap').replaceWith($(data).find("#ankenListViewFragmentWrap"));
+					<!-- /* ページングフラグメント更新 */ -->
+					$('#ankenListPagerWrap').replaceWith($(data).find("#ankenListPagerWrap"));
+					return resolve();
+				}).fail(function() {
+					showErrorMessageForJs(/*[[#{E00059}]]*/ "データの取得に失敗しました。");
+					return reject();
+				}).always(function() {
+				});
+			});
+		}
+
+
+	});
+	</script>
+
+	<div class="nav_sidebar_user_inner">
+		<!--/* 案件一覧メニュー */-->
+		<div class=list_page_menu_title>
+			案件情報
+		</div>
+		<ul class="list_page_menu">
+			<li class="ankenListMenu"
+				th:classappend="${T(jp.loioz.common.constant.CommonConstant$AnkenListMenu).All_ANKEN_LIST.equalsByCode({ankenListSearchForm.selectedAnkenListMenu})} ? 'selected' : ''"
+				th:data-tab="${T(jp.loioz.common.constant.CommonConstant$AnkenListMenu).All_ANKEN_LIST.cd}">
+				<a href="javascript:void(0);">
+					<div class="anken_list_menu">
+						<span>すべて</span>
+					</div>
+				</a>
+			</li>
+			<!--/* ログインユーザーのアカウントタイプが「その他」であれば、「自分の担当案件」、「顧問案件」メニューの使用を不可とする */-->
+			<th:block th:if="${(T(jp.loioz.common.constant.CommonConstant$AccountType).OTHER.equals(T(jp.loioz.common.utility.SessionUtils).getAccountType()))}">
+				<li class="not_active"
+					th:classappend="${T(jp.loioz.common.constant.CommonConstant$AnkenListMenu).MY_ANKEN_LIST.equalsByCode({ankenListSearchForm.selectedAnkenListMenu})} ? 'selected' : ''"
+					th:data-tab="${T(jp.loioz.common.constant.CommonConstant$AnkenListMenu).MY_ANKEN_LIST.cd}">
+					<a href="javascript:void(0);" disabled="disabled">
+						<div class="anken_list_menu">
+							<span>自分の担当案件</span>
+						</div>
+					</a>
+				</li>
+				<li class="not_active"
+					th:classappend="${T(jp.loioz.common.constant.CommonConstant$AnkenListMenu).ADVISOR_ANKEN_LIST.equalsByCode({ankenListSearchForm.selectedAnkenListMenu})} ? 'selected' : ''"
+					th:data-tab="${T(jp.loioz.common.constant.CommonConstant$AnkenListMenu).ADVISOR_ANKEN_LIST.cd}">
+					<a href="javascript:void(0);" disabled="disabled">
+						<div class="anken_list_menu">
+							<span>顧問案件</span>
+						</div>
+					</a>
+				</li>
+			</th:block>
+			<!--/* ログインユーザーのアカウントタイプが「その他」でなければ、「自分の担当案件」、「顧問案件」メニューの使用を可能とする */-->
+			<th:block th:unless="${(T(jp.loioz.common.constant.CommonConstant$AccountType).OTHER.equals(T(jp.loioz.common.utility.SessionUtils).getAccountType()))}">
+				<li class="ankenListMenu"
+					th:classappend="${T(jp.loioz.common.constant.CommonConstant$AnkenListMenu).MY_ANKEN_LIST.equalsByCode({ankenListSearchForm.selectedAnkenListMenu})} ? 'selected' : ''"
+					th:data-tab="${T(jp.loioz.common.constant.CommonConstant$AnkenListMenu).MY_ANKEN_LIST.cd}">
+					<a href="javascript:void(0);">
+						<div class="anken_list_menu">
+							<span>自分の担当案件</span>
+						</div>
+					</a>
+				</li>
+				<li class="ankenListMenu"
+					th:classappend="${T(jp.loioz.common.constant.CommonConstant$AnkenListMenu).ADVISOR_ANKEN_LIST.equalsByCode({ankenListSearchForm.selectedAnkenListMenu})} ? 'selected' : ''"
+					th:data-tab="${T(jp.loioz.common.constant.CommonConstant$AnkenListMenu).ADVISOR_ANKEN_LIST.cd}">
+					<a href="javascript:void(0);">
+						<div class="anken_list_menu">
+							<span>顧問取引先の案件</span>
+						</div>
+					</a>
+				</li>
+			</th:block>
+			<li class="ankenListMenu"
+				th:classappend="${T(jp.loioz.common.constant.CommonConstant$AnkenListMenu).MINJI_SAIBAN_LIST.equalsByCode({ankenListSearchForm.selectedAnkenListMenu})} ? 'selected' : ''"
+				th:data-tab="${T(jp.loioz.common.constant.CommonConstant$AnkenListMenu).MINJI_SAIBAN_LIST.cd}">
+				<a href="javascript:void(0);">
+					<div class="anken_list_menu">
+						<span>民事裁判</span>
+					</div>
+				</a>
+			</li>
+			<li class="ankenListMenu"
+				th:classappend="${T(jp.loioz.common.constant.CommonConstant$AnkenListMenu).KEIJI_SAIBAN_LIST.equalsByCode({ankenListSearchForm.selectedAnkenListMenu})} ? 'selected' : ''"
+				th:data-tab="${T(jp.loioz.common.constant.CommonConstant$AnkenListMenu).KEIJI_SAIBAN_LIST.cd}">
+				<a href="javascript:void(0);">
+					<div class="anken_list_menu">
+						<span>刑事裁判</span>
+					</div>
+				</a>
+			</li>
+		</ul>
+	</div>
+</div>
+
+
+</body>
+</html>

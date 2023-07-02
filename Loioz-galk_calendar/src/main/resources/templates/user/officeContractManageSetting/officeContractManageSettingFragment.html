@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+	xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+	layout:decorator="commonLayout">
+<head>
+	<meta charset="utf-8" />
+</head>
+<body>
+
+<!--/* 契約担当者情報設定 */-->
+<div th:fragment="contactManagerSettingFragment(contactManagerSettingInputForm)" id="contactManagerSettingFragment" th:object="${contactManagerSettingInputForm}">
+	<script type="text/javascript" th:inline="javascript">
+	$(function() {
+		
+		<!--/* 定数 */-->
+		const contactManagerSettingFragmentWrap = $('#contactManagerSettingFragmentWrap');
+		const contactManagerSettingFragment = $('#contactManagerSettingFragment');
+		
+		<!--/* 共有の要素セットアップ処理 */-->
+		commonSetUpElement("#contactManagerSettingFragment");
+		$.fn.autoKana('[name="tenantDaihyoNameSei"]', '[name="tenantDaihyoNameSeiKana"]',{
+			katakana : false
+		});
+		$.fn.autoKana('[name="tenantDaihyoNameMei"]', '[name="tenantDaihyoNameMeiKana"]',{
+			katakana : false
+		});
+		
+		<!--/* 契約担当者情報の保存処理 */-->
+		contactManagerSettingFragment.find(".save").on('click', function() {
+			const formData = contactManagerSettingFragment.find('.contactManagerSettingForm').serializeArray();
+
+			if (ajaxRunning) {
+				return false;
+			}
+			ajaxRunning = true;
+			Promise.resolve(formData)
+				.then((param) => {
+					return new Promise((resolve, reject) => {
+						$.ajax({
+							url : '/user/officeContractManageSetting/saveContactManager',
+							type : 'POST',
+							data : param
+						})
+						.done(function(data, status, jqXHR) {
+							if (isAjaxProcSuccess(jqXHR)) {
+								// HTML表示
+								showInfoMessageForJs(getAjaxProcResutlMessage(jqXHR));
+								return resolve();
+							} else {
+								// 処理失敗
+								if (data) {
+									contactManagerSettingFragmentWrap.html(data);
+								}
+								const errorMsg = getAjaxProcResutlMessage(jqXHR);
+								showErrorMessageForJs(errorMsg);
+								return reject();
+							}
+						})
+						.fail(function(jqXHR, status, errorThrown) {
+							showErrorMessageForJs(/*[[#{E00091}]]*/ "error");
+							return reject();
+						});
+					});
+				})
+				.then(renderContactManagerSettingFragment)
+				.catch((errorObj) => console.log(errorObj))
+				.finally(() => {
+					ajaxRunning = false;
+				});
+		});
+		
+	})
+	</script>
+	
+	<div class="block_title">契約担当者</div>
+	<th:block th:if="${T(jp.loioz.common.utility.SessionUtils).isSystemMng()}">
+		<div class="block_detail">
+			<p>サポート窓口からご連絡をする場合がごさいますので、契約担当者の情報は正しい内容で登録してください。</p>
+		</div>
+	</th:block>
+	
+	<form class="contactManagerSettingForm">
+		<div class="detail_input_area">
+			<!-- 氏名 -->
+			<div class="form-row">
+				<div class="form-group col-md-12 mb-0">
+					<label class="input_parts_label">氏名</label>
+					<th:block th:if="${T(jp.loioz.common.utility.SessionUtils).isSystemMng()}">
+						<span class="mark_equired">必須</span>
+					</th:block>
+				</div>
+				<th:block th:if="${T(jp.loioz.common.utility.SessionUtils).isSystemMng()}">
+					<!-- 姓 -->
+					<div class="form-group col-md-3">
+						<input type="text"class="form-control" th:field="*{tenantDaihyoNameSei}" data-target="tenantDaihyoNameSeiKana" placeholder="姓" maxlength="24">
+						<div th:if="*{#fields.hasErrors('tenantDaihyoNameSei')}" th:errors="*{tenantDaihyoNameSei}" class="error_mag_point">error</div>
+					</div>
+					<!-- 名 -->
+					<div class="form-group col-md-3">
+						<input type="text"class="form-control" th:field="*{tenantDaihyoNameMei}" data-target="tenantDaihyoNameMeiKana" placeholder="名" maxlength="24">
+						<div th:if="*{#fields.hasErrors('tenantDaihyoNameMei')}" th:errors="*{tenantDaihyoNameMei}" class="error_mag_point">error</div>
+					</div>
+				</th:block>
+				
+				<!--/* ユーザー権限：管理者以外はラベル表示 */-->
+				<th:block th:unless="${T(jp.loioz.common.utility.SessionUtils).isSystemMng()}">
+					<!-- 姓・名 -->
+					<div class="form-group col-md-12 mb-0">
+						<span class="mb-1 mr-2" th:text="*{tenantDaihyoNameSei}"></span>
+						<span class="mb-1" th:text="*{tenantDaihyoNameMei}"></span>
+					</div>
+				</th:block>
+				<!--/* ユーザー権限：管理者以外はラベル表示 end */-->
+			</div>
+			
+			<!-- 氏名（かな） -->
+			<div class="form-row">
+				<th:block th:if="${T(jp.loioz.common.utility.SessionUtils).isSystemMng()}">
+					<!-- せい -->
+					<div class="form-group col-md-3">
+						<input type="text" class="form-control" th:field="*{tenantDaihyoNameSeiKana}" placeholder="せい" maxlength="64">
+						<div th:if="*{#fields.hasErrors('tenantDaihyoNameSeiKana')}" th:errors="*{tenantDaihyoNameSeiKana}" class="error_mag_point">error</div>
+					</div>
+					<!-- めい -->
+					<div class="form-group col-md-3">
+						<input type="text" class="form-control" th:field="*{tenantDaihyoNameMeiKana}" placeholder="めい" maxlength="64">
+						<div th:if="*{#fields.hasErrors('tenantDaihyoNameMeiKana')}" th:errors="*{tenantDaihyoNameMeiKana}" class="error_mag_point">error</div>
+					</div>
+				</th:block>
+				
+				<!--/* ユーザー権限：管理者以外はラベル表示 */-->
+				<th:block th:unless="${T(jp.loioz.common.utility.SessionUtils).isSystemMng()}">
+					<!-- せい・めい -->
+					<div class="form-group col-md-12">
+						<span class="mr-2" th:text="*{tenantDaihyoNameSeiKana}"></span>
+						<span th:text="*{tenantDaihyoNameMeiKana}"></span>
+					</div>
+				</th:block>
+				<!--/* ユーザー権限：管理者以外はラベル表示 end */-->
+				
+			</div>
+
+			<!-- メールアドレス -->
+			<div class="form-row">
+				<div class="form-group col-md-6">
+					<label class="input_parts_label">メールアドレス</label>
+					<th:block th:if="${T(jp.loioz.common.utility.SessionUtils).isSystemMng()}">
+						<span class="mark_equired">必須</span>
+						<input type="text" th:field="*{tenantDaihyoMailAddress}" class="form-control">
+						<div th:if="*{#fields.hasErrors('tenantDaihyoMailAddress')}" th:errors="*{tenantDaihyoMailAddress}" class="error_mag_point">error</div>
+					</th:block>
+					
+					<!--/* ユーザー権限：管理者以外はラベル表示 */-->
+					<th:block th:unless="${T(jp.loioz.common.utility.SessionUtils).isSystemMng()}">
+						<div th:text="*{tenantDaihyoMailAddress}"></div>
+					</th:block>
+					<!--/* ユーザー権限：管理者以外はラベル表示 end */-->
+					
+				</div>
+			</div>
+		</div>
+		
+		<!--/* 担当者情報 保存ボタン */-->
+		<th:block th:if="${T(jp.loioz.common.utility.SessionUtils).isSystemMng()}">
+			<div class="input_block_btn_area">
+				<button type="button" class="btn btn-info save"><i class="fas fa-check"></i>保存する</button>
+			</div>
+		</th:block>
+		<!--/* 担当者情報 end */-->
+	</form>
+	
+</div>
+
+</body>
+</html>

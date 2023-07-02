@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+	xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+	layout:decorator="commonLayout">
+<head>
+<meta charset="UTF-8">
+<title layout:fragment="title-contents">
+	[[${T(jp.loioz.common.utility.LoiozUtils).getHtmlTitle("顧問契約", T(jp.loioz.common.utility.SessionUtils).getTenantName())}]]
+</title>
+<th:block th:with="version=${@environment.getProperty('app.version')}">
+	<link th:href="@{/css/person/person.css?{ver}(ver=${version})}" rel="stylesheet" type="text/css"/>
+</th:block>
+
+<style>
+
+/* 顧問契約モーダル内のポップオーバー */
+.popover {
+	max-width: 620px
+}
+.popover_advisor_contract_msg {
+	font-size: 1.2rem
+}
+.popover_advisor_contract_msg ul {
+	padding-left: 3rem;
+	margin-bottom: 0.5rem;
+}
+
+</style>
+
+<script th:inline="javascript">
+
+<!--/*
+二重送信防止対応用の値。
+このHTMLに差し込まれるfragment内のScriptの処理も、共通してこの変数を利用する。
+*/-->
+let ajaxRunning = false;
+
+<!--/* 顧客ヘッダーの再取得 */-->
+function renderCustomerAnkenSelectedView() {
+	const personId = /*[[${viewForm.personId}]]*/""
+	return new Promise((resolve, reject) => {
+		$.ajax({
+			url : /*[[@{/user/advisorContractPerson/getCustomerAnkenSelectedView}]]*/"",
+			type : "GET",
+			data : {"personId": personId},
+			dataType: 'html',
+		})
+		.done(function(data, status, jqXHR) {
+			if (isAjaxProcSuccess(jqXHR)) {
+				// メニュー表示部分のID
+				$('#customerAnkenSelectedWrap').html(data);
+				return resolve();
+			} else {
+				// 処理失敗
+				const errorMsg = getAjaxProcResutlMessage(jqXHR);
+				showErrorMessageForJs(errorMsg);
+				return reject();
+			}
+		})
+		.fail(function(jqXHR, status, errorThrown) {
+			showErrorMessageForJs(/*[[#{E00091}]]*/ "error");
+			
+			return reject();
+		});
+	});
+}
+
+</script>
+
+</head>
+<body>
+	<div layout:fragment="main-contents" th:remove="tag">
+		
+		<!--/* ①サイドメニューあり */-->
+		<div class="contents_sidebar_wrapper contentsSlidebarWrapper" th:data-click-open=${customerAnkenMenuOpenClickForSessionValue} th:data-resize-open=${customerAnkenMenuOpenResizeForSessionValue}>
+			
+			<!--/* ②名簿・案件 サイドメニュー */-->
+			<div th:replace="common/customerAnkenMenu::menuList(
+				sideMenuAnkenId=null,
+				sideMenuCustomerId=${viewForm.personId},
+				selectedTabClass='is_advisor_contract')">
+			</div>
+			
+			<!--/* ③メインコンテンツの外側 */-->
+			<div class="contents_wrapper">
+				<div class="container-fluid">
+					
+					<!--/* 画面メイン */-->
+					<main class="content">
+						
+						<!--/* ぱんくず */-->
+						<div th:replace="common/wrapHeader::wrapHeader(
+							returnListScreen=${T(jp.loioz.common.utility.SessionUtils).getSessionVaule(T(jp.loioz.common.constant.SessionAttrKeyEnum).RETURN_LIST_SCREEN.codeKey)},
+							sideMenuPersonId=${viewForm.personId},
+							selectedTabClass='is_advisor_contract',
+							returnPrevScreenName=${T(jp.loioz.common.utility.SessionUtils).getSessionVaule(T(jp.loioz.common.constant.SessionAttrKeyEnum).RETURN_PREV_SCREEN_NAME)},
+							returnPrevScreenUrl=${T(jp.loioz.common.utility.SessionUtils).getSessionVaule(T(jp.loioz.common.constant.SessionAttrKeyEnum).RETURN_PREV_SCREEN_URL)})">
+						</div>
+						
+						<!--/* メッセージエリア */-->
+						<div th:replace="common/messageArea::messageArea"></div>
+						
+						<!--/* 顧客情報・案件情報 */-->
+						<div id="customerAnkenSelectedWrap" style="display:contents;" th:insert="common/customerAnkenSelected::detailInfo(
+							wrapHeaderAnkenId=null,
+							wrapHeaderCustomerId=${viewForm.personId})">
+						</div>
+						
+						<!-- 顧問契約一覧ブロック -->
+						<div id="advisorContractListFragmentWrap" 
+							th:insert="user/advisorContractPerson/advisorContractListFragment::advisorContractListViewFragment(${viewForm})">
+							<!-- 顧問契約一覧の表示 -->
+						</div>
+							
+						<!-- 顧問契約モーダルブロック（登録、編集） -->
+						<div id="contractModal" class="modal fade" tabindex="-1" role="dialog" aria-hidden="true" data-backdrop="static">
+							<div class="modal-dialog modal-dialog-centered modal_advisor_contract" role="document">
+								<div id="advisorContractEditModalFragmentWrap" class="modal-content">
+									<!-- 顧問契約モーダルのコンテンツを表示 -->
+								</div>
+							</div>
+						</div>
+					</main>
+				</div>
+			</div>
+		</div>
+	</div>
+</body>
+</html>

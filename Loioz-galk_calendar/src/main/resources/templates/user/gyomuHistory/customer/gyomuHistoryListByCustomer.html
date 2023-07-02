@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+	xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+	layout:decorator="commonLayout">
+<head>
+<meta charset="UTF-8">
+<title layout:fragment="title-contents">
+	[[${T(jp.loioz.common.utility.LoiozUtils).getHtmlTitle("業務履歴", T(jp.loioz.common.utility.SessionUtils).getTenantName())}]]
+</title>
+<th:block th:with="version=${@environment.getProperty('app.version')}">
+	<link th:href="@{/css/gyomuHistory/gyomuHistory.css?{ver}(ver=${version})}" rel="stylesheet" type="text/css"/>
+	<link th:href="@{/css/mail/mail.css?{ver}(ver=${version})}" rel="stylesheet" type="text/css"/>
+</th:block>
+<style type="text/css" th:replace="user/gyomuHistory/customer/gyomuHistoryEditByCustomer::gyomuHisoryEditByCustomerStyle"></style>
+<style th:replace="user/dengon/dengonList::dengonStyle"></style>
+<th:block th:if="${T(jp.loioz.common.utility.SessionUtils).canUsePlanFunc(T(jp.loioz.common.constant.plan.PlanConstant$PlanFuncRestrict).PF0001)}">
+	<th:block th:with="version=${@environment.getProperty('app.version')}">
+		<script th:src="@{/js/dengon/dengon-edit.js?{ver}(ver=${version})}" type="text/javascript"></script>
+	</th:block>
+</th:block>
+<script type="text/javascript" th:replace="user/gyomuHistory/customer/gyomuHistoryEditByCustomer::gyomuHisoryEditByCustomerJs"></script>
+<script type="text/javascript" th:inline = "javascript">
+$(function(){
+	<!--/* 検索条件：Filter */-->
+	$(".filter_important").change(function(){
+		$("#searchForm").submit();
+	});
+
+	<!--/* モーダル閉じる処理 */-->
+	$('#selectGyomuHistoryModal').on('hide.bs.modal', function (e) {
+		// 初期化する
+		$('.targetGyomuHistoryModalBody').html('');
+	});
+
+	<!--/* 重要フラグの切替アクション */-->
+	$(document).on('click','#gyomuhistoryList .importantFlg',function() {
+		let gyomuHistorySeq = $(this).data('gyomuHistorySeq');
+		/* 反転して取得 */
+		let importantFlg = !$(this).hasClass('checked');
+		$(this).toggleClass('checked');
+		changeImportantFlg(gyomuHistorySeq, importantFlg);
+	});
+
+	<!--/* 重要フラグの更新処理 */-->
+	function changeImportantFlg(gyomuHistorySeq, importantFlg) {
+		$.ajax({
+			url : "/user/gyomuHistory/customer/changeImportantFlg",
+			type : "POST",
+			data : {"gyomuHistorySeq":gyomuHistorySeq,
+						"importantFlg":importantFlg},
+		}).done(function(result) {
+			if(result.succeeded){
+				<!--/* DB更新成功 */-->
+				showInfoMessageForJs(result.message);
+			} else {
+				<!--/* DB更新失敗 */-->
+				showErrorMessageForJs(result.message);
+			}
+		}).fail(function(jqXHR, textStatus, errorThrown) {
+			window.location.href = "/systemError";
+		}).always(function() {
+		});
+	}
+	<!-- 業務履歴出力 -->
+	$("#gyomuHistoryOutput").on('click', function(){
+		gyomuHistorySeqs = [];
+		const openGyomuHistoryModal = $('.openGyomuHistoryModal');
+		for(let i = 0 ; i < openGyomuHistoryModal.length;i++){
+			const ele = $(openGyomuHistoryModal[i]).data('gyomu_history_seq');
+			if (ele){
+				gyomuHistorySeqs.push(ele);
+			}
+
+		}
+		const ankenId   = $('.isCheckedName').data('ankenid');
+		const ankenName = $('.isCheckedName').text();
+		const transitionType = /*[[${T(jp.loioz.common.constant.CommonConstant.TransitionType).CUSTOMER}]]*/
+		const customerId = [[${gyomuHistoryListByCustomerSearchForm.customerId}]];
+		const customerName = $('.kokyaku_name').text();
+		formData = [];
+		formData.push({name: 'gyomuHistorySeqs', value: gyomuHistorySeqs});
+		formData.push({name: 'customerId', value: customerId});
+		formData.push({name: 'customerName', value: customerName});
+		formData.push({name: 'ankenId', value: ankenId});
+		formData.push({name: 'ankenName', value: ankenName});
+		formData.push({name: 'transitionType', value: transitionType});
+		const url = "/user/gyomuHistory/excel";
+		const button = $(this);
+		downloadFileAjax(url,button,formData);
+		return false;
+	});
+});
+</script>
+</head>
+<body>
+	<div layout:fragment="main-contents" th:remove="tag">
+
+		<div class="contents_sidebar_wrapper contentsSlidebarWrapper" th:data-click-open=${customerAnkenMenuOpenClickForSessionValue} th:data-resize-open=${customerAnkenMenuOpenResizeForSessionValue}>
+
+			<!--/* 顧客・案件メニュー */-->
+			<div th:replace="common/customerAnkenMenu::menuList(
+				sideMenuAnkenId=null,
+				sideMenuCustomerId=${gyomuHistoryListByCustomerSearchForm.customerId},
+				selectedTabClass='is_gyomu')">
+			</div>
+
+			<!--/* メインコンテンツ */-->
+			<div class="contents_wrapper">
+				<div class="container-fluid">
+					
+					<main class="content">
+						<!--/* ぱんくず */-->
+						<div th:replace="common/wrapHeader::wrapHeader(
+							returnListScreen=${T(jp.loioz.common.utility.SessionUtils).getSessionVaule(T(jp.loioz.common.constant.SessionAttrKeyEnum).RETURN_LIST_SCREEN.codeKey)},
+							sideMenuPersonId=${gyomuHistoryListByCustomerSearchForm.customerId},
+							selectedTabClass='is_gyomu',
+							returnPrevScreenName=${T(jp.loioz.common.utility.SessionUtils).getSessionVaule(T(jp.loioz.common.constant.SessionAttrKeyEnum).RETURN_PREV_SCREEN_NAME)},
+							returnPrevScreenUrl=${T(jp.loioz.common.utility.SessionUtils).getSessionVaule(T(jp.loioz.common.constant.SessionAttrKeyEnum).RETURN_PREV_SCREEN_URL)})">
+						</div>
+						
+						<!--/* メッセージエリア */-->
+						<div th:replace="common/messageArea::messageArea"></div>
+						
+						<!--/* 顧客情報・案件情報 */-->
+						<div th:replace="common/customerAnkenSelected::detailInfo(
+							wrapHeaderAnkenId=null,
+							wrapHeaderCustomerId=${gyomuHistoryListByCustomerSearchForm.customerId})">
+						</div>
+						
+						<div class="">
+							<form id="searchForm" th:action="@{/user/gyomuHistory/customer/search}" method="get">
+								<section>
+									<div class="section_header mb-2">
+										<div class="section_header__title">
+											<div class="input-group">
+												<div class="mr-4 pt-1">業務履歴</div>
+												<div class="input-group-prepend">
+													<div class="input-group-text bg-dark px-3 filter_label"><i class="fas fa-filter text-light fa-lg"></i></div>
+												</div>
+												<dl class="gyomuHistoryHeader__user">
+													<dt class="mxw500 char_ellipsis"></dt>
+													<dd>
+														<ul class="gyomuHistoryHeader__user_menu">
+															<li data-click-sync-for-descendants="a">
+																<a class="is_arrow" th:href="@{/user/gyomuHistory/customer/all}"
+																	th:classappend="${gyomuHistoryListByCustomerSearchForm.searchAnkenId == null}? 'isCheckedName' ">すべての業務履歴を表示</a>
+															</li>
+															<li th:each ="headerInfo : ${gyomuHistoryListByCustomerViewForm.Header}" data-click-sync-for-descendants="a" class="mxw300 char_ellipsis">
+																<a class="label_text" th:href="@{/user/gyomuHistory/customer/search(searchAnkenId=${headerInfo.ankenId.asLong()})}"
+																	th:classappend="${gyomuHistoryListByCustomerSearchForm.searchAnkenId == headerInfo.ankenId}? 'isCheckedName' "
+																	th:text="!${#lists.isEmpty(headerInfo.Name)} ? ${headerInfo.Name} : '(案件名未入力)'">案件</a>
+																<div class="sub_text" th:text="${headerInfo.ankenId}"
+																	th:data-ankenId="${gyomuHistoryListByCustomerSearchForm.searchAnkenId}"
+																	th:classappend="${gyomuHistoryListByCustomerSearchForm.searchAnkenId == headerInfo.ankenId}? 'isCheckedId' "></div>
+															</li>
+														</ul>
+													</dd>
+												</dl>
+												<div class="d-flex">
+													<div class="input-group">
+														<input type="text" class="form-control fcAddTextClear" placeholder="件名／本文..."
+															th:field="${gyomuHistoryListByCustomerSearchForm.searchText}" maxlength="30">
+														<div class="input-group-append">
+														 	<button class="btn btn-dark pt-1 pb-0 px-3" type="submit" onclick="submit();"><i class="fas fa-search fa-lg mr-0"></i></button>
+														</div>
+													</div>
+												</div>
+												<div>
+													<label class="checkbox_btn ml-2 mt-2 fw0 fs14">
+													<input type="checkbox" class="filter_important checkbox_input" th:field="${gyomuHistoryListByCustomerSearchForm.Important}">
+													<span class="checkbox_txt">重要のみ表示</span> </label>
+												</div>
+											</div>
+										</div>
+										
+										<!--/* アクションボタン郡 */-->
+										<div class="section_header__action">
+											<a href="javascript:void(0);" class="fs15 mr-4" id="gyomuHistoryOutput">
+												<i class="fas fa-download mr-2"></i>
+												<i class="fas fa-spinner mr-3 faa-spin animated hidden"></i>一覧出力
+											</a>
+											<a href="javascript:void(0);" class="fs15 openGyomuHistoryModal"
+												th:data-customer_id="${gyomuHistoryListByCustomerSearchForm.customerId}"
+												data-toggle="modal" data-target="#selectGyomuHistoryModal"><i class="fas fa-plus-square mr-2"></i>業務履歴追加
+											</a>
+										</div>
+									</div>
+									
+									<div class="section_body" id="gyomuhistoryList" th:fragment="gyomuhistoryList" th:object="${gyomuHistoryListByCustomerViewForm}">
+										<div class="section_body__contents p-0">
+											<table class="table table-hover align-top table_fixed gyomu_histroy_list">
+												<thead class="bg-info">
+													<tr>
+														<th class="col_no1">対応日時</th>
+														<th class="col_no2">件名</th>
+														<th class="col_no3">本文</th>
+														<th class="col_no4">関連</th>
+														<th class="col_no5">操作</th>
+														<th class="col_no6"><i class="fas fa-history mr-2"></i>登録元(案件の業務履歴)</th>
+													</tr>
+												</thead>
+												<tbody>
+													<!--/** 検索結果が0件の場合 */-->
+													<tr th:if="*{#lists.isEmpty(gyomuHistoryList)}">
+														<td colspan="6" class="no_data_table_list border-0">
+															<span th:text="#{I00021}">MSG_I00021</span>
+														</td>
+													</tr >
+													<!--/** 検索結果が1件以上の場合 */-->
+													<th:block th:each ="history : *{gyomuHistoryList}">
+														<!--/** 業務履歴１件データのフラグメント */-->
+														<tr th:replace="user/gyomuHistory/customer/gyomuHistoryListByCustomerFragment::gyomuHistoryListRowByCustomerFragment(${history} , ${gyomuHistoryListByCustomerSearchForm.customerId})"></tr>
+													</th:block>
+												</tbody>
+											</table>
+											<th:block th:if="*{page.hasPrevious() || page.hasNext()}">
+												<div th:replace="common/pager::pager(page=${gyomuHistoryListByCustomerViewForm.page}, url=@{/user/gyomuHistory/customer/page})"></div>
+											</th:block>
+										</div>
+									</div>
+								</section>
+							</form>
+						</div>
+					</main>
+				</div>
+			</div>
+		</div>
+
+		<!--/* モーダル  */-->
+		<div id="selectEditModal">
+			<!--/* 伝言関連モーダル */-->
+			<div	th:replace="::dengonCreateModalTemplate(target='dengon-create-modal-body')"></div>
+			<!--/* 伝言関連モーダル end */-->
+			<!--/* 業務履歴関連モーダル */-->
+			<div th:replace="::modalTemplate(id='selectGyomuHistoryModal',target='targetGyomuHistoryModalBody',modalSize='modal_gyoreki')"></div>
+			<!--/* 業務履歴関連モーダル end */-->
+		</div>
+	</div>
+
+	<!--/** モーダルテンプレート */-->
+	<div th:fragment="modalTemplate(id,target,modalSize)" th:id="${id}" class="modal fade" tabindex="-1" role="dialog" aria-hidden="true" data-backdrop="static">
+		<div class="modal-dialog modal-dialog-centered" role="document" th:classappend="${modalSize}">
+			<div class="modal-content">
+				<div th:class="${target}"></div>
+			</div>
+		</div>
+	</div>
+
+	<!--/* メッセージ作成モーダル */-->
+	<div th:fragment="dengonCreateModalTemplate(target)" id="dengonCreateModal" class="modal fade" tabindex="-1" role="dialog" aria-hidden="true" data-backdrop="static">
+		<div class="modal-dialog modal-dialog-centered modal_mail_edit" role="document">
+			<div class="modal-content">
+				<div th:class="${target}"></div>
+			</div>
+		</div>
+	</div>
+	<!--/* メッセージ作成モーダル end */-->
+
+</body>
+</html>

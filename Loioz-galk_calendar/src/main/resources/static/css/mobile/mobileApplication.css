@@ -1,0 +1,110 @@
+@charset "UTF-8";
+
+/********************************************************
+ * 共通メッセージ（INFO、WRAN、ERROR）
+********************************************************/
+.info_msg_page {
+	display:-webkit-box;
+	display:-ms-flexbox;
+	display:flex;
+	position: absolute;
+	z-index: 1;
+	width: 90vw;
+	left: 0;
+	right: 0;
+	top: 1.5rem;
+	margin: auto;
+	padding: 10px 15px 9px;
+	border-radius: .2rem;
+	font-size: .9rem;
+	line-height: 1.1;
+	/** ↓ PCスタイルと同様 */
+	background-color: rgb(230, 255, 246);
+	border: 1px solid rgb(47, 177, 130);
+	border-radius: 5px;
+	color: rgb(17, 116, 80);
+	text-align: left;
+	-webkit-box-shadow: 0 3px 10px rgba(0,0,0,0.2);
+			box-shadow: 0 3px 10px rgba(0,0,0,0.2);
+}
+.warn_msg_page {
+	display:-webkit-box;
+	display:-ms-flexbox;
+	display:flex;
+	position: absolute;
+	z-index: 1;
+	width: 90vw;
+	left: 0;
+	right: 0;
+	top: 1rem;
+	margin: auto;
+	padding: 1rem 1.2rem 1rem;
+	border-radius: .2rem;
+	font-size: .9rem;
+	line-height: 1.1;
+	/** ↓ PCスタイルと同様 */
+	background-color: rgba(255,243,205,0.96);
+	color: #856404;
+	text-align: left;
+	-webkit-box-shadow: 0 3px 10px rgba(0,0,0,0.2);
+			box-shadow: 0 3px 10px rgba(0,0,0,0.2);
+	border: 1px solid #ffeeba;
+}
+.error_msg_page {
+	display:-webkit-box;
+	display:-ms-flexbox;
+	display:flex;
+	position: absolute;
+	z-index: 1;
+	width: 90vw;
+	left: 0;
+	right: 0;
+	top: 1rem;
+	margin: auto;
+	padding: 1rem 1.2rem 1rem;
+	border-radius: .2rem;
+	font-size: .9rem;
+	line-height: 1.1;
+	/** ↓ PCスタイルと同様 */
+	background-color: rgba(252,221,221,0.96);
+	color: #9E0002;
+	text-align: left;
+	-webkit-box-shadow: 0 3px 10px rgba(0,0,0,0.2);
+			box-shadow: 0 3px 10px rgba(0,0,0,0.2);
+	border: 1px solid #FC5E61;
+}
+
+/* 共通メッセージ（INFO、WRAN、ERROR） */
+.info_msg_js {
+	align-items: flex-start;
+	background-color: rgba(231, 243, 255);
+	border-radius: 5px;
+	color: #004085;
+	display: flex;
+	font-size: 1.3rem;
+	margin: 10px 5px;
+	padding: 9px 10px;
+	line-height: 1;
+}
+.warn_msg_js {
+	align-items: flex-start;
+	background-color: rgba(255,243,205);
+	border-radius: 5px;
+	color: #856404;
+	display: flex;
+	font-size: 1.3rem;
+	margin: 10px 5px;
+	padding: 9px 10px;
+	line-height: 1;
+}
+.error_msg_js {
+	align-items: flex-start;
+	background-color: rgba(252,221,221);
+	border-radius: 5px;
+	color: var(--lz-red-600);
+	display: flex;
+	font-size: 1.3rem;
+	margin: 10px 5px;
+	padding: 9px 10px;
+	line-height: 1;
+}

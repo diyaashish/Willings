@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="15.72" height="14" viewBox="0 0 15.72 14">
+  <g id="icon_task" transform="translate(-1.5 -1.5)">
+    <circle id="task6" cx="1.596" cy="1.596" r="1.596" transform="translate(1.5 1.5)" fill="#203864"/>
+    <rect id="task5" width="9.579" height="2.702" transform="translate(7.64 1.746)" fill="#203864"/>
+    <circle id="task4" cx="1.596" cy="1.596" r="1.596" transform="translate(1.5 6.904)" fill="#203864"/>
+    <rect id="task3" width="9.579" height="2.702" transform="translate(7.64 7.149)" fill="#203864"/>
+    <circle id="task2" cx="1.596" cy="1.596" r="1.596" transform="translate(1.5 12.307)" fill="#203864"/>
+    <rect id="task1" width="9.579" height="2.702" transform="translate(7.64 12.553)" fill="#203864"/>
+  </g>
+</svg>

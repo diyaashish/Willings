@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+		xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+		layout:decorator="commonLayout">
+<head>
+<meta charset="utf-8" />
+</head>
+<body>
+
+	<!-- 報酬明細モーダル -->
+	<div th:fragment="hoshuMeisai">
+
+		<!--/* スクリプト */-->
+		<script th:inline="javascript">
+		$(function() {
+			// 共有の要素セットアップ処理
+			commonSetUpElement();
+		
+		})
+		</script>
+		<div class="modal-header">
+			<h2 class="modalheader_title">報酬明細</h2>
+			<div class="modalheader_action">
+				<!--/* 完了データの表示チェック（全ての報酬明細を確認ではない場合（案件や顧客の行クリックの場合）はチェックはhiddenにする） */-->
+				<div class="fc_sub mr-5" th:classappend="
+					${hoshuMeisaiEditForm.transitionCustomerId != null and hoshuMeisaiEditForm.selectedAnkenId != null}
+					or 
+					${hoshuMeisaiEditForm.transitionAnkenId != null and hoshuMeisaiEditForm.selectedCustomerId != null}
+					? 'hidden' : ''
+				">
+					<label class="check_area checkbox_btn">
+						<input type="checkbox" class="checkbox_input seisanCompDispFlg" name="seisanCompDispFlg" th:checked="${hoshuMeisaiEditForm.seisanCompDispFlg}">
+						<span class="checkbox_txt" th:text="${hoshuMeisaiEditForm.transitionCustomerId} ? '完了した案件のデータを表示': '完了した顧客のデータを表示'"></span>
+					</label>
+					<input type ="hidden" th:field="${hoshuMeisaiEditForm.selectedAnkenId}">
+					<input type ="hidden" th:field="${hoshuMeisaiEditForm.selectedCustomerId}">
+				</div>
+				<div class="mr-4">
+					<a href="javascript:void(0);" class="fs15" role="button" id="hoshuMeisaiDownloadBtn">
+						<i class="fas fa-download mr-2"></i>
+						<i class="fas fa-spinner mr-3 faa-spin animated hidden"></i>報酬明細を出力
+					</a>
+				</div>
+				<th:block th:if="${hoshuMeisaiEditForm.notCompletedAnkenCount > 0}">
+					<a href="javascript:void(0);" class="fs15" data-toggle="modal" data-target="#hoshuModal">
+						<i class="fas fa-plus-square mr-2"></i>報酬を追加
+					</a>
+				</th:block>
+				<th:block th:if="${hoshuMeisaiEditForm.notCompletedAnkenCount == 0}">
+					<th:block th:if="${hoshuMeisaiEditForm.transitionCustomerId}">
+						<span class="fc_sub cursor_default fs15" data-container="body" data-toggle="tooltip" data-trigger="hover" title="進行中の案件がありません。">
+							<i class="fas fa-plus-square mr-2"></i><span>報酬を追加</span>
+						</span>
+					</th:block>
+					<th:block th:if="${hoshuMeisaiEditForm.transitionAnkenId}">
+						<span class="fc_sub cursor_default fs15" data-container="body" data-toggle="tooltip" data-trigger="hover" title="進行中の顧客がいません。">
+							<i class="fas fa-plus-square mr-2"></i><span>報酬を追加</span>
+						</span>
+					</th:block>
+				</th:block>
+			</div>
+		</div>
+
+		<div class="modal-body" th:object="${hoshuMeisaiEditForm}">
+			<div class="header_fixed_table_wrapper table_hoshu_meisai" th:classappend="*{transitionCustomerId} ? 'table_anken' : 'table_customer' ">
+				<table id="hoshu-meisai" class="table-hover tdCursorPointer">
+					<thead>
+						<tr>
+							<th class="col_date">発生日</th>
+							<th class="col_komoku">項目</th>
+							<th class="col_kingaku text-center">報酬額</th>
+							<th class="col_kingaku text-center">消費税</th>
+							<th class="col_kingaku text-center">源泉徴収</th>
+							<th class="col_kingaku mxw150 text-center">合計</th>
+<!--/*/ 			<th:block th:if="*{transitionCustomerId}"> /*/-->
+							<th class="col_id">案件ID</th>
+							<th class="col_name">案件名</th>
+<!--/*/				</th:block> /*/-->
+<!--/*/				<th:block th:if="*{transitionAnkenId}"> /*/-->
+							<th class="col_id">名簿ID</th>
+							<th class="col_name">顧客名</th>
+<!--/*/				</th:block> /*/-->
+							<th class="col_tekiyo">摘要</th>
+							<th class="col_date">精算処理日</th>
+							<th class="col_seisan_id">精算ID</th>
+						</tr>
+					</thead>
+					<tbody>
+<!--/*/ 		<th:block th:if="*{hoshuMeisaiDtoList.size() ==0}"> /*/-->
+						<tr>
+							<td colspan="11" class="no_data_table_list">
+								<span>未請求の報酬はありません。</span>
+							</td>
+						</tr >
+<!--/*/ 		</th:block> /*/-->
+						<tr th:each="hoshuMeisaiList : *{hoshuMeisaiDtoList}" class="pointer" data-toggle='modal' data-target='#hoshuModal' 
+							th:classappend="${hoshuMeisaiList.Completed} ? 'row_complete_hoshu'"
+							th:data-seq="${hoshuMeisaiList.kaikeiKirokuSeq}">
+							<td class="col_date" th:text="${hoshuMeisaiList.hasseiDate}"></td>
+							<td class="col_komoku" th:text="${hoshuMeisaiList.hoshuKomoku?.val}"></td>
+							<td class="col_kingaku text-right" th:text="${hoshuMeisaiList.dispHoshuGaku}"></td>
+							<td class="col_kingaku text-right" th:text="${hoshuMeisaiList.dispTaxGaku}"></td>
+							<td class="col_kingaku text-right" th:classappend="${T( jp.loioz.common.utility.StringUtils).isMinusDicimalStr(hoshuMeisaiList.dispGensenGaku)}? 'minus_money_text':_" th:text="${hoshuMeisaiList.dispGensenGaku}"></td>
+							<td class="col_kingaku text-right" th:text="${hoshuMeisaiList.dispTotal}"></td>
+<!--/*/ 				<th:block th:if="*{transitionCustomerId}"> /*/-->
+								<td class="col_id" th:text="${hoshuMeisaiList.ankenId}"/>
+								<td class="col_name char_ellipsis" th:text="${#strings.isEmpty(hoshuMeisaiList.ankenName)} ? '(案件名未入力)' : ${hoshuMeisaiList.ankenName}"/>
+<!--/*/ 				</th:block> /*/-->
+<!--/*/					<th:block th:if="*{transitionAnkenId}"> /*/-->
+								<td class="col_id" th:text="${hoshuMeisaiList.customerId}"/>
+								<td class="col_name char_ellipsis" th:text="${hoshuMeisaiList.customerName}"></td>
+<!--/*/ 				</th:block> /*/-->
+							<td class="col_tekiyo char_ellipsis" th:text="${hoshuMeisaiList.tekiyou}"></td>
+							<td class="col_date" th:text="${hoshuMeisaiList.seisanDate}"></td>
+							<td class="col_seisan_id" th:text="${hoshuMeisaiList.seisanId}"/>
+						</tr>
+					</tbody>
+				</table>
+			</div>
+		</div>
+		<div class="modal-footer">
+			<button type="button" id="hoshuMeisaiCancelBtn"class="btn btn-light" data-dismiss="modal"><i class="fas fa-times"></i>閉じる</button>
+		</div>
+	</div>
+	<!-- 報酬明細モーダル end -->
+</body>
+</html>

@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+<meta charset="utf-8" />
+<script type="text/javascript" th:inline="javascript" th:fragment="accountingNumberJs">
+<!--/* 請求書/精算書番号のプレビュー文字列取得 */-->
+function toPreviewStr(accgNumberData) {
+	
+	const previewDate = Date.now();
+	const previewSeq = 1;
+	
+	let preview = "";
+	preview += accgNumberData.prefix ?? "";
+	preview += getYearStr(previewDate, accgNumberData.yearFmtCd) ?? "";
+	preview += getMonthStr(previewDate, accgNumberData.monthFmtCd) ?? "";
+	preview += getDaysStr(previewDate, accgNumberData.dayFmtCd) ?? "";
+	preview += accgNumberData.delimiter ?? "";
+	preview += accgNumberData.isZeroPadEnabled ? lpad(previewSeq, accgNumberData.zeroPadDigits, "0") : String(previewSeq);
+	
+	return preview;
+}
+
+<!--/* 年EnumCdから年表示文字列を取得 */-->
+function getYearStr(dateObj, YFmtCd) {
+	const date = new Date(dateObj);
+	if (YFmtCd == /*[[${T(jp.loioz.common.constant.CommonConstant$AccgNoYFmt).UNSPECIFIED.cd}]]*/'1') {
+		return "";
+	} else if (YFmtCd == /*[[${T(jp.loioz.common.constant.CommonConstant$AccgNoYFmt).YYYY.cd}]]*/'2') {
+		return String(date.getFullYear());
+	} else if (YFmtCd == /*[[${T(jp.loioz.common.constant.CommonConstant$AccgNoYFmt).YY.cd}]]*/'3') {
+		return String(date.getFullYear()).substring(2, 4);
+	} else if (YFmtCd == /*[[${T(jp.loioz.common.constant.CommonConstant$AccgNoYFmt).JP_ERA.cd}]]*/'4') {
+		const options = {era: 'narrow'};
+		const formattedStr = Intl.DateTimeFormat('ja-JP-u-ca-japanese', options).format(date);
+		return formattedStr.substr(0, formattedStr.indexOf('/'));;
+	} else {
+		return "";
+	}
+}
+<!--/* 月EnumCDから月表示文字列を取得 */-->
+function getMonthStr(dateObj, MFmtCd) {
+	const date = new Date(dateObj);
+	if (MFmtCd == /*[[${T(jp.loioz.common.constant.CommonConstant$AccgNoMFmt).UNSPECIFIED.cd}]]*/'1') {
+		return "";
+	} else if (MFmtCd == /*[[${T(jp.loioz.common.constant.CommonConstant$AccgNoMFmt).MM.cd}]]*/'2') {
+		return lpad(date.getMonth() + 1, 2, "0");
+	} else {
+		return "";
+	}
+}
+<!--/* 日EnumCDから日表示文字列を取得 */-->
+function getDaysStr(dateObj, DFmtCd) {
+	const date = new Date(dateObj);
+	if (DFmtCd == /*[[${T(jp.loioz.common.constant.CommonConstant$AccgNoDFmt).UNSPECIFIED.cd}]]*/'1') {
+		return "";
+	} else if (DFmtCd == /*[[${T(jp.loioz.common.constant.CommonConstant$AccgNoDFmt).DD.cd}]]*/'2') {
+		return lpad(date.getDate(), 2, "0");
+	} else {
+		return "";
+	}
+}
+</script>
+
+</head>
+</html>

@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+	layout:decorator="commonLayout">
+<head>
+<meta charset="utf-8" th:remove="tag" />
+<title layout:fragment="title-contents">
+	[[${T(jp.loioz.common.utility.LoiozUtils).getHtmlTitle("カレンダー", T(jp.loioz.common.utility.SessionUtils).getTenantName())}]]
+</title>
+<th:block th:with="version=${@environment.getProperty('app.version')}">
+	<link th:href="@{/css/fullcalendar-overwrite.css?{ver}(ver=${version})}" rel="stylesheet" type="text/css"/>
+	<link th:href="@{/css/calendar/calendar.css?{ver}(ver=${version})}" rel="stylesheet" type="text/css"/>
+
+	<script th:src="@{/js/fullcalendar-scheduler/index.global.6.1.7.min.js}" type="text/javascript"></script>
+	<script type="text/javascript" th:src="@{/js/calendar/calendar.js?{ver}(ver=${version})}"></script>
+	
+</th:block>
+<script type="text/javascript" th:inline="javascript">
+</script>
+</head>
+<body>
+	<div layout:fragment="main-contents" th:remove="tag">
+		<div th:replace="common/messageArea::messageArea"></div>
+		
+		<div class="calendar_container">
+			
+			<!--/* calendar options */-->
+			<div class="calendar_container__options">
+				<div id="calendarOptionsFragmentWrap"
+					th:replace="user/calendar/calendarFragment::calendarOptionsFragment(${viewForm.calendarOptionsViewForm})">
+					<!-- カレンダー選択肢 -->
+				</div>
+			</div>
+			
+			<!--/* calendar schedule */-->
+			<div class="calendar_container__schedule">
+				<div id="calendarScheduleFragmentWrap"
+					th:replace="user/calendar/calendarFragment::calendarScheduleFragment(${viewForm.calendarScheduleViewForm})">
+					<!-- カレンダーの表示 -->
+				</div>
+			</div>
+			<!--/* calendar schedule end */-->
+			
+			<!--/* calendar common action */-->
+			<div class="calendar_container__common_action">
+				<div class="common_action_menu"></div>
+			</div>
+			<!--/* calendar common action end */-->
+			
+		</div>
+		
+	</div>
+</body>
+</html>

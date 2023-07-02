@@ -1,0 +1,131 @@
+ <!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+<meta charset="utf-8" />
+</head>
+<body>
+
+<!--/* 本処理は、モーダルを扱うFragment領域で定義する */-->
+<script type="text/javascript" th:inline="javascript" th:fragment="accgInvoiceStatementAccountSelectModalFragmentJs">
+	benzo.global.fragment.accgInvoiceStatementAccountSelectModalFragmentObj = {
+		<!--/* 呼び出し元で定義が可能な処理 */-->
+		setUpObj : {
+			<!--/* 選択 */-->
+			selectAction: () => {
+				throw new Error('selectActionのセットアップ処理がされていません');
+			},
+		},
+		
+		<!--/* フラグメントのパラメータに関連する処理 */-->
+		paramObj : {
+			<!--/* フォームパラメータの取得処理 */-->
+			getFormParams: (modal) => {
+				let formParam = $(modal).find('#accgInvoiceStatementAccountSelectModalInputForm').serializeArray();
+				return formParam;
+			} ,
+		},
+		
+		<!--/* 
+			本フラグメント以外でも扱う処理
+			基本的には書き換えを行わない。
+		*/-->
+		commonFn : {
+		},
+	};
+</script>
+<!--/* 本処理は、モーダルを扱うFragment領域で定義する end */-->
+
+<!--/* 口座選択モーダル */-->
+<div id="accgInvoiceStatementAccountSelectModalFragment" th:fragment="accgInvoiceStatementAccountSelectModalFragment" th:object="${accgInvoiceStatementAccountSelectForm}">
+	<script type="text/javascript" th:inline="javascript">
+	$(function() {
+		let ajaxRunning = false;
+		
+		<!--/* 共有の要素セットアップ処理 */-->
+		commonSetUpElement("#accgInvoiceStatementAccountSelectModalFragment");
+		
+		const accgInvoiceStatementAccountSelectModalFragment = $('#accgInvoiceStatementAccountSelectModalFragment');
+		
+		<!--/* モーダル閉じる時設定 */-->
+		const $accgInvoiceStatementAccountSelectModalFragment = $("#accgInvoiceStatementAccountSelectModalFragment");
+		const $accgInvoiceStatementAccountSelectModal = $accgInvoiceStatementAccountSelectModalFragment.closest(".modal");
+		const $accgInvoiceStatementAccountSelectModalFragmentWrap = $accgInvoiceStatementAccountSelectModal.find(".accgInvoiceStatementAccountSelectModalFragmentWrap");
+		
+		<!--/* モーダルを閉じたときの処理 */-->
+		$accgInvoiceStatementAccountSelectModal.off("hidden.bs.modal.commonHiddenAction");
+		$accgInvoiceStatementAccountSelectModal.one("hidden.bs.modal.commonHiddenAction", function(){
+			$accgInvoiceStatementAccountSelectModalFragmentWrap.html("");
+		});
+		
+		<!--/* 口座選択時選択のボタン有効化 */-->
+		accgInvoiceStatementAccountSelectModalFragment.on("click", ".ginkoRadio", function(e) {
+			$(".select").prop('disabled', false);
+		});
+		
+		<!--/* 選択処理 */-->
+		accgInvoiceStatementAccountSelectModalFragment.on("click", ".select", function(e) {
+			benzo.global.fragment.accgInvoiceStatementAccountSelectModalFragmentObj.setUpObj.selectAction(e);
+		});
+		
+	});
+	</script>
+	
+	<div class="modal-header">
+		<h2 class="modalheader_title" id="accountSelectionTitle">口座の選択</h2>
+	</div>
+	
+	<form id="accgInvoiceStatementAccountSelectModalInputForm">
+		<div class="modal-body">
+			<table class="table table_standard table-sm table_fixed table-hover">
+				<thead>
+					<tr>
+						<th class="col_10">選択</th>
+						<th class="col_15">表示名</th>
+						<th class="col_35">金融機関</th>
+						<th class="col_20">口座番号</th>
+						<th class="col_20">口座名義</th>
+					</tr>
+				</thead>
+				<tbody>
+					<!--/*/ <th:block th:if="*{#lists.isEmpty(bankAccountList)}"> /*/-->
+						<tr>
+							<td colspan="5" class="no_data col_no_data" th:text="#{I00022}">MSG_I00022</td>
+						</tr>
+					<!--/*/ </th:block> /*/-->
+					
+					<tr class="" th:each="data : *{bankAccountList}" data-click-sync-for-descendants=".ginkoRadio">
+						<td>
+							<label class="radio_btn no_text">
+								<input type="radio" class="radio_input ginkoRadio" id="ginkoAccountSeq" name="ginkoAccountSeq" th:value="${data.ginkoAccountSeq}">
+								<span class="radio_txt"></span>
+							</label>
+						</td>
+						<td>
+							<div class="char_ellipsis" th:text="${data.labelName}"></div>
+						</td>
+						<td>
+							<span th:text="${data.ginkoName}"></span>
+							<span th:text="${data.shitenName}"></span>
+							<span th:if="${!#strings.isEmpty(data.shitenNo)}" th:text="|(${data.shitenNo})|"></span>
+						</td>
+						<td>
+							<span class="koza_type" th:if="${!#strings.isEmpty(data.kozaType)}" th:text="|(${data.dispKozaType()})|"></span>
+							<span th:text="${data.kozaNo}"></span>
+						</td>
+						<td>
+							<span th:text="${data.kozaName}"></span>
+						</td>
+					</tr>
+				</tbody>
+			</table>
+		</div>
+		
+		<div class="modal-footer">
+			<button type="button" class="btn btn-info select" disabled><i class="fas fa-check"></i><span>選択</span></button>
+			<button type="button" class="btn btn-light icon_btn_close" data-dismiss="modal" name="cancel"><i class="fas fa-times"></i>閉じる</button>
+		</div>
+	</form>
+</div>
+
+</body>
+</html>

@@ -1,0 +1,334 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+	xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+	layout:decorator="commonLayout">
+<head>
+	<meta charset="utf-8" />
+</head>
+<body>
+
+<!--/* 詳細データ */-->
+<div th:fragment="feeMasterListFragment(feeMasterListViewForm)" id="feeMasterListFragment" th:object="${feeMasterListViewForm}">
+	<script type="text/javascript" th:inline="javascript">
+	$(function() {
+		
+		<!--/* 定数 */-->
+		const feeMasterListFragmentWrap = $('#feeMasterListFragmentWrap');
+		const feeMasterListFragment = $('#feeMasterListFragment');
+		const feeMasterItemEditModal = $('#feeMasterItemEditModal');
+		const feeMasterItemEditModalFragmentWrap = $('#feeMasterItemEditModalFragmentWrap');
+		
+		<!--/* 共有の要素セットアップ処理 */-->
+		commonSetUpElement("#feeMasterFragment");
+		setUpSortTargetFragment("#feeMasterListSortTargetList");
+		
+		<!--/* モーダル表示処理 */-->
+		feeMasterListFragment.find('.openFeeItemEditModal').on('click', function() {
+			if (ajaxRunning) {
+				return false;
+			}
+			
+			const seq = $(this).data('seq');
+			let path;
+			let params = {};
+			if (seq) {
+				path = /*[[@{/user/feeMaster/edit}]]*/'';
+				params = {'feeItemSeq': seq};
+			} else {
+				path = /*[[@{/user/feeMaster/create}]]*/'';
+			}
+			
+			ajaxRunning = true;
+			$.ajax({
+				url : path,
+				type : "GET",
+				data: params,
+			}).done(function(data, status, jqXHR) {
+				<!--/* 成功 */-->
+				if (isAjaxProcSuccess(jqXHR)) {
+					feeMasterItemEditModalFragmentWrap.html(data);
+					feeMasterItemEditModal.modal('show');
+				} else {
+					// 処理失敗
+					const errorMsg = getAjaxProcResutlMessage(jqXHR);
+					showErrorMessageForJs(errorMsg);
+				}
+			}).fail(function(jqXHR, textStatus, errorThrown) {
+				<!--/* 失敗 */-->
+				const errorMsg = /*[[#{E00091}]]*/ "error";
+				showErrorMessageForJs(errorMsg);
+			}).always(function() {
+				ajaxRunning = false;
+			});
+		});
+		
+	});
+	</script>
+	
+	<!-- コンテンツブロック start -->
+	<div class="contents_block">
+		<div class="block_title">報酬項目</div>
+		<div class="block_detail d-flex">
+			<div>
+				<p>会計管理の報酬項目として利用できます。</p>
+			</div>
+			<div class="block_action">
+				<button type="button" class="btn btn-primary openFeeItemEditModal">
+				<i class="fas fa-plus"></i>新規登録</button>
+			</div>
+		</div>
+		<!--/* 一覧表示 */-->
+		<div class="list_area">
+			<table class="table table_standard table_sort table-sm table_fixed table-striped">
+				<thead>
+					<tr>
+						<th class="col_5"><i class="fas fa-grip-vertical fc_sub"></i></th>
+						<th class="col_50">項目名</th>
+						<th class="col_35">備考</th>
+						<th class="col_10">操作</th>
+					</tr>
+				</thead>
+				<tbody id="feeMasterListSortTargetList">
+<!--/*/ 		<th:block th:if="*{#lists.isEmpty(feeMasterList)}"> /*/-->
+								<tr>
+									<td colspan="4" class="no_data_table_list">
+										<span th:text="#{I00021}">MSG_I00021</span>
+									</td>
+								</tr>
+<!--/*/ 		</th:block> /*/-->
+					<tr th:each="listItem : *{feeMasterList}" th:data-target-id="${listItem.feeItemSeq}">
+						<td class="col_5">
+							<div class="move_point sortableObj">
+								<svg class="icon_drag_indicator hidden"></svg>
+								<div class="sortableIdx hidden" th:text="${listItem.dispOrder}"></div>
+							</div>
+						</td>
+						<td class="col_50" th:text="${listItem.feeItemName}"></td>
+						<td class="col_35" th:text="${listItem.remarks}"></td>
+						<td class="col_10">
+							<div class="d-inline-block" data-toggle="tooltip" title="報酬項目を編集" data-trigger="hover" data-container="#feeMasterListFragment">
+								<button class="btn btn-light btn-sm openFeeItemEditModal" th:data-seq="${listItem.feeItemSeq}">
+									<i class="fas fa-edit mr-1"></i>
+									<span>編集</span>
+								</button>
+							</div>
+						</td>
+					</tr>
+				</tbody>
+			</table>
+		</div>
+	</div>
+	
+	<!--/* モーダル */-->
+	<div id="feeMasterItemEditModal" class="modal fade" tabindex="-1" role="dialog" aria-hidden="true" data-backdrop="static">
+		<div class="modal-dialog modal-dialog-centered" role="document">
+			<div class="modal-content">
+				<div id="feeMasterItemEditModalFragmentWrap"></div>
+			</div>
+		</div>
+	</div>
+	
+</div>
+<!--/* 詳細エリア end */-->
+
+<!--/* 報酬項目編集モーダル */-->
+<div th:fragment="feeMasterItemEditModalFragment" id="feeMasterItemEditModalFragment" th:object="${feeMasterItemEditInputForm}">
+	<script type="text/javascript" th:inline="javascript">
+	$(function() {
+		
+		<!--/* 定数 */-->
+		const feeMasterItemEditModalFragmentWrap = $('#feeMasterItemEditModalFragmentWrap');
+		const feeMasterItemEditModalFragment = $('#feeMasterItemEditModalFragment');
+		const modal = feeMasterItemEditModalFragment.closest('.modal');
+		
+		<!--/* 共有の要素セットアップ処理 */-->
+		commonSetUpElement("#feeMasterFragment");
+		
+		<!--/* 登録処理 */-->
+		feeMasterItemEditModalFragment.find('#regist').on('click', function() {
+			if (ajaxRunning) {
+				return false;
+			}
+			
+			const formData = feeMasterItemEditModalFragment.find('#editForm').serializeArray();
+			ajaxRunning = true;
+			Promise.resolve(formData)
+				.then((params) => {
+					return new Promise((resolve, reject) => {
+						$.ajax({
+							url : /*[[@{/user/feeMaster/feeItemRegist}]]*/,
+							type : "POST",
+							data: params,
+						}).done(function(data, status, jqXHR) {
+							<!--/* 成功 */-->
+							if (isAjaxProcSuccess(jqXHR)) {
+								showInfoMessageForJs(getAjaxProcResutlMessage(jqXHR));
+								return resolve();
+							} else {
+								// 処理失敗
+								if (data) {
+									feeMasterItemEditModalFragmentWrap.html(data);
+								}
+								const errorMsg = getAjaxProcResutlMessage(jqXHR);
+								showErrorMessage(errorMsg, modal);
+								return reject();
+							}
+						}).fail(function(jqXHR, textStatus, errorThrown) {
+							<!--/* 失敗 */-->
+							const errorMsg = /*[[#{E00091}]]*/ "error";
+							showErrorMessage(errorMsg, modal);
+							return reject();
+						})
+					});
+				})
+				.then(() => modalHidePromise(modal))
+				.then(getFeeMasterListViewFragment)
+				.catch((errors) => console.log(errors))
+				.finally(() => ajaxRunning = false);
+		});
+		
+		<!--/* 更新処理 */-->
+		feeMasterItemEditModalFragment.find('#update').on('click', function() {
+			if (ajaxRunning) {
+				return false;
+			}
+			const formData = feeMasterItemEditModalFragment.find('#editForm').serializeArray();
+			ajaxRunning = true;
+			Promise.resolve(formData)
+				.then((params) => {
+					return new Promise((resolve, reject) => {
+						$.ajax({
+							url : /*[[@{/user/feeMaster/feeItemUpdate}]]*/,
+							type : "POST",
+							data: params,
+						}).done(function(data, status, jqXHR) {
+							<!--/* 成功 */-->
+							if (isAjaxProcSuccess(jqXHR)) {
+								showInfoMessageForJs(getAjaxProcResutlMessage(jqXHR));
+								return resolve();
+							} else {
+								// 処理失敗
+								if (data) {
+									feeMasterItemEditModalFragmentWrap.html(data);
+								}
+								const errorMsg = getAjaxProcResutlMessage(jqXHR);
+								showErrorMessage(errorMsg, modal);
+								return reject();
+							}
+						}).fail(function(jqXHR, textStatus, errorThrown) {
+							<!--/* 失敗 */-->
+							const errorMsg = /*[[#{E00091}]]*/ "error";
+							showErrorMessage(errorMsg, modal);
+							return reject();
+						})
+					});
+				})
+				.then(() => modalHidePromise(modal))
+				.then(getFeeMasterListViewFragment)
+				.catch((errors) => console.log(errors))
+				.finally(() => ajaxRunning = false);
+		});
+		
+		<!--/* 削除処理 */-->
+		feeMasterItemEditModalFragment.find('#delete').on('click', function() {
+			if (ajaxRunning) {
+				return false;
+			}
+			
+			if (!confirm('削除します。よろしいですか?')){
+				return false;
+			}
+			
+			const feeItemSeq = feeMasterItemEditModalFragment.find('input[name="feeItemSeq"]').val();
+			ajaxRunning = true;
+			Promise.resolve(feeItemSeq)
+				.then((params) => {
+					return new Promise((resolve, reject) => {
+						$.ajax({
+							url : /*[[@{/user/feeMaster/feeItemDelete}]]*/,
+							type : "POST",
+							data: {'feeItemSeq' : feeItemSeq},
+						}).done(function(data, status, jqXHR) {
+							<!--/* 成功 */-->
+							if (isAjaxProcSuccess(jqXHR)) {
+								showInfoMessageForJs(getAjaxProcResutlMessage(jqXHR));
+								return resolve();
+							} else {
+								// 処理失敗
+								const errorMsg = getAjaxProcResutlMessage(jqXHR);
+								showErrorMessage(errorMsg, modal);
+								return reject();
+							}
+						}).fail(function(jqXHR, textStatus, errorThrown) {
+							<!--/* 失敗 */-->
+							const errorMsg = /*[[#{E00091}]]*/ "error";
+							showErrorMessage(errorMsg, modal);
+							return reject();
+						})
+					});
+				})
+				.then(() => modalHidePromise(modal))
+				.then(getFeeMasterListViewFragment)
+				.catch((errors) => console.log(errors))
+				.finally(() => ajaxRunning = false);
+		});
+		
+		<!--/* モーダル閉じる処理をPromise化 */-->
+		function modalHidePromise(modal){
+			return new Promise((resolve) => {
+				$(modal).one('hidden.bs.modal', function() {
+					resolve();
+				});
+				$(modal).modal("hide");
+			});
+		};
+		
+	});
+	</script>
+	<div class="modal-header">
+		<h2 class="modalheader_title" th:text="*{isNew()} ? '報酬項目登録' : '報酬項目更新'"></h2>
+	</div>
+	<div class="modal-body">
+		<div th:replace="common/messageArea::jsMessageArea"></div>
+		<form id="editForm">
+			<!--/** Enter key対応のダミー */-->
+			<input type="text" name="dummy" style="display:none;">
+			<input type="hidden" th:field="*{feeItemSeq}">
+			<!--/** 入力エリア */-->
+			<div class="modal_input_area">
+				<!--/** 名称 */-->
+				<div class="form-row">
+					<div class="form-group col-md-12">
+						<label class="input_parts_label">項目名</label>
+						<span class="mark_equired">必須</span>
+						<input type="text" class="form-control" th:field="*{feeItemName}" placeholder="全角半角30文字" maxlength="30">
+						<div th:if="*{#fields.hasErrors('feeItemName')}" th:errors="*{feeItemName}" class="error_mag_point">error</div>
+					</div>
+				</div>
+				<!--/** 名称 end */-->
+				
+				<!--/** 備考 */-->
+				<div class="form-row">
+					<div class="form-group col-md-12">
+						<label class="input_parts_label">備考</label>
+						<textarea class="form-control" th:field="*{remarks}" maxlength="100"></textarea>
+						<div th:if="*{#fields.hasErrors('remarks')}" th:errors="*{remarks}" class="error_mag_point">error</div>
+					</div>
+				</div>
+				<!--/* 備考 end */-->
+			</div>
+		</form>
+	</div>
+	<div class="modal-footer">
+		<button th:if="*{!isNew()}" type="button" class="btn btn-light mr-auto" id="delete"><i class="far fa-trash-alt"></i>削除</button>
+		<div>
+			<button th:if="*{isNew()}" type="button" class="btn btn-info" id="regist"><i class="fas fa-check"></i>登録</button>
+			<button th:if="*{!isNew()}" type="button" class="btn btn-info" id="update"><i class="fas fa-check"></i>保存</button>
+			<button type="button" class="btn btn-light" data-dismiss="modal"><i class="fas fa-times"></i>閉じる</button>
+		</div>
+	</div>
+</div>
+<!--/* 報酬項目編集モーダル */-->
+	
+</body>
+</html>

@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout">
+<head>
+<meta name="viewport" content="width=device-width,initial-scale=1.0,minimum-scale=1.0">
+<meta charset="utf-8">
+<meta content="IE=edge" http-equiv="X-UA-Compatible">
+<meta name="robots" content="noindex,nofollow">
+<title>
+	[[${T(jp.loioz.common.utility.LoiozUtils).getHtmlTitle("ご案内メール送信", T(jp.loioz.common.utility.SessionUtils).getTenantName())}]]
+</title>
+<th:block th:with="version=${@environment.getProperty('app.version')}">
+	<link th:href="@{/css/bootstrap.min.css?{ver}(ver=${version})}" rel="stylesheet" type="text/css"/><!--/* ファイル内のmapファイルの参照処理の削除を反映させるためにversionを追加 */-->
+	<link th:href="@{/css/bootstrap-overwrite.css?{ver}(ver=${version})}" rel="stylesheet" type="text/css"/>
+	<link th:href="@{/css/base.css?{ver}(ver=${version})}" rel="stylesheet" type="text/css"/>
+	<link th:href="@{/css/content.css?{ver}(ver=${version})}" rel="stylesheet" type="text/css"/>
+	<link th:href="@{/css/noLogin.css?{ver}(ver=${version})}" rel="stylesheet" type="text/css"/>
+	<script type="text/javascript" th:src="@{/webjars/jquery/3.3.1/jquery.min.js}"></script>
+	<script type="text/javascript" th:src="@{/js/jquery-ui-1.12.1.min.js}"></script>
+	<script type="text/javascript" th:src="@{/js/common.js?{ver}(ver=${version})}"></script>
+	<script type="text/javascript" th:src="@{/js/bootstrap.min.js?{ver}(ver=${version})}"></script><!--/* ファイル内のmapファイルの参照処理の削除を反映させるためにversionを追加 */-->
+	<script type="text/javascript" th:src="@{/js/fontawesome-5.15.2-all.min.js}"></script>
+	<script type="text/javascript" th:src="@{/js/Sortable.min.js}"></script>
+	<script type="text/javascript" th:src="@{/js/addclear.js}"></script>
+	<script type="text/javascript" th:src="@{/js/navigation.js?{ver}(ver=${version})}"></script>
+</th:block>
+</head>
+<body>
+
+<th:block th:if="${T(jp.loioz.common.constant.CommonConstant.SystemFlg).FLG_OFF.equalsByCode(@environment.getProperty('app.devMode'))}">
+<!-- Google Tag Manager (noscript) -->
+<noscript><iframe src="https://www.googletagmanager.com/ns.html?id=GTM-TVP5T44"
+height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
+<!-- End Google Tag Manager (noscript) -->
+</th:block>
+
+	<!--/* ヘッダー */-->
+	<header>
+		<div class="tenant_no_login_header">
+			<div class="header_inner">
+				<a href="https://www.loioz.co.jp/">
+					<img class="loioz_logo" th:src="@{/img/logo_1.png}" width="144" height="40">
+				</a>
+			</div>
+		</div>
+	</header>
+	<!--/* ヘッダー end */-->
+	<div id="main-contents">
+		<main class="loioz_hp_contetns">
+			<!--/* タイトル帯 */-->
+			<div class="main_title">
+				<div class="title_inner">
+					<h1>無料トライアル申込みフォーム</h1>
+				</div>
+			</div>
+			<!--/* タイトル帯 end */-->
+
+			<!--/* section */-->
+			<div class="section">
+
+				<!--/* section_inner */-->
+				<div class="section_inner">
+
+					<h2 class="section_title">
+						お申込みありがとうございます。<br>
+						ご案内に関するメールをお送りしました。
+					</h2>
+
+					<!--/* section_content */-->
+					<div class="section_content send_mail">
+						<!--/* row */-->
+						<div class="row justify-content-md-center">
+							<!--/* col-md-7 ① */-->
+							<div class="col-md-7">
+								<div class="send_message">
+									<span class="font-weight-bold" th:text="${mailAddress}"></span> 宛にメールをお送りしました。
+									<span class="d-block">ご案内メールに記載されたURLのリンクより、利用開始の準備を完了してください。</span>
+									<span class="d-block">ご不明な点がございましたら、お気軽にお問い合わせください。</span>
+								</div>
+								<div class="contact_block">
+									<p>お問合わせ先：株式会社ロイオズ　サポートセンター</p>
+									<p class="tel">03-6892-8674</p>
+									<p class="tel_time">電話受付時間：平日10:00～18:00</p>
+									<div class="mail_form">
+										<a href="https://www.loioz.co.jp/contact/" class="contact_link" target="_blank" rel="noopener">
+											<i class="far fa-envelope mr-3"></i>お問い合わせフォーム
+										</a>
+									</div>
+								</div>
+							</div>
+							<!--/* col-md-7 ① end */-->
+						</div>
+					</div>
+					<!--/* section_content end */-->
+
+				</div>
+				<!--/* section_inner end */-->
+
+			</div>
+		</main>
+	</div>
+
+<th:block th:if="${T(jp.loioz.common.constant.CommonConstant.SystemFlg).FLG_OFF.equalsByCode(@environment.getProperty('app.devMode'))}">
+
+	<!-- Google Tag Manager -->
+	<script>(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
+	new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
+	j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
+	'https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);
+	})(window,document,'script','dataLayer','GTM-TVP5T44');</script>
+	<!-- End Google Tag Manager -->
+
+</th:block>
+
+</body>
+</html>

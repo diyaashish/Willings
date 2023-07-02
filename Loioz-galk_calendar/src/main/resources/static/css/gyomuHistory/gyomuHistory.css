@@ -1,0 +1,159 @@
+@charset "UTF-8";
+
+
+/********************************************************
+ * 業務履歴一覧
+*********************************************************/
+
+#gyomuhistoryList .col_date {
+	min-width: 110px;
+	width: 110px;
+	max-width: 115px;
+}
+#gyomuhistoryList .col_subject {
+	min-width: 120px;
+	max-width: 150px;
+	width : 120px;
+}
+#gyomuhistoryList .col_main {
+	min-width: 300px;
+	max-width: 450px;
+	width : 400px;
+}
+#gyomuhistoryList .col_relation {
+	min-width: 135px;
+	max-width: 135px;
+	width: 135px;
+}
+#gyomuhistoryList .col_name {
+	min-width: 100px;
+	width: 135px;
+}
+#gyomuhistoryList .col_btn {
+	min-width: 40px;
+	max-width: 50px;
+	width: 50px;
+}
+.modal-atesaki {
+	max-width: 270px;
+}
+.select-atesaki {
+	width: 200px;
+}
+.col_btn {
+	width: 60px;
+	text-align: center;
+}
+.filter_label {
+	height: 30px;
+}
+.gyomuHistoryHeader__user {
+	min-width:170px;
+	margin: 0px 10px 0 0;
+	position: relative;
+}
+.gyomuHistoryHeader__user>dt {
+	background-color: var(--white);
+	border: 1px solid #ced4da;
+	border-left: none;
+	border-radius: 0 2px 2px 0;
+	cursor: pointer;
+	height: 29px;
+	font-size: 1.3rem;
+	font-weight: normal;
+	text-align: center;
+	white-space: nowrap;
+	padding: 5px 30px 6px 11px;
+	position: relative;
+	z-index: 2;
+}
+.gyomuHistoryHeader__user>dt::after {
+	content: "";
+	border-top: 9px solid var(--loioz-blue);
+	border-right: 5px solid transparent;
+	border-bottom: 5px solid transparent;
+	border-left: 5px solid transparent;
+	display: block;
+	position: absolute;
+	right: 8px;
+	top: 9px;
+}
+.gyomuHistoryHeader__user>dt.selected {
+	border-radius: 0 4px 4px 0;
+	height: 30px;
+}
+.gyomuHistoryHeader__user>dt.selected::after {
+	width:12px;
+	height:12px;
+	background-image:url(/img/icon_btn_close.svg);
+	background-position:center;
+	background-repeat:no-repeat;
+	background-size:12px;
+	border: none;
+	top: 8px;
+}
+.gyomuHistoryHeader__user>dd {
+	position: absolute;
+	top: 32px;
+	border: 1px solid #ced4da;
+	min-width: 250px;
+	z-index: 2;
+	padding: 2px 5px 6px;
+	box-shadow: 0 0px 4px rgba(0, 0, 0, 0.14);
+	background-color: var(--white);
+	display: none;
+}
+
+.gyomuHistoryHeader__user_menu {
+	list-style: none;
+	padding: 0;
+	margin: 0;
+	font-size: 1.3rem;
+}
+.gyomuHistoryHeader__user_menu li {
+	margin: 0;
+	padding: 8px 5px 4px;
+	border-top: 1px solid #ccc;
+}
+.gyomuHistoryHeader__user_menu li:hover {
+	background-color: var(--bg-color-row-hover);
+}
+.gyomuHistoryHeader__user_menu li:first-child {
+	padding: 6px 0;
+	border-top: none;
+}
+.gyomuHistoryHeader__user_menu li a {
+	text-decoration: none;
+	background-position: left center;
+	background-repeat: no-repeat;
+	padding: 2px 0 2px 5px;
+}
+/* 絞り込みリスト */
+.gyomuHistoryHeader__user_menu li a.label_text {
+	text-decoration: none;
+	color: var(--text-color-sub);
+	font-weight: 600;
+}
+.gyomuHistoryHeader__user_menu li .sub_text {
+	padding: 0 0 0 5px;
+}
+
+/* 業務履歴の内容検索ボタン */
+.text_search_btn.no_icon {
+	background-image: none;
+}
+
+/* 業務履歴の登録（関連フラグ） */
+.checkbox_btn.relation_flg {
+	padding: 2px 0 0 23px;
+	margin-right: 20px;;
+}
+
+.btn_action_group {
+	-ms-flex-align: center;
+	align-items: center;
+	display: -ms-flexbox;
+	display: flex;
+	flex-wrap: wrap;
+	gap: 5px;
+}

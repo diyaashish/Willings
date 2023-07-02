@@ -1,0 +1,79 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<svg
+   xmlns:dc="http://purl.org/dc/elements/1.1/"
+   xmlns:cc="http://creativecommons.org/ns#"
+   xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+   xmlns:svg="http://www.w3.org/2000/svg"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
+   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+   width="17"
+   height="16"
+   viewBox="0 0 17 16"
+   version="1.1"
+   id="svg13477"
+   sodipodi:docname="icon_msg_btn_fplus.svg"
+   inkscape:version="0.92.4 (5da689c313, 2019-01-14)">
+  <metadata
+     id="metadata13483">
+    <rdf:RDF>
+      <cc:Work
+         rdf:about="">
+        <dc:format>image/svg+xml</dc:format>
+        <dc:type
+           rdf:resource="http://purl.org/dc/dcmitype/StillImage" />
+      </cc:Work>
+    </rdf:RDF>
+  </metadata>
+  <defs
+     id="defs13481" />
+  <sodipodi:namedview
+     pagecolor="#ffffff"
+     bordercolor="#666666"
+     borderopacity="1"
+     objecttolerance="10"
+     gridtolerance="10"
+     guidetolerance="10"
+     inkscape:pageopacity="0"
+     inkscape:pageshadow="2"
+     inkscape:window-width="1920"
+     inkscape:window-height="1017"
+     id="namedview13479"
+     showgrid="false"
+     inkscape:zoom="50.011719"
+     inkscape:cx="8.5"
+     inkscape:cy="8"
+     inkscape:window-x="-8"
+     inkscape:window-y="-8"
+     inkscape:window-maximized="1"
+     inkscape:current-layer="icon_msg_btn_fplus" />
+  <g
+     id="icon_msg_btn_fplus"
+     transform="translate(-902 -539)">
+    <path
+       id="パス_249"
+       data-name="パス 249"
+       d="M15.179,4.265H9V2.382A1.757,1.757,0,0,0,7.111.5H2.389A1.757,1.757,0,0,0,.5,2.382V13.676A2.956,2.956,0,0,0,3.333,16.5H14.681A2.943,2.943,0,0,0,17.5,13.676V6.815A2.3,2.3,0,0,0,15.179,4.265Z"
+       transform="translate(901.5 538.5)"
+       fill="#119590"
+       style="fill:#17acc7;fill-opacity:1" />
+    <g
+       id="plus"
+       transform="translate(873 277.5)">
+      <rect
+         id="長方形_271"
+         data-name="長方形 271"
+         width="6"
+         height="2"
+         transform="translate(35 270.5)"
+         fill="#fff" />
+      <rect
+         id="長方形_272"
+         data-name="長方形 272"
+         width="6"
+         height="2"
+         transform="translate(39 268.5) rotate(90)"
+         fill="#fff" />
+    </g>
+  </g>
+</svg>

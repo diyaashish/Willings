@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE configuration>
+<project name="doma-gen" default="gen" basedir=".">
+
+  <property name="javaDestDir" value="src/main/java/"/><!-- エンティティが作成されるルート -->
+  <property name="dialectName" value="mysql"/><!-- 利用するデータベース -->
+  <property name="driverClassName" value="com.mysql.cj.jdbc.Driver"/><!-- jdbcドライバ -->
+  <property name="url" value="jdbc:mysql://localhost:3306/service_mgt"/><!-- 接続先 -->
+  <property name="user" value="dbmaster"/><!-- ユーザー -->
+  <property name="password" value="DBMaster@123"/><!-- パスワード -->
+  <property name="entityPackageName" value="jp.loioz.entity.work"/><!-- エンティティが作成されるパッケージ -->
+
+  <path id="classpath">
+  	<pathelement path="target/classes"/>
+    <fileset dir="lib"/>
+  </path>
+
+  <taskdef name="gen" classname="org.seasar.doma.extension.gen.task.Gen" classpathref="classpath" loaderref="loader"/>
+  <typedef name="entityConfig" classname="org.seasar.doma.extension.gen.task.EntityConfig" loaderref="loader"/>
+
+  <target name="gen">
+    <gen
+      dialectName="${dialectName}"
+      driverClassName="${driverClassName}"
+      url="${url}"
+      user="${user}"
+      password="${password}">
+      <entityConfig
+        destdir="${javaDestDir}"
+        packageName="${entityPackageName}"
+        entitySuffix="Entity"
+      	superclassName="jp.loioz.entity.common.DefaultEntity"
+        listenerSuperclassName="jp.loioz.entity.common.DefaultEntityListener"
+      />
+    </gen>
+  </target>
+
+</project>

@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+	xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+	layout:decorator="commonLayout">
+<head>
+<meta charset="utf-8" />
+<title layout:fragment="title-contents">
+	[[${T(jp.loioz.common.utility.LoiozUtils).getHtmlTitle("メールテンプレート編集", T(jp.loioz.common.utility.SessionUtils).getTenantName())}]]
+</title>
+<th:block th:with="version=${@environment.getProperty('app.version')}">
+</th:block>
+<script type="text/javascript" th:inline = "javascript">
+<!--/* 編集画面の場合のみ、関数を有効化 */-->
+/*[# th:if="${viewForm.mailTemplateSeq}"]*/
+function renderEditTemplateFragment() {
+	return new Promise((resolve, reject) => {
+		const url = /*[[@{/user/mailTemplateEdit/{mailTemplateSeq}/getEditInputFragment(mailTemplateSeq=${viewForm.mailTemplateSeq})}]]*/'';
+		$.ajax({
+			url : url,
+			type : "GET",
+		})
+		.done(function(data, status, jqXHR) {
+			if (isAjaxProcSuccess(jqXHR)) {
+				// HTML表示
+				$('#templateEditFragmentWrap').html(data);
+				return resolve();
+			} else {
+				// 処理失敗
+				const errorMsg = getAjaxProcResutlMessage(jqXHR);
+				showErrorMessageForJs(errorMsg);
+				return reject();
+			}
+		})
+		.fail(function(jqXHR, status, errorThrown) {
+			showErrorMessageForJs(/*[[#{E00091}]]*/ "error");
+			return reject();
+		});
+	});
+}
+/*[/]*/
+</script>
+
+</head>
+<body>
+	<div layout:fragment="main-contents" th:remove="tag">
+		
+		<div class="contents_sidebar_wrapper_setting">
+			
+		<!-- サイドメニュー -->
+		<div th:replace="common/systemSettingMenu::selectMenu(${T(jp.loioz.common.constant.CommonConstant$SystemSettingMenu).MAIL_TEMPLATE.getCd()})"></div>
+			
+			<!--/* メインコンテンツの外側 */-->
+			<div class="contents_wrapper">
+				<div class="container-fluid contents_limited_width_setting">
+					<main class="content">
+						
+						<!--/* メッセージエリア */-->
+						<div th:replace="common/messageArea::messageArea"></div>
+						
+						<!-- パンくず-->
+						<div class="breadcrumb_area">
+							<ul>
+								<li><span>メール設定</span></li>
+								<li><i class="fas fa-angle-right"></i></li>
+								<li><a href="/user/mailTemplate/">メールテンプレート</a></li>
+								<li><i class="fas fa-angle-right"></i></li>
+								<li th:if="${viewForm.isNew()}">メールテンプレートの作成</li>
+								<li th:if="${!viewForm.isNew()}">メールテンプレートの編集</li>
+							</ul>
+						</div>
+						
+						<!--/* 詳細 */-->
+						<div id="templateEditFragmentWrap" th:insert="user/mailTemplateEdit/mailTemplateEditFragment::templateEditFragment(${templateInputForm})"></div>
+						
+					</main>
+				</div>
+			</div>
+		</div>
+	</div>
+</body>
+</html>

@@ -1,0 +1,4217 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+	xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout">
+<head>
+<meta charset="utf-8" />
+<title layout:fragment="title-contents">
+	[[${T(jp.loioz.common.utility.LoiozUtils).getHtmlTitle((planSettingForm.sessionDto.isFreePlanStatus() ? "ご利用プランの設定" : "ご利用プラン／請求情報") + "（" + T(jp.loioz.common.constant.plan.PlanConstant$PlanStatus).of(planSettingForm.nowPlanStatus.getCd()).getVal() + "）", planSettingForm.sessionDto.getTenantName())}]]
+</title>
+<th:block th:with="version=${@environment.getProperty('app.version')}">
+	<link href="./css/jquery-ui-1.12.1.min.css" th:href="@{/css/jquery-ui-1.12.1.min.css}" rel="stylesheet" type="text/css" />
+	<link href="./css/bootstrap.min.css" th:href="@{/css/bootstrap.min.css?{ver}(ver=${version})}" rel="stylesheet" type="text/css" /><!--/* ファイル内のmapファイルの参照処理の削除を反映させるためにversionを追加 */-->
+	<link href="./css/bootstrap-grid.min.css" th:href="@{/css/bootstrap-grid.min.css?{ver}(ver=${version})}" rel="stylesheet" type="text/css" /><!--/* ファイル内のmapファイルの参照処理の削除を反映させるためにversionを追加 */-->
+	<link href="./css/bootstrap-reboot.min.css" th:href="@{/css/bootstrap-reboot.min.css?{ver}(ver=${version})}" rel="stylesheet" type="text/css" /><!--/* ファイル内のmapファイルの参照処理の削除を反映させるためにversionを追加 */-->
+	<link href="./css/bootstrap-overwrite.css" th:href="@{/css/bootstrap-overwrite.css?{ver}(ver=${version})}" rel="stylesheet" type="text/css" />
+	<link href="./css/font-awesome-animation.min.css" th:href="@{/css/font-awesome-animation.min.css}" rel="stylesheet" type="text/css" />
+	<link href="./css/base.css" th:href="@{/css/base.css?{ver}(ver=${version})}" rel="stylesheet" type="text/css" />
+	<link href="./css/content.css" th:href="@{/css/content.css?{ver}(ver=${version})}" rel="stylesheet" type="text/css" />
+	<link href="./css/information.css" th:href="@{/css/information.css?{ver}(ver=${version})}" rel="stylesheet" type="text/css" />
+	<link href="./css/application.css" th:href="@{/css/application.css?{ver}(ver=${version})}" rel="stylesheet" type="text/css"/>
+	<link href="./css/table.css" th:href="@{/css/table.css?{ver}(ver=${version})}" rel="stylesheet" type="text/css"/>
+	<link href="./css/modal.css" th:href="@{/css/modal.css?{ver}(ver=${version})}" rel="stylesheet" type="text/css"/>
+
+	<script type="text/javascript" th:src="@{/webjars/jquery/3.3.1/jquery.min.js}"></script>
+	<script type="text/javascript" th:src="@{/js/jquery-ui-1.12.1.min.js}"></script>
+	<script type="text/javascript" th:src="@{/js/datepicker-ja.js}"></script>
+	<script type="text/javascript" th:src="@{/js/common.js?{ver}(ver=${version})}"></script>
+	<script type="text/javascript" th:src="@{/js/popper.min.js?{ver}(ver=${version})}"></script><!--/* ファイル内のmapファイルの参照処理の削除を反映させるためにversionを追加 */-->
+	<script type="text/javascript" th:src="@{/js/popper-utils.min.js?{ver}(ver=${version})}"></script><!--/* ファイル内のmapファイルの参照処理の削除を反映させるためにversionを追加 */-->
+	<script type="text/javascript" th:src="@{/js/bootstrap.min.js?{ver}(ver=${version})}"></script><!--/* ファイル内のmapファイルの参照処理の削除を反映させるためにversionを追加 */-->
+	<script type="text/javascript" th:src="@{/js/bootstrap.bundle.min.js?{ver}(ver=${version})}"></script><!--/* ファイル内のmapファイルの参照処理の削除を反映させるためにversionを追加 */-->
+	<script type="text/javascript" th:src="@{/js/fontawesome-5.15.2-all.min.js}"></script>
+	<script type="text/javascript" th:src="@{/js/navigation.js?{ver}(ver=${version})}"></script>
+	<script type="text/javascript" th:src="@{/js/Sortable.min.js}"></script>
+	<script type="text/javascript" th:src="@{/js/jquery.autoKana.js}"></script>
+	<script type="text/javascript" th:src="@{/js/addclear.js}"></script>
+</th:block>
+<th:block th:if="${T(jp.loioz.common.constant.CommonConstant.SystemFlg).FLG_OFF.equalsByCode(@environment.getProperty('app.devMode'))}">
+
+	<!-- Google Tag Manager -->
+	<script>(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
+	new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
+	j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
+	'https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);
+	})(window,document,'script','dataLayer','GTM-5SX264G');</script>
+	<!-- End Google Tag Manager -->
+
+</th:block>
+<style>
+/* ヘッダーメニュー */
+.header_nav_list.not_active,
+.header_nav_list li.not_active {
+	opacity: 0.65;
+}
+.header_nav_list.not_active a,
+.header_nav_list li.not_active a {
+	pointer-events: none; /* ホバーイベントを打ち消し、色の変更とカーソルデザインをなくす */
+	color: #969696;
+}
+/* サイドメニュー */
+.nav_sidebar_office__menu_items.not_active > li,
+.nav_sidebar_office__menu_items.not_active > li a {
+	pointer-events: none; /* ホバーイベントを打ち消し、色の変更とカーソルデザインをなくす */
+}
+.nav_sidebar_office__menu_items.not_active > li:not(.selected) a {
+	color: #969696;
+}
+
+/* Bootstrapのモーダルのスタイル上書き */
+/* messageAreaのメッセージより上にくるようにする */
+.modal-backdrop {
+	z-index: 10000;
+}
+.modal {
+	z-index: 10050;
+}
+
+/* プラン画面のコンテンツ */
+.paymant_card img {
+	width: 65px;
+	height: 40px;
+	margin-right: 15px;
+}
+.plan_edit_area {
+	padding: 25px 20px;
+	text-align: left;
+	color: var(--text-color-sub);
+}
+.plan_edit_area .plan_panel_title {
+	color: var(--text-color-sub);
+	margin-bottom: 3rem;
+}
+.plan_edit_area .form-row.under_line {
+	border-bottom: 1px solid var(--bor-color-main);
+}
+.plan_apply_label,
+.input_parts label.plan_apply_label {
+	font-weight: bold;
+	color: var(--text-color-sub);
+	line-height: 1;
+	text-align: left;
+	flex: 0 0 100%;
+	max-width: 100%;
+	vertical-align: bottom;
+	font-size: 1.5rem;
+}
+.mt-5-rem {
+	margin-top: 5rem;
+}
+.fc_sub {
+	color: var(--text-color-sub);
+}
+.title_line {
+	border-left: 4px solid var(--loioz-blue);
+	padding-left: 12px;
+}
+.radio_input:checked:disabled ~ .radio_txt::after {
+	background-color: var(--lz-gray-500);
+}
+
+.free_trial_period.content_area,
+.regist_plan.content_area,
+.now_plan.content_area,
+.update_plan.content_area,
+.update_card.content_area {
+	padding: 10px 0px;
+}
+.regist_plan .upper_command_container,
+.now_plan .upper_command_container,
+.update_plan .upper_command_container {
+	position: absolute;
+	top: 30px;
+	right: 0;
+}
+/* ライセンス、ストレージ入力エリア／金額サマリエリア 共通 */
+.free_trial_period .license_storage_charge,
+.free_trial_period .charge_summary_val_plan_regist_area .charge_summary_val,
+.regist_plan .license_storage_charge,
+.regist_plan .charge_summary_val_plan_regist_area .charge_summary_val,
+.now_plan .license_storage_charge,
+.now_plan .charge_summary_val_plan_regist_area .charge_summary_val,
+.update_plan .license_storage_charge,
+.update_plan .charge_summary_val_plan_regist_area .charge_summary_val {
+	display: inline-block;
+	width: 9rem;
+	text-align: right;
+	font-size: 1.6rem;
+}
+/* ライセンス、ストレージ入力エリア */
+.free_trial_period .license_storage_input_label,
+.regist_plan .license_storage_input_label,
+.now_plan .license_storage_input_label,
+.update_plan .license_storage_input_label {
+	display: inline-block;
+	width: 40px;
+	text-align: right;
+	font-size: 1.7rem;
+}
+.free_trial_period .license_storage_input_wrap,
+.regist_plan .license_storage_input_wrap,
+.update_plan .license_storage_input_wrap {
+	display: inline-block;
+	width: 70px;
+	text-align: right;
+}
+.free_trial_period .license_storage_input_wrap .form-control,
+.regist_plan .license_storage_input_wrap .form-control,
+.update_plan .license_storage_input_wrap .form-control {
+	/* form-controlのデフォルトのスタイルを上書き */
+	font-size: 1.6rem;
+	height: 35px;
+	padding: 5px 10px;
+}
+.free_trial_period .license_storage_unit,
+.regist_plan .license_storage_unit,
+.now_plan .license_storage_unit,
+.update_plan .license_storage_unit {
+	display: inline-block;
+	width: 60px;
+	text-align: left;
+}
+.free_trial_period .charge_title,
+.regist_plan .charge_title,
+.now_plan .charge_title,
+.update_plan .charge_title {
+	display: inline-block;
+	width: 8rem;
+	text-align: left;
+}
+/* 金額サマリエリア */
+.free_trial_period .charge_summary_val_plan_regist_area .charge_summary_title,
+.free_trial_period .charge_summary_val_plan_regist_area .plan_sum_charge_title,
+.regist_plan .charge_summary_val_plan_regist_area .charge_summary_title,
+.regist_plan .charge_summary_val_plan_regist_area .plan_sum_charge_title,
+.now_plan .charge_summary_val_plan_regist_area .charge_summary_title,
+.now_plan .charge_summary_val_plan_regist_area .plan_sum_charge_title,
+.update_plan .charge_summary_val_plan_regist_area .charge_summary_title,
+.update_plan .charge_summary_val_plan_regist_area .plan_sum_charge_title {
+	display: inline-block;
+	width: 8rem;
+	text-align: left;
+}
+.free_trial_period .charge_summary_val_plan_regist_area .charge_summary_val_plan_regist .plan_sum_charge_value,
+.regist_plan .charge_summary_val_plan_regist_area .charge_summary_val_plan_regist .plan_sum_charge_value,
+.now_plan .charge_summary_val_plan_regist_area .charge_summary_val_plan_regist .plan_sum_charge_value,
+.update_plan .charge_summary_val_plan_regist_area .charge_summary_val_plan_regist .plan_sum_charge_value {
+	display: inline-block;
+	width: 9rem;
+}
+.free_trial_period .charge_summary_val_plan_regist_area .plan_sum_charge_value,
+.regist_plan .charge_summary_val_plan_regist_area .plan_sum_charge_value,
+.now_plan .charge_summary_val_plan_regist_area .plan_sum_charge_value,
+.update_plan .charge_summary_val_plan_regist_area .plan_sum_charge_value {
+	font-size: 1.6rem;
+	font-weight: 700;
+}
+.free_trial_period .charge_summary_val_plan_regist_area .charge_summary_val_row .plan_sum_charge_title,
+.regist_plan .charge_summary_val_plan_regist_area .charge_summary_val_row .plan_sum_charge_title,
+.now_plan .charge_summary_val_plan_regist_area .charge_summary_val_row .plan_sum_charge_title,
+.update_plan .charge_summary_val_plan_regist_area .charge_summary_val_row .plan_sum_charge_title {
+	font-size: 1.6rem;
+	font-weight: 700;
+}
+/* カード情報入力エリア */
+.regist_plan .card_input_area,
+.update_plan .card_input_area {
+	background-color: #f2f2f2;
+	padding: 15px 20px;
+}
+/* 有償プラン申し込みチェック */
+.paid_plan_check_container input.check {
+	position: absolute;
+	left: -9999px;
+}
+.paid_plan_check_container label.label {
+	display: block;
+	position: relative;
+	cursor: pointer;
+	padding: 6px 12px;
+	margin: 0;
+	text-align: center;
+	border: 1px solid #969696;
+	color: #969696;
+	border-radius: 3px;
+	font-size: 1.2rem;
+	line-height: 1.2rem;
+	background-color: var(--white);
+	font-weight: normal;
+	height: auto;
+}
+.paid_plan_check_container label.label:hover {
+	text-decoration: none;
+	border: 1px solid var(--loioz-primary);
+	color: #fff;
+	background-color: var(--loioz-primary);
+}
+.paid_plan_check_container input.check:checked + label.label {
+	text-decoration: none;
+	border: 1px solid var(--loioz-primary);
+	color: var(--white);
+	background-color: var(--loioz-primary);
+}
+/* 有償プラン申し込みチェックで表示されるエリア */
+.free_trial_period .paid_plan_check_area {
+	background-color: #f2f2f2;
+}
+/* 画面下部のボタンエリア */
+.free_trial_period .lower_command_container,
+.regist_plan .lower_command_container,
+.now_plan .lower_command_container,
+.update_plan .lower_command_container,
+.update_card .lower_command_container {
+	position: relative;
+}
+.now_plan .lower_command_container .back_command_container,
+.update_plan .lower_command_container .back_command_container,
+.update_card .lower_command_container .back_command_container {
+	position: absolute;
+	bottom: 0;
+	left: 0;
+}
+.detail_info {
+	line-height: 1.4;
+	color: var(--text-color-sub);
+	font-size: 1.6rem;
+}
+
+/* 保存内容確認モーダル */
+/* 解約確認モーダル */
+.plan_save_confirm_area .confirm_explain,
+.plan_cancel_confirm_area .confirm_explain {
+	margin: 1.8rem 0 2.6rem;
+}
+/* 解約内容部分 */
+.cancel_content_confirm {
+	margin-top: 3.2rem;
+}
+/* 保存内容部分 */
+.save_content_confirm {
+	margin-bottom: 3rem;
+}
+.save_content_confirm .save_content_title {
+	display: inline-block;
+	width: 20rem;
+	margin-right: auto;
+}
+.save_content_confirm .save_content_val {
+	display: inline-block;
+	width: 18rem;
+}
+.save_content_confirm .save_content_charge {
+	display: inline-block;
+	width: 12rem;
+	text-align: right;
+}
+.save_content_confirm .form-row.under_line {
+	border-bottom: 1px solid var(--bor-color-main);
+}
+.save_content_confirm .card_input_item {
+	display: inline-block;
+}
+.save_content_confirm .card_input_item.pr {
+	padding-right: 3rem;
+}
+.save_content_confirm .card_input_item .item_title {
+	margin-bottom: 0.4rem;
+}
+.save_content_confirm .sum_charge_row .sum_charge_title {
+	display: inline-block;
+	width: 18rem;
+	font-size: 1.4rem;
+}
+.save_content_confirm .sum_charge_row .sum_charge {
+	font-size: 1.5rem;
+}
+/* 機能変更の内容部分 */
+.function_change_confirm {
+	padding: 2.2rem;
+	border-radius: 0.6rem;
+	border: 1px solid var(--bor-color-main);
+}
+.function_change_confirm .exclamation_icon {
+	color: var(--loioz-blue);
+}
+.function_change_confirm .change_explain {
+	margin-bottom: 1.4rem;
+}
+.plan_func_compare_table {
+	font-size: 0;/* inline-blockの隙間を埋める */
+}
+.plan_func_compare_table .col_title {
+	font-weight: 700;
+}
+.plan_func_compare_table .row_col {
+	display: inline-block;
+	font-size: 1.3rem;
+	border: 1px solid #969696;
+	padding: 0.4rem 0.8rem;
+}
+.plan_func_compare_table .row_col.pd_0 {
+	padding: 0;
+}
+.plan_func_compare_table .row_col.bd_no {
+	border: none;
+}
+.plan_func_compare_table .row_col.bd_b_no {
+	border-bottom: none;
+}
+.plan_func_compare_table .row_col.bd_r_no {
+	border-right: none;
+}
+.plan_func_compare_table .row_title {
+	width: 14rem;
+	font-weight: 700;
+	background-color: var(--lz-gray-200);
+} 
+.plan_func_compare_table .row_val {
+	width: 16rem;
+	text-align: center;
+}
+.plan_func_compare_table_wrap .sub_explain {
+	font-size: 1.2rem;
+}
+.function_change_warning {
+	margin-top: 2rem;
+	color: var(--loioz-danger);
+	font-size: 1.3rem;
+}
+/* 確認チェック */
+.confirm_check_wrap {
+	margin-bottom: 3rem;
+	margin-top: 3.6rem;
+}
+.confirm_check_wrap .checkbox_btn .checkbox_input:checked ~ .checkbox_txt {
+	color: var(--text-color-sub);
+}
+/* アクションボタン */
+.action_button_wrap {
+	display: flex;
+	justify-content: center;
+	position: relative;
+	margin-bottom: 3rem;
+}
+.action_button_wrap .plan_confirm_close_button {
+	position: absolute;
+	right: 0;
+}
+.section_table_wrapper {
+	border-radius: 5px;
+	border: 1px solid var(--bor-color-main);
+	box-shadow: 3px 3px 3px 0 var(--shadow-color-main);
+}
+
+</style>
+<script type="text/javascript" src="https://credit.j-payment.co.jp/gateway/js/CPToken.js"></script>
+<script th:inline="javascript">
+/*<![CDATA[*/
+
+<!--/* Ajax通信の処理結果が成功かどうかを判定する */-->
+function isAjaxProcSuccess(jqXHR) {
+	<!--/* Controllerで設定しているvalueと同じ値 */-->
+	const RESPONSE_HEADER_VALUE_OF_AJAX_PROC_RESULT_SUCCESS = /*[[${T(jp.loioz.common.constant.CommonConstant).HEADER_VALUE_OF_AJAX_PROC_RESULT_SUCCESS}]]*/
+	
+	const ajaxResult = getAjaxProcResutl(jqXHR)
+	if (ajaxResult === RESPONSE_HEADER_VALUE_OF_AJAX_PROC_RESULT_SUCCESS) {
+		return true
+	}
+	return false
+}
+<!--/* Ajax通信の処理結果情報をレスポンスヘッダーから取得する */-->
+<!--/* （レスポンスヘッダーの値に独自の値を設定していない限りは、この関数は利用せず、function isAjaxProcSuccess(jqXHR)の関数を利用すること） */-->
+function getAjaxProcResutl(jqXHR) {
+	<!--/* Controllerで設定しているkey名と同じ値 */-->
+	const RESPONSE_HEADER_NAME_OF_AJAX_PROC_RESULT = /*[[${T(jp.loioz.common.constant.CommonConstant).HEADER_NAME_OF_AJAX_PROC_RESULT}]]*/
+	return jqXHR.getResponseHeader(RESPONSE_HEADER_NAME_OF_AJAX_PROC_RESULT)
+}
+<!--/* Ajax通信の処理結果メッセージをレスポンスヘッダーから取得する */-->
+function getAjaxProcResutlMessage(jqXHR) {
+	<!--/* Controllerで設定しているkey名と同じ値 */-->
+	const RESPONSE_HEADER_NAME_OF_AJAX_PROC_RESULT_MESSAGE = /*[[${T(jp.loioz.common.constant.CommonConstant).HEADER_NAME_OF_AJAX_PROC_RESULT_MESSAGE}]]*/
+	const base64Message = jqXHR.getResponseHeader(RESPONSE_HEADER_NAME_OF_AJAX_PROC_RESULT_MESSAGE)
+	// Base64文字をデコードして返却
+	return b64DecodeUnicode(base64Message)
+}
+
+<!--/*
+ * 保存内容確認モーダルを閉じる
+*/-->
+function closeSaveConfirmModal() {
+	<!--/* モーダルを閉じる */-->
+	let modal = $('#saveConfirmModal.modal');
+	modal.modal("hide");
+	<!--/* モーダルのHTMLコンテンツも空にする */-->
+	$('.planSaveConfirmModalContentsWrap').html('');
+}
+
+<!--/*
+ * 解約確認モーダルを閉じる
+*/-->
+function closeCancelConfirmModal() {
+	<!--/* モーダルを閉じる */-->
+	let modal = $('#cancelConfirmModal.modal');
+	modal.modal("hide");
+	<!--/* モーダルのHTMLコンテンツも空にする */-->
+	$('.planCancelConfirmModalContentsWrap').html('');
+}
+
+<!--/* Ajax通信時のCSRFトークン設定 */-->
+$(function() {
+	let token = /*[[(${_csrf.token})]]*/ "";
+	let headerName = /*[[(${_csrf.headerName})]]*/ "";
+	$(document).ajaxSend(function(e, xhr, options) {
+		xhr.setRequestHeader(headerName, token);
+	});
+});
+
+<!--/* ajax処理時のセッションタイムアウトによるリダイレクト処理設定 */-->
+$(function() {
+
+	<!--/* 認証エラー画面へのリダイレクト処理 */-->
+	function ajaxPlanSettingAuthError(xhr) {
+		
+		let authErrorUrl = /*[[${T(jp.loioz.common.constant.UrlConstant).PLANSETTING_GATEWAY_URL}]]*/ ''
+			+ '/'
+			+ /*[[${T(jp.loioz.common.constant.plan.PlanConstant).PLAN_SETTING_AUTH_ERROR_PATH}]]*/ '';
+		
+		let uriUntilContextPathHeaderKey = /*[[${T(jp.loioz.common.constant.CommonConstant).HEADER_NAME_OF_URI_UNTIL_CONTEXT_PATH}]]*/ ''
+		let uriUntilContextPath = xhr.getResponseHeader(uriUntilContextPathHeaderKey)
+		
+		authErrorUrl = uriUntilContextPath + "/" + authErrorUrl
+		
+		window.location.href = authErrorUrl
+	}
+	
+	<!--/* ログイン画面へのリダイレクト処理 */-->
+	function ajaxSessionTimeout(xhr) {
+
+		let loginUrl = /*[[${T(jp.loioz.common.constant.UrlConstant).LOGIN_URL}]]*/ ''
+
+		let uriUntilContextPathHeaderKey = /*[[${T(jp.loioz.common.constant.CommonConstant).HEADER_NAME_OF_URI_UNTIL_CONTEXT_PATH}]]*/ ''
+		let uriUntilContextPath = xhr.getResponseHeader(uriUntilContextPathHeaderKey)
+
+		loginUrl = uriUntilContextPath + "/" + loginUrl + "/"
+
+		window.location.href = loginUrl
+	}
+
+	<!--/*
+		プラン画面では、二重ログインのチェックは他の画面の共通処理とは異なるため、
+		ajaxの二重ログイン画面へのリダイレクト処理は利用しない。
+	*/-->
+
+	<!--/* ajax処理への設定オプション作成 */-->
+	let ajaxSetupOptions = {}
+
+	<!--/* 認証エラー */-->
+	let planSettingAuthErrorCode = /*[[${T(jp.loioz.common.constant.plan.PlanConstant).CUSTOM_PLAN_SETTING_AUTH_ERROR_CODE}]]*/ ''
+	ajaxSetupOptions[planSettingAuthErrorCode] = ajaxPlanSettingAuthError
+	
+	<!--/* セッションタイムアウト */-->
+	let sessionTimeoutErrorCode = /*[[${T(jp.loioz.common.constant.CommonConstant).CUSTOM_SESSION_TIMEOUT_ERROR_CODE}]]*/ ''
+	ajaxSetupOptions[sessionTimeoutErrorCode] = ajaxSessionTimeout
+
+	<!--/* ajax処理への設定適用 */-->
+	$.ajaxSetup({
+		statusCode: ajaxSetupOptions
+	});
+});
+
+<!--/* 共通ヘッダーのスクリプト */-->
+$(function() {
+	
+	<!--/* ログアウトアイコンのクリック */-->
+	$('#logoutButton').on('click', function() {
+		$('#logoutForm').submit();
+	});
+
+	<!--/* プラン設定リンクのクリック */-->
+	let openPlanSettingClickRunning = false;
+	$('.openPlanSetting').on('click', function() {
+		<!--/* すでにプラン画面にいるので何もしない */-->
+		return false;
+	});
+
+	<!--/* お知らせリンクのクリック */-->
+	$('.openInformationTab').on('click', function() {
+		<!--/* 設定メニューが開いている場合は閉じる */-->
+		if($('.headerOfficeMenu').hasClass("activeMenu")) {
+			$('.headerOfficeMenu_btn_close').click()
+		}
+
+		<!--/* お知らせ画面を開く */-->
+		let url = 'https://www.loioz.co.jp/news/';
+		let childWindow = window.open(url, 'rel=noopener');
+
+	});
+});
+
+<!--/* カレンダー画面に戻る（画面左上のロイオズアイコン） */-->
+function topPage() {
+	$("#calendarNaviLink")[0].click();
+}
+
+$(function() {
+
+	let ajaxRunning = false;
+
+	const aid = /*[[${@environment.getProperty('payment.aid')}]]*/""
+	
+	let planChargeUrl = "/user/planSetting/planCharge"
+
+	<!--/* カード番号の、マスキングをかけない桁数 */-->
+	let DIGITS_NO_MASKING_CARD_NUM = 4; 
+	
+	// メッセージ
+	let EXPLAIN_LICENSE_INFO = lineBreakCode2BrTag(/*[[#{I00120}]]*/"")
+	let EXPLAIN_STORAGE_INFO = lineBreakCode2BrTag(/*[[#{I00121}]]*/"")
+	let EXPLAIN_SECURITY_CODE_INFO = lineBreakCode2BrTag(/*[[#{I00122}]]*/"")
+	const REQUIRE_PAY_CARD_INFO_MSG = "お支払いカード情報を入力してください。"
+	const REQUIRE_CARD_NAME_MSG = "カード名義人は入力必須です。"
+	const REQUIRE_CARD_NAME_FIRST_AND_LAST_MSG = "カード名義人には名と性をスペースで区切って入力してください。"
+	const CARD_NAME_MUST_HALF_WIDTH_ALPHANUMERIC_MSG = "カード名義人は半角英字（大文字）で入力してください。"
+	const REQUIRE_CARD_SECURITY_CODE = "セキュリティコードは入力必須です。"
+	const FREE_PLAN_UPDATE_FAIL_MSG = "ご利用ライセンスの変更に失敗しました。しばらく時間をおいてから再度お試しください。"
+	const PLAN_REGIST_FAIL_MSG = "プランの登録に失敗しました。しばらく時間をおいてから再度お試しください。"
+	const PLAN_UPDATE_FAIL_MSG = "プランの変更に失敗しました。しばらく時間をおいてから再度お試しください。"
+	const PLAN_CANCEL_FAIL_MSG = "解約処理に失敗しました。しばらく時間をおいてから再度お試しください。"
+	const CARD_CHANGE_CONFIRM_MSG = "この内容でカード情報を変更します。よろしいですか。"
+	const CARD_CHANGE_FAIL_MSG = "カード情報の変更に失敗しました。しばらく時間をおいてから再度お試しください。"
+	const GET_PLAN_CHARGE_INFO_FAIL_MSG = "プランの料金情報の取得に失敗しました。しばらく時間をおいてから再度お試しください。"
+
+	<!--/*
+	ライセンス、ストレージ、セキュリティコードの説明のツールチップを初期化
+	title属性のメッセージ文字列の改行コード変換等の都合でHTMLではなく、JSでtooptipを記載
+	*/-->
+	let toolTipOptionForExplainLicense = {
+		placement: 'right',
+		trigger: 'hover',
+		html: true,
+		title: '<p class="text-left pt-2 pl-2"><font size=2>' + EXPLAIN_LICENSE_INFO + '</font></p>'
+	}
+	$('.toolTipForExplainLicense').tooltip(toolTipOptionForExplainLicense)
+
+	let toolTipOptionForExplainStorage = {
+		placement: 'right',
+		trigger: 'hover',
+		html: true,
+		title: '<p class="text-left pt-2 pl-2"><font size=2>' + EXPLAIN_STORAGE_INFO + '</font></p>'
+	}
+	$('.toolTipForExplainStorage').tooltip(toolTipOptionForExplainStorage)
+
+	let toolTipOptionForExplainSecurityCode = {
+		placement: 'right',
+		trigger: 'hover',
+		html: true,
+		title: '<p class="text-left pt-2 pl-2"><font size=2>' + EXPLAIN_SECURITY_CODE_INFO + '</font></p>'
+	}
+	$('.toolTipForExplainSecurityCode').tooltip(toolTipOptionForExplainSecurityCode)
+
+	<!--/* 初期表示時に現在のプラン内容の料金情報を取得、表示する */-->
+	const nowPlanTypeId = /*[[${planSettingForm.nowPlanType.getId()}]]*/1
+	const nowLicenseCount = /*[[${planSettingForm.nowLicenseCount}]]*/1
+	const nowStorageCapacity = /*[[${planSettingForm.nowStorageCapacity}]]*/15
+	getPlanChargeAndShowScreenForIndex(nowPlanTypeId, nowLicenseCount, nowStorageCapacity)
+
+	<!--/* 無料期間中のプラン登録フォームを表示する */-->
+	$('#showPlanRegistDuringFreeTrialFormButton').on('click', function() {
+		<!--/* 無料プラン更新フォームを非表示 */-->
+		$('#freePlanUpdateForm').addClass('hidden')
+		<!--/* プラン登録フォームを表示 */-->
+		$('#planRegistDuringFreeTrialForm').removeClass('hidden')
+	})
+	
+	<!--/* 無料プラン更新フォームを表示する */-->
+	$('#showFreePlanUpdateFormButton').on('click', function() {
+		<!--/* プラン登録フォームを非表示 */-->
+		$('#planRegistDuringFreeTrialForm').addClass('hidden')
+		<!--/* 無料プラン更新フォームを表示 */-->
+		$('#freePlanUpdateForm').removeClass('hidden')
+	})
+	
+	<!--/* 有料プラン申し込みチェックの切り替え */-->
+	$("#freeStatusPeriodForm input:checkbox.paidPlanCheck").change(function() {
+		
+		<!--/* 無料トライアル中のライセンス更新の場合にのみ表示する要素 */-->
+		let $elemsShowOnlyFreePlanUpdateCase = $("#freeStatusPeriodForm .showOnlyFreePlanUpdateCase")
+		<!--/* 有償プラン申し込みの場合にのみ表示する要素 */-->
+		let $elemsShowOnlyplanRegistDuringFreeTrialCase = $("#freeStatusPeriodForm .showOnlyplanRegistDuringFreeTrialCase")
+		
+		<!--/* チェックボタンのアイコン */-->
+		let $checkOffElem = $(this).closest('.paidPlanCheckContainer').find('.checkOff');
+		let $checkOnElem = $(this).closest('.paidPlanCheckContainer').find('.checkOn');
+		
+		let checked = $(this).prop('checked')
+		if (checked) {
+			<!--/* 有償プラン申し込みのチェックがされた場合 */-->
+			<!--/* 有償プラン申し込み用の要素を表示 */-->
+			$elemsShowOnlyFreePlanUpdateCase.addClass('hidden')
+			$elemsShowOnlyplanRegistDuringFreeTrialCase.removeClass('hidden')
+			<!--/* チェックONのアイコンを表示 */-->
+			$checkOffElem.addClass('hidden')
+			$checkOnElem.removeClass('hidden')
+		} else {
+			<!--/* 有償プラン申し込みのチェックが外された場合 */-->
+			<!--/* 無料トライアル用の要素を表示 */-->
+			$elemsShowOnlyplanRegistDuringFreeTrialCase.addClass('hidden')
+			$elemsShowOnlyFreePlanUpdateCase.removeClass('hidden')
+			<!--/* チェックOFFのアイコンを表示 */-->
+			$checkOnElem.addClass('hidden')
+			$checkOffElem.removeClass('hidden')
+		}
+	})
+	
+	<!--/* プラン変更画面の表示 */-->
+	$('.showUpdatePlan').on('click', function() {
+
+		clearAllMessages($('#planContentWrap'))
+
+		<!--/* 初期表示時にデフォルトの値でのプランの料金情報を取得、表示する */-->
+		const $checkedRadio = $('#updatePlanTypeRadioWrap input:radio:checked');
+		const $licenseInput = $('#updateLicenseInput');
+		const $storageInput = $('#updateStorageInput');
+		getPlanChargeAndShowScreen($checkedRadio, $licenseInput, $storageInput)
+
+		$('.screen.nowPlan').addClass('hidden')
+		$('.screen.updatePlan').removeClass('hidden')
+	})
+
+	<!--/* カード変更画面の表示 */-->
+	$('.showUpdateCard').on('click', function() {
+
+		clearAllMessages($('#planContentWrap'))
+
+		$('.screen.nowPlan').addClass('hidden')
+		$('.screen.updateCard').removeClass('hidden')
+	})
+
+	<!--/* 現在のプラン画面に戻る */-->
+	$('.backToScreenNowPlan').on('click', function() {
+
+		clearAllMessages($('#planContentWrap'))
+
+		$('.screen.updatePlan').addClass('hidden')
+		$('.screen.updateCard').addClass('hidden')
+		$('.screen.nowPlan').removeClass('hidden')
+	})
+
+	<!--/*
+	 * 画面スクロールを最上部に移動する
+	*/-->
+	function scrollTop() {
+		$('html').animate({scrollTop:0}, 'fast');
+	}
+	
+	<!--/*
+	 * 名前を名、性に分割
+	 *
+	 * @param {string} name
+	 * @return {Array} [名,性]
+	*/-->
+	function splitFirstLastName(name) {
+
+		name = name.trim()
+
+		<!--/* 空白文字で分割 */-->
+		return name.replace(/　/g, ' ').split(' ');
+	}
+
+	<!--/*
+	 * カード名義人のバリデーション
+	 *
+	 * @param {string} cardName
+	 * @return {boolean} true:検証OK false:検証NG
+	*/-->
+	function validCardName(cardName) {
+
+		if (!cardName) {
+			showErrorMessage(REQUIRE_CARD_NAME_MSG, $('#planContentWrap'), null)
+			return false
+		}
+
+		<!--/* 名、性の配列に分割 */-->
+		let cardNames =splitFirstLastName(cardName)
+
+		<!--/* 名と性の両方が入力されているかチェック */-->
+		const NAME_COUNT = 2; // [名, 性]
+		if (cardNames.length !== NAME_COUNT) {
+			showErrorMessage(REQUIRE_CARD_NAME_FIRST_AND_LAST_MSG, $('#planContentWrap'), null)
+			return false
+		}
+
+		<!--/* 半角文字に変換 */-->
+		let halfWidthFirstLastName = getHalfWidthFirstLastName(cardName)
+		const firstName = halfWidthFirstLastName.firstName
+		const lastName = halfWidthFirstLastName.lastName
+
+		<!--/* 半角英字（大文字）かどうかチェック */-->
+		cardNameRegexp = new RegExp('^[A-Z]*$', 'g')
+		const allMatch = firstName.match(cardNameRegexp) && lastName.match(cardNameRegexp)
+		if (!allMatch) {
+			showErrorMessage(CARD_NAME_MUST_HALF_WIDTH_ALPHANUMERIC_MSG, $('#planContentWrap'), null)
+			return false
+		}
+
+		return true
+	}
+
+	<!--/*
+	 * 半角の性、名を持つオブジェクトを取得
+	 *
+	 * @param {string} cardName 性と名が空白文字で区切られた名前の文字列
+	 * @return {Object} カード名義人情報 {firstName, lastName}
+	*/-->
+	function getHalfWidthFirstLastName(cardName) {
+
+		<!--/* 性、名に分割 */-->
+		let cardNames = splitFirstLastName(cardName)
+
+		<!--/* 名、性取得 */-->
+		let firstName = cardNames[0]
+		let lastName = cardNames[1]
+
+		<!--/* 全角→半角変換 */-->
+		firstName = toHalfWidth(firstName)
+		lastName = toHalfWidth(lastName)
+
+		let names = {
+			firstName: firstName,
+			lastName: lastName
+		}
+
+		return names
+	}
+	
+	<!--/*
+	 * カードのセキュリティコードのバリデーション
+	 *
+	 * @param {string} cvv
+	 * @return {boolean} true:検証OK false:検証NG
+	*/-->
+	function validCardSecurityCode(cvv) {
+		
+		if (!cvv || !cvv.trim()) {
+			showErrorMessage(REQUIRE_CARD_SECURITY_CODE, $('#planContentWrap'), null)
+			return false
+		}
+		
+		return true;
+	}
+
+	<!--/*
+	 * トークンの取得処理とコールバック関数の実行
+	 *
+	 * @param {Object} cardInfoObj カード情報
+	 * @param {Function} callback コールバック関数
+	*/-->
+	function getTokenAndExec(cardInfoObj, callback) {
+		<!--/* CP非同期通信よりトークンを生成する */-->
+		CPToken.TokenCreate (
+			{
+				aid: aid,
+				cn: cardInfoObj.cn,
+				ed: cardInfoObj.ed,
+				fn: cardInfoObj.fn,
+				ln: cardInfoObj.ln,
+				cvv: cardInfoObj.cvv
+			},
+			callback
+		);
+	}
+
+	<!--/* フォームのEnterボタンを無効化 */-->
+	const formObj = $("form").not('#quickSearchForm');
+	formObj.each(function(index, _form){
+		$(_form).find("input,select,textarea").on("keydown",function(e) {
+			if(e.which == 13) {
+				return false;
+			}
+		});
+	});
+
+	<!--/*
+	 * 保存内容確認モーダルの表示の前の、プラン情報のパラメータのバリデーションチェック。
+	 */-->
+	function validPlanBeforeRenderPlanSaveConfirm(licenseVal, storageVal) {
+		
+		<!--/* ライセンス数、ストレージ量の必須チェック（ストレージ量は通常空になることはないが念のため） */-->
+		if (!licenseVal || !storageVal) {
+			return false;
+		}
+		
+		return true;
+	}
+	
+	<!--/*
+	 * 保存内容確認モーダルの表示の前の、カード情報のパラメータのバリデーションチェック。
+	 */-->
+	function validCardBeforeRenderPlanSaveConfirm(cardExpireYear, cardExpireMonth, cardName, cardNumOrg, cardSecurityCdOrg) {
+		
+		<!--/* カード情報の必須チェック */-->
+		if (!cardExpireYear || !cardExpireMonth || !cardName || !cardNumOrg || !cardSecurityCdOrg) {
+			showErrorMessage(REQUIRE_PAY_CARD_INFO_MSG, $('#planContentWrap'), null);
+			return false;
+		}
+		
+		return true;
+	}
+	
+	<!--/*
+	 * 保存内容確認モーダルの表示
+	 * 
+	 * @param {string} licenseVal ライセンス数
+	 * @param {string} storageVal ストレージ量
+	 * 
+	 * @param {string} cardExpireYear カード-有効期限（年）
+	 * @param {string} cardExpireMonth カード-有効期限（月）
+	 * @param {string} cardName カード-名義人名
+	 * @param {string} cardNumOrg カード-番号
+	 * @param {string} cardSecurityCdOrg カード-セキュリティコード
+	 * 
+	 * @param {string} nowPlanTypeVal 現在のプランタイプ
+	 * @param {string} planTypeCheckedVal 選択されているプランタイプ（保存しようとしている値）
+	 * 
+	 * @param {boolean} isRegistModal 登録モーダルを開くかどうか
+	 * @param {boolean} isFreePlanUpdateModal 無料プランの更新モーダルを開くかどうか
+	 * @param {boolean} isShowSmallerLicenseMsgForPlanRegist 利用中のライセンス数より入力値が小さい旨のメッセージを表示するかどうか（プラン登録の場合のみ）
+	 * 
+	 * @param {string} actionButtonId 確認後、実際に実行する登録or更新処理のボタンのID
+	 */-->
+	function renderPlanSaveConfirmFragment(licenseVal, storageVal,
+			cardExpireYear, cardExpireMonth, cardName, cardNumOrg, cardSecurityCdOrg,
+			nowPlanTypeVal, planTypeCheckedVal,
+			isRegistModal, isFreePlanUpdateModal, isShowSmallerLicenseMsgForPlanRegist, actionButtonId) {
+		
+		<!--/* カード番号をマスキング */-->
+		let cardNumMasked = '';
+		if (cardNumOrg) {
+			const cardNumOrgSize = cardNumOrg.length;
+			if (cardNumOrgSize > DIGITS_NO_MASKING_CARD_NUM) {
+				let cardNumLast4 = cardNumOrg.slice(-DIGITS_NO_MASKING_CARD_NUM);
+				cardNumMasked = "*".repeat(cardNumOrgSize - DIGITS_NO_MASKING_CARD_NUM) + cardNumLast4;
+			} else {
+				cardNumMasked = "*".repeat(cardNumOrgSize);
+			}
+		}
+		
+		<!--/* セキュリティコードをマスキング */-->
+		let cardSecurityCdMasked  = '';
+		if (cardSecurityCdOrg) {
+			const cardSecurityCdOrgSize = cardSecurityCdOrg.length;
+			cardSecurityCdMasked = "*".repeat(cardSecurityCdOrgSize);
+		}
+		
+		let param = {
+			'licenseVal' : licenseVal,
+			'storageVal' : storageVal,
+			'cardExpireYear' : cardExpireYear,
+			'cardExpireMonth' : cardExpireMonth,
+			'cardName' : cardName,
+			'cardNumMasked' : cardNumMasked,
+			'cardSecurityCdMasked' : cardSecurityCdMasked,
+			'planTypeBefore' : nowPlanTypeVal,
+			'planTypeAfter' : planTypeCheckedVal,
+			'registModal' : isRegistModal,
+			'freePlanUpdateModal' : isFreePlanUpdateModal,
+			'showSmallerLicenseMsgForPlanRegist' : isShowSmallerLicenseMsgForPlanRegist,
+			'actionButtonId' : actionButtonId
+		}
+		
+		$.ajax({
+			type : "GET",
+			url : "/user/planSetting/getPlanSaveConfirmFragment",
+			data : param,
+			dataType : "html"
+		})
+		.done(function(data, status, jqXHR) {
+			if(isAjaxProcSuccess(jqXHR)){
+				
+				$(".planSaveConfirmModalContentsWrap").html(data);
+				
+			} else {
+				
+				<!--/* メッセージ表示 */-->
+				const errorMsg = getAjaxProcResutlMessage(jqXHR);
+				showErrorMessage(errorMsg, $('#planContentWrap'), null);
+				
+				<!--/* モーダルを閉じる */-->
+				closeSaveConfirmModal();
+			}
+		})
+		.fail(function() {
+			
+			<!--/* メッセージ表示 */-->
+			showErrorMessage(/*[[#{E00091}]]*/  "システムエラーが発生しました。", $('#planContentWrap'), null);
+			
+			<!--/* モーダルを閉じる */-->
+			closeSaveConfirmModal();
+			
+		})
+		.always(function() {
+		});
+	}
+	
+	<!--/*
+	 * 解約確認モーダルの表示
+	 * 
+	 * @param {boolean} isDuringFreeTrial 無料期間中の解約かどうか
+	 * 
+	 * @param {string} actionButtonId 確認後、実際に実行する登録or更新処理のボタンのID
+	 */-->
+	function renderPlanCancelConfirmFragment(isDuringFreeTrial, actionButtonId) {
+		
+		let param = {
+			'duringFreeTrial' : isDuringFreeTrial,
+			'actionButtonId' : actionButtonId
+		}
+		
+		$.ajax({
+			type : "GET",
+			url : "/user/planSetting/getPlanCancelConfirmFragment",
+			data : param,
+			dataType : "html"
+		})
+		.done(function(data, status, jqXHR) {
+			if(isAjaxProcSuccess(jqXHR)){
+				
+				$(".planCancelConfirmModalContentsWrap").html(data);
+				
+			} else {
+				
+				<!--/* メッセージ表示 */-->
+				const errorMsg = getAjaxProcResutlMessage(jqXHR);
+				showErrorMessage(errorMsg, $('#planContentWrap'), null);
+				
+				<!--/* モーダルを閉じる */-->
+				closeCancelConfirmModal();
+			}
+		})
+		.fail(function() {
+			
+			<!--/* メッセージ表示 */-->
+			showErrorMessage(/*[[#{E00091}]]*/  "システムエラーが発生しました。", $('#planContentWrap'), null);
+			
+			<!--/* モーダルを閉じる */-->
+			closeCancelConfirmModal();
+			
+		})
+		.always(function() {
+		});
+	}
+	
+	<!--/* 保存内容確認モーダル、解約確認モーダルを開くとき */-->
+	$('#saveConfirmModal, #cancelConfirmModal').on('show.bs.modal', function () {
+		<!--/* メッセージをクリアする */-->
+		clearAllMessages($('#planContentWrap'))
+	});
+	
+	<!--/* 保存内容確認モーダル、解約確認モーダルが閉じたとき */-->
+	<!--/* 画面上部のメッセージが表示されているときのみ、スクロールを上部に移動する */-->
+	$('#saveConfirmModal, #cancelConfirmModal').on('hidden.bs.modal', function () {
+		
+		let msgTextAry = $('#planContentWrap .msgText');
+		let isBackToTop = false;
+		
+		msgTextAry.each((idx, elem) => {
+			let text = $(elem).text();
+			if (text) {
+				isBackToTop = true;
+			}
+		})
+		
+		if (isBackToTop) {
+			<!--/* モーダルが完全に閉じる前にスクロールを移動させると、モーダルが消えるときにスクロールが戻ってしまうのでここで対応する */-->
+			scrollTop();
+		}
+	})
+	
+	<!--/* 【確認モーダル表示】無料プラン内容の更新 */-->
+	$('#freePlanUpdateConfirmButton').on('click', function() {
+		
+		<!--/* ライセンス数、ストレージ量 */-->
+		const licenseVal = $('#freeStatusPeriodForm #planRegistDuringFreeTrialLicenseInput').val();
+		const storageVal = $('#freeStatusPeriodForm #planRegistDuringFreeTrialStorageInput').val();
+		
+		<!--/* プラン情報パラメータのバリデーションチェック */-->
+		let validPlanResult = validPlanBeforeRenderPlanSaveConfirm(licenseVal, storageVal);
+		if (!validPlanResult) {
+			scrollTop();
+			return false;
+		}
+		
+		<!--/* 利用プラン */-->
+		<!--/* 変更前 */-->
+		const nowPlanTypeVal = nowPlanTypeId;
+		<!--/* 変更後 */-->
+		const planTypeCheckedVal = $('#planRegistDuringFreeTrialPlanTypeRadioWrap input:radio:checked').val();
+		
+		<!--/* 登録モーダルを表示するかどうか */-->
+		const isRegistModal = false;
+		<!--/* 無料プランの更新モーダルを表示するかどうか */-->
+		const isFreePlanUpdateModal = true;
+		
+		<!--/* プラン登録の場合に「利用中のライセンス数より入力値が小さい」旨の確認メッセージを表示するか */-->
+		<!--/* （無料ステータスからの初回のプラン登録の場合のみ表示される（trueになる）場合がある） */-->
+		const isShowSmallerLicenseMsgForPlanRegist = false;
+		
+		const actionButtonId = $(this).data('action-button-id');
+		
+		<!--/* 確認モーダルのフラグメントを表示（カード情報は空とする） */-->
+		renderPlanSaveConfirmFragment(licenseVal, storageVal,
+				'', '', '', '', '',
+				nowPlanTypeVal, planTypeCheckedVal,
+				isRegistModal, isFreePlanUpdateModal, isShowSmallerLicenseMsgForPlanRegist, actionButtonId);
+		
+	})
+	
+	<!--/* 無料プラン内容の更新 */-->
+	$('#freePlanUpdateButton').on('click', function() {
+		
+		const planTypeCheckedVal = $('#planRegistDuringFreeTrialPlanTypeRadioWrap input:radio:checked').val();
+		
+		const action = $(this).data('action')
+		let param = $('#freeStatusPeriodForm').serializeArray()
+
+		let dataObj = {
+			freePlanUpdateAction : action,
+			freePlanUpdateParam : param,
+			beforeProcResult : null, // 更新処理の結果
+			messageLevel : null, // 最後のプラン画面へのリダイレクト時に表示するメッセージのレベル
+			triggerActionId : 'freePlanUpdateButton'
+		}
+		
+		<!--/* 2重押下防止 */-->
+		if(ajaxRunning){
+			return false;
+		}
+		
+		ajaxRunning = true;
+		
+		Promise.resolve(dataObj)
+			<!--/* 無料プラン内容の更新 */-->
+			.then(freePlanUpdateFunc)
+			<!--/* 保存後の状態でSession値を更新 */-->
+			.then(updateSessionValueAfterPlanSaveFunc)
+			<!--/* プラン画面を再表示（プラン更新のメッセージ付き） */-->
+			.then(redirectIndexWithMessageFunc)
+			.catch((errorObj) => {
+				<!--/* 異常系の対応は各処理側で行っており、全体共通での異常系の処理は現状ない */-->
+				console.log(errorObj);
+			})
+			.finally(() => {
+				ajaxRunning = false;
+			})
+		
+	})
+	
+	<!--/* 無料プラン内容の更新の処理関数 */-->
+	function freePlanUpdateFunc(dataObj) {
+		return new Promise((resolve, reject) => {
+			
+			<!--/* オブジェクトのプロパティ値を取得 */-->
+			const {freePlanUpdateAction, freePlanUpdateParam} = dataObj;
+			
+			$.ajax({
+				type : "POST",
+				url : freePlanUpdateAction,
+				data : freePlanUpdateParam,
+				dataType : "json"
+			})
+			.done(function(result) {
+				if(result.succeeded){
+					<!--/* 成功 */-->
+					
+					dataObj.beforeProcResult = result;
+					dataObj.messageLevel = /*[[${T(jp.loioz.common.constant.CommonConstant$MessageLevel).INFO.getCd()}]]*/null;
+					
+					<!--/* 次の処理にわたす */-->
+					return resolve(dataObj);
+				} else {
+					showErrorMessage(result.message, $('#planContentWrap'), result.errors);
+					<!--/* 確認モーダルを閉じる */-->
+					closeSaveConfirmModal();
+					
+					return reject();
+				}
+			})
+			.fail(function() {
+				showErrorMessage(FREE_PLAN_UPDATE_FAIL_MSG, $('#planContentWrap'), null);
+				<!--/* 確認モーダルを閉じる */-->
+				closeSaveConfirmModal();
+				
+				return reject();
+			})
+			
+		});
+	}
+	
+	<!--/* 【確認モーダル表示】無料期間中のプランの登録 */-->
+	$('#planRegistDuringFreeTrialConfirmButton').on('click', function() {
+		
+		<!--/* ライセンス数、ストレージ量 */-->
+		const licenseVal = $('#freeStatusPeriodForm #planRegistDuringFreeTrialLicenseInput').val();
+		const storageVal = $('#freeStatusPeriodForm #planRegistDuringFreeTrialStorageInput').val();
+		
+		<!--/* カード情報（月、年、名義） */-->
+		const cardExpireYear = $("#registDuringFreeTrialExpireYear").val();
+		const cardExpireMonth = $("#registDuringFreeTrialExpireMonth").val();
+		const cardName = $("#registDuringFreeTrialCardName").val();
+		<!--/* カード情報（カード番号、セキュリティコード） */-->
+		let cardNumOrg = $("#registDuringFreeTrialCardNum").val();
+		let cardSecurityCdOrg = $("#registDuringFreeTrialCardSecurityCd").val().trim();
+		
+		<!--/* プラン情報パラメータのバリデーションチェック */-->
+		let validPlanResult = validPlanBeforeRenderPlanSaveConfirm(licenseVal, storageVal);
+		if (!validPlanResult) {
+			scrollTop();
+			return false;
+		}
+		<!--/* カード情報パラメータのバリデーションチェック */-->
+		let validCardResult = validCardBeforeRenderPlanSaveConfirm(cardExpireYear, cardExpireMonth, cardName, cardNumOrg, cardSecurityCdOrg);
+		if (!validCardResult) {
+			scrollTop();
+			return false;
+		}
+		
+		<!--/* 利用プラン */-->
+		<!--/* 変更前 */-->
+		const nowPlanTypeVal = nowPlanTypeId;
+		<!--/* 変更後 */-->
+		const planTypeCheckedVal = $('#planRegistDuringFreeTrialPlanTypeRadioWrap input:radio:checked').val();
+		
+		<!--/* 登録モーダルを表示するかどうか */-->
+		const isRegistModal = true;
+		<!--/* 無料プランの更新モーダルを表示するかどうか */-->
+		const isFreePlanUpdateModal = false;
+		
+		<!--/* プラン登録の場合に「利用中のライセンス数より入力値が小さい」旨の確認メッセージを表示するか */-->
+		<!--/* （無料ステータスからの初回のプラン登録の場合のみ表示される（trueになる）場合がある） */-->
+		const isShowSmallerLicenseMsgForPlanRegist = false;
+		
+		const actionButtonId = $(this).data('action-button-id');
+		
+		<!--/* 確認モーダルのフラグメントを表示 */-->
+		renderPlanSaveConfirmFragment(licenseVal, storageVal,
+				cardExpireYear, cardExpireMonth, cardName, cardNumOrg, cardSecurityCdOrg,
+				nowPlanTypeVal, planTypeCheckedVal,
+				isRegistModal, isFreePlanUpdateModal, isShowSmallerLicenseMsgForPlanRegist, actionButtonId);
+		
+	})
+	
+	<!--/* 無料期間中のプランの登録 */-->
+	$('#planRegistDuringFreeTrialButton').on('click', function() {
+		
+		let cardName = $("#registDuringFreeTrialCardName").val()
+
+		<!--/* カード名義人バリデーション */-->
+		if (!validCardName(cardName)) {
+			<!--/* 確認モーダルを閉じる */-->
+			closeSaveConfirmModal();
+			return false;
+		}
+
+		<!--/* 名、性を持つオブジェクトを取得 */-->
+		let cardNames = getHalfWidthFirstLastName(cardName)
+
+		<!--/* セキュリティコードバリデーション */-->
+		let cvv = $("#registDuringFreeTrialCardSecurityCd").val().trim()
+		if (!validCardSecurityCode(cvv)) {
+			<!--/* 確認モーダルを閉じる */-->
+			closeSaveConfirmModal();
+			return false;
+		}
+		
+		let cardInfoObj = {}
+		cardInfoObj.aid = aid
+		cardInfoObj.cn = $("#registDuringFreeTrialCardNum").val()
+		cardInfoObj.ed = $("#registDuringFreeTrialExpireYear").val() + $("#registDuringFreeTrialExpireMonth").val()
+		cardInfoObj.fn = cardNames.firstName
+		cardInfoObj.ln = cardNames.lastName
+		cardInfoObj.cvv = cvv
+
+		getTokenAndExec(cardInfoObj, execPlanRegistDuringFreeTrial)
+	})
+
+	<!--/*
+	 * 無料期間中のプランの登録処理
+	 *
+	 * @param {string} resultCode 結果コード
+	 * @param {string} errMsg エラーメッセージ
+	*/-->
+	function execPlanRegistDuringFreeTrial(resultCode, errMsg) {
+		if (resultCode != "Success") {
+
+			showErrorMessage(errMsg, $('#planContentWrap'), null);
+			<!--/* 確認モーダルを閉じる */-->
+			closeSaveConfirmModal();
+
+		} else {
+			
+			<!--/* 登録カード情報を設定 */-->
+			<!--/* カード番号は下4桁のみとする */-->
+			const registCardNum = $("#registDuringFreeTrialCardNum").val().slice(-DIGITS_NO_MASKING_CARD_NUM)
+			$("#registDuringFreeTrialCardNumForRegist").val(registCardNum)
+
+			<!--/* 有効期限 */-->
+			$("#registDuringFreeTrialExpireMonthForRegist").val($("#registDuringFreeTrialExpireMonth").val())
+			$("#registDuringFreeTrialExpireYearForRegist").val($("#registDuringFreeTrialExpireYear").val())
+
+			<!--/* カード名義人 */-->
+			<!--/* ※バリデーションは行わない（カードトークン取得APIの実行前にチェックしているため） */-->
+			let cardNames = getHalfWidthFirstLastName($("#registDuringFreeTrialCardName").val())
+			$("#registDuringFreeTrialCardFirstNameForRegist").val(cardNames.firstName)
+			$("#registDuringFreeTrialCardLastNameForRegist").val(cardNames.lastName)
+
+			const tkn = $('#tkn').val()
+
+			const action = $("#planRegistDuringFreeTrialButton").data('action')
+			let param = $('#freeStatusPeriodForm').serializeArray()
+
+			let tknObj = {
+				name : "token",
+				value : tkn
+			}
+			param.push(tknObj)
+			
+			let dataObj = {
+				planRegistDuringFreeTrialAction : action,
+				planRegistDuringFreeTrialParam : param,
+				beforeProcResult : null, // 登録処理の結果
+				messageLevel : null, // 最後のプラン画面へのリダイレクト時に表示するメッセージのレベル
+				triggerActionId : 'planRegistDuringFreeTrialButton'
+			}
+			
+			<!--/* 2重押下防止 */-->
+			if(ajaxRunning){
+				return false;
+			}
+
+			ajaxRunning = true;
+			
+			Promise.resolve(dataObj)
+				<!--/* 無料期間中のプランの登録 */-->
+				.then(planRegistDuringFreeTrialFunc)
+				<!--/* 保存後の状態でSession値を更新 */-->
+				.then(updateSessionValueAfterPlanSaveFunc)
+				<!--/* プラン画面を再表示（プラン登録のメッセージ付き） */-->
+				.then(redirectIndexWithMessageFunc)
+				.catch((errorObj) => {
+					<!--/* 異常系の対応は各処理側で行っており、全体共通での異常系の処理は現状ない */-->
+					console.log(errorObj);
+				})
+				.finally(() => {
+					ajaxRunning = false;
+					
+					<!--/* カード情報を消去（表示項目） */-->
+					$("#registDuringFreeTrialCardNum").val("");
+					$("#registDuringFreeTrialExpireYear").val("");
+					$("#registDuringFreeTrialExpireMonth").val("");
+					$("#registDuringFreeTrialCardName").val("");
+					$("#registDuringFreeTrialCardSecurityCd").val("");
+
+					<!--/* カード情報を消去（保存項目） */-->
+					$("#registDuringFreeTrialCardNumForRegist").val("")
+					$("#registDuringFreeTrialExpireMonthForRegist").val("")
+					$("#registDuringFreeTrialExpireYearForRegist").val("")
+					$("#registDuringFreeTrialCardFirstNameForRegist").val("")
+					$("#registDuringFreeTrialCardLastNameForRegist").val("")
+				})
+			
+		}
+	}
+	
+	<!--/* 無料期間中のプランの登録処理関数 */-->
+	function planRegistDuringFreeTrialFunc(dataObj) {
+		return new Promise((resolve, reject) => {
+			
+			<!--/* オブジェクトのプロパティ値を取得 */-->
+			const {planRegistDuringFreeTrialAction, planRegistDuringFreeTrialParam} = dataObj;
+			
+			$.ajax({
+				type : "POST",
+				url : planRegistDuringFreeTrialAction,
+				data : planRegistDuringFreeTrialParam,
+				dataType : "json"
+			})
+			.done(function(result) {
+				if(result.succeeded){
+					<!--/* 成功 */-->
+					
+					dataObj.beforeProcResult = result;
+					dataObj.messageLevel = /*[[${T(jp.loioz.common.constant.CommonConstant$MessageLevel).INFO.getCd()}]]*/null;
+					
+					<!--/* 次の処理にわたす */-->
+					return resolve(dataObj);
+				} else {
+					showErrorMessage(result.message, $('#planContentWrap'), result.errors);
+					<!--/* 確認モーダルを閉じる */-->
+					closeSaveConfirmModal();
+					
+					return reject();
+				}
+			})
+			.fail(function() {
+				showErrorMessage(PLAN_REGIST_FAIL_MSG, $('#planContentWrap'), null);
+				<!--/* 確認モーダルを閉じる */-->
+				closeSaveConfirmModal();
+				
+				return reject();
+			})
+			
+		});
+	}
+	
+	<!--/* 【確認モーダル表示】プランの登録 */-->
+	$('#planRegistConfirmButton').on('click', function() {
+		
+		<!--/* ライセンス数、ストレージ量 */-->
+		const licenseVal = $('#planRegistForm #registLicenseInput').val();
+		const storageVal = $('#planRegistForm #registStorageInput').val();
+		
+		<!--/* カード情報（月、年、名義） */-->
+		const cardExpireYear = $("#registExpireYear").val();
+		const cardExpireMonth = $("#registExpireMonth").val();
+		const cardName = $("#registCardName").val();
+		<!--/* カード情報（カード番号、セキュリティコード） */-->
+		let cardNumOrg = $("#registCardNum").val();
+		let cardSecurityCdOrg = $("#registCardSecurityCd").val().trim();
+		
+		<!--/* プラン情報パラメータのバリデーションチェック */-->
+		let validPlanResult = validPlanBeforeRenderPlanSaveConfirm(licenseVal, storageVal);
+		if (!validPlanResult) {
+			scrollTop();
+			return false;
+		}
+		<!--/* カード情報パラメータのバリデーションチェック */-->
+		let validCardResult = validCardBeforeRenderPlanSaveConfirm(cardExpireYear, cardExpireMonth, cardName, cardNumOrg, cardSecurityCdOrg);
+		if (!validCardResult) {
+			scrollTop();
+			return false;
+		}
+		
+		<!--/* 利用プラン */-->
+		<!--/* 変更前 */-->
+		const nowPlanTypeVal = nowPlanTypeId;
+		<!--/* 変更後 */-->
+		const planTypeCheckedVal = $('#registPlanTypeRadioWrap input:radio:checked').val();
+		
+		<!--/* 登録モーダルを表示するかどうか */-->
+		const isRegistModal = true;
+		<!--/* 無料プランの更新モーダルを表示するかどうか */-->
+		const isFreePlanUpdateModal = false;
+		
+		<!--/* プラン登録の場合に「利用中のライセンス数より入力値が小さい」旨の確認メッセージを表示するか */-->
+		<!--/* （無料ステータスからの初回のプラン登録の場合のみ表示される（trueになる）場合がある） */-->
+		let isShowSmallerLicenseMsgForPlanRegist = false;
+		
+		<!--/* 現在が無料ステータスかどうか */-->
+		const nowIsFreeStatus = /*[[${planSettingForm.isFreeStatus()}]]*/false
+		<!--/* 現在の利用ライセンス数と入力ライセンス数 */-->
+		const nowUsingLicenseCountNum = Number($('#usingLicenseCount').val())
+		const inputLicenseValNum = Number(licenseVal)
+		if (nowIsFreeStatus && inputLicenseValNum < nowUsingLicenseCountNum) {
+			<!--/* ライセンス数に応じた確認メッセージを表示する */-->
+			isShowSmallerLicenseMsgForPlanRegist = true;
+		}
+		
+		const actionButtonId = $(this).data('action-button-id');
+		
+		<!--/* 確認モーダルのフラグメントを表示 */-->
+		renderPlanSaveConfirmFragment(licenseVal, storageVal,
+				cardExpireYear, cardExpireMonth, cardName, cardNumOrg, cardSecurityCdOrg,
+				nowPlanTypeVal, planTypeCheckedVal,
+				isRegistModal, isFreePlanUpdateModal, isShowSmallerLicenseMsgForPlanRegist, actionButtonId);
+		
+	})
+	
+	<!--/* プランの登録 */-->
+	$('#planRegistButton').on('click', function() {
+
+		let cardName = $("#registCardName").val()
+
+		<!--/* カード名義人バリデーション */-->
+		if (!validCardName(cardName)) {
+			<!--/* 確認モーダルを閉じる */-->
+			closeSaveConfirmModal();
+			return false;
+		}
+
+		<!--/* 名、性を持つオブジェクトを取得 */-->
+		let cardNames = getHalfWidthFirstLastName(cardName)
+
+		<!--/* セキュリティコードバリデーション */-->
+		let cvv = $("#registCardSecurityCd").val().trim()
+		if (!validCardSecurityCode(cvv)) {
+			<!--/* 確認モーダルを閉じる */-->
+			closeSaveConfirmModal();
+			return false;
+		}
+		
+		let cardInfoObj = {}
+		cardInfoObj.aid = aid
+		cardInfoObj.cn = $("#registCardNum").val()
+		cardInfoObj.ed = $("#registExpireYear").val() + $("#registExpireMonth").val()
+		cardInfoObj.fn = cardNames.firstName
+		cardInfoObj.ln = cardNames.lastName
+		cardInfoObj.cvv = cvv
+
+		getTokenAndExec(cardInfoObj, execPlanRegist)
+	})
+	
+	<!--/*
+	 * プランの登録処理
+	 *
+	 * @param {string} resultCode 結果コード
+	 * @param {string} errMsg エラーメッセージ
+	*/-->
+	function execPlanRegist(resultCode, errMsg) {
+		if (resultCode != "Success") {
+
+			showErrorMessage(errMsg, $('#planContentWrap'), null);
+			<!--/* 確認モーダルを閉じる */-->
+			closeSaveConfirmModal();
+
+		} else {
+			
+			<!--/* 登録カード情報を設定 */-->
+			<!--/* カード番号は下4桁のみとする */-->
+			const registCardNum = $("#registCardNum").val().slice(-DIGITS_NO_MASKING_CARD_NUM)
+			$("#registCardNumForRegist").val(registCardNum)
+
+			<!--/* 有効期限 */-->
+			$("#registExpireMonthForRegist").val($("#registExpireMonth").val())
+			$("#registExpireYearForRegist").val($("#registExpireYear").val())
+
+			<!--/* カード名義人 */-->
+			<!--/* ※バリデーションは行わない（カードトークン取得APIの実行前にチェックしているため） */-->
+			let cardNames = getHalfWidthFirstLastName($("#registCardName").val())
+			$("#registCardFirstNameForRegist").val(cardNames.firstName)
+			$("#registCardLastNameForRegist").val(cardNames.lastName)
+
+			const tkn = $('#tkn').val()
+
+			const action = $('#planRegistForm').prop('action')
+			let param = $('#planRegistForm').serializeArray()
+
+			let tknObj = {
+				name : "token",
+				value : tkn
+			}
+			param.push(tknObj)
+			
+			let dataObj = {
+				planRegistAction : action,
+				planRegistParam : param,
+				beforeProcResult : null, // 登録処理の結果
+				messageLevel : null, // 最後のプラン画面へのリダイレクト時に表示するメッセージのレベル
+				triggerActionId : 'planRegistButton'
+			}
+			
+			<!--/* 2重押下防止 */-->
+			if(ajaxRunning){
+				return false;
+			}
+			
+			ajaxRunning = true;
+			
+			Promise.resolve(dataObj)
+				<!--/* プラン登録 */-->
+				.then(planRegistFunc)
+				<!--/* 保存後の状態でSession値を更新 */-->
+				.then(updateSessionValueAfterPlanSaveFunc)
+				<!--/* プラン画面を再表示（プラン更新のメッセージ付き） */-->
+				.then(redirectIndexWithMessageFunc)
+				.catch((errorObj) => {
+					<!--/* 異常系の対応は各処理側で行っており、全体共通での異常系の処理は現状ない */-->
+					console.log(errorObj);
+				})
+				.finally(() => {
+					ajaxRunning = false;
+					
+					<!--/* カード情報を消去（表示項目） */-->
+					$("#registCardNum").val("");
+					$("#registExpireYear").val("");
+					$("#registExpireMonth").val("");
+					$("#registCardName").val("");
+					$("#registCardSecurityCd").val("");
+
+					<!--/* カード情報を消去（保存項目） */-->
+					$("#registCardNumForRegist").val("")
+					$("#registExpireMonthForRegist").val("")
+					$("#registExpireYearForRegist").val("")
+					$("#registCardFirstNameForRegist").val("")
+					$("#registCardLastNameForRegist").val("")
+				})
+			
+		}
+	}
+
+	<!--/* プラン登録の処理関数 */-->
+	function planRegistFunc(dataObj) {
+		return new Promise((resolve, reject) => {
+			
+			<!--/* オブジェクトのプロパティ値を取得 */-->
+			const {planRegistAction, planRegistParam} = dataObj;
+			
+			$.ajax({
+				type : "POST",
+				url : planRegistAction,
+				data : planRegistParam,
+				dataType : "json"
+			})
+			.done(function(result) {
+				if(result.succeeded){
+					<!--/* 成功 */-->
+					
+					dataObj.beforeProcResult = result;
+					dataObj.messageLevel = /*[[${T(jp.loioz.common.constant.CommonConstant$MessageLevel).INFO.getCd()}]]*/null;
+					
+					<!--/* 次の処理にわたす */-->
+					return resolve(dataObj);
+				} else {
+					showErrorMessage(result.message, $('#planContentWrap'), result.errors);
+					<!--/* 確認モーダルを閉じる */-->
+					closeSaveConfirmModal();
+					
+					return reject();
+				}
+			})
+			.fail(function() {
+				showErrorMessage(PLAN_REGIST_FAIL_MSG, $('#planContentWrap'), null);
+				<!--/* 確認モーダルを閉じる */-->
+				closeSaveConfirmModal();
+				
+				return reject();
+			})
+			
+		});
+	}
+	
+	<!--/* 【確認モーダル表示】無料期間中のプランの変更 */-->
+	$('#planUpdateDuringFreeTrialConfirmButton').on('click', function() {
+		
+		<!--/* ライセンス数、ストレージ量 */-->
+		const licenseVal = $('#planUpdateForm #updateLicenseInput').val();
+		const storageVal = $('#planUpdateForm #updateStorageInput').val();
+		
+		<!--/* カード情報（月、年、名義） */-->
+		const cardExpireYear = $("#planUpdateExpireYear").val();
+		const cardExpireMonth = $("#planUpdateExpireMonth").val();
+		const cardName = $("#planUpdateCardName").val();
+		<!--/* カード情報（カード番号、セキュリティコード） */-->
+		let cardNumOrg = $("#planUpdateCardNum").val();
+		let cardSecurityCdOrg = $("#planUpdateCardSecurityCd").val().trim();
+		
+		<!--/* プラン情報パラメータのバリデーションチェック */-->
+		let validPlanResult = validPlanBeforeRenderPlanSaveConfirm(licenseVal, storageVal);
+		if (!validPlanResult) {
+			scrollTop();
+			return false;
+		}
+		<!--/* カード情報パラメータのバリデーションチェック */-->
+		let validCardResult = validCardBeforeRenderPlanSaveConfirm(cardExpireYear, cardExpireMonth, cardName, cardNumOrg, cardSecurityCdOrg);
+		if (!validCardResult) {
+			scrollTop();
+			return false;
+		}
+		
+		<!--/* 利用プラン */-->
+		<!--/* 変更前 */-->
+		const nowPlanTypeVal = nowPlanTypeId;
+		<!--/* 変更後 */-->
+		const planTypeCheckedVal = $('#updatePlanTypeRadioWrap input:radio:checked').val();
+		
+		<!--/* 登録モーダルを表示するかどうか */-->
+		const isRegistModal = false;
+		<!--/* 無料プランの更新モーダルを表示するかどうか */-->
+		const isFreePlanUpdateModal = false;
+		
+		<!--/* プラン登録の場合に「利用中のライセンス数より入力値が小さい」旨の確認メッセージを表示するか */-->
+		<!--/* （無料ステータスからの初回のプラン登録の場合のみ表示される（trueになる）場合がある） */-->
+		const isShowSmallerLicenseMsgForPlanRegist = false;
+		
+		const actionButtonId = $(this).data('action-button-id');
+		
+		<!--/* 確認モーダルのフラグメントを表示 */-->
+		renderPlanSaveConfirmFragment(licenseVal, storageVal,
+				cardExpireYear, cardExpireMonth, cardName, cardNumOrg, cardSecurityCdOrg,
+				nowPlanTypeVal, planTypeCheckedVal,
+				isRegistModal, isFreePlanUpdateModal, isShowSmallerLicenseMsgForPlanRegist, actionButtonId);
+		
+	})
+	
+	<!--/* 無料期間中のプランの変更 */-->
+	$('#planUpdateDuringFreeTrialButton').on('click', function() {
+
+		let cardName = $("#planUpdateCardName").val()
+
+		<!--/* カード名義人バリデーション */-->
+		if (!validCardName(cardName)) {
+			<!--/* 確認モーダルを閉じる */-->
+			closeSaveConfirmModal();
+			return false;
+		}
+
+		<!--/* 名、性を持つオブジェクトを取得 */-->
+		let cardNames = getHalfWidthFirstLastName(cardName)
+
+		<!--/* セキュリティコードバリデーション */-->
+		let cvv = $("#planUpdateCardSecurityCd").val().trim()
+		if (!validCardSecurityCode(cvv)) {
+			<!--/* 確認モーダルを閉じる */-->
+			closeSaveConfirmModal();
+			return false;
+		}
+		
+		let cardInfoObj = {}
+		cardInfoObj.aid = aid
+		cardInfoObj.cn = $("#planUpdateCardNum").val()
+		cardInfoObj.ed = $("#planUpdateExpireYear").val() + $("#planUpdateExpireMonth").val()
+		cardInfoObj.fn = cardNames.firstName
+		cardInfoObj.ln = cardNames.lastName
+		cardInfoObj.cvv = cvv
+		
+		getTokenAndExec(cardInfoObj, execPlanUpdateDuringFreeTrial)
+	})
+	
+	<!--/*
+	 * 無料期間中のプランの変更処理
+	 *
+	 * @param {string} resultCode 結果コード
+	 * @param {string} errMsg エラーメッセージ
+	*/-->
+	function execPlanUpdateDuringFreeTrial(resultCode, errMsg) {
+		if (resultCode != "Success") {
+
+			showErrorMessage(errMsg, $('#planContentWrap'), null);
+			<!--/* 確認モーダルを閉じる */-->
+			closeSaveConfirmModal();
+
+		} else {
+
+			<!--/* 登録カード情報を設定 */-->
+			<!--/* カード番号は下4桁のみとする */-->
+			const planUpdateCardNum = $("#planUpdateCardNum").val().slice(-DIGITS_NO_MASKING_CARD_NUM)
+			$("#planUpdateCardNumForRegist").val(planUpdateCardNum)
+
+			<!--/* 有効期限 */-->
+			$("#planUpdateExpireMonthForRegist").val($("#planUpdateExpireMonth").val())
+			$("#planUpdateExpireYearForRegist").val($("#planUpdateExpireYear").val())
+
+			<!--/* カード名義人を分割して設定 */-->
+			<!--/* ※バリデーションは行わない（カードトークン取得APIの実行前にチェックしているため） */-->
+			let cardNames = getHalfWidthFirstLastName($("#planUpdateCardName").val())
+			$("#planUpdateCardFirstNameForRegist").val(cardNames.firstName)
+			$("#planUpdateCardLastNameForRegist").val(cardNames.lastName)
+
+			const tkn = $('#tkn').val()
+
+			const action = $('#planUpdateForm').prop('action') + "/" + $('#planUpdateDuringFreeTrialButton').prop('name')
+			let param = $('#planUpdateForm').serializeArray()
+
+			let tknObj = {
+				name : "token",
+				value : tkn
+			}
+			param.push(tknObj)
+
+			let dataObj = {
+				planUpdateDuringFreeTrialAction : action,
+				planUpdateDuringFreeTrialParam : param,
+				beforeProcResult : null, // 更新処理の結果
+				messageLevel : null, // 最後のプラン画面へのリダイレクト時に表示するメッセージのレベル
+				triggerActionId : 'planUpdateDuringFreeTrialButton'
+			}
+			
+			<!--/* 2重押下防止 */-->
+			if(ajaxRunning){
+				return false;
+			}
+			
+			ajaxRunning = true;
+			
+			Promise.resolve(dataObj)
+				<!--/* 無料期間中のプランの変更 */-->
+				.then(planUpdateDuringFreeTrialFunc)
+				<!--/* 保存後の状態でSession値を更新 */-->
+				.then(updateSessionValueAfterPlanSaveFunc)
+				<!--/* プラン画面を再表示（プラン更新のメッセージ付き） */-->
+				.then(redirectIndexWithMessageFunc)
+				.catch((errorObj) => {
+					<!--/* 異常系の対応は各処理側で行っており、全体共通での異常系の処理は現状ない */-->
+					console.log(errorObj);
+				})
+				.finally(() => {
+					ajaxRunning = false;
+					
+					<!--/* カード情報を消去（表示項目） */-->
+					$("#planUpdateCardNum").val("");
+					$("#planUpdateExpireYear").val("");
+					$("#planUpdateExpireMonth").val("");
+					$("#planUpdateCardName").val("");
+					$("#planUpdateCardSecurityCd").val("");
+
+					<!--/* カード情報を消去（保存項目） */-->
+					$("#planUpdateCardNumForRegist").val("")
+					$("#planUpdateExpireMonthForRegist").val("")
+					$("#planUpdateExpireYearForRegist").val("")
+					$("#planUpdateCardFirstNameForRegist").val("")
+					$("#planUpdateCardLastNameForRegist").val("")
+				})
+				
+		}
+	}
+	
+	<!--/* 無料期間中のプランの変更の処理関数 */-->
+	function planUpdateDuringFreeTrialFunc(dataObj) {
+		return new Promise((resolve, reject) => {
+			
+			<!--/* オブジェクトのプロパティ値を取得 */-->
+			const {planUpdateDuringFreeTrialAction, planUpdateDuringFreeTrialParam} = dataObj;
+			
+			$.ajax({
+				type : "POST",
+				url : planUpdateDuringFreeTrialAction,
+				data : planUpdateDuringFreeTrialParam,
+				dataType : "json"
+			})
+			.done(function(result) {
+				if(result.succeeded){
+					<!--/* 成功 */-->
+					
+					dataObj.beforeProcResult = result;
+					dataObj.messageLevel = /*[[${T(jp.loioz.common.constant.CommonConstant$MessageLevel).INFO.getCd()}]]*/null;
+					
+					<!--/* 次の処理にわたす */-->
+					return resolve(dataObj);
+				} else {
+					
+					if (result.isDeleteFailed) {
+						<!--/* 削除（解約）で失敗した場合 */-->
+						showErrorMessage(result.message, $('#planContentWrap'), result.errors);
+						<!--/* 確認モーダルを閉じる */-->
+						closeSaveConfirmModal();
+						
+						return reject();
+					} else if (result.isRegistFailed) {
+						<!--/* 登録で失敗した場合 */-->
+						
+						dataObj.beforeProcResult = result;
+						dataObj.messageLevel = /*[[${T(jp.loioz.common.constant.CommonConstant$MessageLevel).ERROR.getCd()}]]*/null;
+						
+						<!--/* 次の処理にわたす */-->
+						return resolve(dataObj);
+					} else {
+						<!--/* 入力チェックエラーなどの場合 */-->
+						showErrorMessage(result.message, $('#planContentWrap'), result.errors);
+						<!--/* 確認モーダルを閉じる */-->
+						closeSaveConfirmModal();
+						
+						return reject();
+					}
+				}
+			})
+			.fail(function() {
+				showErrorMessage(PLAN_UPDATE_FAIL_MSG, $('#planContentWrap'), null);
+				<!--/* 確認モーダルを閉じる */-->
+				closeSaveConfirmModal();
+				
+				return reject();
+			})
+			
+		});
+	}
+	
+	<!--/* 【確認モーダル表示】プランの変更登録 */-->
+	$('#planUpdateRegistConfirmButton').on('click', function() {
+		
+		<!--/* ライセンス数、ストレージ量 */-->
+		const licenseVal = $('#planUpdateForm #updateLicenseInput').val();
+		const storageVal = $('#planUpdateForm #updateStorageInput').val();
+		
+		<!--/* カード情報（月、年、名義） */-->
+		const cardExpireYear = $("#planUpdateExpireYear").val();
+		const cardExpireMonth = $("#planUpdateExpireMonth").val();
+		const cardName = $("#planUpdateCardName").val();
+		<!--/* カード情報（カード番号、セキュリティコード） */-->
+		let cardNumOrg = $("#planUpdateCardNum").val();
+		let cardSecurityCdOrg = $("#planUpdateCardSecurityCd").val().trim();
+		
+		<!--/* プラン情報パラメータのバリデーションチェック */-->
+		let validPlanResult = validPlanBeforeRenderPlanSaveConfirm(licenseVal, storageVal);
+		if (!validPlanResult) {
+			scrollTop();
+			return false;
+		}
+		<!--/* カード情報パラメータのバリデーションチェック */-->
+		let validCardResult = validCardBeforeRenderPlanSaveConfirm(cardExpireYear, cardExpireMonth, cardName, cardNumOrg, cardSecurityCdOrg);
+		if (!validCardResult) {
+			scrollTop();
+			return false;
+		}
+		
+		<!--/* 利用プラン */-->
+		<!--/* 変更前 */-->
+		const nowPlanTypeVal = nowPlanTypeId;
+		<!--/* 変更後 */-->
+		const planTypeCheckedVal = $('#updatePlanTypeRadioWrap input:radio:checked').val();
+		
+		<!--/* 登録モーダルを表示するかどうか */-->
+		const isRegistModal = $(this).data('open-regist-modal');
+		<!--/* 無料プランの更新モーダルを表示するかどうか */-->
+		const isFreePlanUpdateModal = false;
+		
+		<!--/* プラン登録の場合に「利用中のライセンス数より入力値が小さい」旨の確認メッセージを表示するか */-->
+		<!--/* （無料ステータスからの初回のプラン登録の場合のみ表示される（trueになる）場合がある） */-->
+		const isShowSmallerLicenseMsgForPlanRegist = false;
+		
+		const actionButtonId = $(this).data('action-button-id');
+		
+		<!--/* 確認モーダルのフラグメントを表示 */-->
+		renderPlanSaveConfirmFragment(licenseVal, storageVal,
+				cardExpireYear, cardExpireMonth, cardName, cardNumOrg, cardSecurityCdOrg,
+				nowPlanTypeVal, planTypeCheckedVal,
+				isRegistModal, isFreePlanUpdateModal, isShowSmallerLicenseMsgForPlanRegist, actionButtonId);
+		
+	})
+	
+	<!--/* プランの変更登録 */-->
+	$('#planUpdateRegistButton').on('click', function() {
+
+		let cardName = $("#planUpdateCardName").val()
+
+		<!--/* カード名義人バリデーション */-->
+		if (!validCardName(cardName)) {
+			<!--/* 確認モーダルを閉じる */-->
+			closeSaveConfirmModal();
+			return false;
+		}
+
+		<!--/* 名、性を持つオブジェクトを取得 */-->
+		let cardNames = getHalfWidthFirstLastName(cardName)
+
+		<!--/* セキュリティコードバリデーション */-->
+		let cvv = $("#planUpdateCardSecurityCd").val().trim()
+		if (!validCardSecurityCode(cvv)) {
+			<!--/* 確認モーダルを閉じる */-->
+			closeSaveConfirmModal();
+			return false;
+		}
+		
+		let cardInfoObj = {}
+		cardInfoObj.aid = aid
+		cardInfoObj.cn = $("#planUpdateCardNum").val()
+		cardInfoObj.ed = $("#planUpdateExpireYear").val() + $("#planUpdateExpireMonth").val()
+		cardInfoObj.fn = cardNames.firstName
+		cardInfoObj.ln = cardNames.lastName
+		cardInfoObj.cvv = cvv
+
+		getTokenAndExec(cardInfoObj, execPlanUpdateRegist)
+	})
+
+	<!--/*
+	 * プランの変更登録処理
+	 *
+	 * @param {string} resultCode 結果コード
+	 * @param {string} errMsg エラーメッセージ
+	*/-->
+	function execPlanUpdateRegist(resultCode, errMsg) {
+		if (resultCode != "Success") {
+
+			showErrorMessage(errMsg, $('#planContentWrap'), null);
+			<!--/* 確認モーダルを閉じる */-->
+			closeSaveConfirmModal();
+
+		} else {
+			
+			<!--/* 登録カード情報を設定 */-->
+			<!--/* カード番号は下4桁のみとする */-->
+			const planUpdateCardNum = $("#planUpdateCardNum").val().slice(-DIGITS_NO_MASKING_CARD_NUM)
+			$("#planUpdateCardNumForRegist").val(planUpdateCardNum)
+
+			<!--/* 有効期限 */-->
+			$("#planUpdateExpireMonthForRegist").val($("#planUpdateExpireMonth").val())
+			$("#planUpdateExpireYearForRegist").val($("#planUpdateExpireYear").val())
+
+			<!--/* カード名義人を分割して設定 */-->
+			<!--/* ※バリデーションは行わない（カードトークン取得APIの実行前にチェックしているため） */-->
+			let cardNames = getHalfWidthFirstLastName($("#planUpdateCardName").val())
+			$("#planUpdateCardFirstNameForRegist").val(cardNames.firstName)
+			$("#planUpdateCardLastNameForRegist").val(cardNames.lastName)
+
+			const tkn = $('#tkn').val()
+
+			const action = $('#planUpdateForm').prop('action') + "/" + $('#planUpdateRegistButton').prop('name')
+			let param = $('#planUpdateForm').serializeArray()
+			
+			let tknObj = {
+				name : "token",
+				value : tkn
+			}
+			param.push(tknObj)
+			
+			let dataObj = {
+				planUpdateRegistAction : action,
+				planUpdateRegistParam : param,
+				beforeProcResult : null, // 変更処理の結果
+				messageLevel : null, // 最後のプラン画面へのリダイレクト時に表示するメッセージのレベル
+				triggerActionId : 'planUpdateRegistButton'
+			}
+			
+			<!--/* 2重押下防止 */-->
+			if(ajaxRunning){
+				return false;
+			}
+
+			ajaxRunning = true;
+			
+			Promise.resolve(dataObj)
+				<!--/* プランの変更 */-->
+				.then(planUpdateRegistFunc)
+				<!--/* 保存後の状態でSession値を更新 */-->
+				.then(updateSessionValueAfterPlanSaveFunc)
+				<!--/* プラン画面を再表示（プラン更新のメッセージ付き） */-->
+				.then(redirectIndexWithMessageFunc)
+				.catch((errorObj) => {
+					<!--/* 異常系の対応は各処理側で行っており、全体共通での異常系の処理は現状ない */-->
+					console.log(errorObj);
+				})
+				.finally(() => {
+					ajaxRunning = false;
+					
+					<!--/* カード情報を消去（表示項目） */-->
+					$("#planUpdateCardNum").val("");
+					$("#planUpdateExpireYear").val("");
+					$("#planUpdateExpireMonth").val("");
+					$("#planUpdateCardName").val("");
+					$("#planUpdateCardSecurityCd").val("");
+
+					<!--/* カード情報を消去（保存項目） */-->
+					$("#planUpdateCardNumForRegist").val("")
+					$("#planUpdateExpireMonthForRegist").val("")
+					$("#planUpdateExpireYearForRegist").val("")
+					$("#planUpdateCardFirstNameForRegist").val("")
+					$("#planUpdateCardLastNameForRegist").val("")
+				})
+			
+		}
+	}
+
+	<!--/* プランの変更登録の処理関数 */-->
+	function planUpdateRegistFunc(dataObj) {
+		return new Promise((resolve, reject) => {
+			
+			<!--/* オブジェクトのプロパティ値を取得 */-->
+			const {planUpdateRegistAction, planUpdateRegistParam} = dataObj;
+			
+			$.ajax({
+				type : "POST",
+				url : planUpdateRegistAction,
+				data : planUpdateRegistParam,
+				dataType : "json"
+			})
+			.done(function(result) {
+				if(result.succeeded){
+					<!--/* 成功 */-->
+					
+					dataObj.beforeProcResult = result;
+					dataObj.messageLevel = /*[[${T(jp.loioz.common.constant.CommonConstant$MessageLevel).INFO.getCd()}]]*/null;
+					
+					<!--/* 次の処理にわたす */-->
+					return resolve(dataObj);
+				} else {
+					
+					if (result.isUpdateFailed) {
+						<!--/* 更新で失敗した場合 */-->
+						showErrorMessage(result.message, $('#planContentWrap'), result.errors);
+						<!--/* 確認モーダルを閉じる */-->
+						closeSaveConfirmModal();
+						
+						return reject();
+					} else if (result.isRegistFailed) {
+						<!--/* 登録で失敗した場合 */-->
+						
+						dataObj.beforeProcResult = result;
+						dataObj.messageLevel = /*[[${T(jp.loioz.common.constant.CommonConstant$MessageLevel).ERROR.getCd()}]]*/null;
+						
+						<!--/* 次の処理にわたす */-->
+						return resolve(dataObj);
+					} else {
+						<!--/* 入力チェックエラーなどの場合 */-->
+						showErrorMessage(result.message, $('#planContentWrap'), result.errors);
+						<!--/* 確認モーダルを閉じる */-->
+						closeSaveConfirmModal();
+						
+						return reject();
+					}
+				}
+			})
+			.fail(function() {
+				showErrorMessage(PLAN_UPDATE_FAIL_MSG, $('#planContentWrap'), null);
+				<!--/* 確認モーダルを閉じる */-->
+				closeSaveConfirmModal();
+				
+				return reject();
+			})
+			
+		});
+	}
+	
+	<!--/* 【確認モーダル表示】無料期間中のプランの解約 */-->
+	$('#planDeleteDuringFreeTrialConfirmButton').on('click', function() {
+		
+		<!--/* 無料期間中かどうか */-->
+		const isDuringFreeTrial = true;
+		
+		<!--/* 実際の解約処理を実行するアクションボタンのID */-->
+		const actionButtonId = $(this).data('action-button-id');
+		
+		<!--/* 確認モーダルのフラグメントを表示 */-->
+		renderPlanCancelConfirmFragment(isDuringFreeTrial, actionButtonId);
+		
+	})
+	
+	<!--/* 無料期間中のプランの解約 */-->
+	$('#planDeleteDuringFreeTrialButton').on('click', function() {
+		
+		const action = $('#planUpdateForm').prop('action') + "/" + $(this).prop('name')
+		
+		let dataObj = {
+			planDeleteDuringFreeTrialAction : action,
+			beforeProcResult : null, // 解約処理の結果
+			messageLevel : null, // 最後のプラン画面へのリダイレクト時に表示するメッセージのレベル
+			triggerActionId : 'planDeleteDuringFreeTrialButton'
+		}
+		
+		<!--/* 2重押下防止 */-->
+		if(ajaxRunning){
+			return false;
+		}
+		
+		ajaxRunning = true;
+		
+		Promise.resolve(dataObj)
+			<!--/* 無料期間中のプランの解約 */-->
+			.then(planDeleteDuringFreeTrialFunc)
+			<!--/* 保存後の状態でSession値を更新 */-->
+			.then(updateSessionValueAfterPlanSaveFunc)
+			<!--/* プラン画面を再表示（プラン更新のメッセージ付き） */-->
+			.then(redirectIndexWithMessageFunc)
+			.catch((errorObj) => {
+				<!--/* 異常系の対応は各処理側で行っており、全体共通での異常系の処理は現状ない */-->
+				console.log(errorObj);
+			})
+			.finally(() => {
+				ajaxRunning = false;
+			})
+		
+	})
+	
+	<!--/* 無料期間中のプランの解約の処理関数 */-->
+	function planDeleteDuringFreeTrialFunc(dataObj) {
+		return new Promise((resolve, reject) => {
+			
+			<!--/* オブジェクトのプロパティ値を取得 */-->
+			const {planDeleteDuringFreeTrialAction} = dataObj;
+			
+			$.ajax({
+				type : "POST",
+				url : planDeleteDuringFreeTrialAction,
+				dataType : "json"
+			})
+			.done(function(result) {
+				if(result.succeeded){
+					<!--/* 成功 */-->
+					
+					dataObj.beforeProcResult = result;
+					dataObj.messageLevel = /*[[${T(jp.loioz.common.constant.CommonConstant$MessageLevel).INFO.getCd()}]]*/null;
+					
+					<!--/* 次の処理にわたす */-->
+					return resolve(dataObj);
+				} else {
+					showErrorMessage(result.message, $('#planContentWrap'), result.errors);
+					<!--/* 確認モーダルを閉じる */-->
+					closeCancelConfirmModal();
+					
+					return reject();
+				}
+			})
+			.fail(function() {
+				showErrorMessage(PLAN_CANCEL_FAIL_MSG, $('#planContentWrap'), null);
+				<!--/* 確認モーダルを閉じる */-->
+				closeCancelConfirmModal();
+				
+				return reject();
+			})
+			
+		});
+	}
+	
+	<!--/* 【確認モーダル表示】プランの解約 */-->
+	$('#planCancelButtonConfirmButton').on('click', function() {
+		
+		<!--/* 無料期間中かどうか */-->
+		const isDuringFreeTrial = false;
+		
+		<!--/* 実際の解約処理を実行するアクションボタンのID */-->
+		const actionButtonId = $(this).data('action-button-id');
+		
+		<!--/* 確認モーダルのフラグメントを表示 */-->
+		renderPlanCancelConfirmFragment(isDuringFreeTrial, actionButtonId);
+		
+	})
+	
+	<!--/* プランの解約 */-->
+	$('#planCancelButton').on('click', function() {
+
+		const action = $('#planUpdateForm').prop('action') + "/" + $(this).prop('name')
+		
+		let dataObj = {
+			planCancelAction : action,
+			beforeProcResult : null, // 解約処理の結果
+			messageLevel : null, // 最後のプラン画面へのリダイレクト時に表示するメッセージのレベル
+			triggerActionId : 'planCancelButton'
+		}
+		
+		<!--/* 2重押下防止 */-->
+		if(ajaxRunning){
+			return false;
+		}
+
+		ajaxRunning = true;
+		
+		Promise.resolve(dataObj)
+			<!--/* プランの解約 */-->
+			.then(planCancelFunc)
+			<!--/* 保存後の状態でSession値を更新 */-->
+			.then(updateSessionValueAfterPlanSaveFunc)
+			<!--/* プラン画面を再表示（プラン更新のメッセージ付き） */-->
+			.then(redirectIndexWithMessageFunc)
+			.catch((errorObj) => {
+				<!--/* 異常系の対応は各処理側で行っており、全体共通での異常系の処理は現状ない */-->
+				console.log(errorObj);
+			})
+			.finally(() => {
+				ajaxRunning = false;
+			})
+		
+	})
+
+	<!--/* プランの解約の処理関数 */-->
+	function planCancelFunc(dataObj) {
+		return new Promise((resolve, reject) => {
+			
+			<!--/* オブジェクトのプロパティ値を取得 */-->
+			const {planCancelAction} = dataObj;
+			
+			$.ajax({
+				type : "POST",
+				url : planCancelAction,
+				dataType : "json"
+			})
+			.done(function(result) {
+				if(result.succeeded){
+					<!--/* 成功 */-->
+					
+					dataObj.beforeProcResult = result;
+					dataObj.messageLevel = /*[[${T(jp.loioz.common.constant.CommonConstant$MessageLevel).INFO.getCd()}]]*/null;
+					
+					<!--/* 次の処理にわたす */-->
+					return resolve(dataObj);
+				} else {
+					showErrorMessage(result.message, $('#planContentWrap'), result.errors);
+					<!--/* 確認モーダルを閉じる */-->
+					closeCancelConfirmModal();
+					
+					return reject();
+				}
+			})
+			.fail(function() {
+				showErrorMessage(PLAN_CANCEL_FAIL_MSG, $('#planContentWrap'), null);
+				<!--/* 確認モーダルを閉じる */-->
+				closeCancelConfirmModal();
+				
+				return reject();
+			})
+			
+		});
+	}
+	
+	<!--/* プランの保存処理後、ログインSessionのPlanFuncRestrictMapの値を更新する処理（テナント側へのリクエスト） */-->
+	function updateSessionValueAfterPlanSaveFunc(dataObj) {
+		return new Promise((resolve, reject) => {
+			
+			<!--/* リクエストパス（テナント側） */-->
+			let tenantUrlContextPath = /*[[${planSettingForm.sessionDto.getTenantUrlContextPath()}]]*/null
+			let procPath = /*[[${T(jp.loioz.common.constant.UrlConstant).PLANSETTING_TENANT_ACCESS_URL}]]*/null
+			let requestPath = tenantUrlContextPath + "/" + procPath + "/updateSessionValueAfterPlanSave";
+			
+			$.ajax({
+				type : "GET",
+				url : requestPath,
+				dataType : "json",
+				xhrFields: {
+					withCredentials: true
+				}
+			})
+			.done(function(res) {
+				<!--/* 成功 */-->
+				
+				<!--/* 次の処理にわたす */-->
+				return resolve(dataObj);
+			})
+			.fail(function() {
+				<!--/* 失敗は考慮しない */-->
+				return reject();
+			});
+		});
+	}
+	
+	<!--/* プラン画面のIndexメソッドにリダイレクトする（メッセージ表示付き） */-->
+	function redirectIndexWithMessageFunc(dataObj) {
+		return new Promise((resolve, reject) => {
+			
+			<!--/* オブジェクトのプロパティ値を取得 */-->
+			<!--/* 保存処理の結果オブジェクト */-->
+			const {beforeProcResult, triggerActionId, messageLevel} = dataObj;
+			
+			let param = "level="+ messageLevel +"&message=" + encodeURIComponent(beforeProcResult.message)
+			let url = "redirectIndexWithMessage?"+param
+			
+			<!--/* 下記の画面遷移中（画面ロード中）に再度ボタンが押されないよう、クリックイベントを削除 */-->
+			<!--/* ※画面遷移の完了より前にalwaysの関数が実行され、通常の2重押下防止対応だけでは対応しきれないことによる特別な対応 */-->
+			$('#' + triggerActionId).off('click');
+			
+			location.href = url
+			
+			<!--/* 次の処理にわたす */-->
+			return resolve(dataObj);
+		});
+	}
+	
+	<!--/* カード情報の変更 */-->
+	$('#cardChangeButton').on('click', function() {
+
+		clearAllMessages($('#planContentWrap'))
+
+		if (!window.confirm(CARD_CHANGE_CONFIRM_MSG)) {
+			return false;
+		}
+
+		let cardName = $("#updateCardName").val()
+
+		<!--/* カード名義人バリデーション */-->
+		if (!validCardName(cardName)) {
+			scrollTop();
+			return false;
+		}
+
+		<!--/* 名、性を持つオブジェクトを取得 */-->
+		let cardNames = getHalfWidthFirstLastName(cardName)
+
+		<!--/* セキュリティコードバリデーション */-->
+		let cvv = $("#updateCardSecurityCd").val().trim()
+		if (!validCardSecurityCode(cvv)) {
+			scrollTop();
+			return false;
+		}
+		
+		let cardInfoObj = {}
+		cardInfoObj.aid = aid
+		cardInfoObj.cn = $("#updateCardNum").val()
+		cardInfoObj.ed = $("#updateExpireYear").val() + $("#updateExpireMonth").val()
+		cardInfoObj.fn = cardNames.firstName
+		cardInfoObj.ln = cardNames.lastName
+		cardInfoObj.cvv = cvv
+
+		getTokenAndExec(cardInfoObj, execCardChange)
+	})
+
+	<!--/*
+	 * カード情報の変更処理
+	 *
+	 * @param {string} resultCode 結果コード
+	 * @param {string} errMsg エラーメッセージ
+	*/-->
+	function execCardChange(resultCode, errMsg) {
+		if (resultCode != "Success") {
+
+			showErrorMessage(errMsg, $('#planContentWrap'), null);
+			scrollTop();
+
+		} else {
+			<!--/* 2重押下防止 */-->
+			if(ajaxRunning){
+				return false;
+			}
+
+			<!--/* 更新カード情報を設定 */-->
+			<!--/* カード番号は下4桁のみとする */-->
+			const updateCardNum = $("#updateCardNum").val().slice(-DIGITS_NO_MASKING_CARD_NUM)
+			$("#updateCardNumForUpdate").val(updateCardNum)
+
+			<!--/* 有効期限 */-->
+			$("#updateExpireYearForUpdate").val($("#updateExpireYear").val())
+			$("#updateExpireMonthForUpdate").val($("#updateExpireMonth").val())
+
+			<!--/* カード名義人を分割して設定 */-->
+			<!--/* ※バリデーションは行わない（カードトークン取得APIの実行前にチェックしているため） */-->
+			let cardNames = getHalfWidthFirstLastName($("#updateCardName").val())
+			$("#updateCardFirstNameForUpdate").val(cardNames.firstName)
+			$("#updateCardLastNameForUpdate").val(cardNames.lastName)
+
+			const tkn = $('#tkn').val()
+
+			const action = $('#cardChangeForm').prop('action')
+			let param = $('#cardChangeForm').serializeArray()
+			let tknObj = {
+				name : "token",
+				value : tkn
+			}
+			param.push(tknObj)
+
+			ajaxRunning = true;
+			$.ajax({
+				type : "POST",
+				url : action,
+				data : param,
+				dataType : "json"
+			})
+			.done(function(result) {
+				if(result.succeeded){
+
+					const messageLevel = /*[[${T(jp.loioz.common.constant.CommonConstant$MessageLevel).INFO.getCd()}]]*/null
+					let param = "level="+ messageLevel +"&message=" + encodeURIComponent(result.message)
+					let url = "redirectIndexWithMessage?"+param
+					
+					<!--/* 下記の画面遷移中（画面ロード中）に再度ボタンが押されないよう、クリックイベントを削除 */-->
+					<!--/* ※画面遷移の完了より前にalwaysの関数が実行され、通常の2重押下防止対応だけでは対応しきれないことによる特別な対応 */-->
+					$('#cardChangeButton').off('click');
+					
+					location.href = url
+
+				} else {
+					showErrorMessage(result.message, $('#planContentWrap'), result.errors);
+					scrollTop();
+				}
+			})
+			.fail(function() {
+				showErrorMessage(CARD_CHANGE_FAIL_MSG, $('#planContentWrap'), null);
+				scrollTop();
+			})
+			.always(function() {
+				ajaxRunning = false;
+
+				<!--/* カード情報を消去（表示項目） */-->
+				$("#updateCardNum").val("");
+				$("#updateExpireYear").val("");
+				$("#updateExpireMonth").val("");
+				$("#updateCardName").val("");
+				$("#updateCardSecurityCd").val("");
+
+				<!--/* カード情報を消去（保存項目） */-->
+				$("#updateCardNumForUpdate").val("")
+				$("#updateExpireYearForUpdate").val("")
+				$("#updateExpireMonthForUpdate").val("")
+				$("#updateCardFirstNameForUpdate").val("")
+				$("#updateCardLastNameForUpdate").val("")
+			});
+		}
+	}
+	
+	<!--/* 無料期間中のプラン登録フォームの、プランタイプorライセンス数の選択値が変更された場合 */-->
+	$('#planRegistDuringFreeTrialPlanTypeRadioWrap input:radio, #planRegistDuringFreeTrialLicenseInput').on('change', function(event) {
+		<!--/* ※2重押下防止処理は入れない（selectボックスが変更された最新のデータを反映させたいため） */-->
+		const $checkedRadio = $('#planRegistDuringFreeTrialPlanTypeRadioWrap input:radio:checked');
+		const $licenseInput = $('#planRegistDuringFreeTrialLicenseInput');
+		const $storageInput = $('#planRegistDuringFreeTrialStorageInput');
+		getPlanChargeAndShowScreen($checkedRadio, $licenseInput, $storageInput)
+	})
+
+	<!--/* プラン登録フォームの、プランタイプorライセンス数orストレージ容量の選択値が変更された場合 */-->
+	$('#registPlanTypeRadioWrap input:radio, #registLicenseInput, #registStorageInput').on('change', function(event) {
+		<!--/* ※2重押下防止処理は入れない（selectボックスが変更された最新のデータを反映させたいため） */-->
+		const $checkedRadio = $('#registPlanTypeRadioWrap input:radio:checked');
+		const $licenseInput = $('#registLicenseInput');
+		const $storageInput = $('#registStorageInput');
+		getPlanChargeAndShowScreen($checkedRadio, $licenseInput, $storageInput)
+	})
+
+	<!--/* プラン変更フォームの、プランタイプorライセンス数orストレージ容量の選択値が変更された場合 */-->
+	$('#updatePlanTypeRadioWrap input:radio, #updateLicenseInput, #updateStorageInput').on('change', function(event) {
+		<!--/* ※2重押下防止処理は入れない（selectボックスが変更された最新のデータを反映させたいため） */-->
+		const $checkedRadio = $('#updatePlanTypeRadioWrap input:radio:checked');
+		const $licenseInput = $('#updateLicenseInput');
+		const $storageInput = $('#updateStorageInput');
+		getPlanChargeAndShowScreen($checkedRadio, $licenseInput, $storageInput)
+	})
+	
+	<!--/*
+	 * プラン情報を取得し画面に表示する（画面初期表示用）
+	 *
+	 * @param {string} nowPlanTypeId プランタイプID
+	 * @param {string} licenseCount ライセンス数
+	 * @param {string} storageCount ストレージ量
+	*/-->
+	function getPlanChargeAndShowScreenForIndex(nowPlanTypeId, licenseCount, storageCount) {
+
+		const requestUrl = buildPlanChargeRequestUrl(nowPlanTypeId, licenseCount, storageCount)
+		execGetPlanChargeAndShowScreen(requestUrl)
+	}
+	
+	<!--/*
+	 * プラン情報を取得し画面に表示する
+	 *
+	 * @param {jQuery} $planTypeRadio プランタイプ選択ラジオオブジェクト
+	 * @param {jQuery} $licenseInput ライセンス数入力オブジェクト
+	 * @param {jQuery} $storageInput ストレージ量入力オブジェクト
+	*/-->
+	function getPlanChargeAndShowScreen($planTypeRadio, $licenseInput, $storageInput) {
+
+		const requestUrl = getPlanChargeRequestUrl($planTypeRadio, $licenseInput, $storageInput)
+		execGetPlanChargeAndShowScreen(requestUrl)
+	}
+	
+	<!--/*
+	 * プラン情報を取得し画面に表示する
+	 *
+	 * @param {string} requestUrl プラン情報取得リクエストのURL
+	*/-->
+	function execGetPlanChargeAndShowScreen(requestUrl) {
+		
+		$.ajax({
+			type : "GET",
+			url : requestUrl,
+		})
+		.done(function(result) {
+			if(result.succeeded){
+
+				clearAllMessages($('#planContentWrap'))
+				clearAllItemMsg()
+
+				const planInfo = result.planInfo
+				const oneLicenseCharge = planInfo.oneLicenseCharge
+				const licenseCharge = planInfo.licenseCharge
+				const storageCharge = planInfo.storageCharge
+				const sumCharge = planInfo.sumCharge
+				const taxAmountOfSumCharge = planInfo.taxAmountOfSumCharge
+
+				<!--/* プラン情報を設定 */-->
+				$('.selectedPlanTypeOneLicenseCharge').html(formatComma(escapeHtml(oneLicenseCharge)))
+				$('.selectedLicenseCharge').html(formatComma(escapeHtml(licenseCharge)))
+				$('.selectedStorageCharge').html(formatComma(escapeHtml(storageCharge)))
+				$('.selectedPlanSumCharge').html(formatComma(escapeHtml(sumCharge)))
+				$('.selectedPlanTaxAmountOfSumCharge').html(formatComma(escapeHtml(taxAmountOfSumCharge)))
+				$('.selectedPlanSumChargeIncludedTax').html(formatComma(escapeHtml(sumCharge + taxAmountOfSumCharge)))
+
+			} else {
+				showErrorMessage(result.message, $('#planContentWrap'), result.errors);
+				scrollTop();
+			}
+		})
+		.fail(function() {
+			showErrorMessage(GET_PLAN_CHARGE_INFO_FAIL_MSG, $('#planContentWrap'), null);
+			scrollTop();
+		})
+		.always(function() {
+		});
+	}
+	
+	<!--/*
+	 * プランの料金情報を取得するリクエストのURLを取得する
+	 *
+	 * @param {jQuery} $planTypeRadio プランタイプを選択したラジオボタン
+	 * @param {jQuery} $licenseInput ライセンス数を入力したテキストボックス
+	 * @param {jQuery} $storageSelectBox ストレージ容量を選択したセレクトボックス
+	 *
+	 * @return {string} url プランの料金情報を取得するAPIをコールするためのURL
+	*/-->
+	function getPlanChargeRequestUrl($planTypeRadio, $licenseInput, $storageSelectBox) {
+
+		<!--/* プランタイプ */-->
+		var planTypeValue = $planTypeRadio.val()
+		
+		<!--/* ライセンス数 */-->
+		var licenseValue = getLicenseInputVal($licenseInput)
+
+		<!--/* ストレージ容量 */-->
+		var storageObj = $storageSelectBox.get(0)
+		var storageIdx = storageObj.selectedIndex;
+		var storageValue = storageObj.options[storageIdx].value;
+
+		let requestUrl = buildPlanChargeRequestUrl(planTypeValue, licenseValue, storageValue)
+
+		return requestUrl
+	}
+	
+	<!--/*
+	 * プランの料金情報を取得するリクエストのURLを取得する
+	 *
+	 * @param {string} planTypeId プランタイプID
+	 * @param {string} licenseCount ライセンス数
+	 * @param {string} storageCount ストレージ容量
+	 *
+	 * @return {string} url プランの料金情報を取得するAPIをコールするためのURL
+	*/-->
+	function buildPlanChargeRequestUrl(planTypeId, licenseCount, storageCount) {
+		
+		let action = planChargeUrl
+		let param = "?planTypeId=" + planTypeId + "&licenseCount=" + licenseCount + "&storageCount=" + storageCount
+		let requestUrl = action + param
+
+		return requestUrl
+	}
+	
+	<!--/*
+	 * ライセンス数の入力要素から入力値を取得する
+	 *
+	 * @param {jQuery} $licenseInput ライセンス数を入力したテキストボックス
+	 *
+	 * @return {string} licenseValue ライセンス数
+	*/-->
+	function getLicenseInputVal($licenseInput) {
+		
+		<!--/* ライセンス数 */-->
+		<!--/* 全角→半角変換、数字以外除去（入力ボックスの表示状態と合わせる） */-->
+		inputNumberOnlyFunc($licenseInput[0])
+		var licenseValue = $licenseInput.val()
+		
+		return licenseValue;
+	}
+	
+	<!--/* プランの請求履歴モーダルを表示する */-->
+	$('.showPlanHistoryModal').on('click', function() {
+		let action = "planHistory/list";
+		$.ajax({
+			url : action,
+			type : "GET",
+		}).done(function(val) {
+			<!--/* モーダルの表示 */-->
+			$('.planHistoryModalContentsWrap').html(val);
+		}).fail(function(jqXHR, textStatus, errorThrown) {
+		}).always(function() {
+		});
+	})
+
+});
+/*]]>*/
+</script>
+</head>
+<body>
+
+<th:block th:if="${T(jp.loioz.common.constant.CommonConstant.SystemFlg).FLG_OFF.equalsByCode(@environment.getProperty('app.devMode'))}">
+
+	<!-- Google Tag Manager (noscript) -->
+	<noscript><iframe src="https://www.googletagmanager.com/ns.html?id=GTM-5SX264G"
+	height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
+	<!-- End Google Tag Manager (noscript) -->
+
+</th:block>
+
+	<!--/* ヘッダー */-->
+	<!--/* ※プラン画面では利用しない値はnullを設定 */-->
+	<!--/* ※プラン画面にはシステム管理者しかアクセスできないためisSystemMngは固定でtrueとする */-->
+	<th:block th:replace="commonLayoutFragment::loginHeaderFragment(
+		loginHeaderForm                    =         ${loginHeaderForm},
+		isOnlyPlanSettingAccessible        =         ${planSettingForm.sessionDto.isOnlyPlanSettingAccessible()},
+		isFreePlanStatus                   =         ${planSettingForm.sessionDto.isFreePlanStatus()},
+		tenantName                         =         ${planSettingForm.sessionDto.getTenantName()},
+		subDomain                          =         ${planSettingForm.sessionDto.getSubDomain()},
+		planTypeTitle                        =       ${planSettingForm.sessionDto.getPlanTypeTitle()},
+		daysCountFreePlanAvailable         =         ${planSettingForm.sessionDto.getDaysCountFreePlanAvailable()},
+		loginAccountName                   =         ${planSettingForm.sessionDto.getLoginAccountName()},
+		loginAccountId                     =         ${planSettingForm.sessionDto.getLoginAccountId()},
+		mailAddress                        =         ${planSettingForm.sessionDto.getLoginAccountMailAddress()},
+		isLawyer                           =         ${planSettingForm.sessionDto.isLawyer()},
+		deviceType                         =         null,
+		isSystemMng                        =         true,
+		tenantUrlContextPath               =         ${planSettingForm.sessionDto.getTenantUrlContextPath()},
+		isPlanView                         =         true,
+		canUseMessage                      =         ${planSettingForm.sessionDto.canUsePlanFunc(T(jp.loioz.common.constant.plan.PlanConstant$PlanFuncRestrict).PF0001)},
+		canUseKaikei                       =         ${planSettingForm.sessionDto.canUsePlanFunc(T(jp.loioz.common.constant.plan.PlanConstant$PlanFuncRestrict).PF0002)},
+		oldKaikeiIsOnInTenantFuncSetting         =         ${T(jp.loioz.common.constant.CommonConstant$SystemFlg).FLG_ON.equalsByCode(
+		                                                                               planSettingForm.sessionDto.getTenantFuncSettingValue(T(jp.loioz.common.constant.TenantFuncSettingConstant$TenantFuncSetting).OLD_KAIKEI_ON_OFF)
+		                                                                       )},
+		oldKaikeiIsOpenInLoiozAdminControl      =         ${T(jp.loioz.common.constant.CommonConstant$SystemFlg).FLG_ON.equalsByCode(
+		                                                                               planSettingForm.sessionDto.getLoiozAdminControlValue(T(jp.loioz.common.constant.LoiozAdminControlConstant$LoiozAdminControl).OLD_KAIKEI_OPEN)
+		                                                                       )}
+	)"></th:block>
+
+	<!-- コンテンツメイン -->
+	<div id="main-contents" class="contents_sidebar_wrapper_setting">
+		<!-- サイドメニュー -->
+		<div th:replace="common/systemSettingMenuForPlan::selectMenu(
+			${T(jp.loioz.common.constant.CommonConstant$SystemSettingMenu).KEIYAKU_PLAN.getCd()},
+			${planSettingForm.sessionDto.isOnlyPlanSettingAccessible()},
+			${planSettingForm.sessionDto.isLawyer()},
+			${planSettingForm.sessionDto.getTenantUrlContextPath()},
+			${planSettingForm.sessionDto.isFreePlanStatus()},
+			${planSettingForm.sessionDto.canUsePlanFunc(T(jp.loioz.common.constant.plan.PlanConstant$PlanFuncRestrict).PF0002)},
+			${T(jp.loioz.common.constant.CommonConstant$SystemFlg).FLG_ON.equalsByCode(
+				planSettingForm.sessionDto.getLoiozAdminControlValue(T(jp.loioz.common.constant.LoiozAdminControlConstant$LoiozAdminControl).OLD_KAIKEI_OPEN)
+			)}
+		)"></div>
+		<div class="contents_wrapper">
+			<div>
+				<div th:object="${planSettingForm}">
+					<div th:replace="common/messageArea::messageArea"></div>
+
+					<div id="planContentWrap" class="container-fluid contents_limited_width_setting">
+					
+						<!--/* パンくず*/-->
+						<div class="breadcrumb_area">
+							<ul>
+								<li><span>契約管理</span></li>
+								<li><i class="fas fa-angle-right"></i></li>
+								<li>[[${planSettingForm.sessionDto.isFreePlanStatus()} ? 'ご利用プランの設定' : 'ご利用プラン／請求情報']]</li>
+							</ul>
+						</div>
+						
+						<div th:replace="common/messageArea::jsMessageArea"></div>
+						
+						<!--/* コンテンツブロック */-->
+						<div class="contents_block position-relative">
+							<!--/* 無料期間中の画面 */-->
+							<div class="screen freeStatusPeriod free_trial_period content_area fc_sub" th:classappend="*{!isShowFreeStatusPeriodScreen()}? 'hidden'">
+							
+								<p class="h1 mb-2 text-center">
+									<span class="d-block mb-3 font-weight-bold">現在、無料トライアル中です。</span>
+									<span class="d-block mb-4 h2 font-weight-bold">（<span class="text-danger">[[*{getFreeTrialExpiredAtStr()}]]</span>まで）</span>
+								</p>
+								<div class="row mx-1">
+									<div class="col-lg-9 pl-0">
+										<h3 class="title_line font-weight-bold py-1">ご登録情報</h3>
+										<div class="plan_edit_area px-0">
+											<div class="form-row mx-1">
+												<div class="input_parts form-group col-md-2 mb-0 pl-0">
+													<label class="plan_apply_label pt-1">事務所名</label>
+												</div>
+												<div class="input_parts form-group col-md-10">
+													<span th:text="*{tenantName}"></span>
+												</div>
+											</div>
+											<div class="form-row mx-1">
+												<div class="input_parts form-group col-md-2 mb-0 pl-0">
+													<label class="plan_apply_label pt-1">事務所ID</label>
+												</div>
+												<div class="input_parts form-group col-md-10">
+													<span th:text="*{subDomain}"></span>
+												</div>
+											</div>
+										</div>
+									</div>
+								</div>
+								
+								<!--/* 無料ステータス中プランの更新／登録フォーム（無料プランのライセンス更新 or 継続利用申し込み） */-->
+								<div class="row mx-1">
+									<div class="col-lg-9 pl-0">
+										<form id="freeStatusPeriodForm" class="free_status_period_form">
+											<!--/* ライセンス選択 */-->
+											<div class="d-flex justify-content-between align-items-center">
+												<h3 class="title_line font-weight-bold text-left py-1">ご利用ライセンス</h3>
+												
+												<div class="paidPlanCheckContainer paid_plan_check_container">
+													<input id="paidPlanCheck" type="checkbox" class="check paidPlanCheck" />
+													<label  for="paidPlanCheck" class="label">
+														<span class="checkOff"><i class="far fa-circle mr-2 fa-lg"></i>有償プランの申し込みを行う</span>
+														<span class="checkOn hidden"><i class="far fa-check-circle mr-2 fa-lg"></i>有償プランの申し込みを行う</span>
+													</label>
+												</div>
+											</div>
+											
+											<div class="plan_edit_area mb-2 px-0">
+												<div class="detail_input_area mb-2">
+												
+													<div class="form-row mx-1">
+														<div class="input_parts form-group w-100">
+															<div>
+																<span class="d-inline-block mb-3 font-weight-bold">ご利用プラン</span>
+															</div>
+															<div class="d-flex justify-content-between align-items-center">
+																<div>
+																	<div id="planRegistDuringFreeTrialPlanTypeRadioWrap">
+																		<label class="radio_btn mb-0" th:each="option : *{getPlanTypeSelectOptions()}" th:with="nowPlanTypeId=*{nowPlanType.getId()}">
+																			<input type="radio" class="radio_input" name="planTypeIdForSave" th:value="${option.value}" th:checked="${T(java.lang.String).valueOf(option.value).equals(nowPlanTypeId)}">
+																			<span class="radio_txt text_1st" th:text="${option.label}">スターター</span>
+																		</label>
+																	</div>
+																	<div>
+																		<span class="error_mag_point hidden d-inline-block mt-2 mr-4" id="itemMsg_planTypeIdForSave"></span>
+																		<span class="error_mag_point hidden d-inline-block mt-2" id="itemMsg_planTypeIdForGetPlanCharge"></span>
+																	</div>
+																</div>
+																<div class="showOnlyplanRegistDuringFreeTrialCase hidden">
+																	<span class="charge_title mx-2">1ライセンス</span>
+																	<span class="d-inline-block">
+																		<span class="license_storage_charge">
+																			<span class="selectedPlanTypeOneLicenseCharge"></span>
+																		</span>
+																		<span class="d-inline-block px-2">円</span>
+																	</span>
+																</div>
+															</div>
+														</div>
+													</div>
+												
+													<div class="form-row under_line pb-2 mb-4"></div>
+												
+													<div class="form-row mx-1">
+														<div class="input_parts form-group w-100">
+															<div>
+																<span class="d-inline-block mb-3 font-weight-bold">ライセンス数</span>
+																<span class="d-inline-block ml-2 toolTipForExplainLicense"><i class="fas fa-question-circle"></i></span>
+															</div>
+															<div class="d-flex justify-content-between align-items-center">
+																<div>
+																	<div>
+																		<span class="license_storage_input_wrap mb-0">
+																			<input type="text" id="planRegistDuringFreeTrialLicenseInput" class="form-control input_number_only text-right" name="licenseNumForSave" th:value="*{nowLicenseCount}" maxlength="3"/>
+																		</span>
+																		<span class="license_storage_unit ml-2">ユーザー</span>
+																	</div>
+																	<div>
+																		<span class="error_mag_point hidden d-inline-block mt-2 mr-4" id="itemMsg_licenseNumForSave"></span>
+																		<span class="error_mag_point hidden d-inline-block mt-2" id="itemMsg_licenseNumForGetPlanCharge"></span>
+																	</div>
+																</div>
+																<div class="showOnlyplanRegistDuringFreeTrialCase hidden">
+																	<span class="charge_title mx-2">月額</span>
+																	<span class="d-inline-block">
+																		<span class="license_storage_charge">
+																			<span class="selectedLicenseCharge"></span>
+																		</span>
+																		<span class="d-inline-block px-2">円</span>
+																	</span>
+																</div>
+															</div>
+														</div>
+													</div>
+													
+													<div class="form-row under_line pb-2 mb-4"></div>
+													
+													<div class="form-row mx-1">
+														<div class="input_parts form-group w-100">
+															<div>
+																<span class="d-inline-block mb-3 font-weight-bold">loiozファイルストレージ容量</span>
+																<span class="d-inline-block ml-2 toolTipForExplainStorage"><i class="fas fa-question-circle"></i></span>
+															</div>
+															<div class="d-flex justify-content-between align-items-center">
+																<div>
+																	<div>
+																		<span class="license_storage_input_label" th:text="*{nowStorageCapacity}"></span>
+																		<span class="license_storage_input_wrap mb-0 hidden">
+																			<select id="planRegistDuringFreeTrialStorageInput" class="form-control hidden" name="storageCapacityForSave" th:value="*{nowStorageCapacity}">
+																				<th:block th:each="enum : *{getStorageCapacitySelectOptions()}" th:with="nowStorageCapacity=*{nowStorageCapacity}">
+																					<option th:value="${enum.quantity}" th:selected="${T(java.lang.String).valueOf(enum.quantity).equals(nowStorageCapacity)}">[[${enum.quantity}]]</option>
+																				</th:block>
+																			</select>
+																		</span>
+																		<span class="license_storage_unit ml-2">GB</span>
+																	</div>
+																	<div>
+																		<span class="error_mag_point hidden d-inline-block mt-2 mr-4" id="itemMsg_storageCapacityForSave"></span>
+																		<span class="error_mag_point hidden d-inline-block mt-2" id="itemMsg_storageCapacityForGetPlanCharge"></span>
+																	</div>
+																</div>
+																<div class="showOnlyplanRegistDuringFreeTrialCase hidden">
+																	<span class="charge_title mr-2">月額</span>
+																	<span class="d-inline-block">
+																		<span class="license_storage_charge">
+																			<span class="selectedStorageCharge"></span>
+																		</span>
+																		<span class="d-inline-block px-2">円</span>
+																	</span>
+																</div>
+															</div>
+														</div>
+													</div>
+													
+													<div class="form-row under_line pb-2 mb-3"></div>
+													
+													<!-- 料金サマリ -->
+													<div class="showOnlyplanRegistDuringFreeTrialCase hidden">
+														<div class="form-row mx-1">
+															<div class="input_parts form-group w-100 d-flex justify-content-between align-items-center mb-0">
+																<div>
+																	<!-- サマリ部分は数量部分はない -->
+																</div>
+																<div class="charge_summary_val_plan_regist_area">
+																	<span class="charge_summary_title mr-2">小計</span>
+																	<span class="d-inline-block">
+																		<span class="charge_summary_val">
+																			<span class="selectedPlanSumCharge"></span>
+																		</span>
+																		<span class="d-inline-block px-2">円</span>
+																	</span>
+																</div>
+															</div>
+														</div>
+														<div class="form-row mx-1">
+															<div class="input_parts form-group w-100 d-flex justify-content-between align-items-center mb-2">
+																<div>
+																	<!-- サマリ部分は数量部分はない -->
+																</div>
+																<div class="charge_summary_val_plan_regist_area">
+																	<span class="charge_summary_title mr-2">消費税</span>
+																	<span class="d-inline-block">
+																		<span class="charge_summary_val">
+																			<span class="selectedPlanTaxAmountOfSumCharge"></span>
+																		</span>
+																		<span class="d-inline-block px-2">円</span>
+																	</span>
+																</div>
+															</div>
+														</div>
+														<div class="form-row mx-1">
+															<div class="input_parts form-group w-100 d-flex justify-content-between align-items-center mb-0">
+																<div>
+																	<!-- サマリ部分は数量部分はない -->
+																</div>
+																<div class="charge_summary_val_plan_regist_area">
+																	<div class="charge_summary_val_plan_regist charge_summary_val_row">
+																		<span class="plan_sum_charge_title mr-2">月額料金</span>
+																		<span class="d-inline-block">
+																			<span class="selectedPlanSumChargeIncludedTax plan_sum_charge_value text-right"></span>
+																			<span class="d-inline-block font-weight-bold px-2">円</span>
+																		</span>
+																	</div>
+																</div>
+															</div>
+														</div>
+													</div>
+													
+												</div>
+												<div class="text-left mt-4">
+													<div class="d-flex mb-2">
+														<div class="mr-2">※</div>
+														<div>
+															<span class="d-block">トライアル中は、ライセンス数のみ自由に変更することができます。</span>
+														</div>
+													</div>
+													<div class="d-flex">
+														<div class="mr-2">※</div>
+														<div>
+															<span class="d-block">トライアル終了後もサービスをご利用いただく場合は、有償プランのお申し込みが必要です。</span>
+															<span class="d-block">[[*{getFreeTrialExpiredAtStr()}]]までは引き続き無料でご利用いただけます。</span>
+														</div>
+													</div>
+												</div>
+											</div>
+											
+											<!--/* 有償プラン申し込み入力 */-->
+											<!--/* 無料期間中のプラン登録の場合のみ表示 */-->
+											<div class="showOnlyplanRegistDuringFreeTrialCase hidden paid_plan_check_area px-3 py-5">
+												<div class="px-4">
+													<!--/* お支払い情報（カード払いのみ） */-->
+													<div>
+														<h3 class="title_line font-weight-bold py-1">お支払い情報（カード払いのみ）</h3>
+														<div class="plan_edit_area px-0 pb-2 mb-0">
+															<div class="detail_input_area card_input_area">
+																<div class="form-row">
+																	<div class="input_parts form-group col-md-9 mb-4">
+																		<label class="plan_apply_label mb-3">ご利用可能なカード<small>（VISA、Master、JCB、AMEX、Diners）</small></label>
+																		<div class="d-flex paymant_card">
+																			<img class="img-thumbnail" th:src="@{/img/payment/visa.gif}">
+																			<img class="img-thumbnail" th:src="@{/img/payment/master.gif}">
+																			<img class="img-thumbnail" th:src="@{/img/payment/jcb.gif}">
+																			<img class="img-thumbnail" th:src="@{/img/payment/amex.gif}">
+																			<img class="img-thumbnail" th:src="@{/img/payment/diners_logo_white.gif}">
+																		</div>
+																	</div>
+																</div>
+																<div class="form-row">
+																	<div class="input_parts form-group col-md-6 mb-0">
+																		<label class="plan_apply_label mb-3">カード番号</label>
+																		<div>
+																			<input type="text" id="registDuringFreeTrialCardNum" class="form-control d-inline-block w-75 input_number_only" maxlength="16" autocomplete="off"/>
+																			<input type="hidden" id="registDuringFreeTrialCardNumForRegist" name="cardNumForSave"/>
+																		</div>
+																		<div class="input_nav">
+																			<p>※-（ハイフン）なしでご入力ください。</p>
+																			<p>　例）1111222233334444</p>
+																		</div>
+																	</div>
+																	<div class="input_parts form-group col-md-5 mb-0">
+																		<label class="plan_apply_label mb-3">有効期限</label>
+																		<div>
+																			<input type="text" id="registDuringFreeTrialExpireMonth" class="form-control d-inline-block w-25 input_number_only" placeholder="MM" maxlength="2" autocomplete="off"/>
+																			<input type="hidden" id="registDuringFreeTrialExpireMonthForRegist" name="expireMonthForSave"/>
+																			<span>月</span>
+																			<span>／</span>
+																			<input type="text" id="registDuringFreeTrialExpireYear" class="form-control d-inline-block w-25 input_number_only" placeholder="YY" maxlength="2" autocomplete="off"/>
+																			<input type="hidden" id="registDuringFreeTrialExpireYearForRegist" name="expireYearForSave"/>
+																			<span>年</span>
+																		</div>
+																		<div class="input_nav">
+																			<p>※半角数字の2桁でご入力ください。</p>
+																			<p>　例）<span th:text="*{#temporals.format(sampleCardExpiredDate, 'MM 月 ／ yy 年')}"></span></p>
+																		</div>
+																	</div>
+																</div>
+																<div class="form-row">
+																	<div class="input_parts form-group col-md-6 mb-0">
+																		<label class="plan_apply_label mb-3">カード名義人</label>
+																		<div>
+																			<input type="text" id="registDuringFreeTrialCardName" class="form-control d-inline-block w-75" maxlength="100" autocomplete="off"/>
+																			<input type="hidden" id="registDuringFreeTrialCardFirstNameForRegist" name="cardFirstNameForSave"/>
+																			<input type="hidden" id="registDuringFreeTrialCardLastNameForRegist" name="cardLastNameForSave"/>
+																		</div>
+																		<div class="input_nav mb-0">
+																			<p>※半角ローマ字でご入力ください。</p>
+																			<p>　例）TARO LOIOZ</p>
+																		</div>
+																	</div>
+																	<div class="input_parts form-group col-md-5 mb-0">
+																		<label class="plan_apply_label mb-3">セキュリティコード<span class="ml-2 toolTipForExplainSecurityCode"><i class="fas fa-question-circle"></i></span></label>
+																		<div>
+																			<input type="text" id="registDuringFreeTrialCardSecurityCd" name="cardSecurityCdForSave" class="form-control input_number_only digit5" placeholder="xxx" maxlength="4" autocomplete="off"/>
+																		</div>
+																		<div class="input_nav mb-0">
+																			<p>※半角数字でご入力ください。</p>
+																			<p>　例）012</p>
+																		</div>
+																	</div>
+																</div>
+															</div>
+														</div>
+													</div>
+													
+												</div>
+											</div>
+											
+											<!-- コマンド -->
+											<div class="lower_command_container mt-5-rem text-center">
+												<div class="row">
+													<!--/* 無料プラン更新の場合のみ表示 */-->
+													<div class="showOnlyFreePlanUpdateCase col-lg-12">
+														<button type="button" id="freePlanUpdateConfirmButton" class="btn btn-primary btn-lg"data-action-button-id="freePlanUpdateButton" data-toggle="modal" data-target="#saveConfirmModal">変更内容の確認へ進む</button>
+														<button type="button" id="freePlanUpdateButton" class="hidden" data-action="/user/planSetting/freePlanUpdate"></button>
+													</div>
+													<!--/* 無料期間中のプラン登録の場合のみ表示 */-->
+													<div class="showOnlyplanRegistDuringFreeTrialCase hidden col-lg-12">
+														<button type="button" id="planRegistDuringFreeTrialConfirmButton" class="btn btn-primary btn-lg"data-action-button-id="planRegistDuringFreeTrialButton" data-toggle="modal" data-target="#saveConfirmModal">登録内容の確認へ進む</button>
+														<button type="button" id="planRegistDuringFreeTrialButton" class="hidden" data-action="/user/planSetting/planRegistDuringFreeTrial"></button>
+													</div>
+												</div>
+											</div>
+											
+										</form>
+									</div>
+								</div>
+							
+							</div>
+
+							<!--/* 無料トライアルの終了後、または、解約後の期限切れの状態でのアクセス画面 */-->
+							<div class="screen registPlan regist_plan content_area fc_sub" th:classappend="*{!isShowPlanRegistScreen()}? 'hidden'">
+								<form id="planRegistForm" th:action="@{/user/planSetting/regist}" method="post">
+									<div class="h1 text-center font-weight-bold">
+										<!--/* 無料トライアルの終了後の場合 */-->
+										<th:block th:if="${T(jp.loioz.common.constant.plan.PlanConstant.PlanStatus).FREE.getCd()} == *{nowPlanStatus.getCd()}">
+											無料トライアルのご利用ありがとうございました。
+										</th:block>
+										<!--/* 解約後の期限切れの場合 */-->
+										<th:block th:if="${T(jp.loioz.common.constant.plan.PlanConstant.PlanStatus).CANCELED.getCd()} == *{nowPlanStatus.getCd()}">
+											loiozのご利用ありがとうございました。
+										</th:block>
+									</div>
+									
+									<!--/* 解約後の期限切れの場合 */-->
+									<th:block th:if="${T(jp.loioz.common.constant.plan.PlanConstant.PlanStatus).CANCELED.getCd()} == *{nowPlanStatus.getCd()}">
+										<!--/* 画面上部ボタンエリア */-->
+										<div class="container upper_command_container">
+											<div class="row col-12 p-0 m-0 justify-content-end align-items-center">
+												<a href="javascript:void(0);" data-toggle="modal" data-target="#planHistoryModal" class="showPlanHistoryModal btn btn-light" role="button">
+													<i class="fas fa-list"></i><span class="d-inline-block">請求履歴</span>
+												</a>
+											</div>
+										</div>
+									</th:block>
+									
+									<p class="mt-5 mb-4 detail_info">
+										引き続きご利用いただく場合は、以下のお支払い情報のご登録が必要となります。<br>
+										ご登録後は、すぐにloioz（ロイオズ）のご利用が可能となります。
+									</p>
+									<div class="row mx-1">
+										<div class="col-lg-9 pl-0">
+											<div class="mb-5 text-left fc_sub">
+												<p class="text_mark">
+													<i class="fas fa-exclamation-circle mr-2"></i>お支払い情報をご登録いただいた場合、初回のお支払いは当月末となります。
+												</p>
+											</div>
+										</div>
+									</div>
+									
+									<div class="row mx-1">
+										<div class="col-lg-9 pl-0">
+											<h3 class="title_line font-weight-bold mt-4 py-1">ご登録情報</h3>
+											<div class="plan_edit_area px-0">
+												<div class="form-row mx-1">
+													<div class="input_parts form-group col-md-2 mb-0 pl-0">
+														<label class="plan_apply_label pt-1">事務所名</label>
+													</div>
+													<div class="input_parts form-group col-md-10">
+														<span th:text="*{tenantName}"></span>
+													</div>
+												</div>
+												<div class="form-row mx-1">
+													<div class="input_parts form-group col-md-2 mb-0 pl-0">
+														<label class="plan_apply_label pt-1">事務所ID</label>
+													</div>
+													<div class="input_parts form-group col-md-10">
+														<span th:text="*{subDomain}"></span>
+													</div>
+												</div>
+											</div>
+										</div>
+									</div>
+									
+									<!--/* ライセンス選択 */-->
+									<div class="row mx-1">
+										<div class="col-lg-9 pl-0">
+											<h3 class="title_line font-weight-bold py-1">ご利用ライセンス、ファイルストレージ容量のご選択</h3>
+											<div class="plan_edit_area px-0">
+												<div class="detail_input_area mb-2">
+													
+													<div class="form-row mx-1">
+														<div class="input_parts form-group w-100">
+															<div>
+																<span class="d-inline-block mb-3">ご利用プラン</span>
+															</div>
+															<div class="d-flex justify-content-between align-items-center">
+																<div>
+																	<div id="registPlanTypeRadioWrap">
+																		<label class="radio_btn mb-0" th:each="option : *{getPlanTypeSelectOptions()}" th:with="nowPlanTypeId=*{nowPlanType.getId()}">
+																			<input type="radio" class="radio_input" name="planTypeIdForSave" th:value="${option.value}" th:checked="${T(java.lang.String).valueOf(option.value).equals(nowPlanTypeId)}">
+																			<span class="radio_txt text_1st" th:text="${option.label}">スターター</span>
+																		</label>
+																	</div>
+																	<div>
+																		<span class="error_mag_point hidden d-inline-block mt-2 mr-4" id="itemMsg_planTypeIdForSave"></span>
+																		<span class="error_mag_point hidden d-inline-block mt-2" id="itemMsg_planTypeIdForGetPlanCharge"></span>
+																	</div>
+																</div>
+																<div>
+																	<span class="charge_title mx-2">1ライセンス</span>
+																	<span class="d-inline-block">
+																		<span class="license_storage_charge">
+																			<span class="selectedPlanTypeOneLicenseCharge"></span>
+																		</span>
+																		<span class="d-inline-block px-2">円</span>
+																	</span>
+																</div>
+															</div>
+														</div>
+													</div>
+												
+													<div class="form-row under_line pb-2 mb-4"></div>
+													
+													<div class="form-row mx-1">
+														<div class="input_parts form-group w-100">
+															<div>
+																<span class="d-inline-block mb-3">ライセンス数</span>
+																<span class="d-inline-block ml-2 toolTipForExplainLicense"><i class="fas fa-question-circle"></i></span>
+															</div>
+															<div class="d-flex justify-content-between align-items-center">
+																<div>
+																	<div>
+																		<span class="license_storage_input_wrap mb-0">
+																			<input type="text" id="registLicenseInput" class="form-control input_number_only text-right" name="licenseNumForSave" th:value="*{nowLicenseCount}" maxlength="3"/>
+																		</span>
+																		<span class="license_storage_unit ml-2">ユーザー</span>
+																	</div>
+																	<div>
+																		<span class="error_mag_point hidden d-inline-block mt-2 mr-4" id="itemMsg_licenseNumForSave"></span>
+																		<span class="error_mag_point hidden d-inline-block mt-2" id="itemMsg_licenseNumForGetPlanCharge"></span>
+																	</div>
+																</div>
+																<div>
+																	<span class="charge_title mx-2">月額</span>
+																	<span class="d-inline-block">
+																		<span class="license_storage_charge">
+																			<span class="selectedLicenseCharge"></span>
+																		</span>
+																		<span class="d-inline-block px-2">円</span>
+																	</span>
+																</div>
+															</div>
+														</div>
+													</div>
+													
+													<div class="form-row under_line pb-2 mb-4"></div>
+													
+													<div class="form-row mx-1">
+														<div class="input_parts form-group w-100">
+															<div>
+																<span class="d-inline-block mb-3">loiozファイルストレージ容量</span>
+																<span class="d-inline-block ml-2 toolTipForExplainStorage"><i class="fas fa-question-circle"></i></span>
+															</div>
+															<div class="d-flex justify-content-between align-items-center">
+																<div>
+																	<div>
+																		<!-- 外部ストレージ連携を利用していない場合 -> loiozストレージの変更が可能 -->
+																		<th:block th:if="*{connectedExternalStorageService == null}">
+																			<span class="license_storage_input_wrap mb-0">
+																				<select id="registStorageInput" class="form-control" name="storageCapacityForSave" th:value="*{nowStorageCapacity}">
+																					<th:block th:each="enum : *{getStorageCapacitySelectOptions()}" th:with="nowStorageCapacity=*{nowStorageCapacity}">
+																						<option th:value="${enum.quantity}" th:selected="${T(java.lang.String).valueOf(enum.quantity).equals(nowStorageCapacity)}">[[${enum.quantity}]]</option>
+																					</th:block>
+																				</select>
+																			</span>
+																		</th:block>
+																		<!-- 外部ストレージ連携を利用している場合 -> loiozストレージは変更不可 -->
+																		<th:block th:unless="*{connectedExternalStorageService == null}">
+																			<span class="license_storage_input_label" th:text="*{nowStorageCapacity}"></span>
+																			<span class="license_storage_input_wrap mb-0 hidden">
+																				<select id="registStorageInput" class="form-control hidden" name="storageCapacityForSave" th:value="*{nowStorageCapacity}">
+																					<th:block th:each="enum : *{getStorageCapacitySelectOptions()}" th:with="nowStorageCapacity=*{nowStorageCapacity}">
+																						<option th:value="${enum.quantity}" th:selected="${T(java.lang.String).valueOf(enum.quantity).equals(nowStorageCapacity)}">[[${enum.quantity}]]</option>
+																					</th:block>
+																				</select>
+																			</span>
+																		</th:block>
+																		<span class="license_storage_unit ml-2">GB</span>
+																	</div>
+																	<div>
+																		<span class="error_mag_point hidden d-inline-block mt-2 mr-4" id="itemMsg_storageCapacityForSave"></span>
+																		<span class="error_mag_point hidden d-inline-block mt-2" id="itemMsg_storageCapacityForGetPlanCharge"></span>
+																	</div>
+																</div>
+																<div>
+																	<span class="charge_title mr-2">月額</span>
+																	<span class="d-inline-block">
+																		<span class="license_storage_charge">
+																			<span class="selectedStorageCharge"></span>
+																		</span>
+																		<span class="d-inline-block px-2">円</span>
+																	</span>
+																</div>
+															</div>
+														</div>
+													</div>
+													
+													<div class="form-row under_line pb-2 mb-3"></div>
+													
+													<!-- 料金サマリ -->
+													<div class="form-row mx-1">
+														<div class="input_parts form-group w-100 d-flex justify-content-between align-items-center mb-0">
+															<div>
+																<!-- サマリ部分は数量部分はない -->
+															</div>
+															<div class="charge_summary_val_plan_regist_area">
+																<span class="charge_summary_title mr-2">小計</span>
+																<span class="d-inline-block">
+																	<span class="charge_summary_val">
+																		<span class="selectedPlanSumCharge"></span>
+																	</span>
+																	<span class="d-inline-block px-2">円</span>
+																</span>
+															</div>
+														</div>
+													</div>
+													<div class="form-row mx-1">
+														<div class="input_parts form-group w-100 d-flex justify-content-between align-items-center mb-2">
+															<div>
+																<!-- サマリ部分は数量部分はない -->
+															</div>
+															<div class="charge_summary_val_plan_regist_area">
+																<span class="charge_summary_title mr-2">消費税</span>
+																<span class="d-inline-block">
+																	<span class="charge_summary_val">
+																		<span class="selectedPlanTaxAmountOfSumCharge"></span>
+																	</span>
+																	<span class="d-inline-block px-2">円</span>
+																</span>
+															</div>
+														</div>
+													</div>
+													<div class="form-row mx-1">
+														<div class="input_parts form-group w-100 d-flex justify-content-between align-items-center">
+															<div>
+																<!-- サマリ部分は数量部分はない -->
+															</div>
+															<div class="charge_summary_val_plan_regist_area font-weight-bold">
+																<div class="charge_summary_val_plan_regist charge_summary_val_row">
+																	<span class="plan_sum_charge_title mr-2">月額料金</span>
+																	<span class="d-inline-block">
+																		<span class="selectedPlanSumChargeIncludedTax plan_sum_charge_value text-right"></span>
+																		<span class="d-inline-block font-weight-bold px-2">円</span>
+																	</span>
+																</div>
+															</div>
+														</div>
+													</div>
+												</div>
+												<div class="d-block text-left mt-2">
+													<!-- 外部ストレージ連携を利用している場合のみ表示 -->
+													<th:block th:unless="*{connectedExternalStorageService == null}">
+														<div class="mb-2">
+															<span class="d-block small">※ 外部サービス連携の設定で、外部のストレージサービスと連携中の状態となっています。</span>
+															<span class="d-block small">　 loiozのファイルストレージは利用されていないため、ファイルストレージ容量は無料の[[${T(jp.loioz.common.constant.plan.PlanConstant).FREE_PLAN_STORAGE_CAPACITY}]]GBで固定となります。</span>
+														</div>
+													</th:block>
+													<span class="d-block small">※ 当月の料金につきましては、月初から本日までの日数分の料金を上記から割引いた金額となります。</span>
+												</div>
+											</div>
+											
+											<!--/* 3.お支払い情報（カード払いのみ） */-->
+											<h3 class="title_line font-weight-bold mt-3 py-1">お支払い情報（カード払いのみ）</h3>
+											<div class="plan_edit_area pt-4 px-0 mt-1">
+												<div class="detail_input_area card_input_area">
+													<div class="form-row">
+														<div class="input_parts form-group col-md-9 mb-4">
+															<label class="plan_apply_label mb-3">ご利用可能なカード<small>（VISA、Master、JCB、AMEX、Diners）</small></label>
+															<div class="d-flex paymant_card">
+																<img class="img-thumbnail" th:src="@{/img/payment/visa.gif}">
+																<img class="img-thumbnail" th:src="@{/img/payment/master.gif}">
+																<img class="img-thumbnail" th:src="@{/img/payment/jcb.gif}">
+																<img class="img-thumbnail" th:src="@{/img/payment/amex.gif}">
+																<img class="img-thumbnail" th:src="@{/img/payment/diners_logo_white.gif}">
+															</div>
+														</div>
+													</div>
+													<div class="form-row">
+														<div class="input_parts form-group col-md-6 mb-0">
+															<label class="plan_apply_label mb-3">カード番号</label>
+															<div>
+																<input type="text" id="registCardNum" class="form-control w-75 input_number_only" maxlength="16" autocomplete="off"/>
+																<input type="hidden" id="registCardNumForRegist" name="cardNumForSave"/>
+															</div>
+															<div class="input_nav">
+																<p>※-（ハイフン）なしでご入力ください。</p>
+																<p>　例）1111222233334444</p>
+															</div>
+														</div>
+														<div class="input_parts form-group col-md-5 mb-0">
+															<label class="plan_apply_label mb-3">有効期限</label>
+															<div>
+																<input type="text" id="registExpireMonth" class="form-control d-inline-block w-25 input_number_only" placeholder="MM" maxlength="2" autocomplete="off"/>
+																<input type="hidden" id="registExpireMonthForRegist" name="expireMonthForSave"/>
+																<span>月</span>
+																<span>／</span>
+																<input type="text" id="registExpireYear" class="form-control d-inline-block w-25 input_number_only" placeholder="YY" maxlength="2" autocomplete="off"/>
+																<input type="hidden" id="registExpireYearForRegist" name="expireYearForSave"/>
+																<span>年</span>
+															</div>
+															<div class="input_nav">
+																<p>※半角数字の2桁でご入力ください。</p>
+																<p>　例）<span th:text="*{#temporals.format(sampleCardExpiredDate, 'MM 月 ／ yy 年')}"></span></p>
+															</div>
+														</div>
+													</div>
+													<div class="form-row">
+														<div class="input_parts form-group col-md-6 mb-0">
+															<label class="plan_apply_label mb-3">カード名義人</label>
+															<div>
+																<input type="text" id="registCardName" name="cardNameForSave" class="form-control w-75" maxlength="100" autocomplete="off"/>
+																<input type="hidden" id="registCardFirstNameForRegist" name="cardFirstNameForSave"/>
+																<input type="hidden" id="registCardLastNameForRegist" name="cardLastNameForSave"/>
+															</div>
+															<div class="input_nav">
+																<p>※半角ローマ字でご入力ください。</p>
+																<p>　例）TARO LOIOZ</p>
+															</div>
+														</div>
+														<div class="input_parts form-group col-md-5 mb-0">
+															<label class="plan_apply_label mb-3">セキュリティコード<span class="ml-2 toolTipForExplainSecurityCode"><i class="fas fa-question-circle"></i></span></label>
+															<div>
+																<input type="text" id="registCardSecurityCd" name="cardSecurityCdForSave" class="form-control input_number_only digit5" placeholder="xxx" maxlength="4" autocomplete="off"/>
+															</div>
+															<div class="input_nav">
+																<p>※半角数字でご入力ください。</p>
+																<p>　例）012</p>
+															</div>
+														</div>
+													</div>
+												</div>
+											</div>
+											
+											<!-- コマンド -->
+											<div class="lower_command_container mt-5 text-center">
+												<div>
+													<button type="button" id="planRegistConfirmButton" class="btn btn-primary btn-lg"data-action-button-id="planRegistButton" data-toggle="modal" data-target="#saveConfirmModal">登録内容の確認へ進む</button>
+													<button type="button" id="planRegistButton" class="hidden">登録内容の確認へ進む</button>
+												</div>
+											</div>
+										</div>
+									</div>
+								</form>
+							</div>
+
+							<!--/* 有料プラン中の詳細表示画面 */-->
+							<div class="screen nowPlan now_plan content_area" th:classappend="*{!isShowNowPlanScreen()}? 'hidden'">
+							
+								<!--/* 画面上部ボタンエリア */-->
+								<div class="container upper_command_container">
+									<div class="row col-12 p-0 m-0 justify-content-end align-items-center">
+										<!--/* 無料期間中ではない場合 */-->
+										<th:block th:unless="*{duringTheFreePeriod}">
+											<a href="javascript:void(0);" data-toggle="modal" data-target="#planHistoryModal" class="showPlanHistoryModal btn btn-light" role="button">
+												<i class="fas fa-list"></i><span class="d-inline-block">請求履歴</span>
+											</a>
+										</th:block>
+									</div>
+								</div>
+								
+								<!--/* ページタイトル */-->
+								<div class="block_title mb-5">
+									<span th:unless="*{isChangingStatus()}">現在のご利用プラン</span>
+									<span th:if="*{isChangingStatus()}">変更中のプラン内容</span>
+								</div>
+								
+								<!--/* 無料期間中の場合 */-->
+								<th:block th:if="*{duringTheFreePeriod}">
+									<div class="mb-5 text-left">
+										<div class="mb-4 detail_info">
+											<span class="d-block">初回のお支払いは、[[*{getFirstChargeYearMonthStr()}]]末に行われます。</span>
+											<span class="d-block fs12">※無料トライアル中のお申し込みにつき、[[*{getFreeTrialExpiredAtStr()}]]までの料金は発生致しません。</span>
+										</div>
+									</div>
+								</th:block>
+								
+								<div class="row">
+									<div class="col-lg-4 mb-4">
+										<div class="section_table_wrapper h-100">
+											<div class="plan_edit_area h-100 d-flex flex-column">
+												
+												<h2 class="title_line plan_panel_title font-weight-bold mb-4 py-1">現在のご利用プラン</h2>
+												<div class="detail_input_area mb-5 pb-4">
+													
+													<div class="form-row mx-1 mb-4">
+														<div class="input_parts w-100">
+															<label>ご利用プラン</label>
+															<div class="d-flex justify-content-between">
+																<span>
+																	<span th:text="*{getNowPlanTitle()}"></span>
+																</span>
+																<span>
+																	<span th:with="oneLicenseCharge = *{oneLicenseCharge}">
+																		[[${#numbers.formatInteger(oneLicenseCharge, 1, 'COMMA')}]]
+																	</span>
+																	<span>円</span>
+																</span>
+															</div>
+														</div>
+													</div>
+													
+													<div class="form-row under_line mb-3"></div>
+													
+													<div class="form-row mx-1 mb-2">
+														<div class="input_parts w-100">
+															<label>ライセンス</label>
+															<div class="d-flex justify-content-between">
+																<span>
+																	<span th:with="oneLicenseCharge = *{oneLicenseCharge}">
+																		[[${#numbers.formatInteger(oneLicenseCharge, 1, 'COMMA')}]]
+																	</span>
+																	<span>円</span>
+																	<span class="d-inline-block px-1">×</span>
+																	<span th:text="*{nowLicenseCount}"></span><span>ユーザー</span>
+																</span>
+																<span>
+																	<span th:with="nowLicenseCharge = *{nowLicenseCharge}">
+																		[[${#numbers.formatInteger(nowLicenseCharge, 1, 'COMMA')}]]
+																	</span>
+																	<span>円</span>
+																</span>
+															</div>
+														</div>
+													</div>
+													<div class="form-row mx-1 mb-4">
+														<div class="input_parts w-100">
+															<label>loiozファイルストレージ</label>
+															<div class="d-flex justify-content-between">
+																<span>
+																	<span th:text="*{nowStorageCapacity}"></span><span>GB</span>
+																</span>
+																<span>
+																	<span th:with="nowStorageCharge = *{nowStorageCharge}">
+																		[[${#numbers.formatInteger(nowStorageCharge, 1, 'COMMA')}]]
+																	</span>
+																	<span>円</span>
+																</span>
+															</div>
+														</div>
+													</div>
+													
+													<div class="form-row under_line mb-3"></div>
+													
+													<div class="form-row mx-1 mb-2">
+														<div class="input_parts w-100">
+															<div class="d-flex justify-content-between">
+																<span>小計</span>
+																<span>
+																	<span th:with="nowSumCharge = *{nowSumCharge}">
+																		[[${#numbers.formatInteger(nowSumCharge, 1, 'COMMA')}]]
+																	</span>
+																	<span>円</span>
+																</span>
+															</div>
+														</div>
+													</div>
+													<div class="form-row mx-1 mb-3">
+														<div class="input_parts w-100">
+															<div class="d-flex justify-content-between">
+																<span>消費税</span>
+																<span>
+																	<span th:with="taxAmountOfNowSumCharge = *{taxAmountOfNowSumCharge}">
+																		[[${#numbers.formatInteger(taxAmountOfNowSumCharge, 1, 'COMMA')}]]
+																	</span>
+																	<span>円</span>
+																</span>
+															</div>
+														</div>
+													</div>
+													
+													<div class="form-row under_line mb-4"></div>
+													
+													<div class="form-row mx-1">
+														<div class="input_parts w-100">
+															<div class="d-flex justify-content-between font-weight-bold">
+																<span>月額料金</span>
+																<span>
+																	<span th:with="nowSumChargeIncludedTax = *{nowSumChargeIncludedTax}">
+																		[[${#numbers.formatInteger(nowSumChargeIncludedTax, 1, 'COMMA')}]]
+																	</span>
+																	<span>円</span>
+																</span>
+															</div>
+														</div>
+													</div>
+												</div>
+												
+												<!-- コマンド -->
+												<div class="lower_command_container text-center mt-auto">
+													<button type="button" class="btn btn-primary showUpdatePlan mr-4">
+														<span th:if="*{isCanceledStatus()}">利用プランを登録する</span>
+														<span th:th:unless="*{isCanceledStatus()}">利用プランを変更する</span>
+													</button>
+												</div>
+											</div>
+										</div>
+									</div>
+									
+									<div class="col-lg-4 mb-4">
+										<div class="section_table_wrapper h-100">
+											<div class="plan_edit_area h-100 d-flex flex-column">
+												<h2 class="title_line plan_panel_title font-weight-bold mb-4 py-1">お支払い情報</h2>
+												<div class="detail_input_area mb-5 pb-4">
+													<div class="form-row">
+														<div class="input_parts form-group col-md-12">
+															<label>カード番号</label>
+															<p th:text="*{getNowCardNumForDisplay()}"></p>
+														</div>
+													</div>
+													<div class="form-row">
+														<div class="input_parts form-group col-md-12">
+															<label>有効期限</label>
+															<div>
+																<span th:text="*{nowCardExpiredMonth}"></span>
+																<span>月</span>
+																<span>／</span>
+																<span th:text="*{nowCardExpiredYear}"></span>
+																<span>年</span>
+															</div>
+														</div>
+													</div>
+													<div class="form-row">
+														<div class="input_parts form-group col-md-12">
+															<label>カード名義人</label>
+															<p class="text-nowrap" th:text="*{nowCardFirstName} + '　' + *{nowCardLastName}"></p>
+														</div>
+													</div>
+												</div>
+												<!-- コマンド -->
+												<div class="lower_command_container text-center mt-auto">
+													<button th:if="*{isEnabledStatus()}" type="button" class="btn btn-primary showUpdateCard">カード情報を変更する</button>
+												</div>
+											</div>
+										</div>
+									</div>
+								</div>
+							</div>
+
+							<!--/* 利用プランの変更画面（有料プラン中） */-->
+							<div class="screen updatePlan update_plan content_area hidden">
+								<form id="planUpdateForm" th:action="@{/user/planSetting}" method="post">
+									
+									<!--/* 画面上部ボタンエリア */-->
+									<div class="container upper_command_container">
+										<div class="row col-12 p-0 m-0 justify-content-end align-items-center">
+											<!--/* 無料期間中の場合 */-->
+											<th:block th:if="*{duringTheFreePeriod}">
+												<button type="button" id="planDeleteDuringFreeTrialConfirmButton" class="btn btn-lg btn-outline-primary"data-action-button-id="planDeleteDuringFreeTrialButton" data-toggle="modal" data-target="#cancelConfirmModal">解約処理に進む</button>
+												<button type="button" id="planDeleteDuringFreeTrialButton" name="planDeleteDuringFreeTrial" class="hidden"></button>
+											</th:block>
+											<!--/* 無料期間中ではない場合 */-->
+											<th:block th:unless="*{duringTheFreePeriod}">
+												<button th:if="*{isEnabledStatus()}" type="button" id="planCancelButtonConfirmButton" class="btn btn-lg btn-outline-primary"data-action-button-id="planCancelButton" data-toggle="modal" data-target="#cancelConfirmModal">解約処理に進む</button>
+												<button type="button" id="planCancelButton" name="planCancel" class="hidden"></button>
+											</th:block>
+										</div>
+									</div>
+								
+									<!--/* ページタイトル */-->
+									<p class="mb-5">
+										<!--/* 利用中ステータスの場合 */-->
+										<th:block th:if="*{isEnabledStatus()}">
+											<span class="block_title">プランの変更内容を入力する</span>
+										</th:block>
+										<!--/* 変更中ステータスの場合 */-->
+										<th:block th:if="*{isChangingStatus()}">
+											<span class="block_title">利用プランの変更</span>
+											<span class="d-block detail_info mt-4">
+												前回正常に登録が完了されなかった下記の内容で、一度登録を完了していただく必要があります。<br>
+												下記の内容から変更をされたい場合は、お手数ですが、登録完了後に再度プラン内容の変更をお願いいたします。
+											</span>
+										</th:block>
+										<!--/* 解約ステータス以外の場合 */-->
+										<th:block th:if="*{isCanceledStatus()}">
+											<span class="block_title">プランの登録内容を入力する</span>
+										</th:block>
+									</p>
+									
+									<!--/* 無料期間中（無料期間中にプラン登録している場合）のみ表示 */-->
+									<th:block th:if="*{duringTheFreePeriod}">
+										<div class="mb-5 text-left">
+											<div class="mb-4 detail_info">
+												<span class="d-block">初回のお支払いは、[[*{getFirstChargeYearMonthStr()}]]末に行われます。</span>
+												<span class="d-block fs12">※無料トライアル中のお申し込みにつき、[[*{getFreeTrialExpiredAtStr()}]]までの料金は発生致しません。</span>
+											</div>
+										</div>
+									</th:block>
+									
+									<div class="row">
+										<div class="col-lg-8 pl-0">
+											<div class="plan_edit_area pt-0">
+												<h3 class="title_line font-weight-bold text-left mb-5 py-1">ご利用ライセンス、ファイルストレージ容量のご選択</h3>
+												
+												<div class="detail_input_area mb-2">
+												
+													<div class="form-row mx-1">
+														<div class="input_parts form-group w-100">
+															<div>
+																<span class="d-inline-block mb-3">ご利用プラン</span>
+															</div>
+															<div class="d-flex justify-content-between align-items-center">
+																<div>
+																	<div id="updatePlanTypeRadioWrap">
+																		<!--/* 変更中の場合 -> 変更できないようにinput:radioをdisabledとしname属性削除で表示（値送信用のinput:radioはhiddenで残す） */-->
+																		<th:block th:if="*{isChangingStatus()}">
+																			<!--/* disabledとしラベル表示（送信しないためname属性削除） */-->
+																			<label class="radio_btn mb-0" th:each="option : *{getPlanTypeSelectOptions()}" th:with="nowPlanTypeId=*{nowPlanType.getId()}">
+																				<input type="radio" class="radio_input" th:value="${option.value}" th:checked="${T(java.lang.String).valueOf(option.value).equals(nowPlanTypeId)}" disabled="disabled">
+																				<span class="radio_txt text_1st" th:text="${option.label}">スターター</span>
+																			</label>
+																			<!--/* 値送信用のhidden */-->
+																			<label class="radio_btn mb-0 hidden" th:each="option : *{getPlanTypeSelectOptions()}" th:with="nowPlanTypeId=*{nowPlanType.getId()}">
+																				<input type="radio" class="radio_input" name="planTypeIdForSave" th:value="${option.value}" th:checked="${T(java.lang.String).valueOf(option.value).equals(nowPlanTypeId)}">
+																				<span class="radio_txt text_1st" th:text="${option.label}">スターター</span>
+																			</label>
+																		</th:block>
+																		<!--/* 変更中ではない場合（有効か解約の場合） -> 通常のinput:radioを表示 */-->
+																		<th:block th:unless="*{isChangingStatus()}">
+																			<label class="radio_btn mb-0" th:each="option : *{getPlanTypeSelectOptions()}" th:with="nowPlanTypeId=*{nowPlanType.getId()}">
+																				<input type="radio" class="radio_input" name="planTypeIdForSave" th:value="${option.value}" th:checked="${T(java.lang.String).valueOf(option.value).equals(nowPlanTypeId)}">
+																				<span class="radio_txt text_1st" th:text="${option.label}">スターター</span>
+																			</label>
+																		</th:block>
+																	</div>
+																	<div>
+																		<span class="error_mag_point hidden d-inline-block mt-2 mr-4" id="itemMsg_planTypeIdForSave"></span>
+																		<span class="error_mag_point hidden d-inline-block mt-2" id="itemMsg_planTypeIdForGetPlanCharge"></span>
+																	</div>
+																</div>
+																<div>
+																	<span class="charge_title mx-2">1ライセンス</span>
+																	<span class="d-inline-block">
+																		<span class="license_storage_charge">
+																			<span class="selectedPlanTypeOneLicenseCharge"></span>
+																		</span>
+																		<span class="d-inline-block px-2">円</span>
+																	</span>
+																</div>
+															</div>
+														</div>
+													</div>
+												
+													<div class="form-row under_line pb-2 mb-4"></div>
+												
+													<div class="form-row mx-1">
+														<div class="input_parts form-group w-100">
+															<div>
+																<span class="d-inline-block mb-3">ライセンス数</span>
+																<span class="d-inline-block ml-2 toolTipForExplainLicense"><i class="fas fa-question-circle"></i></span>
+															</div>
+															<div class="d-flex justify-content-between align-items-center">
+																<div>
+																	<div>
+																		<!--/* 変更中の場合 -> 変更できないようにinputではなくtextで表示（inputはhidden） */-->
+																		<th:block th:if="*{isChangingStatus()}">
+																			<span class="license_storage_input_label" th:text="*{nowLicenseCount}"></span>
+																			<span class="license_storage_input_wrap mb-0 hidden">
+																				<input type="text" id="updateLicenseInput" class="form-control input_number_only hidden text-right" name="licenseNumForSave" th:value="*{nowLicenseCount}" maxlength="3"/>
+																			</span>
+																		</th:block>
+																		<!--/* 変更中ではない場合（有効か解約の場合） -> 通常のinputを表示 */-->
+																		<th:block th:unless="*{isChangingStatus()}">
+																			<span class="license_storage_input_wrap mb-0">
+																				<input type="text" id="updateLicenseInput" class="form-control input_number_only text-right" name="licenseNumForSave" th:value="*{nowLicenseCount}" maxlength="3"/>
+																			</span>
+																		</th:block>
+																		<span class="license_storage_unit ml-2">ユーザー</span>
+																	</div>
+																	<div>
+																		<span class="error_mag_point hidden d-inline-block mt-2 mr-4" id="itemMsg_licenseNumForSave"></span>
+																		<span class="error_mag_point hidden d-inline-block mt-2" id="itemMsg_licenseNumForGetPlanCharge"></span>
+																	</div>
+																</div>
+																<div>
+																	<span class="charge_title mx-2">月額</span>
+																	<span class="d-inline-block">
+																		<span class="license_storage_charge">
+																			<span class="selectedLicenseCharge"></span>
+																		</span>
+																		<span class="d-inline-block px-2">円</span>
+																	</span>
+																</div>
+															</div>
+														</div>
+													</div>
+													
+													<div class="form-row under_line pb-2 mb-4"></div>
+													
+													<div class="form-row mx-1">
+														<div class="input_parts form-group w-100">
+															<div>
+																<span class="d-inline-block mb-3">loiozファイルストレージ容量</span>
+																<span class="d-inline-block ml-2 toolTipForExplainStorage"><i class="fas fa-question-circle"></i></span>
+															</div>
+															<div class="d-flex justify-content-between align-items-center">
+																<div>
+																	<div>
+																		<!--/* 無料期間中、または、変更中の場合 -> 変更できないようにselect-optionではなくtextで表示 */-->
+																		<th:block th:if="*{duringTheFreePeriod} or *{isChangingStatus()}">
+																			<span class="license_storage_input_label" th:text="*{nowStorageCapacity}"></span>
+																			<span class="license_storage_input_wrap mb-0 hidden">
+																				<select id="updateStorageInput" class="form-control hidden" name="storageCapacityForSave" th:value="*{nowStorageCapacity}">
+																					<th:block th:each="enum : *{getStorageCapacitySelectOptions()}" th:with="nowStorageCapacity=*{nowStorageCapacity}">
+																						<option th:value="${enum.quantity}" th:selected="${T(java.lang.String).valueOf(enum.quantity).equals(nowStorageCapacity)}">[[${enum.quantity}]]</option>
+																					</th:block>
+																				</select>
+																			</span>
+																		</th:block>
+																		<!--/* 無料期間中、または、変更中のいずれでもない場合（無料期間切れ、解約、有効の場合） */-->
+																		<th:block th:unless="*{duringTheFreePeriod} or *{isChangingStatus()}">
+																			<!-- 外部ストレージ連携を利用していない場合 -> loiozストレージの変更が可能 -->
+																			<th:block th:if="*{connectedExternalStorageService == null}">
+																				<span class="license_storage_input_wrap mb-0">
+																					<select id="updateStorageInput" class="form-control" name="storageCapacityForSave" th:value="*{nowStorageCapacity}">
+																						<th:block th:each="enum : *{getStorageCapacitySelectOptions()}" th:with="nowStorageCapacity=*{nowStorageCapacity}">
+																							<option th:value="${enum.quantity}" th:selected="${T(java.lang.String).valueOf(enum.quantity).equals(nowStorageCapacity)}">[[${enum.quantity}]]</option>
+																						</th:block>
+																					</select>
+																				</span>
+																			</th:block>
+																			<!-- 外部ストレージ連携を利用している場合 -> loiozストレージは変更不可 -->
+																			<th:block th:unless="*{connectedExternalStorageService == null}">
+																				<span class="license_storage_input_label" th:text="*{nowStorageCapacity}"></span>
+																				<span class="license_storage_input_wrap mb-0 hidden">
+																					<select id="updateStorageInput" class="form-control hidden" name="storageCapacityForSave" th:value="*{nowStorageCapacity}">
+																						<th:block th:each="enum : *{getStorageCapacitySelectOptions()}" th:with="nowStorageCapacity=*{nowStorageCapacity}">
+																							<option th:value="${enum.quantity}" th:selected="${T(java.lang.String).valueOf(enum.quantity).equals(nowStorageCapacity)}">[[${enum.quantity}]]</option>
+																						</th:block>
+																					</select>
+																				</span>
+																			</th:block>
+																		</th:block>
+																		<span class="license_storage_unit ml-2">GB</span>
+																	</div>
+																	<div>
+																		<span class="error_mag_point hidden d-inline-block mt-2 mr-4" id="itemMsg_storageCapacityForSave"></span>
+																		<span class="error_mag_point hidden d-inline-block mt-2" id="itemMsg_storageCapacityForGetPlanCharge"></span>
+																	</div>
+																</div>
+																<div>
+																	<span class="charge_title mr-2">月額</span>
+																	<span class="d-inline-block">
+																		<span class="license_storage_charge">
+																			<span class="selectedStorageCharge"></span>
+																		</span>
+																		<span class="d-inline-block px-2">円</span>
+																	</span>
+																</div>
+															</div>
+														</div>
+													</div>
+													
+													<div class="form-row under_line pb-2 mb-3"></div>
+													
+													<!-- 料金サマリ -->
+													<div class="form-row mx-1">
+														<div class="input_parts form-group w-100 d-flex justify-content-between align-items-center mb-0">
+															<div>
+																<!-- サマリ部分は数量部分はない -->
+															</div>
+															<div class="charge_summary_val_plan_regist_area">
+																<span class="charge_summary_title mr-2">小計</span>
+																<span class="d-inline-block">
+																	<span class="charge_summary_val">
+																		<span class="selectedPlanSumCharge"></span>
+																	</span>
+																	<span class="d-inline-block px-2">円</span>
+																</span>
+															</div>
+														</div>
+													</div>
+													<div class="form-row mx-1">
+														<div class="input_parts form-group w-100 d-flex justify-content-between align-items-center mb-2">
+															<div>
+																<!-- サマリ部分は数量部分はない -->
+															</div>
+															<div class="charge_summary_val_plan_regist_area">
+																<span class="charge_summary_title mr-2">消費税</span>
+																<span class="d-inline-block">
+																	<span class="charge_summary_val">
+																		<span class="selectedPlanTaxAmountOfSumCharge"></span>
+																	</span>
+																	<span class="d-inline-block px-2">円</span>
+																</span>
+															</div>
+														</div>
+													</div>
+													<div class="form-row mx-1">
+														<div class="input_parts form-group w-100 d-flex justify-content-between align-items-center">
+															<div>
+																<!-- サマリ部分は数量部分はない -->
+															</div>
+															<div class="charge_summary_val_plan_regist_area">
+																<div class="charge_summary_val_plan_regist charge_summary_val_row">
+																	<span class="plan_sum_charge_title mr-2">月額料金</span>
+																	<span class="d-inline-block">
+																		<span class="selectedPlanSumChargeIncludedTax plan_sum_charge_value text-right"></span>
+																		<span class="d-inline-block font-weight-bold px-2">円</span>
+																	</span>
+																</div>
+															</div>
+														</div>
+													</div>
+												</div>
+												<!--/* 無料期間中、または、変更中のいずれでもない場合（無料期間切れ、解約、有効の場合） */-->
+												<th:block th:unless="*{duringTheFreePeriod} or *{isChangingStatus()}">
+													<!-- 外部ストレージ連携を利用している場合 -->
+													<th:block th:unless="*{connectedExternalStorageService == null}">
+														<div class="d-flex text-left px-2 mb-2">
+															<span class="d-block small">※</span>
+															<span class="d-block small pl-2">
+																外部サービス連携の設定で、外部のストレージサービスと連携中の状態となっています。<br>
+																loiozのファイルストレージは利用されていないため、ファイルストレージ容量は無料の[[${T(jp.loioz.common.constant.plan.PlanConstant).FREE_PLAN_STORAGE_CAPACITY}]]GBで固定となります。
+															</span>
+														</div>
+													</th:block>
+												</th:block>
+												<div class="d-flex text-left px-2">
+													<span class="d-block small">※</span>
+													<span class="d-block small pl-2">
+														プラン変更を行った月の料金につきましては、上記の金額ではなく、現在のプランの料金と、
+														変更後のプランの料金の日割りでの合計金額となります。
+													</span>
+												</div>
+											</div>
+											
+											<div class="plan_edit_area pt-5">
+												<h3 class="title_line font-weight-bold text-left mb-4 py-1">お支払い情報（カード払いのみ）</h3>
+												<div class="mb-4">
+													プランの変更を行う場合は、再度、お支払い情報の入力をお願いいたします。
+												</div>
+												<div class="detail_input_area card_input_area">
+													<div class="form-row">
+														<div class="input_parts form-group col-md-9 mb-4">
+															<label class="plan_apply_label mb-3">ご利用可能なカード<small>（VISA、Master、JCB、AMEX、Diners）</small></label>
+															<div class="d-flex paymant_card">
+																<img class="img-thumbnail" th:src="@{/img/payment/visa.gif}">
+																<img class="img-thumbnail" th:src="@{/img/payment/master.gif}">
+																<img class="img-thumbnail" th:src="@{/img/payment/jcb.gif}">
+																<img class="img-thumbnail" th:src="@{/img/payment/amex.gif}">
+																<img class="img-thumbnail" th:src="@{/img/payment/diners_logo_white.gif}">
+															</div>
+														</div>
+													</div>
+													<div class="form-row">
+														<div class="input_parts form-group col-md-6 mb-0">
+															<label class="plan_apply_label mb-3">カード番号</label>
+															<div>
+																<input type="text" id="planUpdateCardNum" class="form-control w-75 input_number_only" maxlength="16" autocomplete="off"/>
+																<input type="hidden" id="planUpdateCardNumForRegist" name="cardNumForSave"/>
+															</div>
+															<div class="input_nav">
+																<p>※-（ハイフン）なしでご入力ください。</p>
+																<p>　例）1111222233334444</p>
+															</div>
+														</div>
+														<div class="input_parts form-group col-md-5 mb-0">
+															<label class="plan_apply_label mb-3">有効期限</label>
+															<div>
+																<input type="text" id="planUpdateExpireMonth" class="form-control d-inline-block w-25 input_number_only" placeholder="MM" maxlength="2" autocomplete="off"/>
+																<input type="hidden" id="planUpdateExpireMonthForRegist" name="expireMonthForSave"/>
+																<span>月</span>
+																<span>／</span>
+																<input type="text" id="planUpdateExpireYear" class="form-control d-inline-block w-25 input_number_only" placeholder="YY" maxlength="2" autocomplete="off"/>
+																<input type="hidden" id="planUpdateExpireYearForRegist" name="expireYearForSave"/>
+																<span>年</span>
+															</div>
+															<div class="input_nav">
+																<p>※半角数字の2桁でご入力ください。</p>
+																<p>　例）<span th:text="*{#temporals.format(sampleCardExpiredDate, 'MM 月 ／ yy 年')}"></span></p>
+															</div>
+														</div>
+													</div>
+													<div class="form-row">
+														<div class="input_parts form-group col-md-6 mb-0">
+															<label class="plan_apply_label mb-3">カード名義人</label>
+															<div>
+																<input type="text" id="planUpdateCardName" name="cardNameForSave" class="form-control w-75" maxlength="100" autocomplete="off"/>
+																<input type="hidden" id="planUpdateCardFirstNameForRegist" name="cardFirstNameForSave"/>
+																<input type="hidden" id="planUpdateCardLastNameForRegist" name="cardLastNameForSave"/>
+															</div>
+															<div class="input_nav">
+																<p>※半角ローマ字でご入力ください。</p>
+																<p>　例）TARO LOIOZ</p>
+															</div>
+														</div>
+														<div class="input_parts form-group col-md-5 mb-0">
+															<label class="plan_apply_label mb-3">セキュリティコード<span class="ml-2 toolTipForExplainSecurityCode"><i class="fas fa-question-circle"></i></span></label>
+															<div>
+																<input type="text" id="planUpdateCardSecurityCd" name="cardSecurityCdForSave" class="form-control input_number_only digit5" placeholder="xxx" maxlength="4" autocomplete="off"/>
+															</div>
+															<div class="input_nav">
+																<p>※半角数字でご入力ください。</p>
+																<p>　例）012</p>
+															</div>
+														</div>
+													</div>
+												</div>
+											</div>
+										</div>
+										
+										<div class="col-lg-4">
+											<div class="section_table_wrapper mb-4">
+												<div class="plan_edit_area">
+													<h3 class="title_line plan_panel_title font-weight-bold mb-4 py-1">現在のご利用プラン</h3>
+													<div class="detail_input_area">
+													
+														<div class="form-row mx-1 mb-4">
+															<div class="input_parts w-100">
+																<label>ご利用プラン</label>
+																<div class="d-flex justify-content-between">
+																	<span>
+																		<span th:text="*{getNowPlanTitle()}"></span>
+																	</span>
+																	<span>
+																		<span th:with="oneLicenseCharge = *{oneLicenseCharge}">
+																			[[${#numbers.formatInteger(oneLicenseCharge, 1, 'COMMA')}]]
+																		</span>
+																		<span>円</span>
+																	</span>
+																</div>
+															</div>
+														</div>
+														
+														<div class="form-row under_line mb-3"></div>
+													
+														<div class="form-row mx-1 mb-2">
+															<div class="input_parts w-100">
+																<label>ライセンス</label>
+																<div class="d-flex justify-content-between">
+																	<span>
+																		<span th:with="oneLicenseCharge = *{oneLicenseCharge}">
+																			[[${#numbers.formatInteger(oneLicenseCharge, 1, 'COMMA')}]]
+																		</span>
+																		<span>円</span>
+																		<span class="d-inline-block px-1">×</span>
+																		<span th:text="*{nowLicenseCount}"></span><span>ユーザー</span>
+																	</span>
+																	<span>
+																		<span th:with="nowLicenseCharge = *{nowLicenseCharge}">
+																			[[${#numbers.formatInteger(nowLicenseCharge, 1, 'COMMA')}]]
+																		</span>
+																		<span>円</span>
+																	</span>
+																</div>
+															</div>
+														</div>
+														<div class="form-row mx-1 mb-4">
+															<div class="input_parts w-100">
+																<label>loiozファイルストレージ</label>
+																<div class="d-flex justify-content-between">
+																	<span>
+																		<span th:text="*{nowStorageCapacity}"></span><span>GB</span>
+																	</span>
+																	<span>
+																		<span th:with="nowStorageCharge = *{nowStorageCharge}">
+																			[[${#numbers.formatInteger(nowStorageCharge, 1, 'COMMA')}]]
+																		</span>
+																		<span>円</span>
+																	</span>
+																</div>
+															</div>
+														</div>
+														
+														<div class="form-row under_line mb-3"></div>
+														
+														<div class="form-row mx-1 mb-2">
+															<div class="input_parts w-100">
+																<div class="d-flex justify-content-between">
+																	<span>小計</span>
+																	<span>
+																		<span th:with="nowSumCharge = *{nowSumCharge}">
+																			[[${#numbers.formatInteger(nowSumCharge, 1, 'COMMA')}]]
+																		</span>
+																		<span>円</span>
+																	</span>
+																</div>
+															</div>
+														</div>
+														<div class="form-row mx-1 mb-3">
+															<div class="input_parts w-100">
+																<div class="d-flex justify-content-between">
+																	<span>消費税</span>
+																	<span>
+																		<span th:with="taxAmountOfNowSumCharge = *{taxAmountOfNowSumCharge}">
+																			[[${#numbers.formatInteger(taxAmountOfNowSumCharge, 1, 'COMMA')}]]
+																		</span>
+																		<span>円</span>
+																	</span>
+																</div>
+															</div>
+														</div>
+														
+														<div class="form-row under_line mb-4"></div>
+														
+														<div class="form-row mx-1">
+															<div class="input_parts w-100">
+																<div class="d-flex justify-content-between font-weight-bold">
+																	<span>月額料金</span>
+																	<span>
+																		<span th:with="nowSumChargeIncludedTax = *{nowSumChargeIncludedTax}">
+																			[[${#numbers.formatInteger(nowSumChargeIncludedTax, 1, 'COMMA')}]]
+																		</span>
+																		<span>円</span>
+																	</span>
+																</div>
+															</div>
+														</div>
+													</div>
+												</div>
+											</div>
+										</div>
+									</div>
+		
+									<!-- コマンド -->
+									<div class="lower_command_container pt-5 text-center">
+										<div class="back_command_container">
+											<button type="button" class="btn btn-light btn-lg backToScreenNowPlan">キャンセル</button>
+										</div>
+										<div>
+											<!--/* 無料期間中の場合 */-->
+											<th:block th:if="*{duringTheFreePeriod}">
+												<button type="button" id="planUpdateDuringFreeTrialConfirmButton" class="btn btn-primary btn-lg"data-action-button-id="planUpdateDuringFreeTrialButton" data-toggle="modal" data-target="#saveConfirmModal">変更内容の確認へ進む</button>
+												<button type="button" id="planUpdateDuringFreeTrialButton" name="planUpdateDuringFreeTrial" class="hidden"></button>
+											</th:block>
+											<!--/* 無料期間中ではない場合 */-->
+											<th:block th:unless="*{duringTheFreePeriod}">
+											
+												<button type="button" id="planUpdateRegistConfirmButton" class="btn btn-primary btn-lg"data-action-button-id="planUpdateRegistButton" data-toggle="modal" data-target="#saveConfirmModal" th:data-open-regist-modal="*{!isEnabledStatus()}">
+													<!--/* 利用中ステータスの場合 */-->
+													<th:block th:if="*{isEnabledStatus()}">
+														変更内容の確認へ進む
+													</th:block>
+													<!--/* 利用中ステータスではない（変更中ステータス or 解約ステータス）の場合 */-->
+													<th:block th:unless="*{isEnabledStatus()}">
+														登録内容の確認へ進む
+													</th:block>
+												</button>
+												<button type="button" id="planUpdateRegistButton" name="planUpdateRegist" class="hidden"></button>
+												
+											</th:block>
+										</div>
+									</div>
+
+								</form>
+							</div>
+
+							<!--/* カード情報の変更画面（有料プラン中） */-->
+							<div class="screen updateCard update_card content_area hidden">
+								<form id="cardChangeForm" th:action="@{/user/planSetting/cardChange}" method="post">
+									<div class="block_title mb-5">
+										<span>カード情報の変更</span>
+									</div>
+
+									<div class="row">
+										<div class="col-lg-8 pl-0">
+											<div class="plan_edit_area pt-0">
+												<h3 class="title_line font-weight-bold text-left mb-5 py-1">お支払い情報（カード払いのみ）</h3>
+												<div class="detail_input_area">
+													<div class="form-row">
+														<div class="input_parts form-group col-md-8 mb-4">
+															<label class="plan_apply_label mb-3">ご利用可能なカード<small>（VISA、Master、JCB、AMEX、Diners）</small></label>
+															<div class="d-flex paymant_card">
+																<img class="img-thumbnail" th:src="@{/img/payment/visa.gif}">
+																<img class="img-thumbnail" th:src="@{/img/payment/master.gif}">
+																<img class="img-thumbnail" th:src="@{/img/payment/jcb.gif}">
+																<img class="img-thumbnail" th:src="@{/img/payment/amex.gif}">
+																<img class="img-thumbnail" th:src="@{/img/payment/diners_logo_white.gif}">
+															</div>
+														</div>
+													</div>
+													<div class="form-row">
+														<div class="input_parts form-group col-md-6 mb-0">
+															<label class="plan_apply_label mb-3">カード番号</label>
+															<div>
+																<input type="text" id="updateCardNum" class="form-control w-75 input_number_only" maxlength="16" autocomplete="off"/>
+																<input type="hidden" id="updateCardNumForUpdate" name="cardNumForSave"/>
+															</div>
+															<div class="input_nav">
+																<p>※-（ハイフン）なしでご入力ください。</p>
+																<p>　例）1111222233334444</p>
+															</div>
+														</div>
+														<div class="input_parts form-group col-md-5 mb-0">
+															<label class="plan_apply_label mb-3">有効期限</label>
+															<div>
+																<input type="text" id="updateExpireMonth" class="form-control d-inline-block w-25 input_number_only" placeholder="MM" maxlength="2" autocomplete="off"/>
+																<input type="hidden" id="updateExpireMonthForUpdate" name="expireMonthForSave"/>
+																<span>月</span>
+																<span>／</span>
+																<input type="text" id="updateExpireYear" class="form-control d-inline-block w-25 input_number_only" placeholder="YY" maxlength="2" autocomplete="off"/>
+																<input type="hidden" id="updateExpireYearForUpdate" name="expireYearForSave"/>
+																<span>年</span>
+															</div>
+															<div class="input_nav">
+																<p>※半角数字の2桁でご入力ください。</p>
+																<p>　例）<span th:text="*{#temporals.format(sampleCardExpiredDate, 'MM 月 ／ yy 年')}"></span></p>
+															</div>
+														</div>
+													</div>
+													<div class="form-row">
+														<div class="input_parts form-group col-md-6">
+															<label class="plan_apply_label mb-3">カード名義人</label>
+															<div>
+																<input type="text" id="updateCardName" name="cardNameForSave" class="form-control w-75" maxlength="100" autocomplete="off"/>
+																<input type="hidden" id="updateCardFirstNameForUpdate" name="cardFirstNameForSave"/>
+																<input type="hidden" id="updateCardLastNameForUpdate" name="cardLastNameForSave"/>
+															</div>
+															<div class="input_nav">
+																<p>※半角ローマ字でご入力ください。</p>
+																<p>　例）TARO LOIOZ</p>
+															</div>
+														</div>
+														<div class="input_parts form-group col-md-5">
+															<label class="plan_apply_label mb-3">セキュリティコード<span class="ml-2 toolTipForExplainSecurityCode"><i class="fas fa-question-circle"></i></span></label>
+															<div>
+																<input type="text" id="updateCardSecurityCd" name="cardSecurityCdForSave" class="form-control input_number_only digit5" placeholder="xxx" maxlength="4" autocomplete="off"/>
+															</div>
+															<div class="input_nav">
+																<p>※半角数字でご入力ください。</p>
+																<p>　例）012</p>
+															</div>
+														</div>
+													</div>
+												</div>
+											</div>
+										</div>
+										
+										<div class="col-lg-4 mb-4">
+											<div class="section_table_wrapper">
+												<div class="plan_edit_area">
+													<h3 class="title_line plan_panel_title font-weight-bold mb-4 py-1">現在のお支払い情報</h3>
+													<div class="detail_input_area">
+														<div class="form-row">
+															<div class="input_parts form-group col-md-12">
+																<label>カード番号</label>
+																<p th:text="*{getNowCardNumForDisplay()}"></p>
+															</div>
+														</div>
+														<div class="form-row">
+															<div class="input_parts form-group col-md-12">
+																<label>有効期限</label>
+																<div>
+																	<span th:text="*{nowCardExpiredMonth}"></span>
+																	<span>月</span>
+																	<span>／</span>
+																	<span th:text="*{nowCardExpiredYear}"></span>
+																	<span>年</span>
+																</div>
+															</div>
+														</div>
+														<div class="form-row">
+															<div class="input_parts form-group col-md-12 mb-0">
+																<label>カード名義人</label>
+																<p class="text-nowrap" th:text="*{nowCardFirstName} + '　' + *{nowCardLastName}"></p>
+															</div>
+														</div>
+													</div>
+												</div>
+											</div>
+										</div>
+										
+									</div>
+									
+									<!-- コマンド -->
+									<div class="lower_command_container pt-5 text-center">
+										<div class="back_command_container">
+											<button type="button" class="btn btn-light btn-lg backToScreenNowPlan">キャンセル</button>
+										</div>
+										<div>
+											<button type="button" id="cardChangeButton" class="btn btn-danger btn-lg">
+												<i class="fas fa-check"></i>カード情報を変更する
+											</button>
+										</div>
+									</div>
+								</form>
+							</div>
+						</div>
+					</div>
+					<!-- カード情報トークン -->
+					<input id="tkn" name="tkn" type="hidden" value="">
+					<!-- 利用中ライセンス数 -->
+					<input type="hidden" th:field="*{usingLicenseCount}" />
+				</div>
+			</div>
+			<!-- 請求履歴モーダル -->
+			<div id="planHistoryModal" class="modal fade" tabindex="-1" role="dialog" aria-hidden="true" data-backdrop="static">
+				<div class="modal-dialog modal-dialog-centered modal_seikyu_rireki" role="document">
+					<div class="modal-content">
+						<div class="planHistoryModalContentsWrap"></div>
+					</div>
+				</div>
+			</div>
+			<!-- 保存内容確認モーダル -->
+			<div id="saveConfirmModal" class="modal fade" tabindex="-1" role="dialog" aria-hidden="true" data-backdrop="static">
+				<div class="modal-dialog modal-dialog-centered modal_plan_save_confirm" role="document">
+					<div class="modal-content">
+						<div class="planSaveConfirmModalContentsWrap"></div>
+					</div>
+				</div>
+			</div>
+			<!-- 解約確認モーダル -->
+			<div id="cancelConfirmModal" class="modal fade" tabindex="-1" role="dialog" aria-hidden="true" data-backdrop="static">
+				<div class="modal-dialog modal-dialog-centered modal_plan_cancel_confirm" role="document">
+					<div class="modal-content">
+						<div class="planCancelConfirmModalContentsWrap"></div>
+					</div>
+				</div>
+			</div>
+			
+		</div>
+	</div>
+</body>
+</html>

@@ -1,0 +1,280 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+	layout:decorator="mobileCommonLayout">
+<head>
+<meta charset="utf-8" th:remove="tag" />
+<title layout:fragment="title-contents">
+	[[${T(jp.loioz.common.utility.LoiozUtils).getHtmlTitle("カレンダー", T(jp.loioz.common.utility.SessionUtils).getTenantName())}]]
+</title>
+<style th:replace="user/schedule/mobile/scheduleModal::css"></style>
+<style type="text/css">
+	body {
+		padding: 0 !important;
+	}
+	
+	.smart_wrapper {
+		display: flex;
+		height: calc(100vh - 13vmin);
+		height: calc((var(--vh, 1vh) * 100) - (var(--vmin, 1vmin) * 13));
+		padding: 0;
+	}
+	
+	#scheduleEdit.isSaibanLimit [data-contains="deleteButton"] {
+		display: none;
+	}
+</style>
+
+<script th:replace="user/schedule/mobile/scheduleModal::scripts"></script>
+<script type="text/javascript" th:inline="javascript">
+$(function(){
+	<!--/* スマホ スケジュールメニュー表示 */-->
+	$("#scheduleCalMenuBtn").on("click", function(){
+		$("#smartScheduleSideInfo").show("fade");
+		$("#smartScheduleMenu").show("slide", {direction: "left" }, 500);
+	});
+	$("#smartScheduleSideInfo").on("click", function() {
+		$("#smartScheduleSideInfo").hide("fade");
+		$("#smartScheduleMenu").hide("slide", {direction: "left" }, 500);
+	});
+	
+	// 本処理ではサイドメニューを閉じる処理のみ
+	$(".calendarDispType").click(function(){
+		$("#smartScheduleSideInfo").trigger("click");
+	});
+	
+	<!--/** 予定の新規登録アイコン */-->
+	$("#scheduleNewAdd").on("click", function(){
+		const step = calendarMinStep;// scheduleCalendar
+		const focusDate = currentMainCalendarDate;
+		const now = new Date();
+		let from = new Date(focusDate);
+		from.setHours(now.getHours(), floor(now.getMinutes(), step));
+		let to = new Date(from);
+		to.setTime(from.getTime() + (step * 60 * 1000));
+		
+		if(from.getDate() !== to.getDate()){
+			to = from;
+		}
+		
+		let dateTimeParams = {
+			"dateFrom": $.datepicker.formatDate("yy/mm/dd", from),
+			"dateTo": $.datepicker.formatDate("yy/mm/dd", to),
+			"timeFrom": formatHHMMSS(from.getHours(), from.getMinutes(), 0),
+			"timeTo": formatHHMMSS(to.getHours(), to.getMinutes(), 0),
+			"hourFrom": from.getHours(),
+			"minFrom": from.getMinutes(),// 倍数の切り捨て
+			"hourTo": to.getHours(),
+			"minTo": to.getMinutes(),// 倍数の切り上げ
+			"allday": false,
+		}
+		
+		// 編集を表示処理
+		benzo.global.scheduleCalendar.onNewAddClick(dateTimeParams, event);
+	});
+
+});
+</script>
+<script type="text/javascript" th:inline="javascript">
+<!--/* カレンダー選択状態をセッションに保存する */-->
+function saveCalendarStatus(){
+	let params = {};
+	params.dispType = getCurrentCalendarDispType();
+	params.calendarDate = $.datepicker.formatDate("yy/mm/dd", currentMainCalendarDate);
+	params.userSelectType = $(".userSelectArea .userSelectTab.selected").data("userSelectType");
+	params.selectedAccountSeq = uniqueArray(
+		$(".userSelectArea .userCheck:checked").map(function(){
+			return $(this).data("accountSeq");
+		}).get()
+	);
+	params.selectedHoliday = $(".userSelectArea .holidayCheck").prop("checked");
+	if(params.selectedAccountSeq.length == 0){
+		params.selectedAccountSeq = [null];
+	}
+
+	$.ajax({
+		type : "POST",
+		url : /*[[(@{/user/schedule/saveCalendarStatus})]]*/ "/",
+		data : params,
+		dataType : "json",
+		traditional: true
+	});
+}
+</script>
+<script type="text/javascript" th:inline="javascript">
+<!--/* カレンダー初期表示 */-->
+$(function() {
+	let dispType = /*[[${{calendarStatusForm.dispType}}]]*/"";
+	let saveCalendarStatusFlg = false;
+	if(dispType === /*[[${T(jp.loioz.app.user.schedule.enums.CalendarDispType).ROOM.cd}]]*/){
+		// スマホにRoom表示はないので、強制的に月表示にする
+		dispType = /*[[${T(jp.loioz.app.user.schedule.enums.CalendarDispType).MONTHLY.cd}]]*/"3"
+		saveCalendarStatusFlg = true;
+	}
+	setCurrentCalendarDispType(dispType);
+	currentMainCalendarDate = new Date(/*[[${{calendarStatusForm.calendarDate}}]]*/);
+	currentMainCalendarDate.setHours(0, 0, 0, 0);
+	currentMiniCalendarDate = currentMainCalendarDate;
+	changeMainCalendar(currentMainCalendarDate);
+	
+	// 表示プロパティを変更したので、その値をセッションに保持
+	if(saveCalendarStatusFlg) {
+		saveCalendarStatus();
+	}
+});
+</script>
+<!--/* ユーザー選択 */-->
+<script type="text/javascript" th:inline="javascript">
+$(function() {
+	<!--/* 初期表示状態でのユーザーグループタブ選択 */-->
+	const userSelectType = /*[[${{calendarStatusForm.userSelectType}}]]*/ null;
+	<!--/* 初期選択状態のユーザー */-->
+	const selectedUsers = [
+		/*[# th:each="accountSeq : ${calendarStatusForm.selectedAccountSeq}"]*/
+		[[${accountSeq}]],
+		/*[/]*/
+	];
+	const selectedHoliday = /*[[${calendarStatusForm.selectedHoliday}]]*/null;
+	if(selectedHoliday) {
+		// 値を設定するだけ。後続の処理で描写切り替えが行われる
+		$(".userSelectArea .holidayCheck").prop("checked", Boolean(selectedHoliday));
+	}
+	<!--/* カレンダー初期表示 */-->
+	initUserSelectTab(userSelectType, selectedUsers);
+});
+</script>
+<!--/* 予定登録モーダル */-->
+<script type="text/javascript" th:inline="javascript">
+$(function() {
+	let editContainer = benzo.global.smartSchedule.editContainer;
+
+	<!--/* 予定がクリックされたらモーダルを開く(編集) */-->
+	benzo.global.scheduleCalendar.onEntryClick = function(scheduleSeq, event){
+		let config = {
+			isUpdate: true
+		};
+		<!--/* 予定表データを取得 */-->
+		let scheduleData = $.extend(true, {}, scheduleCache[scheduleSeq]);
+
+		<!--/* 非公開の予定を開かない */-->
+		if(scheduleData.forbidden){
+			return;
+		}
+
+		<!--/* モーダルを開く */-->
+		benzo.global.smartSchedule.openEditContainer(scheduleData, config);
+
+		<!--/* 初回面談・裁判期日は、予定表からは一部項目が編集不可 */-->
+		if(scheduleData.saibanLimit){
+			editContainer.find('[data-contains="subject"], [data-contains="date"], [data-contains="place"], [data-contains="shokaiMendan"], [data-contains="saibanLimit"]')
+				.find("input, textarea, select, button").prop("disabled", true);
+			editContainer.find('[data-contains="subject"], [data-contains="date"], [data-contains="place"], [data-contains="shokaiMendan"], [data-contains="saibanLimit"]')
+				.find(".select").attr("disabled",true);
+		}
+	}
+	
+	<!--/* 新規登録を開く */-->
+	benzo.global.scheduleCalendar.onNewAddClick = function(dateTimeParams, event){
+		// サイドメニューを閉じる
+		$("#smartScheduleSideInfo").trigger("click");
+
+		let config = {
+			isCreate: true
+		};
+		<!--/* 予定表データを取得 */-->
+		let scheduleData = $.extend(true, {}, benzo.global.smartSchedule.emptyScheduleData, dateTimeParams);
+		
+		// 新規登録時にログインユーザーを参加者に追加
+		const myAccountSeq = /*[[${T(jp.loioz.common.utility.SessionUtils).getLoginAccountSeq()}]]*/null;
+		scheduleData.member = [myAccountSeq]
+
+		<!--/* モーダルを開く */-->
+		benzo.global.smartSchedule.openEditContainer(scheduleData, config);
+	}
+	
+
+	<!--/* 登録・更新・削除ボタン */-->
+	let ajaxRunning = false;
+	editContainer.find(".saveSchedule").on("click", function(){
+		if(ajaxRunning){
+			return false;
+		}
+
+		let button = $(this);
+		if(button.is(".deleteButton")){
+			if(!confirm("この予定を削除します。よろしいですか？")){
+				return false;
+			}
+		}
+
+		let params = benzo.global.smartSchedule.getEditFormParams();
+		let scheduleSeq = params["scheduleSeq"];
+
+		ajaxRunning = true;
+		$.ajax({
+			type : "POST",
+			url : /*[[(@{/user/schedule/needConfirm})]]*/ "/",
+			data : params,
+			dataType : "json"
+		})
+		.done(function(checked) {
+			if(!button.is(".deleteButton")){
+				if(checked.needConfirm &&!confirm(checked.message)){
+					ajaxRunning = false;
+					return false;
+				}
+			}
+			$.ajax({
+				type : "POST",
+				url : button.data("url"),
+				data : params,
+				dataType : "json"
+			})
+			.done(function(result) {
+				if(result.succeeded){
+					// 編集エリアを閉じる
+					benzo.global.scheduleCalendar.closeEditView();
+					benzo.global.smartSchedule.closeEditContainer();
+					
+					<!--/* 更新・削除の場合は、予定データ再読込のためにキャッシュを削除 */-->
+					if(button.is(".updateButton") || button.is(".deleteButton")){
+						delete scheduleCache[scheduleSeq];
+					}
+					showInfoMessageForJs(result.message);
+					changeMainCalendar(currentMainCalendarDate);
+				} else {
+					// エラーメッセージ表示
+					showErrorMessage(result.message, editContainer, result.errors);
+				}
+			})
+			.fail(function() {
+				showErrorMessage(/*[[#{E00013}]]*/ "error", editContainer);
+			})
+			.always(function(){
+				ajaxRunning = false;
+			});
+		});
+	});
+});
+</script>
+</head>
+<body>
+	<div layout:fragment="header-contents" th:remove="tag"></div>
+	<div layout:fragment="main-contents" th:remove="tag">
+		<div class="smart_wrapper">
+			<div th:replace="common/messageArea::messageArea"></div>
+			<div th:replace="user/schedule/mobile/scheduleCalendar::mobileScheduleMainCal"></div>
+			<!--/*- スケジュールコントロールボタン*/-->
+			<div class="schedule_control_area">
+				<!-- <div id="scheduleCalMenuBtn" class="schedule_control_btn is_three_point"></div> -->
+				<div id="scheduleNewAdd" class="schedule_control_btn is_plus" role="button"></div>
+			</div>
+		</div>
+		<div th:replace="user/schedule/mobile/scheduleModal::mobileEditView"></div>
+		<div th:replace="user/schedule/mobile/scheduleModal::mobileEditContainer(
+			createUrl=@{/user/schedule/create},
+			updateUrl=@{/user/schedule/update},
+			deleteUrl=@{/user/schedule/delete})"></div>
+		<div th:replace="user/schedule/mobile/scheduleCalendar::mobileScheduleSideMenu"></div>
+	</div>
+</body>
+</html>

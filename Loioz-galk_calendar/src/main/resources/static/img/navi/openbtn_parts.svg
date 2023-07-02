@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 7.861 7.861" width="8px" height="8px">
+  <defs>
+    <style>
+      .cls-1 {
+        fill: #c3c3c3;
+      }
+    </style>
+  </defs>
+  <path id="openbtn_parts" class="cls-1" d="M-1739.214-951.139H-1740V-959h7.861v.787a7.083,7.083,0,0,0-7.075,7.074Z" transform="translate(1740 959)"/>
+</svg>

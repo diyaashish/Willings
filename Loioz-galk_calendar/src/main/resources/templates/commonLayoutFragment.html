@@ -1,0 +1,1036 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+	<meta charset="utf-8" />
+</head>
+<body>
+
+
+<!--/* 
+
+	共通レイアウトフラグメント
+	
+*/-->
+
+
+<!--/* ログイン後の共通ヘッダーフラグメント（表示する値をSessionから取得してHTMLを構築） */-->
+<th:block th:fragment="loginHeaderFragmentUseSessionVal(
+		loginHeaderForm
+	)">
+
+	<!--/* ヘッダー */-->
+	<!--/* ※Sessionの値を設定してヘッダーを表示する場合は、プラン画面での表示ではないので、プラン画面以外では利用しない値はnullとしている。 */-->
+	<th:block th:replace="commonLayoutFragment::loginHeaderFragment(
+		loginHeaderForm						=	${loginHeaderForm},
+		isOnlyPlanSettingAccessible			=	${T(jp.loioz.common.utility.SessionUtils).isOnlyPlanSettingAccessible()},
+		isFreePlanStatus					=	${T(jp.loioz.common.utility.SessionUtils).isFreePlanStatus()},
+		tenantName							=	${T(jp.loioz.common.utility.SessionUtils).getTenantName()},
+		subDomain							=	${T(jp.loioz.common.utility.SessionUtils).getSubDomain()},
+		planTypeTitle							=	${T(jp.loioz.common.utility.SessionUtils).getPlanTypeTitle()},
+		daysCountFreePlanAvailable			=	${T(jp.loioz.common.utility.SessionUtils).getDaysCountFreePlanAvailable()},
+		loginAccountName					=	${T(jp.loioz.common.utility.SessionUtils).getLoginAccountName()},
+		loginAccountId						=	${T(jp.loioz.common.utility.SessionUtils).getLoginAccountId()},
+		mailAddress							=	${T(jp.loioz.common.utility.SessionUtils).getMailAddress()},
+		isLawyer							=	${T(jp.loioz.common.utility.SessionUtils).isLawyer()},
+		deviceType							=	${T(jp.loioz.common.utility.SessionUtils).getDeviceType()},
+		isSystemMng							=	${T(jp.loioz.common.utility.SessionUtils).isSystemMng()},
+		tenantUrlContextPath				=	null,
+		isPlanView							=	false,
+		canUseMessage						=	${T(jp.loioz.common.utility.SessionUtils).canUsePlanFunc(T(jp.loioz.common.constant.plan.PlanConstant$PlanFuncRestrict).PF0001)},
+		canUseKaikei						=	${T(jp.loioz.common.utility.SessionUtils).canUsePlanFunc(T(jp.loioz.common.constant.plan.PlanConstant$PlanFuncRestrict).PF0002)},
+		oldKaikeiIsOnInTenantFuncSetting	=	${T(jp.loioz.common.constant.CommonConstant$SystemFlg).FLG_ON.equalsByCode(
+																		T(jp.loioz.common.utility.SessionUtils).getTenantFuncSettingValue(T(jp.loioz.common.constant.TenantFuncSettingConstant$TenantFuncSetting).OLD_KAIKEI_ON_OFF)
+																)},
+		oldKaikeiIsOpenInLoiozAdminControl	= ${T(jp.loioz.common.constant.CommonConstant$SystemFlg).FLG_ON.equalsByCode(
+																			T(jp.loioz.common.utility.SessionUtils).getLoiozAdminControlValue(T(jp.loioz.common.constant.LoiozAdminControlConstant$LoiozAdminControl).OLD_KAIKEI_OPEN)
+																	)},
+	)"></th:block>
+	
+</th:block>
+
+
+
+<!--/* ログイン後の共通ヘッダーフラグメント */-->
+<th:block th:fragment="loginHeaderFragment(
+		loginHeaderForm,
+		isOnlyPlanSettingAccessible,
+		isFreePlanStatus,
+		tenantName,
+		subDomain,
+		planTypeTitle,
+		daysCountFreePlanAvailable,
+		loginAccountName,
+		loginAccountId,
+		mailAddress,
+		isLawyer,
+		deviceType,
+		isSystemMng,
+		tenantUrlContextPath,
+		isPlanView,
+		canUseMessage,
+		canUseKaikei,
+		oldKaikeiIsOnInTenantFuncSetting,
+		oldKaikeiIsOpenInLoiozAdminControl
+	)">
+	
+	<!--/* 各リンクに設定するURL */-->
+	<th:block th:with="
+		ankenListUrl											=		(${!isPlanView ? '/user/ankenList/'												: (!isOnlyPlanSettingAccessible ? tenantUrlContextPath + '/user/ankenList/'													: 'javascript:void(0);')}),
+		meiboListUrl											=		(${!isPlanView ? '/user/meiboList/'												: (!isOnlyPlanSettingAccessible ? tenantUrlContextPath + '/user/meiboList/'													: 'javascript:void(0);')}),
+		customerListUrl									=		(${!isPlanView ? '/user/meiboList/customerAll'							: (!isOnlyPlanSettingAccessible ? tenantUrlContextPath + '/user/meiboList/customerAll'								: 'javascript:void(0);')}),
+		shukkinListUrl										=		(${!isPlanView ? '/user/nyushukkinYotei/shukkin/list'					: (!isOnlyPlanSettingAccessible ? tenantUrlContextPath + '/user/nyushukkinYotei/shukkin/list'						: 'javascript:void(0);')}),
+		nyukinListUrl											=		(${!isPlanView ? '/user/nyushukkinYotei/nyukin/list'					: (!isOnlyPlanSettingAccessible ? tenantUrlContextPath + '/user/nyushukkinYotei/nyukin/list'						: 'javascript:void(0);')}),
+		azukarikinManagementListUrl				=		(${!isPlanView ? '/user/azukarikinManagement/list'					: (!isOnlyPlanSettingAccessible ? tenantUrlContextPath + '/user/azukarikinManagement/list'						: 'javascript:void(0);')}),
+		feeListUrl												=		(${!isPlanView ? '/user/feeList/'													: (!isOnlyPlanSettingAccessible ? tenantUrlContextPath + '/user/feeList/'														: 'javascript:void(0);')}),
+		depositRecvListUrl								=		(${!isPlanView ? '/user/depositRecvList/'									: (!isOnlyPlanSettingAccessible ? tenantUrlContextPath + '/user/depositRecvList/'										: 'javascript:void(0);')}),
+		invoiceListUrl										=		(${!isPlanView ? '/user/invoiceList/'											: (!isOnlyPlanSettingAccessible ? tenantUrlContextPath + '/user/invoiceList/'												: 'javascript:void(0);')}),
+		statementListUrl									=		(${!isPlanView ? '/user/statementList/'										: (!isOnlyPlanSettingAccessible ? tenantUrlContextPath + '/user/statementList/'											: 'javascript:void(0);')}),
+		fileManagementAllSearchUrl				=		(${!isPlanView ? '/user/fileManagementAllSearch/'					: (!isOnlyPlanSettingAccessible ? tenantUrlContextPath + '/user/fileManagementAllSearch/'						: 'javascript:void(0);')}),
+		scheduleUrl											=		(${!isPlanView ? '/user/schedule/'												: (!isOnlyPlanSettingAccessible ? tenantUrlContextPath + '/user/schedule/'													: 'javascript:void(0);')}),
+		calendarUrl											=		(${!isPlanView ? '/user/calendar/'												: (!isOnlyPlanSettingAccessible ? tenantUrlContextPath + '/user/calendar/'													: 'javascript:void(0);')}),
+		taskManagementListUrl						=		(${!isPlanView ? '/user/taskManagement/list'							: (!isOnlyPlanSettingAccessible ? tenantUrlContextPath + '/user/taskManagement/list'								: 'javascript:void(0);')}),
+		dengonUrl											=		(${!isPlanView ? '/user/dengon/'												: (!isOnlyPlanSettingAccessible ? tenantUrlContextPath + '/user/dengon/'													: 'javascript:void(0);')}),
+		personManagementNewAddKojinUrl				=		(${!isPlanView ? '/user/personManagement/new/addKojin'				: (!isOnlyPlanSettingAccessible ? tenantUrlContextPath + '/user/personManagement/new/addKojin'					: 'javascript:void(0);')}),
+		personManagementNewAddHojinUrl				=		(${!isPlanView ? '/user/personManagement/new/addHojin'				: (!isOnlyPlanSettingAccessible ? tenantUrlContextPath + '/user/personManagement/new/addHojin'					: 'javascript:void(0);')}),
+		personManagementNewAddLawyerUrl				=		(${!isPlanView ? '/user/personManagement/new/addLawyer'				: (!isOnlyPlanSettingAccessible ? tenantUrlContextPath + '/user/personManagement/new/addLawyer'					: 'javascript:void(0);')}),
+		ankenRegistUrl										=		(${!isPlanView ? '/user/ankenRegist/'											: (!isOnlyPlanSettingAccessible ? tenantUrlContextPath + '/user/ankenRegist/'											: 'javascript:void(0);')}),
+		getUserHeaderSearchFragmentUrl						=		(${!isPlanView ? '/common/userheader/getUserHeaderSearchFragment'								: '/' + T(jp.loioz.common.constant.UrlConstant).PLANSETTING_URL + '/getUserHeaderSearchFragment'}),
+		quickSearchMeiboUrl							=		(${!isPlanView ? '/user/meiboList/quick'								: tenantUrlContextPath + '/user/meiboList/quick'}),
+		quickSearchAnkenUrl							=		(${!isPlanView ? '/user/ankenList/quick'								: tenantUrlContextPath + '/user/ankenList/quick'}),
+		officeSettingUrl									=		(${!isPlanView ? '/user/officeSetting/'										: (!isOnlyPlanSettingAccessible ? tenantUrlContextPath + '/user/officeSetting/'											: 'javascript:void(0);')}),
+		officeAccountSettingListUrl					=		(${!isPlanView ? '/user/officeAccountSetting/list'						: (!isOnlyPlanSettingAccessible ? tenantUrlContextPath + '/user/officeAccountSetting/list'							: 'javascript:void(0);')}),
+		myAccountEditUrl								=		(${!isPlanView ? '/user/myAccountEdit/'									: (!isOnlyPlanSettingAccessible ? tenantUrlContextPath + '/user/myAccountEdit/'										: 'javascript:void(0);')}),
+		myAccountKozaListUrl							=		(${!isPlanView ? '/user/myAccountKozaList/'								: (!isOnlyPlanSettingAccessible ? tenantUrlContextPath + '/user/myAccountKozaList/'									: 'javascript:void(0);')}),
+		toiawaseUrl											=		(${!isPlanView ? '/user/toiawase/'												: (!isOnlyPlanSettingAccessible ? tenantUrlContextPath + '/user/toiawase/'													: 'javascript:void(0);')}),
+		logoutUrl												=		(${!isPlanView ? '/user/logout'													: tenantUrlContextPath + '/user/logout'}),
+	">
+	
+	<script type="text/javascript" th:inline="javascript">
+	$(function() {
+		
+		<!--/* ヘッダー検索の検索条件が親と子の関係をまたぐ必要があるので、メモリに保持しておく */-->
+		benzo.global.fragment.headerSearchFragment = {};
+		
+		<!--/* プラン画面での表示かどうか */-->
+		benzo.global.fragment.headerSearchFragment.isPlanView = /*[[${isPlanView}]]*/false;
+		<!--/* 自身のテナントのコンテキストパス */-->
+		benzo.global.fragment.headerSearchFragment.tenantUrlContextPath = /*[[${tenantUrlContextPath}]]*/'';
+		
+		<!--/* 検索処理のレンダリング処理をメモリの関数として定義し、共通化する */-->
+		benzo.global.fragment.headerSearchFragment.renderHeaderSearchListViewFragmentPromise = function(requestData) {
+			return new Promise((resolve, reject) => {
+				$.ajax({
+					url : /*[[${getUserHeaderSearchFragmentUrl}]]*/'',
+					type : "GET",
+					data : requestData
+				})
+				.done(function(data, status, jqXHR) {
+					if (isAjaxProcSuccess(jqXHR)) {
+						
+						<!--/* 連続入力の最後のリクエストのみ有効 */-->
+						if (benzo.global.fragment.headerSearchFragment.uuid == getAjaxProcResutlMessage(jqXHR)) {
+							benzo.global.fragment.headerSearchFragment.uuid = "";
+							
+							<!--/* Promiseチェーンの最後の処理となるため、引数データは渡さない */-->
+							$("#headerSearchListViewFragmentWrap").html(data);
+							
+							$(".searchIcon").addClass("hidden");
+							$('.spinIcon').addClass('hidden');
+							$('.enterIcon').removeClass('hidden');
+						}
+						resolve();
+					} else {
+						// 処理失敗
+						const errorMsg = getAjaxProcResutlMessage(jqXHR);
+						showErrorMessageForJs(errorMsg);
+						
+						benzo.global.fragment.headerSearchFragment.uuid = "";
+						$(".searchIcon").removeClass("hidden");
+						$('.spinIcon').addClass('hidden');
+						$('.enterIcon').addClass('hidden');
+						reject();
+					}
+				})
+				.fail(function(jqXHR, status, errorThrown) {
+					showErrorMessageForJs(/*[[#{E00091}]]*/ "error");
+
+					benzo.global.fragment.headerSearchFragment.uuid = "";
+					$(".searchIcon").removeClass("hidden");
+					$('.spinIcon').addClass('hidden');
+					$('.enterIcon').addClass('hidden');
+					reject();
+				});
+			});
+		};
+
+		<!--/* ヘッダー検索の入力 */-->
+		let timeoutId = "";
+		$(document).on('input', "#loginHeaderContents #headerSearchInput", function(e) {
+			
+			<!--/* 入力値をメモリに格納 */-->
+			benzo.global.fragment.headerSearchFragment.keywords = $(this).val().trim();
+			benzo.global.fragment.headerSearchFragment.uuid = Date.now();
+			
+			if (benzo.global.fragment.headerSearchFragment.keywords.length) {
+				$(".searchIcon").addClass("hidden");
+				$('.spinIcon').removeClass('hidden');
+				$(".enterIcon").addClass("hidden");
+			}
+			
+			<!--/* 共通処理：遅延処理実行 */-->
+			timeoutId = lazyQueueFn(_renderResultArea, {"clearQueueId": timeoutId, lazyMilSec: 300});
+			
+			<!--/* Inner関数 */-->
+			function _renderResultArea() {
+				const searchKeywords = benzo.global.fragment.headerSearchFragment.keywords;
+				if (!searchKeywords.length) {
+					$("#headerSearchListViewFragmentWrap").html("");
+					$(".searchIcon").removeClass("hidden");
+					$('.spinIcon').addClass('hidden');
+					$('.enterIcon').addClass('hidden');
+					return;
+				}
+				
+				<!--/* タブの選択がメモリに格納されていない場合、初期値をメモリに保持する */-->
+				if (!benzo.global.fragment.headerSearchFragment.headerSearchTabCd) {
+					benzo.global.fragment.headerSearchFragment.headerSearchTabCd = /*[[${T(jp.loioz.common.constant.CommonConstant$HeaderSearchTab).PERSON.cd}]]*/'1'
+				}
+				
+				<!--/* リクエストデータを作成する */-->
+				const {keywords, headerSearchTabCd, uuid} = benzo.global.fragment.headerSearchFragment;
+				let requestData = [
+					{name: "keywords", value: keywords},
+					{name: "headerSearchTabCd", value: headerSearchTabCd},
+					{name: "requestUuid", value: uuid}
+				];
+				
+				Promise.resolve(requestData)
+					.then(benzo.global.fragment.headerSearchFragment.renderHeaderSearchListViewFragmentPromise)
+					.catch((errorObj) => console.log(errorObj))
+					.finally(() => {
+					});
+			};
+		})
+		
+		<!--/* ヘッダーフォーカス時のポップオーバー検索 */-->
+		$(document).on('focus', "#loginHeaderContents #headerSearchInput",function(e) {
+			const popoverVisible =$('.headerSearchPopover').is(':visible');
+			if (!popoverVisible) {
+				$("#headerSearchInput").trigger('input');
+			}
+		});
+		
+		<!--/* エンターキー押下 */-->
+		$(document).on('keydown', function(e) {
+			if (e.keyCode == 13) {
+				
+				let enterTargetId = $(e.target).attr('id');
+				if ("headerSearchInput" == enterTargetId) {
+					<!--/* ヘッダー検索のInputでのエンターの場合は、そちら用のイベントで処理を実行するためこの処理は行わない */-->
+					return;
+				}
+				
+				const popoverVisible =$('.headerSearchPopover').is(':visible');
+				if (popoverVisible) {
+					<!--/* エンターキー押下時、ヘッダー検索ポップオーバーが表示状態の場合は、一覧検索を実行する */-->
+					
+					const {keywords, headerSearchTabCd, personCount, ankenCount} = benzo.global.fragment.headerSearchFragment;
+					
+					<!--/* 一覧画面を表示 */-->
+					goToList(keywords, headerSearchTabCd, personCount, ankenCount);
+				}
+			}
+		})
+		
+		<!--/* ヘッダー検索でエンターキー押したら、一覧検索 */-->
+		$("#headerSearchInput").on('keydown', function(e) {
+			if (e.keyCode == 13) {
+				
+				const {keywords, headerSearchTabCd, personCount, ankenCount} = benzo.global.fragment.headerSearchFragment;
+				
+				let isSearching = !$('.spinIcon').hasClass('hidden');
+				if (isSearching) {
+					<!--/* 入力されたキーワードで検索処理中の場合 -> なにもしない */-->
+					return false;
+				}
+				
+				<!--/* 一覧画面を表示 */-->
+				goToList(keywords, headerSearchTabCd, personCount, ankenCount);
+			}
+		});
+
+		<!--/* ヘッダー検索ポップオーバーの非表示処理 */-->
+		$(document).on('click',function(e) {
+			
+			<!--/* 自作ポップオーバーの非表示処理（ポップオーバー外のクリック） */-->
+			let popover = $(e.target).closest('.headerSearchPopover');
+			let popoverWraper = $(e.target).closest('.headerSearchPopoverWrap');
+			if(!popover.length && !popoverWraper.length) {
+				<!--/* ポップオーバー要素の外側をクリックした時の操作 */--> 
+				<!--/* 全てのポップオーバーを非表示とする */--> 
+				$('.headerSearchPopover').hide();
+			} else {
+				<!--/* ターゲット要素をクリックした時の操作 */-->
+				<!--/* 特になにもしない */-->
+			}
+		});
+		
+		<!--/* 引数のキーワードで一覧画面を表示する */-->
+		function goToList(keywords, headerSearchTabCd, personCount, ankenCount) {
+			
+			<!--/* リクエストパラメータ作成 */-->
+			let requestData = {
+				page : '',
+				quickSearch : keywords
+			}
+			
+			let params = new URLSearchParams(requestData);
+			
+			<!--/* URL作成 */-->
+			let url = '';
+			
+			const headerSearchTabPerson = /*[[${T(jp.loioz.common.constant.CommonConstant$HeaderSearchTab).PERSON.cd}]]*/'1';
+			const headerSearchTabAnken = /*[[${T(jp.loioz.common.constant.CommonConstant$HeaderSearchTab).ANKEN.cd}]]*/'2';
+			
+			if (!headerSearchTabCd || headerSearchTabCd == headerSearchTabPerson) {
+				<!--/* headerSearchTabCdが空（未設定）か、名簿のタブCDの場合 */-->
+				
+				if (personCount == 0) {
+					<!--/* 検索結果の件数が0のときは一覧の表示処理は行わない */-->
+					return false;
+				}
+				url = /*[[${quickSearchMeiboUrl}]]*/'';
+			} else if (headerSearchTabCd == headerSearchTabAnken) {
+				<!--/* headerSearchTabCdが、案件のタブCDの場合 */-->
+				
+				if (ankenCount == 0) {
+					<!--/* 検索結果の件数が0のときは一覧の表示処理は行わない */-->
+					return false;
+				}
+				url = /*[[${quickSearchAnkenUrl}]]*/'';
+			} else {
+				<!--/* その他の場合は処理しない */-->
+				return false;
+			}
+			
+			<!--/* URLにリクエストパラメータを付与 */-->
+			url = url + '?' + params;
+			
+			window.location.href = url;
+		}
+		
+	});
+	</script>
+	
+	<header class="global_header" id="loginHeaderContents" th:object="${loginHeaderForm}">
+		<!--/* loiozロゴ */-->
+		<th:block th:unless="${isPlanView and isOnlyPlanSettingAccessible}">
+			<a class="global_header__logo" href="javascript:void(0);" onclick="topPage();"></a>
+		</th:block>
+		<th:block th:if="${isPlanView and isOnlyPlanSettingAccessible}">
+			<a class="global_header__logo" href="javascript:void(0);"></a>
+		</th:block>
+		
+		<!--/* メインメニューエリア */-->
+		<div class="global_header__main">
+			<ul class="header_nav_list" th:classappend="${isPlanView and isOnlyPlanSettingAccessible} ? not_active">
+				<!--/* メニュー */-->
+				<li>
+					<a href="javascript:void(0);" class="global_header_nav" th:classappend="!${isPlanView and isOnlyPlanSettingAccessible} ? 'mainMenuFnc':''">
+						<i class="fas fa-bars fa-lg mr-2"></i>
+						<span>メニュー</span>
+					</a>
+					<!--/* ヘッダーメインメニュー */-->
+
+		<th:block th:if="${!isPlanView or (isPlanView and !isOnlyPlanSettingAccessible)}">
+					<div class="header_dropdown_menu_wrap">
+						<div id="headerScreenMenu"  data-backdrop="static" class="header_main_menu header_dropdown_menu">
+							<div class="header_dropdown_menu__inner">
+								<div class="menu_parts">
+									<ul>
+										<li class="menu_block">案件・名簿管理</li>
+										<li><a th:href="${ankenListUrl}">案件情報（すべて）</a></li>
+										<li><a th:href="${meiboListUrl}">名簿情報（すべて）</a></li>
+										<li><a th:href="${customerListUrl}">顧客名簿</a></li>
+									</ul>
+									<hr class="my-2">
+			<!--/* プラン判定（会計管理の利用可否） */-->
+			<th:block th:if="${canUseKaikei}">
+										<!--/* 会計管理 */-->
+										<ul>
+											<li class="menu_block">会計管理</li>
+											<li><a th:href="${feeListUrl}">報酬管理</a></li>
+											<li><a th:href="${depositRecvListUrl}">預り金／実費管理</a></li>
+											<li><a th:href="${invoiceListUrl}">請求書</a></li>
+											<li><a th:href="${statementListUrl}">精算書</a></li>
+										</ul>
+										<hr class="my-2">
+			</th:block>
+									<!--/* データ管理 */-->
+									<ul>
+										<li class="menu_block">データ管理</li>
+										<li th:switch="*{storageConnectedService}">
+			<!--/* 外部サービス連携の判定 */-->
+			<th:block th:if="*{storageConnectedService}">
+												<script type="text/javascript" th:inline="javascript">
+												$(function() {
+													$(".googleRootRedirect").on("click", function() {
+														const url = /*[[@{/common/api/google/getRootFolderUrl}]]*/"";
+														getRootFolder(url);
+													});
+													$(".boxRootRedirect").on("click", function() {
+														const url = /*[[@{/common/api/box/getRootFolderUrl}]]*/"";
+														getRootFolder(url);
+													});
+													$(".dropboxRootRedirect").on("click", function() {
+														const url = /*[[@{/common/api/dropbox/getRootFolderUrl}]]*/"";
+														getRootFolder(url);
+													});
+													function getRootFolder(url){
+														$.ajax({
+															url : url,
+															type : "GET",
+														})
+														.done(function(data, status, jqXHR) {
+															if (data.successed) {
+																let childWindow = window.open(data.url, 'rel=noopener');
+															} else {
+																showErrorMessageForJs(data.message);
+															}
+														})
+														.fail(function(jqXHR, status, errorThrown) {
+															<!--/* なにもしない */-->
+															showErrorMessageForJs(/*[[#{E00091}]]*/ "error");
+														});
+													}
+												});
+												</script>
+			</th:block>
+											<a th:case="*{T(jp.loioz.common.constant.CommonConstant$ExternalService).GOOGLE}" href="javascript:void(0);" class="googleRootRedirect">GoogleDriveを開く</a>
+											<a th:case="*{T(jp.loioz.common.constant.CommonConstant$ExternalService).BOX}" href="javascript:void(0);" class="boxRootRedirect">Boxを開く</a>
+											<a th:case="*{T(jp.loioz.common.constant.CommonConstant$ExternalService).DROPBOX}" href="javascript:void(0);" class="dropboxRootRedirect">Dropboxを開く</a>
+											<a th:case="*" th:href="${fileManagementAllSearchUrl}">ファイル一覧</a>
+										</li>
+									</ul>
+			<!--/* プラン判定（会計管理の利用可否と） */-->
+			<th:block th:if="${canUseKaikei}">
+				<!--/* 設定値による判定（管理者制御でOpen状態、かつ、テナント機能設定で利用がONの状態） */-->
+				<th:block th:if="${oldKaikeiIsOpenInLoiozAdminControl and oldKaikeiIsOnInTenantFuncSetting}">
+									<!--/* 旧）会計管理メニュー） */-->
+									<hr class="my-2">
+									<ul>
+										<li class="menu_block">旧）会計管理</li>
+										<li><a th:href="${shukkinListUrl}">出金予定一覧</a></li>
+										<li><a th:href="${nyukinListUrl}">入金予定一覧</a></li>
+										<li><a th:href="${azukarikinManagementListUrl}">未収入金一覧</a></li>
+									</ul>
+				</th:block>
+			</th:block>
+								</div>
+							</div>
+						</div>
+					</div>
+					
+		</th:block>
+				</li>
+				<!--/* 新カレンダー */-->
+				<li>
+					<a id="calendarNaviLink" class="global_header_nav" th:href="${calendarUrl}">
+						<i class="far fa-calendar-alt fa-lg mr-2"></i>
+						<span>新カレンダー</span>
+					</a>
+				</li>
+				<!--/* 旧カレンダー */-->
+				<li>
+					<a id="calendarNaviLink" class="global_header_nav" th:href="${scheduleUrl}">
+						<i class="far fa-calendar-alt fa-lg mr-2"></i>
+						<span>旧カレンダー</span>
+					</a>
+				</li>
+				<!--/* タスク */-->
+				<li>
+					<a class="global_header_nav" th:href="${taskManagementListUrl}">
+						<i class="fas fa-list fa-lg mr-2"></i>
+						<span>タスク</span>
+						<span class="navi_list_cnt" th:if="*{newTaskCount} > 0" th:text="*{newTaskCount}"></span>
+					</a>
+				</li>
+				<!--/* メッセージ */-->
+				<th:block th:if="${canUseMessage}">
+					<!--/* 有償プランのお申し込み画面以外の場合 */-->
+					<li>
+						<a class="global_header_nav" th:href="${dengonUrl}">
+							<i class="far fa-envelope fa-lg mr-2"></i>
+							<span>メッセージ</span>
+							<span class="msgCnt navi_list_cnt" th:if="*{newDengonCount} > 0" th:text="*{newDengonCount}"></span>
+						</a>
+					</li>
+				</th:block>
+			</ul>
+		</div>
+		<!--/* メニューサブ */-->
+		<div class="global_header__sub">
+			<ul class="header_nav_list">
+				<!--/* 追加 */-->
+				<li th:classappend="${isPlanView and isOnlyPlanSettingAccessible} ? not_active">
+					<a class="global_header_nav" th:classappend="!${isPlanView and isOnlyPlanSettingAccessible} ? 'headerAdditionFnc':''" href="javascript:void(0);">
+						<i class="far fa-plus-square fa-lg mr-2"></i>
+						<span>追加<i class="fas fa-angle-down ml-3"></i></span>
+					</a>
+					<!--/* 追加メニュー */-->
+					<div class="header_dropdown_menu_wrap">
+						<div id="headerAdditionMenu" class="header_addition_menu header_dropdown_menu" data-backdrop="static">
+							<div class="header_dropdown_menu__inner">
+								<!--/* 事務所設定メニュー */-->
+								<div class="menu_parts">
+									<ul>
+										<li class="menu_block">案件追加</li>
+										<li><a th:href="${ankenRegistUrl}">案件を追加</a></li>
+									</ul>
+									<hr class="my-2">
+									<ul>
+										<li class="menu_block">名簿追加</li>
+										<li><a th:href="${personManagementNewAddKojinUrl}">個人を追加</a></li>
+										<li><a th:href="${personManagementNewAddHojinUrl}">企業・団体を追加</a></li>
+										<li><a th:href="${personManagementNewAddLawyerUrl}">弁護士を追加</a></li>
+									</ul>
+								</div>
+							</div>
+						</div>
+					</div>
+				</li>
+				<!--/* 検索BOX */-->
+<!--/*/			<th:block th:if="${!isPlanView or (isPlanView and !isOnlyPlanSettingAccessible)}"> /*/-->
+				<li>
+					<!--/* 検索結果の入力ポップアップ */-->
+					<div class="popover_box_wrap headerSearchPopoverWrap">
+						<div>
+							<div class="header_search">
+								<div class="seach_box">
+									<i class="fas fa-search seach_box_icon searchIcon"></i>
+									<i class="fas fa-circle-notch faa-spin animated seach_box_icon spinIcon hidden"></i>
+									<i class="fas fa-level-down-alt fa-rotate-90 seach_box_icon enterIcon hidden"></i>
+									<input type="search" name="quickSearch" id="headerSearchInput" class="form-control" placeholder="名簿／案件／裁判を検索" autocomplete="off" maxlength="300">
+								</div>
+							</div>
+						</div>
+						<div id="headerSearchListViewFragmentWrap" class="headerSearchListViewFragmentWrap">
+							<!--/* 検索結果フラグメント */-->
+						</div>
+					</div>
+				</li>
+<!--/*/			</th:block> /*/-->
+				<!--/* 無料トライアル */-->
+				<li th:if="${isFreePlanStatus and !isOnlyPlanSettingAccessible}">
+					<div class="warning_label"><i class="far fa-clock mr-2"></i>無料トライアル中</div>
+				</li>
+				<!--/* スマホに切り替え */-->
+<!--/*/			<th:block th:if="${!isPlanView}"> /*/-->
+				<li th:if="${deviceType == T(jp.loioz.common.constant.CommonConstant$DeviceType).MOBILE}" >
+					<a th:href="@{/common/changeViewType/{viewType}(viewType=${T(jp.loioz.common.constant.CommonConstant$ViewType).MOBILE.getCd()})}">スマホ</a>
+				</li>
+<!--/*/			</th:block> /*/-->
+				<!--/* 事務所名 */-->
+				<li th:classappend="${isPlanView and isOnlyPlanSettingAccessible} ? not_active">
+					<a class="global_header__office global_header_nav headerOfficeFnc py-2" href="javascript:void(0);">
+						<i class="far fa-building"></i>
+						<span class="char_ellipsis" th:text="${tenantName}">事務所名</span>
+					</a>
+					<!--/* 事務所設定メニュー */-->
+<!--/*/				<th:block th:if="${!isPlanView or (isPlanView and !isOnlyPlanSettingAccessible)}"> /*/-->
+					<div class="header_dropdown_menu_wrap">
+						<div id="headerOfficeMenu" class="header_office_menu header_dropdown_menu" data-backdrop="static">
+							<div class="header_dropdown_menu__inner">
+								<!--/* 事務所情報 */-->
+								<div class="info_parts">
+									<div class="info_parts__name">
+										<div class="char_ellipsis"><span th:text="${tenantName}">事務所名</span></div>
+									</div>
+									<div class="info_parts__id">
+										[事務所ID: <span th:text="${subDomain}">[事務所ID: xxx ]</span>]
+									</div>
+									<div class="info_parts__plan_type">
+										<span class="badge badge_cyan"> [[${planTypeTitle}]]</span>
+									</div>
+									<div th:if="${isFreePlanStatus and !isOnlyPlanSettingAccessible}"
+										class="info_parts__trial_free_days">
+										無料トライアル あと<span class="days_count">[[${daysCountFreePlanAvailable}]]</span>日
+									</div>
+								</div>
+								
+								<!--/* 事務所設定メニュー */-->
+								<div class="menu_parts">
+
+<!--/* 管理者の場合 */-->
+<!--/*/							<th:block th:if="${isSystemMng}"> /*/-->
+									<ul>
+										<li class="menu_block">事務所設定</li>
+										<li><a th:href="${officeSettingUrl}">事務所情報の設定</a></li>
+									</ul>
+									<hr class="my-2">
+									<ul>
+										<li class="menu_block">契約管理</li>
+										<li><a th:href="${officeAccountSettingListUrl}">アカウントの管理</a></li>
+										<li>
+											<a href="javascript:void(0);" class="openPlanSetting"
+												th:text="${isFreePlanStatus and !isOnlyPlanSettingAccessible} ? 'ご利用プランの設定' : 'ご利用プラン／請求情報' "></a>
+										</li>
+									</ul>
+<!--/*/							</th:block> /*/-->
+
+<!--/* 管理者以外の場合 */-->
+<!--/*/							<th:block th:unless="${isSystemMng}"> /*/-->
+									<ul>
+										<li><a th:href="${officeSettingUrl}">事務所情報の設定</a></li>
+										<li><a th:href="${officeAccountSettingListUrl}">アカウント一覧</a></li>
+									</ul>
+<!--/*/							</th:block> /*/-->
+
+								</div>
+							</div>
+						</div>
+					</div>
+<!--/*/				</th:block> /*/-->
+				</li>
+				<!--/* アカウント設定メニュー */-->
+				<li>
+					<a class="account_icon global_header_nav headerAccountFnc" href="javascript:void(0);">
+						<i class="fas fa-user-circle" th:style="|color: *{LoginColor}|"></i>
+						<i class="fas fa-angle-down"></i>
+					</a>
+					
+					<!--/* アカウント設定メニュー詳細 */-->
+					<div class="header_dropdown_menu_wrap">
+						<div id="headerAccountMenu" class="header_account_menu header_dropdown_menu" data-backdrop="static">
+							<div class="header_dropdown_menu__inner">
+								<!--/* アカウント情報 */-->
+								<div class="info_parts">
+									<div class="info_parts__name">
+										<div class="char_ellipsis" th:text="${loginAccountName}"></div>
+									</div>
+									<div class="info_parts__id">
+										[アカウントID: <span th:text="${loginAccountId}"></span>]
+									</div>
+									<div class="info_parts__mail_address">
+										<span th:text="${mailAddress}">abcdefghijklnmop.loioz.co.jp</span>
+									</div>
+								</div>
+								
+								<!--/* アカウント設定メニュー */-->
+								<div class="menu_parts">
+									<ul>
+										<li class="menu_block">個人設定</li>
+										<li th:classappend="${isPlanView and isOnlyPlanSettingAccessible} ? not_active"><a th:href="${myAccountEditUrl}">個人情報の設定</a></li>
+										<th:block th:if="${canUseKaikei}">
+											<li th:if="${isLawyer}" th:classappend="${isPlanView and isOnlyPlanSettingAccessible} ? not_active"><a th:href="${myAccountKozaListUrl}">個人口座の設定</a></li>
+										</th:block>
+									</ul>
+									<hr class="my-2">
+									<ul>
+										<li class="menu_block">サポート</li>
+										<li th:classappend="${isPlanView and isOnlyPlanSettingAccessible} ? not_active"><a th:href="${toiawaseUrl}">ご質問・ご要望</a></li>
+										<li>
+											<a href="javascript:void(0);" class="openInformationTab">お知らせ（公式サイト）
+												<i class="fas fa-external-link-alt fc_sub float-right"></i>
+											</a>
+										</li>
+									</ul>
+									<hr class="my-2">
+									<ul>
+										<li class="text-left">
+											<a class="is_arrow" id="logoutButton" href="javascript:void(0);" data-toggle="tooltip" data-container=".global_header" data-placement="bottom">ログアウト</a>
+											<form role="form" id="logoutForm" th:action="${logoutUrl}" method="post"></form>
+										</li>
+									</ul>
+								</div>
+							</div>
+						</div>
+					</div>
+					<!--/* アカウント設定メニュー詳細 end */-->
+				</li>
+			</ul>
+		</div>
+	</header>
+	</th:block>
+</th:block>
+
+<!--/* ヘッダー検索 */-->
+<th:block th:fragment="headerSearchFragment" th:object="${headerSearchListViewForm}">
+	<script type="text/javascript" th:inline="javascript">
+	$(function() {
+		
+		commonSetUpElement();
+		
+		const $headerSearchFragment = $(".headerSearchFragment");
+		
+		benzo.global.fragment.headerSearchFragment.personCount = /*[[*{personCount}]]*/'';
+		benzo.global.fragment.headerSearchFragment.ankenCount = /*[[*{ankenCount}]]*/'';
+		benzo.global.fragment.headerSearchFragment.saibanCount = /*[[*{saibanCount}]]*/'';
+		
+		<!--/* タブ選択による表示切り替えを行う */-->
+		$headerSearchFragment.find(".tabSelectBtn").on("click", function() {
+			
+			<!--/* タブCD値をメモリに保持 */-->
+			const tabCd = $(this).data("cd");
+			benzo.global.fragment.headerSearchFragment.headerSearchTabCd = tabCd;
+			
+			<!--/* 検索条件はメモリ値から作成する タブ切り替えなので、ページ情報が送信しない */-->
+			const {keywords, headerSearchTabCd, personCount, ankenCount, saibanCount} = benzo.global.fragment.headerSearchFragment;
+			const requestData = [
+				{name: "keywords", value: keywords},
+				{name: "headerSearchTabCd", value: headerSearchTabCd},
+				{name: "personCount", value: personCount},
+				{name: "ankenCount", value: ankenCount},
+				{name: "saibanCount", value: saibanCount},
+			]
+			
+			<!--/* リクエストデータからレンダリング処理を実行 */-->
+			Promise.resolve(requestData)
+				.then(benzo.global.fragment.headerSearchFragment.renderHeaderSearchListViewFragmentPromise)
+				.catch((errorObj) => console.log(errorObj))
+				.finally(() => {
+					
+				});
+			
+		});
+	});
+	</script>
+		
+	<div class="headerSearchFragment">
+		<div class="popover_box header_search_popover notAutoClose popoverBox headerSearchPopover">
+			<div class="popover_box_header">
+				<!--/* タブ */-->
+				<nav class="header_search_tab_nav">
+					<div th:with="enum=${T(jp.loioz.common.constant.CommonConstant$HeaderSearchTab).PERSON}">
+						<button class="btn btn-light hover tabSelectBtn" th:classappend="${enum.equalsByCode(headerSearchListSearchForm.headerSearchTabCd)}?'selected'" th:disabled="*{personCount == 0}" th:data-cd="${enum.cd}">
+							名簿<span class="ml-1" th:text="*{PersonCounterLimitOver}? |(*{T(jp.loioz.common.constant.CommonConstant).HEADER_SEARCH_COUNTER_LIMIT}+)| : |(*{personCount})| "></span>
+						</button>
+					</div>
+					<div th:with="enum=${T(jp.loioz.common.constant.CommonConstant$HeaderSearchTab).ANKEN}">
+						<button class="btn btn-light hover tabSelectBtn border-right-0 border-left-0" th:classappend="${enum.equalsByCode(headerSearchListSearchForm.headerSearchTabCd)}?'selected'" th:disabled="*{ankenCount == 0}" th:data-cd="${enum.cd}">
+							案件<span class="ml-1" th:text="*{AnkenCounterLimitOver}? |(*{T(jp.loioz.common.constant.CommonConstant).HEADER_SEARCH_COUNTER_LIMIT}+)| : |(*{ankenCount})| ">カウンタ</span>
+						</button>
+					</div>
+					<div th:with="enum=${T(jp.loioz.common.constant.CommonConstant$HeaderSearchTab).SAIBAN}">
+						<button class="btn btn-light hover tabSelectBtn" th:classappend="${enum.equalsByCode(headerSearchListSearchForm.headerSearchTabCd)}?'selected'" th:disabled="*{saibanCount == 0}" th:data-cd="${enum.cd}">
+							裁判<span class="ml-1" th:text="*{SaibanCounterLimitOver}? |(*{T(jp.loioz.common.constant.CommonConstant).HEADER_SEARCH_COUNTER_LIMIT}+)| : |(*{saibanCount})|">カウンタ</span>
+						</button>
+					</div>
+				</nav>
+			</div>
+			<div class="popover_box_body">
+				<div id="headerSearchListFragmentWrap">
+					<th:block th:switch="${headerSearchListSearchForm.headerSearchTabCd}" th:if="${T(jp.loioz.common.constant.CommonConstant$HeaderSearchTab).PERSON}">
+						<th:block th:case=${T(jp.loioz.common.constant.CommonConstant$HeaderSearchTab).PERSON.cd} th:insert="::headerSearchPersonListFragment(*{headerSearchPersonListFragmentViewForm})"></th:block>
+						<th:block th:case=${T(jp.loioz.common.constant.CommonConstant$HeaderSearchTab).ANKEN.cd} th:insert="::headerSearchAnkenListFragment(*{headerSearchAnkenListFragmentViewForm})"></th:block>
+						<th:block th:case=${T(jp.loioz.common.constant.CommonConstant$HeaderSearchTab).SAIBAN.cd} th:insert="::headerSearchSaibanListFragment(*{headerSearchSaibanListFragmentViewForm})"></th:block>
+					</th:block>
+				</div>
+			</div>
+		</div>
+	</div>
+</th:block>
+
+<!--/* ヘッダー検索：名簿一覧 */-->
+<th:block th:fragment="headerSearchPersonListFragment(headerSearchPersonListFragmentViewForm)" th:object="${headerSearchPersonListFragmentViewForm}">
+	<script type="text/javascript" th:inline="javascript">
+	$(function() {
+		
+		commonSetUpElement();
+		
+		const $headerSearchPersonListFragment = $(".headerSearchPersonListFragment");
+		$headerSearchPersonListFragment.find(".personData").on('click', function() {
+			
+			let href = ''
+			const isPlanView = benzo.global.fragment.headerSearchFragment.isPlanView;
+			
+			if (isPlanView) {
+				<!--/* プラン画面での画面遷移の場合は、URLに自分のテナントのコンテキストパスを指定する */-->
+				const tenantUrlContextPath = benzo.global.fragment.headerSearchFragment.tenantUrlContextPath;
+				href = tenantUrlContextPath + $(this).data('href');
+			} else {
+				href = $(this).data('href');
+			}
+			
+			window.location.href = href;
+		});
+	});
+	</script>
+	<div class="headerSearchPersonListFragment">
+		<div class="popover_box_content hover_scroll">
+			<ul>
+				<li th:if="*{#lists.isEmpty(personList)}" class="p-3">
+					<div class="no_data" th:text="#{I00044('方')}"></div>
+				</li>
+				<li class="header_search_list personData" th:each="personData: *{personList}" th:data-href="@{/user/personManagement/edit/{personId}/(personId=${personData.personId.asLong()})}">
+					<div class="header_search_list__title">
+						<div class="header_search_image">
+							
+							<!--/* 名簿属性ラベル */-->
+							<div th:class="|person_image_wrapper${personData.getPersonAttributeCd().getCd()} image_wrapper_sm|">
+								<!--/* 個人アイコン */-->
+								<img th:if="${T(jp.loioz.common.constant.CommonConstant$CustomerType).KOJIN.equalsByCode(personData.customerType.getCd())}" 
+									class="img-thumbnail person_image_sm" th:src="@{/img/person_kojin.svg}"
+									data-boundary="window" data-container="body" data-toggle="tooltip" data-trigger="hover" th:title="個人">
+								
+								<!--/* 企業・団体アイコン */-->
+								<img th:if="${T(jp.loioz.common.constant.CommonConstant$CustomerType).HOJIN.equalsByCode(personData.customerType.getCd())}"
+									class="img-thumbnail person_image_sm" th:src="@{/img/person_hojin.svg}"
+									data-boundary="window" data-container="body" data-toggle="tooltip" data-trigger="hover" th:title="企業・団体">
+								
+								<!--/* 弁護士アイコン */-->
+								<img th:if="${T(jp.loioz.common.constant.CommonConstant$CustomerType).LAWYER.equalsByCode(personData.customerType.getCd())}"
+									class="img-thumbnail person_image_sm" th:src="@{/img/person_bengoshi.svg}"
+									data-boundary="window" data-container="body" data-toggle="tooltip" data-trigger="hover" th:title="弁護士">
+							</div>
+						</div>
+						
+						<div class="header_search_name">
+							<!--/* 名前 */-->
+							<div class="fs19 fw600 fc_sub" th:text="${personData.personName}">山田 太郎</div>
+							<!--/* 名簿ID */-->
+							<span class="app_id_link fs12 mr-2 py-1" th:text="|名簿ID：${personData.personId.asLong()}|">名簿ID：104</span>
+							<!--/* 名簿属性 */-->
+							<span th:class="|badge detail_attr_sm py-1 person_type${personData.personAttribute.getCd().getCd()}|">
+								[[${personData.personAttribute.getCd().getVal()}]]
+							</span>
+							<!--/* 住所など */-->
+							<div class="pt-3 px-2">
+								<div class="fs13">
+									<span th:text="${personData.address1}">〇〇県〇〇市〇〇区〇〇ー〇〇ー〇〇</span>
+									<span th:text="${personData.address2}">〇〇ステートメント〇〇号室</span>
+								</div>
+								<div class="fs13">
+									<span th:if="!${#strings.isEmpty(personData.telNo)}" th:text="|電話：${personData.telNo}|">電話：090-1234-5678</span>
+								</div>
+							</div>
+						</div>
+					</div>
+				</li>
+			</ul>
+		</div>
+		
+		<!--/* ページャー */-->
+		<div th:replace="::headerSearchListPager(*{pager})"></div>
+	</div>
+</th:block>
+
+<!--/* ヘッダー検索：案件一覧 */-->
+<th:block th:fragment="headerSearchAnkenListFragment(headerSearchAnkenListFragmentViewForm)" th:object="${headerSearchAnkenListFragmentViewForm}">
+	<script type="text/javascript" th:inline="javascript">
+	$(function() {
+		
+		commonSetUpElement();
+		
+		const $headerSearchAnkenListFragment = $(".headerSearchAnkenListFragment");
+		$headerSearchAnkenListFragment.find(".ankenData").on('click', function() {
+			
+			let href = ''
+			const isPlanView = benzo.global.fragment.headerSearchFragment.isPlanView;
+			
+			if (isPlanView) {
+				<!--/* プラン画面での画面遷移の場合は、URLに自分のテナントのコンテキストパスを指定する */-->
+				const tenantUrlContextPath = benzo.global.fragment.headerSearchFragment.tenantUrlContextPath;
+				href = tenantUrlContextPath + $(this).data('href');
+			} else {
+				href = $(this).data('href');
+			}
+			
+			window.location.href = href;
+		});
+	});
+	</script>
+	<div class="headerSearchAnkenListFragment">
+		<div class="popover_box_content hover_scroll">
+			<ul>
+				<li th:if="*{#lists.isEmpty(ankenList)}" class="p-3">
+					<div class="no_data" th:text="#{I00044('案件')}"></div>
+				</li>
+				<li class="header_search_list ankenData" th:each="ankenData: *{ankenList}"
+					th:data-href="@{/user/ankenManagement/edit/{ankenId}/(ankenId=${ankenData.ankenId.asLong()})}">
+					<div class="header_search_list__title">
+						<div class="header_search_image">
+							<!--/* 案件属性ラベル */-->
+							<div th:class="|case_image_wrapper${ankenData.ankenType?.cd}|">
+								<img class="img-thumbnail case_img_sm" th:src="@{/img/case_type{typeCd}.svg(typeCd=${ankenData.ankenType?.cd})}">
+							</div>
+						</div>
+						<div class="header_search_name">
+							<!--/* 案件種別 */-->
+							<div class="fs19 fw600 fc_sub" th:text="${#strings.isEmpty(ankenData.ankenName)}? '(案件名未入力)' : ${ankenData.ankenName}"></div>
+							<span class="app_id_link case_link fs12 py-1 mr-2" th:text="|案件ID：${ankenData.ankenId.asLong()}|">案件ID：60</span>
+							<span class="fs12">
+	<!--/* 案件区分 */-->
+	<!--/* 事務所 */-->
+	<th:block th:if="${T(jp.loioz.common.constant.CommonConstant$AnkenType).JIMUSHO.equals(ankenData.ankenType)}">
+								<i class="far fa-building"></i>
+	</th:block>
+	<!--/* 個人 */-->
+	<th:block th:if="${T(jp.loioz.common.constant.CommonConstant$AnkenType).KOJIN.equals(ankenData.ankenType)}">
+								<i class="fas fa-briefcase"></i>
+	</th:block>
+								<span th:text="${ankenData.ankenType?.val}"></span>
+							</span>
+							<div class="pt-4 w-100">
+								<div class="header_search_separate">
+									<div class="header_search_separate__left">
+										<div>
+											<span class="badge badge-pill badge_square_sm mnw50 py-1 badge_blue">顧客</span>
+											<div class="fs13 mt-1" th:text="${#strings.listJoin(ankenData.customerNameList, ', ')}"></div>
+										</div>
+									</div>
+									<div class="header_search_separate__right">
+			<th:block th:if="!${#lists.isEmpty(ankenData.aitegataNameList)}">
+										<span class="badge badge-pill badge_square_sm mnw50 py-1 badge_green">相手方</span>
+										<div class="fs13 mt-1" th:text="${#strings.listJoin(ankenData.aitegataNameList, ', ')}"></div>
+			</th:block>
+			<th:block th:if="!${#lists.isEmpty(ankenData.higaishaNameList)}">
+										<span class="badge badge-pill badge_square_sm mnw50 py-1 badge_green">被害者</span>
+										<div class="fs13 mt-1" th:text="${#strings.listJoin(ankenData.higaishaNameList, ', ')}"></div>
+			</th:block>
+									</div>
+								</div>
+							</div>
+						</div>
+					</div>
+				</li>
+			</ul>
+		</div>
+		
+		<!--/* ページャー */-->
+		<div th:replace="::headerSearchListPager(*{pager})"></div>
+	</div>
+</th:block>
+
+<!--/* ヘッダー検索：裁判一覧 */-->
+<th:block th:fragment="headerSearchSaibanListFragment(headerSearchSaibanListFragmentViewForm)" th:object="${headerSearchSaibanListFragmentViewForm}">
+	<script type="text/javascript" th:inline="javascript">
+	$(function() {
+		
+		commonSetUpElement();
+		
+		const $headerSearchSaibanListFragment = $(".headerSearchSaibanListFragment");
+		$headerSearchSaibanListFragment.find(".saibanData").on('click', function() {
+			
+			let href = ''
+			const isPlanView = benzo.global.fragment.headerSearchFragment.isPlanView;
+			
+			if (isPlanView) {
+				<!--/* プラン画面での画面遷移の場合は、URLに自分のテナントのコンテキストパスを指定する */-->
+				const tenantUrlContextPath = benzo.global.fragment.headerSearchFragment.tenantUrlContextPath;
+				href = tenantUrlContextPath + $(this).data('href');
+			} else {
+				href = $(this).data('href');
+			}
+			
+			window.location.href = href;
+		});
+		
+	});
+	</script>
+	<div class="headerSearchSaibanListFragment">
+		<div class="popover_box_content hover_scroll">
+			<ul>
+				<li th:if="*{#lists.isEmpty(saibanList)}" class="p-3">
+					<div class="no_data" th:text="#{I00044('裁判')}"></div>
+				</li>
+				<li class="header_search_list saibanData" th:each="saibanData: *{saibanList}" th:data-href="@{/user/saibanManagement/{ankenId}/{branchNumber}(ankenId=${saibanData.ankenId.asLong()}, branchNumber=${saibanData.saibanBranchNo})}"
+					th:with="isMinji=${T(jp.loioz.common.constant.CommonConstant$BunyaType).MINJI.equalsByCode(saibanData.bunyaType)}, isKeiji=${T(jp.loioz.common.constant.CommonConstant$BunyaType).KEIJI.equalsByCode(saibanData.bunyaType)}">
+					<div class="header_search_list__title">
+						<div class="header_search_image">
+							<!--/* 案件属性ラベル */-->
+							<div th:class="|case_image_wrapper${saibanData.ankenType?.cd}|">
+								<img class="img-thumbnail case_judgment_img_sm" th:src="@{/img/saiban.svg}">
+							</div>
+						</div>
+						<div class="header_search_name">
+							<div class="fs19 fw600 fc_sub" th:text="${#strings.isEmpty(saibanData.jikenName)}? '(事件名未入力)' : ${saibanData.jikenName}"></div>
+							<span class="app_id_link case_link fs12 py-1 mr-2" th:text="|案件ID：${saibanData.ankenId.asLong()}|">案件ID：60</span>
+							<!--/* 事件番号 */-->
+							<span class="fs12">
+								<span class="" th:text="${saibanData.caseNo}"></span>
+							</span>
+							<div class="mt-2" th:if="!${#lists.isEmpty(saibanData.subCaseNo)}">
+								<span class="badge badge-pill data_label badge_gray badge_square">追起訴</span>
+								<span class="fs13 ml-2" th:text="${#strings.listJoin(saibanData.subCaseNo, ', ')}"></span>
+							</div>
+							<div class="pt-4 w-100">
+								<div class="header_search_separate">
+									<div class="header_search_separate__left">
+			<th:block th:if="!${#lists.isEmpty(saibanData.customerNameList)}">
+										<span class="badge badge-pill badge_square_sm mnw50 fs12 py-1 badge_blue">
+											<th:block th:if="${isMinji}">顧客(当事者)</th:block>
+											<th:block th:if="${isKeiji}">顧客(被告人)</th:block>
+										</span>
+										<div class="fs13 mt-1" th:text="${#strings.listJoin(saibanData.customerNameList, ', ')}"></div>
+			</th:block>
+									</div>
+									<div class="header_search_separate__right">
+			<th:block th:if="!${#lists.isEmpty(saibanData.aitegataNameList)}">
+										<span class="badge badge-pill badge_square_sm mnw50 fs12 py-1 badge_green">相手方</span>
+										<div class="fs13 mt-1" th:text="${#strings.listJoin(saibanData.aitegataNameList, ', ')}"></div>
+			</th:block>
+									</div>
+								</div>
+							</div>
+						</div>
+					</div>
+				</li>
+			</ul>
+		</div>
+		
+		<!--/* ページャー */-->
+		<div th:replace="::headerSearchListPager(*{pager})"></div>
+	</div>
+</th:block>
+
+<!--/* ヘッダー検索：独自共通ページャー */-->
+<th:block th:fragment="headerSearchListPager(page)" th:with="
+	page=${page}?: ${T(org.springframework.data.domain.Page).empty()}">
+	
+	<div id="headerSearchPager" th:object="${page}" class="my-2">
+		<script type="text/javascript" th:inline="javascript">
+		$(function() {
+			
+			commonSetUpElement();
+			
+			const $headerSearchPager = $("#headerSearchPager");
+			
+			<!--/* ページング処理 */-->
+			$headerSearchPager.find(".paging").on("click", function() {
+				
+				<!--/* ページ番号をメモリに保持 */-->
+				const pageNo = $(this).data("page");
+				benzo.global.fragment.headerSearchFragment.page = pageNo;
+				
+				<!--/* 検索条件はメモリ値から作成する */-->
+				const {keywords, headerSearchTabCd, page, personCount, ankenCount, saibanCount} = benzo.global.fragment.headerSearchFragment;
+				const requestData = [
+					{name: "keywords", value: keywords},
+					{name: "headerSearchTabCd", value: headerSearchTabCd},
+					{name: "page", value: page},
+					{name: "personCount", value: personCount},
+					{name: "ankenCount", value: ankenCount},
+					{name: "saibanCount", value: saibanCount}
+				]
+				
+				Promise.resolve(requestData)
+					.then(benzo.global.fragment.headerSearchFragment.renderHeaderSearchListViewFragmentPromise)
+					.catch((errorObj) => console.log(errorObj))
+					.finally(() => {
+						
+					});
+				
+			});
+			
+		});
+		</script>
+		
+		<!--/* 共通ページャレイアウト呼び出し */-->
+		<th:block th:insert="common/pagerAjax::pagerAjaxNextPrevStyle(${page})"></th:block>
+		
+	</div>
+</th:block>
+
+</body>
+</html>

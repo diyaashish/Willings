@@ -1,0 +1,2545 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+	xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+	layout:decorator="commonLayout">
+<head>
+<meta charset="utf-8" />
+<title layout:fragment="title-contents">
+	[[${T(jp.loioz.common.utility.LoiozUtils).getHtmlTitle("請求書", T(jp.loioz.common.utility.SessionUtils).getTenantName())}]]
+</title>
+<th:block th:with="version=${@environment.getProperty('app.version')}">
+	<link href="./css/accg/accg.css" th:href="@{/css/accg/accg.css?{ver}(ver=${version})}" rel="stylesheet" type="text/css" />
+	<script th:src="@{/js/accg/accg.js?{ver}(ver=${version})}" type="text/javascript"></script>
+</th:block>
+<script type="text/javascript" th:inline="javascript">
+<!--/*
+ 二重送信防止対応用の値。
+ このHTMLに差し込まれるfragment内のScriptの処理も、共通してこの変数を利用する。
+*/-->
+let ajaxRunning = false;
+
+</script>
+<script type="text/javascript" th:replace="common/mvc/confirm/confirmModal::confirmModalFragmentJs"></script>
+<script type="text/javascript" th:replace="common/mvc/accgDepositRecvSelect/accgInvoiceStatementDepositRecvSelectModal::accgInvoiceStatementDepositRecvSelectModalFragmentJs"></script>
+<!--/* 会計送付ポップオーバー処理 */-->
+<script type="text/javascript" th:replace="common/mvc/accgSendFilePopover/popover::accgSendFilePopoverJs"></script>
+<style type="text/css" th:replace="common/mvc/accgSendFilePopover/popover::accgSendFilePopoverStyle"></style>
+
+<script type="text/javascript" th:replace="common/js/accgAnkenScreenJs::accgAnkenScreenJs"></script>
+<script type="text/javascript" th:inline = "javascript">
+
+<!--/* 請求書SEQを取得 */-->
+function getInvoiceSeq() {
+	return $('#invoice_detail_view_global_invoice_seq').val();
+}
+
+<!--/* 請求書詳細画面のコンテキストパス */-->
+function getContextPath() {
+	const invoiceSeq = getInvoiceSeq();
+	return `/user/invoiceDetail/${invoiceSeq}`;
+}
+
+<!--/* タブ選択状態を取得 */-->
+function getSelectedTabCd() {
+	return $('#docContentsFragmentWrap .active').data("tabCd");
+};
+
+<!--/* 詳細フラグメントのレンダリング処理 */-->
+function renderAccgInvoiceStatementDetailFragment() {
+	return new Promise((resolve, reject) => {
+		const invoiceSeq = getInvoiceSeq();
+		$.ajax({
+			url : "/user/invoiceDetail/" + invoiceSeq + "/getAccgInvoiceStatementDetailFragment",
+			type : "GET"
+		})
+		.done(function(data, status, jqXHR) {
+			if (isAjaxProcSuccess(jqXHR)) {
+				<!--/* 処理成功 */-->
+				$('#invoiceDetailFragmentWrap').html(data);
+				return resolve();
+			} else {
+				<!--/* 処理失敗 */-->
+				const errorMsg = getAjaxProcResutlMessage(jqXHR);
+				showErrorMessageFadeOutForJs(errorMsg);
+				return reject();
+			}
+		})
+		.fail(function(jqXHR, status, errorThrown) {
+			showErrorMessageFadeOutForJs(/*[[#{E00091}]]*/"error");
+			return reject();
+		});
+	});
+}
+
+<!--/* 案件表示用フラグメント表示 */-->
+function renderAnkenViewFragment() {
+	return new Promise((resolve, reject) => {
+		const invoiceSeq = getInvoiceSeq();
+		
+		$.ajax({
+			url : "/user/invoiceDetail/" + invoiceSeq + "/getAnkenViewFragment",
+			type : "GET"
+		})
+		.done(function(data, status, jqXHR) {
+			if (isAjaxProcSuccess(jqXHR)) {
+				<!--/* 処理成功 */-->
+				$('#ankenFragmentWrap').html(data);
+				return resolve();
+			} else {
+				<!--/* 処理失敗 */-->
+				const errorMsg = getAjaxProcResutlMessage(jqXHR);
+				showErrorMessageFadeOutForJs(errorMsg);
+				return reject();
+			}
+		})
+		.fail(function(jqXHR, status, errorThrown) {
+			showErrorMessageFadeOutForJs(/*[[#{E00091}]]*/ "error");
+			return reject();
+		});
+	});
+}
+
+<!--/* 発行処理 */-->
+const issueFn = (requestParam) => {
+	
+	<!--/* 発行処理Innerメソッド：発行前チェック処理 */-->
+	const _issueBeforeCheck = (params) => {
+		return new Promise((resolve, reject) => {
+			const invoiceSeq = getInvoiceSeq();
+			$.ajax({
+				url : "/user/invoiceDetail/" + invoiceSeq + "/checkOfBeforeIssue",
+				type : "POST",
+				data : params,
+			})
+			.done(function(data, status, jqXHR) {
+				if (isAjaxProcSuccess(jqXHR)) {
+					<!--/* 処理成功 レスポンスデータを次のPromiseチェーンに渡す */-->
+					return resolve(data);
+				} else {
+					<!--/* 処理失敗 */-->
+					const errorMsg = getAjaxProcResutlMessage(jqXHR);
+					showErrorMessageFadeOutForJs(errorMsg);
+					return reject();
+				}
+			})
+			.fail(function(jqXHR, status, errorThrown) {
+				showErrorMessageFadeOutForJs(/*[[#{E00091}]]*/"error");
+				return reject();
+			});
+		});
+	};
+	
+	<!--/* 発行処理Innerメソッド：発行処理 */-->
+	const _issue = (params) => {
+		return new Promise((resolve, reject) => {
+			const formatChangeFlg = params.formatChangeFlg;
+			const invoiceSeq = getInvoiceSeq();
+			$.ajax({
+				url : "/user/invoiceDetail/" + invoiceSeq + "/issue",
+				type : "POST",
+				data : params,
+			})
+			.done(function(data, status, jqXHR) {
+				if (isAjaxProcSuccess(jqXHR)) {
+					<!--/* 処理成功 */-->
+					if (formatChangeFlg === true) {
+						<!--/* 精算書詳細画面への遷移 */-->
+						window.location.href = getAjaxProcResutlMessage(jqXHR) + "&isAccgAnkenSide=" + isAccgAnkenSide();
+					} else {
+						showInfoMessageForJs(getAjaxProcResutlMessage(jqXHR));
+						return resolve();
+					}
+				} else {
+					<!--/* 処理失敗 */-->
+					const errorMsg = getAjaxProcResutlMessage(jqXHR);
+					showErrorMessageFadeOutForJs(errorMsg);
+					return reject();
+				}
+			})
+			.fail(function(jqXHR, status, errorThrown) {
+				showErrorMessageFadeOutForJs(/*[[#{E00091}]]*/"error");
+				return reject();
+			});
+		});
+	};
+	
+	<!--/* 発行処理Innerメソッド：確認モーダルの表示 */-->
+	const _changeToStatementConfirmModalBuildPromise = (params) => {
+		<!--/* 確認コンファームで「はい」ボタン押下処理をセットアップ */-->
+		benzo.global.fragment.confirmModalFragmentObj.setUpObj.okAction = (e) => {
+			if (ajaxRunning) {
+				return false;
+			}
+			ajaxRunning = true;
+			Promise.resolve(params)
+				.then(_issue)
+				.then(() => benzo.global.fragment.confirmModalFragmentObj.commonFn.closeModalPromise($("#confirmModal")))
+				.catch((errorObj) => {/* 何もしない */})
+				.finally(() => {
+					ajaxRunning = false;
+				});
+		};
+		
+		<!--/* コンファーム表示 */-->
+		benzo.global.fragment.confirmModalFragmentObj.paramObj.confirmTitle = /*[[#{confirm.C00004('請求書', '精算書')}]]*/;
+		benzo.global.fragment.confirmModalFragmentObj.paramObj.message = /*[[#{I00142('請求', '0またはマイナス', '精算書')}]]*/;
+		benzo.global.fragment.confirmModalFragmentObj.paramObj.noBtnDispFlg = false;
+		$("#confirmModal").modal("show");
+		
+		<!--/* PromiseChainはここで終了 */-->
+		return Promise.reject();
+	};
+	
+	<!--/* 発行処理の一連のPromiseチェーンを返却 */-->
+	return Promise
+		.resolve(requestParam)
+		.then(_issueBeforeCheck)
+		.then((responseResult) => {
+			if (responseResult.needChangeToStatement) {
+				<!--/* 会計書類種別変更が必要な場合 */-->
+				requestParam["formatChangeFlg"] = true;
+				return _changeToStatementConfirmModalBuildPromise(requestParam);
+			} else {
+				<!--/* 会計書類種別変更が不要な場合 */-->
+				requestParam["formatChangeFlg"] = false;
+				return _issue(requestParam);
+			}
+		});
+};
+
+<!--/* 請求書削除処理の確認モーダル設定 */-->
+const deleteConfirmModalBuild = (requestParam) => {
+	
+	<!--/*削除確認モーダルのInner関数： 削除前チェック */-->
+	const _deletePreChecked = (param) => {
+		return new Promise((resolve, reject) => {
+			const invoiceSeq = getInvoiceSeq();
+			$.ajax({
+				url : "/user/invoiceDetail/" + invoiceSeq + "/checkOfBeforeDelete",
+				type : "GET",
+			})
+			.done(function(data, status, jqXHR) {
+				if (isAjaxProcSuccess(jqXHR)) {
+					<!--/* 処理成功 */-->
+					return resolve();
+				} else {
+					<!--/* 処理失敗 */-->
+					const errorMsg = getAjaxProcResutlMessage(jqXHR);
+					showErrorMessageForJs(errorMsg);
+					return reject();
+				}
+			})
+			.fail(function(jqXHR, status, errorThrown) {
+				showErrorMessageForJs(/*[[#{E00091}]]*/ "error");
+				return reject();
+			});
+		});
+	}
+	
+	<!--/* 削除確認モーダルのInner関数：請求書の削除処理 */-->
+	const _delete = (param) => {
+		return new Promise((resolve, reject) => {
+			const invoiceSeq = getInvoiceSeq();
+			$.ajax({
+				url : "/user/invoiceDetail/" + invoiceSeq + "/delete?isAccgAnkenSide=" + isAccgAnkenSide(),
+				type : "POST",
+				data : param,
+			})
+			.done(function(data, status, jqXHR) {
+				if (getAjaxProcResutl(jqXHR) == /*[[${T(jp.loioz.app.user.invoiceDetail.controller.InvoiceDetailController).HEADER_VALUE_OF_AJAX_PROC_RESULT_INVOICE_DELETE_SUCCESS_REDIRECT}]]*/'invoice_delete_success_redirect') {
+					window.location.href = getAjaxProcResutlMessage(jqXHR);
+				} else {
+					<!--/* 処理失敗 */-->
+					const errorMsg = getAjaxProcResutlMessage(jqXHR);
+					showErrorMessageForJs(errorMsg);
+					return reject();
+				}
+			})
+			.fail(function(jqXHR, status, errorThrown) {
+				showErrorMessageForJs(/*[[#{E00091}]]*/"error");
+				return reject();
+			});
+		});
+	}
+	
+	<!--/* 削除確認のモーダルで「はい」ボタン押下処理をセットアップ */-->
+	benzo.global.fragment.confirmModalFragmentObj.setUpObj.okAction = (e) => {
+		if (ajaxRunning) {
+			return false;
+		}
+		ajaxRunning = true;
+		
+		Promise.resolve(requestParam)
+			.then(() => benzo.global.fragment.confirmModalFragmentObj.commonFn.closeModalPromise($("#confirmModal")))
+			.then(() => _deletePreChecked(requestParam))
+			.then(() => {
+				<!--/* 削除 */-->
+				return _delete(requestParam)
+			})
+			.catch((errorObj) => {/* 何もしない */})
+			.finally(() => {
+				ajaxRunning = false;
+			});
+	};
+	
+	<!--/* 削除の確認コンファーム表示 */-->
+	benzo.global.fragment.confirmModalFragmentObj.paramObj.confirmTitle= /*[[#{confirm.C00002('請求書')}]]*/;
+	benzo.global.fragment.confirmModalFragmentObj.paramObj.message = '';
+	benzo.global.fragment.confirmModalFragmentObj.paramObj.noBtnDispFlg = false;
+	$("#confirmModal").modal("show");
+	
+};
+
+<!--/* 発行を戻す押下時の確認モーダルの表示と確認モーダル内アクションセットアップ処理 */-->
+const changeToDraftConfirmModalBuild = (requestParam) => {
+	<!--/* 確認コンファームで「はい」ボタン押下処理をセットアップ */-->
+	benzo.global.fragment.confirmModalFragmentObj.setUpObj.okAction = (e) => {
+		if (ajaxRunning) {
+			return false;
+		}
+		
+		ajaxRunning = true;
+		Promise.resolve(requestParam)
+			.then((params) => {
+				return new Promise((resolve, reject) => {
+					const invoiceSeq = getInvoiceSeq();
+					$.ajax({
+						url : "/user/invoiceDetail/" + invoiceSeq + "/updateInvoiceToDraftAndRemoveRelatedData",
+						type : "POST",
+						data : params,
+					})
+					.done(function(data, status, jqXHR) {
+						if (isAjaxProcSuccess(jqXHR)) {
+							<!--/* 処理成功 */-->
+							showInfoMessageForJs(getAjaxProcResutlMessage(jqXHR));
+							return resolve();
+						} else {
+							<!--/* 処理失敗 */-->
+							const errorMsg = getAjaxProcResutlMessage(jqXHR);
+							showErrorMessageForJs(errorMsg);
+							return reject();
+						}
+					})
+					.fail(function(jqXHR, status, errorThrown) {
+						showErrorMessageForJs(/*[[#{E00091}]]*/ "error");
+						return reject();
+					});
+				});
+			})
+			.then(renderAccgInvoiceStatementDetailFragment)
+			.catch((errorObj) => {/* なにもしない */})
+			.finally(() => {
+				$("#confirmModal").modal("hide");
+				ajaxRunning = false;
+			});
+	};
+	
+	<!--/* 発行前に戻すコンファーム表示 */-->
+	benzo.global.fragment.confirmModalFragmentObj.paramObj.confirmTitle = /*[[#{confirm.C00003}]]*/;
+	benzo.global.fragment.confirmModalFragmentObj.paramObj.message = /*[[#{I00141('請求書')}]]*/;
+	benzo.global.fragment.confirmModalFragmentObj.paramObj.noBtnDispFlg = false;
+	$("#confirmModal").modal("show");
+}
+
+<!--/* 設定表示用フラグメント表示 */-->
+function renderSettingViewFragment() {
+	return new Promise((resolve, reject) => {
+		const invoiceSeq = getInvoiceSeq();
+		
+		$.ajax({
+			url : "/user/invoiceDetail/" + invoiceSeq + "/getSettingViewFragment",
+			type : "GET"
+		})
+		.done(function(data, status, jqXHR) {
+			if (isAjaxProcSuccess(jqXHR)) {
+				<!--/* 処理成功 */-->
+				$('.settingViewFragmentWrap').html(data);
+				$('.settingInputFragmentWrap').removeClass('edit_mode');
+				$('.settingInputFragmentWrap').addClass('docSettingEdit');
+				return resolve();
+			} else {
+				<!--/* 処理失敗 */-->
+				const errorMsg = getAjaxProcResutlMessage(jqXHR);
+				showErrorMessageFadeOutForJs(errorMsg);
+				return reject();
+			}
+		})
+		.fail(function(jqXHR, status, errorThrown) {
+			showErrorMessageFadeOutForJs(/*[[#{E00091}]]*/ "error");
+			return reject();
+		});
+	});
+}
+
+<!--/* 設定入力用フラグメント表示 */-->
+function renderSettingInputFragment() {
+	return new Promise((resolve, reject) => {
+		const invoiceSeq = getInvoiceSeq();
+		
+		$.ajax({
+			url : "/user/invoiceDetail/" + invoiceSeq + "/getSettingInputFragment",
+			type : "GET"
+		})
+		.done(function(data, status, jqXHR) {
+			if (isAjaxProcSuccess(jqXHR)) {
+				<!--/* 処理成功 */-->
+				$('.settingInputFragmentWrap').html(data);
+				$('.settingInputFragmentWrap').removeClass('docSettingEdit');
+				$('.settingInputFragmentWrap').addClass('edit_mode');
+				return resolve();
+			} else {
+				<!--/* 処理失敗 */-->
+				const errorMsg = getAjaxProcResutlMessage(jqXHR);
+				showErrorMessageFadeOutForJs(errorMsg);
+				return reject();
+			}
+		})
+		.fail(function(jqXHR, status, errorThrown) {
+			showErrorMessageFadeOutForJs(/*[[#{E00091}]]*/ "error");
+			return reject();
+		});
+	});
+}
+
+<!--/* 設定フラグメント保存 */-->
+const saveSettingFunc = (formData) => {
+	return new Promise((resolve, reject) => {
+		const invoiceSeq = getInvoiceSeq();
+		
+		$.ajax({
+			url : "/user/invoiceDetail/" + invoiceSeq + "/saveSetting",
+			type : "POST",
+			data : formData
+		})
+		.done(function(data, status, jqXHR) {
+			if (isAjaxProcSuccess(jqXHR)) {
+				<!--/* 処理成功 */-->
+				showInfoMessageForJs(getAjaxProcResutlMessage(jqXHR));
+				return resolve();
+			} else {
+				<!--/* 処理失敗 */-->
+				if (data) {
+					<!--/* HTMLのコンテンツが返却されている場合 */-->
+					<!--/* 対象行部分にHTML表示 */-->
+					$('.settingInputFragmentWrap').html(data);
+				}
+				const errorMsg = getAjaxProcResutlMessage(jqXHR);
+				showErrorMessageFadeOutForJs(errorMsg);
+				return reject();
+			}
+		})
+		.fail(function(jqXHR, status, errorThrown) {
+			showErrorMessageFadeOutForJs(/*[[#{E00091}]]*/ "error");
+			return reject();
+		});
+	});
+}
+
+<!--/* 内部メモ表示用フラグメント表示 */-->
+function renderMemoViewFragment() {
+	return new Promise((resolve, reject) => {
+		const invoiceSeq = getInvoiceSeq();
+		
+		$.ajax({
+			url : "/user/invoiceDetail/" + invoiceSeq + "/getMemoViewFragment",
+			type : "GET"
+		})
+		.done(function(data, status, jqXHR) {
+			if (isAjaxProcSuccess(jqXHR)) {
+				<!--/* 処理成功 */-->
+				$('.memoViewFragmentWrap').html(data);
+				$('.memoInputFragmentWrap').removeClass('edit_mode');
+				$('.memoInputFragmentWrap').addClass('docMemoEdit');
+				return resolve();
+			} else {
+				<!--/* 処理失敗 */-->
+				const errorMsg = getAjaxProcResutlMessage(jqXHR);
+				showErrorMessageFadeOutForJs(errorMsg);
+				return reject();
+			}
+		})
+		.fail(function(jqXHR, status, errorThrown) {
+			showErrorMessageFadeOutForJs(/*[[#{E00091}]]*/ "error");
+			return reject();
+		});
+	});
+}
+
+<!--/* 内部メモ入力用フラグメント表示 */-->
+function renderMemoInputFragment() {
+	return new Promise((resolve, reject) => {
+		const invoiceSeq = getInvoiceSeq();
+		
+		$.ajax({
+			url : "/user/invoiceDetail/" + invoiceSeq + "/getMemoInputFragment",
+			type : "GET"
+		})
+		.done(function(data, status, jqXHR) {
+			if (isAjaxProcSuccess(jqXHR)) {
+				<!--/* 処理成功 */-->
+				$('.memoInputFragmentWrap').html(data);
+				$('.memoInputFragmentWrap').removeClass('docMemoEdit');
+				$('.memoInputFragmentWrap').addClass('edit_mode');
+				return resolve();
+			} else {
+				<!--/* 処理失敗 */-->
+				const errorMsg = getAjaxProcResutlMessage(jqXHR);
+				showErrorMessageFadeOutForJs(errorMsg);
+				return reject();
+			}
+		})
+		.fail(function(jqXHR, status, errorThrown) {
+			showErrorMessageFadeOutForJs(/*[[#{E00091}]]*/ "error");
+			return reject();
+		});
+	});
+}
+
+<!--/* 内部メモフラグメント保存 */-->
+const saveMemoFunc = (formData) => {
+	return new Promise((resolve, reject) => {
+		const invoiceSeq = getInvoiceSeq();
+		
+		$.ajax({
+			url : "/user/invoiceDetail/" + invoiceSeq + "/saveMemo",
+			type : "POST",
+			data : formData
+		})
+		.done(function(data, status, jqXHR) {
+			if (isAjaxProcSuccess(jqXHR)) {
+				<!--/* 処理成功 */-->
+				showInfoMessageForJs(getAjaxProcResutlMessage(jqXHR));
+				return resolve();
+			} else {
+				<!--/* 処理失敗 */-->
+				if (data) {
+					<!--/* HTMLのコンテンツが返却されている場合 */-->
+					<!--/* 対象行部分にHTML表示 */-->
+					$('.memoInputFragmentWrap').html(data);
+				}
+				const errorMsg = getAjaxProcResutlMessage(jqXHR);
+				showErrorMessageFadeOutForJs(errorMsg);
+				return reject();
+			}
+		})
+		.fail(function(jqXHR, status, errorThrown) {
+			showErrorMessageFadeOutForJs(/*[[#{E00091}]]*/ "error");
+			return reject();
+		});
+	});
+}
+
+<!--/* タブ表示フラグメント表示 */-->
+function renderDocContentsSelectedViewFragment() {
+	const selectedTabCd = getSelectedTabCd();
+	return renderDocContentsViewFragment({"selectedTabCd" : selectedTabCd});
+}
+
+<!--/* タブ表示フラグメント表示 */-->
+function renderDocContentsViewFragment(optionParam) {
+	return new Promise((resolve, reject) => {
+		const invoiceSeq = getInvoiceSeq();
+		$.ajax({
+			url : "/user/invoiceDetail/" + invoiceSeq + "/getDocContentsViewFragment",
+			type : "GET",
+			data : optionParam
+		})
+		.done(function(data, status, jqXHR) {
+			if (isAjaxProcSuccess(jqXHR)) {
+				<!--/* 処理成功 */-->
+				$('#docContentsFragmentWrap').html(data);
+				return resolve();
+			} else {
+				<!--/* 処理失敗 */-->
+				const errorMsg = getAjaxProcResutlMessage(jqXHR);
+				showErrorMessageFadeOutForJs(errorMsg);
+				return reject();
+			}
+		})
+		.fail(function(jqXHR, status, errorThrown) {
+			showErrorMessageFadeOutForJs(/*[[#{E00091}]]*/ "error");
+			return reject();
+		});
+	});
+}
+
+<!--/* 基本情報_タイトル表示用フラグメント表示 */-->
+function renderBaseTitleViewFragment() {
+	return new Promise((resolve, reject) => {
+		const invoiceSeq = getInvoiceSeq();
+		
+		$.ajax({
+			url : "/user/invoiceDetail/" + invoiceSeq + "/getBaseTitleViewFragment",
+			type : "GET"
+		})
+		.done(function(data, status, jqXHR) {
+			if (isAjaxProcSuccess(jqXHR)) {
+				<!--/* 処理成功 */-->
+				$('.baseTitleFragmentWrap').html(data);
+				$('.baseTitleFragmentWrap').removeClass('edit_mode');
+				return resolve();
+			} else {
+				<!--/* 処理失敗 */-->
+				const errorMsg = getAjaxProcResutlMessage(jqXHR);
+				showErrorMessageFadeOutForJs(errorMsg);
+				return reject();
+			}
+		})
+		.fail(function(jqXHR, status, errorThrown) {
+			showErrorMessageFadeOutForJs(/*[[#{E00091}]]*/ "error");
+			return reject();
+		});
+	});
+}
+
+<!--/* 基本情報_タイトル入力用フラグメント表示 */-->
+function renderBaseTitleInputFragment() {
+	return new Promise((resolve, reject) => {
+		const invoiceSeq = getInvoiceSeq();
+		
+		$.ajax({
+			url : "/user/invoiceDetail/" + invoiceSeq + "/getBaseTitleInputFragment",
+			type : "GET"
+		})
+		.done(function(data, status, jqXHR) {
+			if (isAjaxProcSuccess(jqXHR)) {
+				<!--/* 処理成功 */-->
+				$('.baseTitleFragmentWrap').html(data);
+				$('.baseTitleFragmentWrap').addClass('edit_mode');
+				$('.baseTitleFragmentWrap').removeClass('docBaseTitleEdit');
+				return resolve();
+			} else {
+				<!--/* 処理失敗 */-->
+				const errorMsg = getAjaxProcResutlMessage(jqXHR);
+				showErrorMessageFadeOutForJs(errorMsg);
+				return reject();
+			}
+		})
+		.fail(function(jqXHR, status, errorThrown) {
+			showErrorMessageFadeOutForJs(/*[[#{E00091}]]*/ "error");
+			return reject();
+		});
+	});
+}
+
+<!--/* 基本情報_タイトルフラグメント保存 */-->
+const saveBaseTitleFunc = (formData) => {
+	return new Promise((resolve, reject) => {
+		const invoiceSeq = getInvoiceSeq();
+		
+		$.ajax({
+			url : "/user/invoiceDetail/" + invoiceSeq + "/saveBaseTitle",
+			type : "POST",
+			data : formData
+		})
+		.done(function(data, status, jqXHR) {
+			if (isAjaxProcSuccess(jqXHR)) {
+				<!--/* 処理成功 */-->
+				showInfoMessageForJs(getAjaxProcResutlMessage(jqXHR));
+				return resolve();
+			} else {
+				<!--/* 処理失敗 */-->
+				if (data) {
+					<!--/* HTMLのコンテンツが返却されている場合 */-->
+					<!--/* 対象行部分にHTML表示 */-->
+					$('.baseTitleFragmentWrap').html(data);
+				}
+				const errorMsg = getAjaxProcResutlMessage(jqXHR);
+				showErrorMessageFadeOutForJs(errorMsg);
+				return reject();
+			}
+		})
+		.fail(function(jqXHR, status, errorThrown) {
+			showErrorMessageFadeOutForJs(/*[[#{E00091}]]*/ "error");
+			return reject();
+		});
+	});
+}
+
+<!--/* 基本情報_請求先表示用フラグメント表示 */-->
+function renderBaseToViewFragment() {
+	return new Promise((resolve, reject) => {
+		const invoiceSeq = getInvoiceSeq();
+		
+		$.ajax({
+			url : "/user/invoiceDetail/" + invoiceSeq + "/getBaseToViewFragment",
+			type : "GET"
+		})
+		.done(function(data, status, jqXHR) {
+			if (isAjaxProcSuccess(jqXHR)) {
+				<!--/* 処理成功 */-->
+				$('.baseToFragmentWrap').html(data);
+				$('.baseToFragmentWrap').addClass('docBaseToEdit');
+				$('.baseToFragmentWrap').removeClass('edit_mode');
+				return resolve();
+			} else {
+				<!--/* 処理失敗 */-->
+				const errorMsg = getAjaxProcResutlMessage(jqXHR);
+				showErrorMessageFadeOutForJs(errorMsg);
+				return reject();
+			}
+		})
+		.fail(function(jqXHR, status, errorThrown) {
+			showErrorMessageFadeOutForJs(/*[[#{E00091}]]*/ "error");
+			return reject();
+		});
+	});
+}
+
+<!--/* 基本情報_請求先入力用フラグメント表示 */-->
+function renderBaseToInputFragment() {
+	return new Promise((resolve, reject) => {
+		const invoiceSeq = getInvoiceSeq();
+		
+		$.ajax({
+			url : "/user/invoiceDetail/" + invoiceSeq + "/getBaseToInputFragment",
+			type : "GET"
+		})
+		.done(function(data, status, jqXHR) {
+			if (isAjaxProcSuccess(jqXHR)) {
+				<!--/* 処理成功 */-->
+				$('.baseToFragmentWrap').html(data);
+				$('.baseToFragmentWrap').addClass('edit_mode');
+				$('.baseToFragmentWrap').removeClass('docBaseToEdit');
+				return resolve();
+			} else {
+				<!--/* 処理失敗 */-->
+				const errorMsg = getAjaxProcResutlMessage(jqXHR);
+				showErrorMessageFadeOutForJs(errorMsg);
+				return reject();
+			}
+		})
+		.fail(function(jqXHR, status, errorThrown) {
+			showErrorMessageFadeOutForJs(/*[[#{E00091}]]*/ "error");
+			return reject();
+		});
+	});
+}
+
+<!--/* 基本情報_請求先の名称、敬称、詳細の再表示 */-->
+const renderBaseToNameAndDetail = (personId) => {
+	return new Promise((resolve, reject) => {
+		const invoiceSeq = getInvoiceSeq();
+		const param = [
+			{name:"personId", value:personId}
+		];
+		
+		$.ajax({
+			url : "/user/invoiceDetail/" + invoiceSeq + "/getBaseToNameAndDetail",
+			type : "GET",
+			data : param
+		})
+		.done(function(data, status, jqXHR) {
+			if (isAjaxProcSuccess(jqXHR)) {
+				<!--/* 処理成功 */-->
+				$('.baseToName').val(data.baseToName);
+				$('.baseToNameEnd').val(data.baseToNameEnd);
+				$('.baseToDetail').val(data.baseToDetail);
+				return resolve();
+			} else {
+				<!--/* 処理失敗 */-->
+				const errorMsg = getAjaxProcResutlMessage(jqXHR);
+				showErrorMessageFadeOutForJs(errorMsg);
+				return reject();
+			}
+		})
+		.fail(function(jqXHR, status, errorThrown) {
+			showErrorMessageFadeOutForJs(/*[[#{E00091}]]*/ "error");
+			return reject();
+		});
+	});
+}
+
+<!--/* 基本情報_請求先フラグメント保存 */-->
+const saveBaseToFunc = (formData) => {
+	return new Promise((resolve, reject) => {
+		const invoiceSeq = getInvoiceSeq();
+		
+		$.ajax({
+			url : "/user/invoiceDetail/" + invoiceSeq + "/saveBaseTo",
+			type : "POST",
+			data : formData
+		})
+		.done(function(data, status, jqXHR) {
+			if (isAjaxProcSuccess(jqXHR)) {
+				<!--/* 処理成功 */-->
+				showInfoMessageForJs(getAjaxProcResutlMessage(jqXHR));
+				return resolve();
+			} else {
+				<!--/* 処理失敗 */-->
+				if (data) {
+					<!--/* HTMLのコンテンツが返却されている場合 */-->
+					<!--/* 対象行部分にHTML表示 */-->
+					$('.baseToFragmentWrap').html(data);
+				}
+				const errorMsg = getAjaxProcResutlMessage(jqXHR);
+				showErrorMessageFadeOutForJs(errorMsg);
+				return reject();
+			}
+		})
+		.fail(function(jqXHR, status, errorThrown) {
+			showErrorMessageFadeOutForJs(/*[[#{E00091}]]*/ "error");
+			return reject();
+		});
+	});
+}
+
+<!--/* 基本情報_請求元表示用フラグメント表示 */-->
+function renderBaseFromViewFragment() {
+	return new Promise((resolve, reject) => {
+		const invoiceSeq = getInvoiceSeq();
+		
+		$.ajax({
+			url : "/user/invoiceDetail/" + invoiceSeq + "/getBaseFromViewFragment",
+			type : "GET"
+		})
+		.done(function(data, status, jqXHR) {
+			if (isAjaxProcSuccess(jqXHR)) {
+				<!--/* 処理成功 */-->
+				$('.baseFromFragmentWrap').html(data);
+				$('.baseFromFragmentWrap').addClass('docBaseFromEdit');
+				$('.baseFromFragmentWrap').removeClass('edit_mode');
+				return resolve();
+			} else {
+				<!--/* 処理失敗 */-->
+				const errorMsg = getAjaxProcResutlMessage(jqXHR);
+				showErrorMessageFadeOutForJs(errorMsg);
+				return reject();
+			}
+		})
+		.fail(function(jqXHR, status, errorThrown) {
+			showErrorMessageFadeOutForJs(/*[[#{E00091}]]*/ "error");
+			return reject();
+		});
+	});
+}
+
+<!--/* 基本情報_請求元入力用フラグメント表示 */-->
+function renderBaseFromInputFragment() {
+	return new Promise((resolve, reject) => {
+		const invoiceSeq = getInvoiceSeq();
+		
+		$.ajax({
+			url : "/user/invoiceDetail/" + invoiceSeq + "/getBaseFromInputFragment",
+			type : "GET"
+		})
+		.done(function(data, status, jqXHR) {
+			if (isAjaxProcSuccess(jqXHR)) {
+				<!--/* 処理成功 */-->
+				$('.baseFromFragmentWrap').html(data);
+				$('.baseFromFragmentWrap').addClass('edit_mode');
+				$('.baseFromFragmentWrap').removeClass('docBaseFromEdit');
+				return resolve();
+			} else {
+				<!--/* 処理失敗 */-->
+				const errorMsg = getAjaxProcResutlMessage(jqXHR);
+				showErrorMessageFadeOutForJs(errorMsg);
+				return reject();
+			}
+		})
+		.fail(function(jqXHR, status, errorThrown) {
+			showErrorMessageFadeOutForJs(/*[[#{E00091}]]*/ "error");
+			return reject();
+		});
+	});
+}
+
+<!--/* 基本情報_請求元フラグメント保存 */-->
+const saveBaseFromFunc = (formData) => {
+	return new Promise((resolve, reject) => {
+		const invoiceSeq = getInvoiceSeq();
+		
+		$.ajax({
+			url : "/user/invoiceDetail/" + invoiceSeq + "/saveBaseFrom",
+			type : "POST",
+			data : formData
+		})
+		.done(function(data, status, jqXHR) {
+			if (isAjaxProcSuccess(jqXHR)) {
+				<!--/* 処理成功 */-->
+				showInfoMessageForJs(getAjaxProcResutlMessage(jqXHR));
+				return resolve();
+			} else {
+				<!--/* 処理失敗 */-->
+				if (data) {
+					<!--/* HTMLのコンテンツが返却されている場合 */-->
+					<!--/* 対象行部分にHTML表示 */-->
+					$('.baseFromFragmentWrap').html(data);
+				}
+				const errorMsg = getAjaxProcResutlMessage(jqXHR);
+				showErrorMessageFadeOutForJs(errorMsg);
+				return reject();
+			}
+		})
+		.fail(function(jqXHR, status, errorThrown) {
+			showErrorMessageFadeOutForJs(/*[[#{E00091}]]*/ "error");
+			return reject();
+		});
+	});
+}
+
+<!--/* 基本情報_挿入文表示用フラグメント表示 */-->
+function renderBaseOtherViewFragment() {
+	return new Promise((resolve, reject) => {
+		const invoiceSeq = getInvoiceSeq();
+		
+		$.ajax({
+			url : "/user/invoiceDetail/" + invoiceSeq + "/getBaseOtherViewFragment",
+			type : "GET"
+		})
+		.done(function(data, status, jqXHR) {
+			if (isAjaxProcSuccess(jqXHR)) {
+				<!--/* 処理成功 */-->
+				$('.baseOtherFragmentWrap').html(data);
+				$('.baseOtherFragmentWrap').addClass('docBaseOtherEdit');
+				$('.baseOtherFragmentWrap').removeClass('edit_mode');
+				return resolve();
+			} else {
+				<!--/* 処理失敗 */-->
+				const errorMsg = getAjaxProcResutlMessage(jqXHR);
+				showErrorMessageFadeOutForJs(errorMsg);
+				return reject();
+			}
+		})
+		.fail(function(jqXHR, status, errorThrown) {
+			showErrorMessageFadeOutForJs(/*[[#{E00091}]]*/ "error");
+			return reject();
+		});
+	});
+}
+
+<!--/* 基本情報_挿入文入力用フラグメント表示 */-->
+function renderBaseOtherInputFragment() {
+	return new Promise((resolve, reject) => {
+		const invoiceSeq = getInvoiceSeq();
+		
+		$.ajax({
+			url : "/user/invoiceDetail/" + invoiceSeq + "/getBaseOtherInputFragment",
+			type : "GET"
+		})
+		.done(function(data, status, jqXHR) {
+			if (isAjaxProcSuccess(jqXHR)) {
+				<!--/* 処理成功 */-->
+				$('.baseOtherFragmentWrap').html(data);
+				$('.baseOtherFragmentWrap').addClass('edit_mode');
+				$('.baseOtherFragmentWrap').removeClass('docBaseOtherEdit');
+				return resolve();
+			} else {
+				<!--/* 処理失敗 */-->
+				const errorMsg = getAjaxProcResutlMessage(jqXHR);
+				showErrorMessageFadeOutForJs(errorMsg);
+				return reject();
+			}
+		})
+		.fail(function(jqXHR, status, errorThrown) {
+			showErrorMessageFadeOutForJs(/*[[#{E00091}]]*/ "error");
+			return reject();
+		});
+	});
+}
+
+<!--/* 基本情報_挿入文フラグメント保存 */-->
+const saveBaseOtherFunc = (formData) => {
+	return new Promise((resolve, reject) => {
+		const invoiceSeq = getInvoiceSeq();
+		
+		$.ajax({
+			url : "/user/invoiceDetail/" + invoiceSeq + "/saveBaseOther",
+			type : "POST",
+			data : formData
+		})
+		.done(function(data, status, jqXHR) {
+			if (isAjaxProcSuccess(jqXHR)) {
+				<!--/* 処理成功 */-->
+				showInfoMessageForJs(getAjaxProcResutlMessage(jqXHR));
+				return resolve();
+			} else {
+				<!--/* 処理失敗 */-->
+				if (data) {
+					<!--/* HTMLのコンテンツが返却されている場合 */-->
+					<!--/* 対象行部分にHTML表示 */-->
+					$('.baseOtherFragmentWrap').html(data);
+				}
+				const errorMsg = getAjaxProcResutlMessage(jqXHR);
+				showErrorMessageFadeOutForJs(errorMsg);
+				return reject();
+			}
+		})
+		.fail(function(jqXHR, status, errorThrown) {
+			showErrorMessageFadeOutForJs(/*[[#{E00091}]]*/ "error");
+			return reject();
+		});
+	});
+}
+
+<!--/* 既入金表示用フラグメント表示 */-->
+function renderRepayViewFragment() {
+	return new Promise((resolve, reject) => {
+		const invoiceSeq = getInvoiceSeq();
+		
+		$.ajax({
+			url : "/user/invoiceDetail/" + invoiceSeq + "/getRepayViewFragment",
+			type : "GET"
+		})
+		.done(function(data, status, jqXHR) {
+			if (isAjaxProcSuccess(jqXHR)) {
+				<!--/* 処理成功 */-->
+				$('.repayFragmentWrap').html(data);
+				$('.repayFragmentWrap').removeClass('edit_mode');
+				return resolve();
+			} else {
+				<!--/* 処理失敗 */-->
+				const errorMsg = getAjaxProcResutlMessage(jqXHR);
+				showErrorMessageFadeOutForJs(errorMsg);
+				return reject();
+			}
+		})
+		.fail(function(jqXHR, status, errorThrown) {
+			showErrorMessageFadeOutForJs(/*[[#{E00091}]]*/ "error");
+			return reject();
+		});
+	});
+}
+
+<!--/* 既入金入力用フラグメント表示 */-->
+function renderRepayInputFragment() {
+	return new Promise((resolve, reject) => {
+		const invoiceSeq = getInvoiceSeq();
+		
+		$.ajax({
+			url : "/user/invoiceDetail/" + invoiceSeq + "/getRepayInputFragment",
+			type : "GET"
+		})
+		.done(function(data, status, jqXHR) {
+			if (isAjaxProcSuccess(jqXHR)) {
+				<!--/* 処理成功 */-->
+				$('.repayFragmentWrap').html(data);
+				$('.repayFragmentWrap').addClass('edit_mode');
+				return resolve();
+			} else {
+				<!--/* 処理失敗 */-->
+				const errorMsg = getAjaxProcResutlMessage(jqXHR);
+				showErrorMessageFadeOutForJs(errorMsg);
+				return reject();
+			}
+		})
+		.fail(function(jqXHR, status, errorThrown) {
+			showErrorMessageFadeOutForJs(/*[[#{E00091}]]*/ "error");
+			return reject();
+		});
+	});
+}
+
+<!--/* 既入金入力情報まとめ処理 */-->
+const groupOrUngroupSimilarRepayItemsFunc = (formData) => {
+	return new Promise((resolve, reject) => {
+		const invoiceSeq = getInvoiceSeq();
+		
+		$.ajax({
+			url : "/user/invoiceDetail/" + invoiceSeq + "/groupOrUngroupSimilarRepayItems",
+			type : "POST",
+			data : formData,
+		})
+		.done(function(data, status, jqXHR) {
+			if (isAjaxProcSuccess(jqXHR)) {
+				<!--/* 処理成功 */-->
+				$('.repayUl').html(data);
+				<!--/* 金額のカンマを付与する */-->
+				invoiceDetailFormatComma();
+				return resolve();
+			} else {
+				<!--/* 処理失敗 */-->
+				if (data) {
+					<!--/* HTMLのコンテンツが返却されている場合 */-->
+					<!--/* 対象行部分にHTML表示 */-->
+					$('.repayFragmentWrap').html(data);
+				}
+				const errorMsg = getAjaxProcResutlMessage(jqXHR);
+				showErrorMessageFadeOutForJs(errorMsg);
+				<!--/* 金額のカンマを付与する */-->
+				invoiceDetailFormatComma();
+				return reject();
+			}
+		}).fail(function() {
+			showErrorMessageFadeOutForJs(/*[[#{E00091}]]*/ "error");
+			return reject();
+		});
+	});
+}
+
+<!--/* DBに登録してある請求額と同じか確認 */-->
+const checkInvoiceAmountChangeRepayFunc = (formData) => {
+	return new Promise((resolve, reject) => {
+		const invoiceSeq = getInvoiceSeq();
+		
+		$.ajax({
+			url : "/user/invoiceDetail/" + invoiceSeq + "/checkInvoiceAmountChangeRepay",
+			type : "POST",
+			data : formData
+		})
+		.done(function(data, status, jqXHR) {
+			if (isAjaxProcSuccess(jqXHR)) {
+				<!--/* 処理成功 */-->
+				return resolve(formData);
+			} else {
+				<!--/* 処理失敗 */-->
+				if (data) {
+					<!--/* HTMLのコンテンツが返却されている場合 */-->
+					<!--/* 対象行部分にHTML表示 */-->
+					$('.repayFragmentWrap').html(data);
+					<!--/* 金額をカンマ区切りに変換 */-->
+					invoiceDetailFormatComma();
+				}
+				const errorMsg = getAjaxProcResutlMessage(jqXHR);
+				const paymentPlanResetConfirmKey = /*[[${T(jp.loioz.common.constant.MessageEnum).MSG_W00014.messageKey}]]*/'';
+				if (paymentPlanResetConfirmKey == errorMsg) {
+					<!--/* コンファームで支払計画の再作成を促す */-->
+					<!--/* 確認コンファームで「はい」ボタン押下処理をセットアップ */-->
+					benzo.global.fragment.confirmModalFragmentObj.setUpObj.okAction = (e) => {
+						if (ajaxRunning) {
+							return false;
+						}
+						ajaxRunning = true;
+						
+						Promise.resolve(formData)
+							.then(saveRepayFunc)
+							.then(renderDocContentsSelectedViewFragment)
+							.catch((errorObj) => console.log(errorObj))
+							.finally(() => {
+								$("#confirmModal").modal("hide");
+								ajaxRunning = false;
+							});
+					};
+					<!--/* コンファーム表示 */-->
+					benzo.global.fragment.confirmModalFragmentObj.paramObj.confirmTitle = /*[[#{confirm.C00005}]]*/;
+					benzo.global.fragment.confirmModalFragmentObj.paramObj.message = /*[[#{I00143}]]*/;
+					benzo.global.fragment.confirmModalFragmentObj.paramObj.okBtnDispFlg = true;
+					benzo.global.fragment.confirmModalFragmentObj.paramObj.noBtnDispFlg = false;
+					benzo.global.fragment.confirmModalFragmentObj.paramObj.cancelBtnDispFlg = true;
+					
+					$("#confirmModal").modal("show");
+					
+					return reject();
+				} else {
+					showErrorMessageFadeOutForJs(errorMsg);
+					return reject();
+				}
+			}
+		})
+		.fail(function(jqXHR, status, errorThrown) {
+			showErrorMessageFadeOutForJs(/*[[#{E00091}]]*/ "error");
+			return reject();
+		});
+	});
+}
+
+<!--/* 既入金フラグメント保存 */-->
+const saveRepayFunc = (formData) => {
+	return new Promise((resolve, reject) => {
+		const invoiceSeq = getInvoiceSeq();
+		
+		$.ajax({
+			url : "/user/invoiceDetail/" + invoiceSeq + "/saveRepay",
+			type : "POST",
+			data : formData
+		})
+		.done(function(data, status, jqXHR) {
+			if (isAjaxProcSuccess(jqXHR)) {
+				<!--/* 処理成功 */-->
+				$('.repayFragmentWrap').html(data);
+				$('.repayFragmentWrap').removeClass('edit_mode');
+				showInfoMessageForJs(getAjaxProcResutlMessage(jqXHR));
+				<!--/* 取引状況再表示 */-->
+				renderAccgDocSummaryViewFragment();
+				return resolve();
+			} else {
+				<!--/* 処理失敗 */-->
+				if (data) {
+					<!--/* HTMLのコンテンツが返却されている場合 */-->
+					<!--/* 対象行部分にHTML表示 */-->
+					$('.repayFragmentWrap').html(data);
+					<!--/* 金額をカンマ区切りに変換 */-->
+					invoiceDetailFormatComma();
+				}
+				const errorMsg = getAjaxProcResutlMessage(jqXHR);
+				showErrorMessageFadeOutForJs(errorMsg);
+				return reject();
+			}
+		})
+		.fail(function(jqXHR, status, errorThrown) {
+			showErrorMessageFadeOutForJs(/*[[#{E00091}]]*/ "error");
+			return reject();
+		});
+	});
+}
+
+<!--/* 請求表示用フラグメント表示 */-->
+function renderInvoiceViewFragment() {
+	return new Promise((resolve, reject) => {
+		const invoiceSeq = getInvoiceSeq();
+		
+		$.ajax({
+			url : "/user/invoiceDetail/" + invoiceSeq + "/getInvoiceViewFragment",
+			type : "GET"
+		})
+		.done(function(data, status, jqXHR) {
+			if (isAjaxProcSuccess(jqXHR)) {
+				<!--/* 処理成功 */-->
+				$('.invoiceFragmentWrap').html(data);
+				$('.invoiceFragmentWrap').removeClass('edit_mode');
+				return resolve();
+			} else {
+				<!--/* 処理失敗 */-->
+				const errorMsg = getAjaxProcResutlMessage(jqXHR);
+				showErrorMessageFadeOutForJs(errorMsg);
+				return reject();
+			}
+		})
+		.fail(function(jqXHR, status, errorThrown) {
+			showErrorMessageFadeOutForJs(/*[[#{E00091}]]*/ "error");
+			return reject();
+		});
+	});
+}
+
+<!--/* 請求入力用フラグメント表示 */-->
+function renderInvoiceInputFragment() {
+	return new Promise((resolve, reject) => {
+		const invoiceSeq = getInvoiceSeq();
+		
+		$.ajax({
+			url : "/user/invoiceDetail/" + invoiceSeq + "/getInvoiceInputFragment",
+			type : "GET"
+		})
+		.done(function(data, status, jqXHR) {
+			if (isAjaxProcSuccess(jqXHR)) {
+				<!--/* 処理成功 */-->
+				$('.invoiceFragmentWrap').html(data);
+				$('.invoiceFragmentWrap').addClass('edit_mode');
+				return resolve();
+			} else {
+				<!--/* 処理失敗 */-->
+				const errorMsg = getAjaxProcResutlMessage(jqXHR);
+				showErrorMessageFadeOutForJs(errorMsg);
+				return reject();
+			}
+		})
+		.fail(function(jqXHR, status, errorThrown) {
+			showErrorMessageFadeOutForJs(/*[[#{E00091}]]*/ "error");
+			return reject();
+		});
+	});
+}
+
+<!--/* 請求入力用合計額フラグメント表示 */-->
+function renderInvoiceTotalAmountInputFragment() {
+	return new Promise((resolve, reject) => {
+		const invoiceSeq = getInvoiceSeq();
+		<!--/* 金額のカンマを除去する */-->
+		invoiceDetailUnformatComma();
+		
+		<!--/* リクエストパラメータを取得するために金額のdisabled解除 */-->
+		invoiceDetailUnDesabledAmount();
+		
+		<!--/* リクエストパラメータ */-->
+		const formData = $('#invoiceInputForm').serializeArray();
+		
+		<!--/* 金額のカンマを付与する */-->
+		invoiceDetailFormatComma();
+		
+		<!--/* 金額のdisabled設定 */-->
+		invoiceDetailDesabledAmount();
+		
+		$.ajax({
+			url : "/user/invoiceDetail/" + invoiceSeq + "/getInvoiceTotalAmountInputFragment",
+			type : "POST",
+			data : formData
+		})
+		.done(function(data, status, jqXHR) {
+			if (isAjaxProcSuccess(jqXHR)) {
+				<!--/* 処理成功 */-->
+				$('#invoiceTotalAmountInputFragmentWrap').html(data);
+				return resolve();
+			} else {
+				<!--/* 処理失敗 */-->
+				const errorMsg = getAjaxProcResutlMessage(jqXHR);
+				showErrorMessageFadeOutForJs(errorMsg);
+				return reject();
+			}
+		})
+		.fail(function(jqXHR, status, errorThrown) {
+			showErrorMessageFadeOutForJs(/*[[#{E00091}]]*/ "error");
+			return reject();
+		});
+	});
+}
+
+<!--/* 請求入力情報まとめ処理 */-->
+const groupOrUngroupSimilarInvoiceItemsFunc = (formData) => {
+	return new Promise((resolve, reject) => {
+		const invoiceSeq = getInvoiceSeq();
+		
+		$.ajax({
+			url : "/user/invoiceDetail/" + invoiceSeq + "/groupOrUngroupSimilarInvoiceItems",
+			type : "POST",
+			data : formData,
+		})
+		.done(function(data, status, jqXHR) {
+			if (isAjaxProcSuccess(jqXHR)) {
+				<!--/* 処理成功 */-->
+				$('.invoiceUl').html(data);
+				<!--/* 金額のカンマを付与する */-->
+				invoiceDetailFormatComma();
+				return resolve();
+			} else {
+				<!--/* 処理失敗 */-->
+				if (data) {
+					<!--/* HTMLのコンテンツが返却されている場合 */-->
+					<!--/* 対象行部分にHTML表示 */-->
+					$('.invoiceFragmentWrap').html(data);
+				}
+				const errorMsg = getAjaxProcResutlMessage(jqXHR);
+				showErrorMessageFadeOutForJs(errorMsg);
+				<!--/* 金額のカンマを付与する */-->
+				invoiceDetailFormatComma();
+				return reject();
+			}
+		}).fail(function() {
+			showErrorMessageFadeOutForJs(/*[[#{E00091}]]*/ "error");
+			return reject();
+		});
+	});
+}
+
+<!--/* 報酬用請求入力用フラグメント1行追加 */-->
+function addFeeRow(invoiceRowCount) {
+	return new Promise((resolve, reject) => {
+		const invoiceSeq = getInvoiceSeq();
+		
+		$.ajax({
+			url : "/user/invoiceDetail/" + invoiceSeq + "/addFeeRow",
+			type : "GET",
+			data : {
+				"invoiceRowCount" : invoiceRowCount
+			},
+		})
+		.done(function(data, status, jqXHR) {
+			if (isAjaxProcSuccess(jqXHR)) {
+				<!--/* データが無いメッセージを非表示にする */-->
+				$(".invoiceNoData").addClass('hidden');
+				<!--/* 処理成功 */-->
+				$('.invoiceUl').append(data);
+				return resolve();
+			} else {
+				<!--/* 処理失敗 */-->
+				const errorMsg = getAjaxProcResutlMessage(jqXHR);
+				showErrorMessageFadeOutForJs(errorMsg);
+				return reject();
+			}
+		})
+		.fail(function(jqXHR, status, errorThrown) {
+			showErrorMessageFadeOutForJs(/*[[#{E00091}]]*/ "error");
+			return reject();
+		});
+	});
+}
+
+<!--/* 預り金用請求入力用フラグメント1行追加 */-->
+function addDepositRecvRow(invoiceRowCount) {
+	return new Promise((resolve, reject) => {
+		const invoiceSeq = getInvoiceSeq();
+		
+		$.ajax({
+			url : "/user/invoiceDetail/" + invoiceSeq + "/addDepositRecvRow",
+			type : "GET",
+			data : {
+				"invoiceRowCount" : invoiceRowCount
+			},
+		})
+		.done(function(data, status, jqXHR) {
+			if (isAjaxProcSuccess(jqXHR)) {
+				<!--/* データが無いメッセージを非表示にする */-->
+				$(".invoiceNoData").addClass('hidden');
+				<!--/* 処理成功 */-->
+				$('.invoiceUl').append(data)
+				return resolve();
+			} else {
+				<!--/* 処理失敗 */-->
+				const errorMsg = getAjaxProcResutlMessage(jqXHR);
+				showErrorMessageFadeOutForJs(errorMsg);
+				return reject();
+			}
+		})
+		.fail(function(jqXHR, status, errorThrown) {
+			showErrorMessageFadeOutForJs(/*[[#{E00091}]]*/ "error");
+			return reject();
+		});
+	});
+}
+
+<!--/* 未精算報酬の請求入力用フラグメントを表示 */-->
+function addUnPaidFee(unPaidFeeSeqArray) {
+	return new Promise((resolve, reject) => {
+		const invoiceSeq = getInvoiceSeq();
+		
+		<!--/* 請求項目の行番号最大値を取得 */-->
+		let invoiceRowCount = 0;
+		$('.invoiceRow').map(function() {
+			invoiceRowCount = Math.max($(this).find('.index').val(), invoiceRowCount);
+		})
+		
+		$.ajax({
+			url : "/user/invoiceDetail/" + invoiceSeq + "/addUnPaidFee",
+			type : "POST",
+			data : {
+				"unPaidFeeSeqList" : String(unPaidFeeSeqArray),
+				"invoiceRowCount" : invoiceRowCount+1
+			},
+		})
+		.done(function(data, status, jqXHR) {
+			if (isAjaxProcSuccess(jqXHR)) {
+				<!--/* データが無いメッセージを非表示にする */-->
+				$(".invoiceNoData").addClass('hidden');
+				<!--/* 処理成功 */-->
+				$('.invoiceUl').append(data)
+				return resolve();
+			} else {
+				<!--/* 処理失敗 */-->
+				const errorMsg = getAjaxProcResutlMessage(jqXHR);
+				showErrorMessageFadeOutForJs(errorMsg);
+				return reject();
+			}
+		}).fail(function() {
+			showErrorMessageFadeOutForJs(/*[[#{E00091}]]*/ "error");
+			return reject();
+		});
+	});
+}
+
+<!--/* 値引き用請求入力用フラグメント1行追加 */-->
+function addDiscountRow(invoiceRowCount) {
+	return new Promise((resolve, reject) => {
+		const invoiceSeq = getInvoiceSeq();
+		
+		$.ajax({
+			url : "/user/invoiceDetail/" + invoiceSeq + "/addDiscountRow",
+			type : "GET",
+			data : {
+				"invoiceRowCount" : invoiceRowCount
+			},
+		})
+		.done(function(data, status, jqXHR) {
+			if (isAjaxProcSuccess(jqXHR)) {
+				<!--/* データが無いメッセージを非表示にする */-->
+				$(".invoiceNoData").addClass('hidden');
+				<!--/* 処理成功 */-->
+				$('.invoiceUl').append(data);
+				return resolve();
+			} else {
+				<!--/* 処理失敗 */-->
+				const errorMsg = getAjaxProcResutlMessage(jqXHR);
+				showErrorMessageFadeOutForJs(errorMsg);
+				return reject();
+			}
+		})
+		.fail(function(jqXHR, status, errorThrown) {
+			showErrorMessageFadeOutForJs(/*[[#{E00091}]]*/ "error");
+			return reject();
+		});
+	});
+}
+
+<!--/* テキスト用請求入力用フラグメント1行追加 */-->
+function addTextRow(invoiceRowCount) {
+	return new Promise((resolve, reject) => {
+		const invoiceSeq = getInvoiceSeq();
+		
+		$.ajax({
+			url : "/user/invoiceDetail/" + invoiceSeq + "/addTextRow",
+			type : "GET",
+			data : {
+				"invoiceRowCount" : invoiceRowCount
+			},
+		})
+		.done(function(data, status, jqXHR) {
+			if (isAjaxProcSuccess(jqXHR)) {
+				<!--/* データが無いメッセージを非表示にする */-->
+				$(".invoiceNoData").addClass('hidden');
+				<!--/* 処理成功 */-->
+				$('.invoiceUl').append(data);
+				return resolve();
+			} else {
+				<!--/* 処理失敗 */-->
+				const errorMsg = getAjaxProcResutlMessage(jqXHR);
+				showErrorMessageFadeOutForJs(errorMsg);
+				return reject();
+			}
+		})
+		.fail(function(jqXHR, status, errorThrown) {
+			showErrorMessageFadeOutForJs(/*[[#{E00091}]]*/ "error");
+			return reject();
+		});
+	});
+}
+
+<!--/* DBに登録してある請求額と同じか確認 */-->
+const checkInvoiceAmountChangeInvoiceFunc = (formData) => {
+	return new Promise((resolve, reject) => {
+		const invoiceSeq = getInvoiceSeq();
+		
+		$.ajax({
+			url : "/user/invoiceDetail/" + invoiceSeq + "/checkInvoiceAmountChangeInvoice",
+			type : "POST",
+			data : formData
+		})
+		.done(function(data, status, jqXHR) {
+			if (isAjaxProcSuccess(jqXHR)) {
+				<!--/* 処理成功 */-->
+				return resolve(formData);
+			} else {
+				<!--/* 処理失敗 */-->
+				if (data) {
+					<!--/* HTMLのコンテンツが返却されている場合 */-->
+					<!--/* 対象行部分にHTML表示 */-->
+					$('.invoiceFragmentWrap').html(data);
+				}
+				<!--/* 金額をカンマ区切りに変換 */-->
+				invoiceDetailFormatComma();
+				
+				const errorMsg = getAjaxProcResutlMessage(jqXHR);
+				const paymentPlanResetConfirmKey = /*[[${T(jp.loioz.common.constant.MessageEnum).MSG_W00014.messageKey}]]*/'';
+				if (paymentPlanResetConfirmKey == errorMsg) {
+					<!--/* コンファームで支払計画の再作成を促す */-->
+					<!--/* 確認コンファームで「はい」ボタン押下処理をセットアップ */-->
+					benzo.global.fragment.confirmModalFragmentObj.setUpObj.okAction = (e) => {
+						if (ajaxRunning) {
+							return false;
+						}
+						ajaxRunning = true;
+						
+						Promise.resolve(formData)
+							.then(saveInvoiceFunc)
+							.then(renderDocContentsSelectedViewFragment)
+							.catch((errorObj) => console.log(errorObj))
+							.finally(() => {
+								$("#confirmModal").modal("hide");
+								ajaxRunning = false;
+							});
+					};
+					<!--/* コンファーム表示 */-->
+					benzo.global.fragment.confirmModalFragmentObj.paramObj.confirmTitle = /*[[#{confirm.C00005}]]*/;
+					benzo.global.fragment.confirmModalFragmentObj.paramObj.message = /*[[#{I00143}]]*/;
+					benzo.global.fragment.confirmModalFragmentObj.paramObj.okBtnDispFlg = true;
+					benzo.global.fragment.confirmModalFragmentObj.paramObj.noBtnDispFlg = false;
+					benzo.global.fragment.confirmModalFragmentObj.paramObj.cancelBtnDispFlg = true;
+					$("#confirmModal").modal("show");
+					
+					return reject();
+				} else {
+					showErrorMessageFadeOutForJs(errorMsg);
+					return reject();
+				}
+			}
+		})
+		.fail(function(jqXHR, status, errorThrown) {
+			showErrorMessageFadeOutForJs(/*[[#{E00091}]]*/ "error");
+			return reject();
+		});
+	});
+}
+
+<!--/* 請求フラグメント保存 */-->
+const saveInvoiceFunc = (formData) => {
+	return new Promise((resolve, reject) => {
+		const invoiceSeq = getInvoiceSeq();
+		
+		$.ajax({
+			url : "/user/invoiceDetail/" + invoiceSeq + "/saveInvoice",
+			type : "POST",
+			data : formData
+		})
+		.done(function(data, status, jqXHR) {
+			if (isAjaxProcSuccess(jqXHR)) {
+				<!--/* 処理成功 */-->
+				$('.invoiceFragmentWrap').html(data);
+				$('.invoiceFragmentWrap').removeClass('edit_mode');
+				showInfoMessageForJs(getAjaxProcResutlMessage(jqXHR));
+				<!--/* 取引状況再表示 */-->
+				renderAccgDocSummaryViewFragment();
+				return resolve();
+			} else {
+				<!--/* 処理失敗 */-->
+				if (data) {
+					<!--/* HTMLのコンテンツが返却されている場合 */-->
+					<!--/* 対象行部分にHTML表示 */-->
+					$('.invoiceFragmentWrap').html(data);
+					<!--/* 金額をカンマ区切りに変換 */-->
+					invoiceDetailFormatComma();
+				}
+				const errorMsg = getAjaxProcResutlMessage(jqXHR);
+				showErrorMessageFadeOutForJs(errorMsg);
+				return reject();
+			}
+		})
+		.fail(function(jqXHR, status, errorThrown) {
+			showErrorMessageFadeOutForJs(/*[[#{E00091}]]*/ "error");
+			return reject();
+		});
+	});
+}
+
+<!--/* 取引状況表示用フラグメント表示 */-->
+function renderAccgDocSummaryViewFragment() {
+	return new Promise((resolve, reject) => {
+		const invoiceSeq = getInvoiceSeq();
+		
+		$.ajax({
+			url : "/user/invoiceDetail/" + invoiceSeq + "/getAccgDocSummaryViewFragment",
+			type : "GET"
+		})
+		.done(function(data, status, jqXHR) {
+			if (isAjaxProcSuccess(jqXHR)) {
+				<!--/* 処理成功 */-->
+				$('.docSummaryFragmentWrap').html(data);
+				return resolve();
+			} else {
+				<!--/* 処理失敗 */-->
+				const errorMsg = getAjaxProcResutlMessage(jqXHR);
+				showErrorMessageFadeOutForJs(errorMsg);
+				return reject();
+			}
+		})
+		.fail(function(jqXHR, status, errorThrown) {
+			showErrorMessageFadeOutForJs(/*[[#{E00091}]]*/ "error");
+			return reject();
+		});
+	});
+}
+
+<!--/* 進行状況表示用フラグメント表示 */-->
+function renderDocActivityViewFragment() {
+	return new Promise((resolve, reject) => {
+		const invoiceSeq = getInvoiceSeq();
+		
+		$.ajax({
+			url : "/user/invoiceDetail/" + invoiceSeq + "/getDocActivityViewFragment",
+			type : "GET"
+		})
+		.done(function(data, status, jqXHR) {
+			if (isAjaxProcSuccess(jqXHR)) {
+				<!--/* 処理成功 */-->
+				$('.docActivityFragmentWrap').html(data);
+				return resolve();
+			} else {
+				<!--/* 処理失敗 */-->
+				const errorMsg = getAjaxProcResutlMessage(jqXHR);
+				showErrorMessageFadeOutForJs(errorMsg);
+				return reject();
+			}
+		})
+		.fail(function(jqXHR, status, errorThrown) {
+			showErrorMessageFadeOutForJs(/*[[#{E00091}]]*/ "error");
+			return reject();
+		});
+	});
+}
+
+<!--/* カンマフォーマット指定項目についてカンマを付与する */-->
+function invoiceDetailFormatComma() {
+	$('#accgInvoiceStatementDetailFragment .commaFormat').each(function(){
+		$(this).formatComma();
+	});
+}
+
+<!--/* カンマフォーマット指定項目についてカンマを除去する */-->
+function invoiceDetailUnformatComma() {
+	$('#accgInvoiceStatementDetailFragment .commaFormat').each(function(){
+		$(this).unformatComma();
+	});
+}
+
+<!--/* 既入金の入力項目のdisabledを外す */-->
+function repayInputFormUnDesabledItem() {
+	$('#accgInvoiceStatementDetailFragment .repayInputItem').prop('disabled', false);
+}
+
+<!--/* 既入金の入力項目にdisabledを設定する */-->
+function repayInputFormDesabledItem() {
+	$('.repayRow').map(function() {
+		<!--/* 種類のSelectは、現状、選択肢がひとつしかないので、すべてのケースでdisabledにする */-->
+		$(this).find('.depositSumTargetSelectBox').prop('disabled', true);
+		
+		<!--/* 請求書、精算書から作成された預り金の場合はdisabledにする */-->
+		if ($(this).find('.depositMadeFromAccgDocFlg').prop('checked')) {
+			$(this).find('.repayInputItem').prop('disabled', true);
+		}
+	})
+}
+
+<!--/* 金額項目のdisabledを外す */-->
+function invoiceDetailUnDesabledAmount() {
+	$('#accgInvoiceStatementDetailFragment .amount').prop('disabled', false);
+}
+
+<!--/* 金額項目のdisabledを設定する */-->
+function invoiceDetailDesabledAmount() {
+	<!--/* 既入金でまとめ表示している場合、金額をdisabledにする */-->
+	$('.repayRow').map(function() {
+		if ($(this).find('.rowRepaySumFlg').prop('checked')) {
+			$(this).find('.amount').prop('disabled', true);
+		}
+	})
+	
+	<!--/* 請求項目でまとめ表示している場合とタイムチャージの場合、金額をdisabledにする */-->
+	$('.invoiceRow').map(function() {
+		if ($(this).find('.rowExpenseSumFlg').prop('checked') || $(this).find('.timeChargeCheck').prop('checked')) {
+			$(this).find('.amount').prop('disabled', true);
+		}
+	})
+}
+
+<!--/* タイムチャージ単価、時間の値をチェック */-->
+function checkTimeChargeTankaTime(timeChargeTanka, timeChargeTime, amountInputTypeHtml) {
+	
+	<!--/* 単価か時間のどちらかが空の場合、報酬額を空にする */-->
+	if (timeChargeTanka.trim() === '' || timeChargeTime.trim() === '') {
+		amountInputTypeHtml.val('')
+		<!--/* 金額をカンマ区切りに変換 */-->
+		invoiceDetailFormatComma();
+		return true;
+	}
+	
+	<!--/* 単価か時間のどちらかがマイナスの場合、報酬額を空にする */-->
+	if (timeChargeTanka.trim() < 0 || timeChargeTime.trim() < 0) {
+		amountInputTypeHtml.val('')
+		<!--/* 金額をカンマ区切りに変換 */-->
+		invoiceDetailFormatComma();
+		return true;
+	}
+	return false
+}
+
+<!--/* 報酬項目の候補を検索 */-->
+let timeoutId = "";
+function searchFeeItemName(index, keyCode) {
+	
+	const invoiceSeq = getInvoiceSeq();
+	const searchWord = $('#invoiceRow_' + index).find(".searchItemName").val();
+	
+	<!--/** tabとキーボード入力以外で呼び出された場合 */-->
+	if (isTabOrMouseInput(keyCode)) {
+		$('#invoiceRow_' + index).find('.itemNameListFragmentWrap').html('');
+		return false;
+	} else {
+		<!--/* 項目検索処理 */-->
+		$.ajax({
+			url : "/user/invoiceDetail/" + invoiceSeq + "/searchFeeItemName",
+			type : "GET",
+			data : {
+				"searchWord" : searchWord
+			},
+		})
+		.done(function(data, status, jqXHR) {
+			
+			if (isAjaxProcSuccess(jqXHR)) {
+				<!--/* 処理成功 */-->
+				$('#invoiceItemNameListFragment_' + index).html(data);
+			} else {
+				<!--/* 処理失敗 */-->
+				const errorMsg = getAjaxProcResutlMessage(jqXHR);
+				showErrorMessageFadeOutForJs(errorMsg);
+			}
+		}).fail(function() {
+			showErrorMessageFadeOutForJs(/*[[#{E00091}]]*/ "error");
+		});
+	}
+}
+
+<!--/* 【既入金】預り金項目の候補を検索 */-->
+function searchRepayDepositRecvItemName(index, depositType, keyCode) {
+	
+	const invoiceSeq = getInvoiceSeq();
+	
+	let searchWord = $('#repayRow_' + index).find(".searchItemName").val();
+	
+	<!--/** tabとキーボード入力以外で呼び出された場合 */-->
+	if (isTabOrMouseInput(keyCode)) {
+		$('.itemNameListFragmentWrap').html('');
+		return false;
+	} else {
+		<!--/* 項目検索処理 */-->
+		$.ajax({
+			url : "/user/invoiceDetail/" + invoiceSeq + "/searchDepositRecvItemName",
+			type : "GET",
+			data : {
+				"searchWord" : searchWord,
+				"depositType" : depositType
+			},
+		})
+		.done(function(data, status, jqXHR) {
+			
+			if (isAjaxProcSuccess(jqXHR)) {
+				<!--/* 処理成功 */-->
+				$('#repayItemNameListFragment_' + index).html(data);
+			} else {
+				<!--/* 処理失敗 */-->
+				const errorMsg = getAjaxProcResutlMessage(jqXHR);
+				showErrorMessageFadeOutForJs(errorMsg);
+			}
+		}).fail(function() {
+			showErrorMessageFadeOutForJs(/*[[#{E00091}]]*/ "error");
+		});
+	}
+}
+
+<!--/* 【請求項目】預り金項目の候補を検索 */-->
+function searchInvoiceDepositRecvItemName(index, depositType, keyCode) {
+	
+	const invoiceSeq = getInvoiceSeq();
+	
+	let searchWord = $('#invoiceRow_' + index).find(".searchItemName").val();
+	
+	<!--/** tabとキーボード入力以外で呼び出された場合 */-->
+	if (isTabOrMouseInput(keyCode)) {
+		$('.itemNameListFragmentWrap').html('');
+		return false;
+	} else {
+		<!--/* 項目検索処理 */-->
+		$.ajax({
+			url : "/user/invoiceDetail/" + invoiceSeq + "/searchDepositRecvItemName",
+			type : "GET",
+			data : {
+				"searchWord" : searchWord,
+				"depositType" : depositType
+			},
+		})
+		.done(function(data, status, jqXHR) {
+			
+			if (isAjaxProcSuccess(jqXHR)) {
+				<!--/* 処理成功 */-->
+				$('#invoiceItemNameListFragment_' + index).html(data);
+			} else {
+				<!--/* 処理失敗 */-->
+				const errorMsg = getAjaxProcResutlMessage(jqXHR);
+				showErrorMessageFadeOutForJs(errorMsg);
+			}
+		}).fail(function() {
+			showErrorMessageFadeOutForJs(/*[[#{E00091}]]*/ "error");
+		});
+	}
+}
+
+<!--/* 項目の設定データリスト：非表示処理 */-->
+$(document).off('click.itemSearchPopoverHide');
+$(document).on('click.itemSearchPopoverHide', function(e) {
+	<!--/* 自作ポップオーバーの非表示処理（ポップオーバー外のクリック） */-->
+	let popoverWraper = $(e.target).closest('.itemNameListFragmentWrap');
+	if(!popoverWraper.length) {
+		<!--/* ポップオーバー要素の外側をクリックした時の操作 */--> 
+		<!--/* 全てのポップオーバーを非表示とする */-->
+		$('.itemNameListFragmentWrap').html('');
+	} else {
+		<!--/* ターゲット要素をクリックした時の操作 */-->
+		<!--/* 特になにもしない */-->
+	}
+});
+
+<!--/* タイムチャージ金額計算 */-->
+const calculateInputTimeChargeFunc = (requestParam) => {
+	return new Promise((resolve, reject) => {
+		const invoiceSeq = getInvoiceSeq();
+		$.ajax({
+			url : "/user/invoiceDetail/" + invoiceSeq + "/calculateInputTimeCharge",
+			type : "GET",
+			data : requestParam
+		})
+		.done(function(response) {
+			if (response.succeeded) {
+				<!--/* 処理成功 */-->
+				const feeAmount = response.feeAmount;
+				const index = response.index;
+				$('#invoiceRow_' + index).find('.amount').val(feeAmount);
+				<!--/* 金額をカンマ区切りに変換 */-->
+				invoiceDetailFormatComma();
+				return resolve();
+			} else {
+				<!--/* 処理失敗 */-->
+				const index = response.index;
+				$('#invoiceRow_' + index).find('.amount').val('');
+				<!--/* 金額をカンマ区切りに変換 */-->
+				invoiceDetailFormatComma();
+				return reject();
+			}
+		})
+		.fail(function(jqXHR, status, errorThrown) {
+			showErrorMessageFadeOutForJs(/*[[#{E00091}]]*/ "error");
+			return reject();
+		})
+	});
+}
+
+<!--/* 請求書タブ内の再レンダリング処理 */-->
+function renderDocInvoicePdfViewFragment() {
+	const invoiceSeq = getInvoiceSeq();
+	
+	<!--/* 作成中PDFフラグメントの表示 */-->
+	const renderCreatingViewFragment = () => {
+		return new Promise((resolve, reject) => {
+			$.ajax({
+				url : `/user/invoiceDetail/${invoiceSeq}/getInvoicePdfCreatingViewFragment`,
+				type : "GET",
+			})
+			.done(function(data, status, jqXHR) {
+				if (isAjaxProcSuccess(jqXHR)) {
+					// HTML表示
+					$('#docInvoicePdfFragmentWrap').html(data);
+					return resolve();
+				} else {
+					// 処理失敗
+					const errorMsg = getAjaxProcResutlMessage(jqXHR);
+					showErrorMessageFadeOutForJs(errorMsg);
+					return reject();
+				}
+			})
+			.fail(function(jqXHR, status, errorThrown) {
+				showErrorMessageFadeOutForJs(/*[[#{E00091}]]*/"error");
+				return reject();
+			});
+		})
+	}
+	
+	<!--/* 請求書PDFタブのフラグメントの表示 */-->
+	const renderDocViewFragment = () => {
+		return new Promise((resolve, reject) => {
+			$.ajax({
+				url : `/user/invoiceDetail/${invoiceSeq}/getDocInvoicePdfViewFragment`,
+				type : "GET",
+			})
+			.done(function(data, status, jqXHR) {
+				if (isAjaxProcSuccess(jqXHR)) {
+					// HTML表示
+					$('#docInvoicePdfFragmentWrap').html(data);
+					return resolve();
+				} else {
+					// 処理失敗
+					$('#docInvoicePdfFragmentWrap').html("");
+					const errorMsg = getAjaxProcResutlMessage(jqXHR);
+					showErrorMessageFadeOutForJs(errorMsg);
+					return reject();
+				}
+			})
+			.fail(function(jqXHR, status, errorThrown) {
+				$('#docInvoicePdfFragmentWrap').html("");
+				showErrorMessageFadeOutForJs(/*[[#{E00091}]]*/"error");
+				return reject();
+			});
+		});
+	}
+	
+	return Promise.resolve()
+		.then(renderCreatingViewFragment)
+		.then(renderDocViewFragment);
+}
+
+<!--/* 実費明細タブ内の再レンダリング処理 */-->
+function renderDipositRecordPdfViewFragment() {
+	const invoiceSeq = getInvoiceSeq();
+	
+	<!--/* 作成中PDFフラグメントの表示 */-->
+	const renderCreatingViewFragment = () => {
+		return new Promise((resolve, reject) => {
+			$.ajax({
+				url : `/user/invoiceDetail/${invoiceSeq}/getDipositRecordPdfCreatingViewFragment`,
+				type : "GET",
+			})
+			.done(function(data, status, jqXHR) {
+				if (isAjaxProcSuccess(jqXHR)) {
+					// HTML表示
+					$('#dipositRecordPdfFragmentWrap').html(data);
+					return resolve();
+				} else {
+					// 処理失敗
+					const errorMsg = getAjaxProcResutlMessage(jqXHR);
+					showErrorMessageFadeOutForJs(errorMsg);
+					return reject();
+				}
+			})
+			.fail(function(jqXHR, status, errorThrown) {
+				showErrorMessageFadeOutForJs(/*[[#{E00091}]]*/"error");
+				return reject();
+			});
+		})
+	}
+	
+	<!--/* 実費明細PDFタブのフラグメントの表示 */-->
+	const renderDocViewFragment = () => {
+		return new Promise((resolve, reject) => {
+			$.ajax({
+				url : `/user/invoiceDetail/${invoiceSeq}/getDipositRecordPdfViewFragment`,
+				type : "GET",
+			})
+			.done(function(data, status, jqXHR) {
+				if (isAjaxProcSuccess(jqXHR)) {
+					// HTML表示
+					$('#dipositRecordPdfFragmentWrap').html(data);
+					return resolve();
+				} else {
+					// 処理失敗
+					$('#dipositRecordPdfFragmentWrap').html("");
+					const errorMsg = getAjaxProcResutlMessage(jqXHR);
+					showErrorMessageFadeOutForJs(errorMsg);
+					return reject();
+				}
+			})
+			.fail(function(jqXHR, status, errorThrown) {
+				$('#dipositRecordPdfFragmentWrap').html("");
+				showErrorMessageFadeOutForJs(/*[[#{E00091}]]*/"error");
+				return reject();
+			});
+		});
+	}
+	
+	return Promise.resolve()
+		.then(renderCreatingViewFragment)
+		.then(renderDocViewFragment);
+};
+
+<!--/* 支払計画PDF作成中フラグメントの表示 */-->
+const renderPaymentPlanPdfCreatingViewFragment = (params) => {
+	const invoiceSeq = getInvoiceSeq();
+	return new Promise((resolve, reject) => {
+		$.ajax({
+			url : `/user/invoiceDetail/${invoiceSeq}/getPaymentPlanPdfCreatingViewFragment`,
+			type : "GET",
+		})
+		.done(function(data, status, jqXHR) {
+			if (isAjaxProcSuccess(jqXHR)) {
+				// HTML表示
+				$('#planPngCreatingMsgWrap').html(data);
+				return resolve(params);
+			} else {
+				<!--/* 処理失敗のケースは実行先メソッドで想定（実装）していない -> 処理なし */-->
+				return reject();
+			}
+		})
+		.fail(function(jqXHR, status, errorThrown) {
+			showErrorMessageFadeOutForJs(/*[[#{E00091}]]*/"error");
+			return reject();
+		});
+	})
+}
+
+<!--/* 支払計画PDF作成中フラグメントの削除 */-->
+function deletePaymentPlanPdfCreatingViewFragment() {
+	$('#planPngCreatingMsgWrap').html('');
+}
+
+<!--/* 支払計画書タブ内の再レンダリング処理 */-->
+function renderPaymentPlanConditionViewFragment() {
+	const invoiceSeq = getInvoiceSeq();
+	return new Promise((resolve, reject) => {
+		$.ajax({
+			url : `/user/invoiceDetail/${invoiceSeq}/getPaymentPlanConditionViewFragment`,
+			type : "GET",
+		})
+		.done(function(data, status, jqXHR) {
+			if (isAjaxProcSuccess(jqXHR)) {
+				// HTML表示
+				$('#paymentPlanFragmentWrap').html(data);
+				return resolve();
+			} else {
+				// 処理失敗
+				const errorMsg = getAjaxProcResutlMessage(jqXHR);
+				showErrorMessageFadeOutForJs(errorMsg);
+				return reject();
+			}
+		})
+		.fail(function(jqXHR, status, errorThrown) {
+			showErrorMessageFadeOutForJs(/*[[#{E00091}]]*/"error");
+			return reject();
+		});
+	});
+};
+
+<!--/* お振込先表示用フラグメント表示 */-->
+function renderBankDetailViewFragment() {
+	return new Promise((resolve, reject) => {
+		const invoiceSeq = getInvoiceSeq();
+		
+		$.ajax({
+			url : "/user/invoiceDetail/" + invoiceSeq + "/getBankDetailViewFragment",
+			type : "GET"
+		})
+		.done(function(data, status, jqXHR) {
+			if (isAjaxProcSuccess(jqXHR)) {
+				<!--/* 処理成功 */-->
+				$('.bankDetailFragmentWrap').html(data);
+				$('.bankDetailFragmentWrap').addClass('docBankDetailEdit');
+				$('.bankDetailFragmentWrap').removeClass('edit_mode');
+				return resolve();
+			} else {
+				<!--/* 処理失敗 */-->
+				const errorMsg = getAjaxProcResutlMessage(jqXHR);
+				showErrorMessageFadeOutForJs(errorMsg);
+				return reject();
+			}
+		})
+		.fail(function(jqXHR, status, errorThrown) {
+			showErrorMessageFadeOutForJs(/*[[#{E00091}]]*/ "error");
+			return reject();
+		});
+	});
+}
+
+<!--/* お振込先入力用フラグメント表示 */-->
+function renderBankDetailInputFragment() {
+	return new Promise((resolve, reject) => {
+		const invoiceSeq = getInvoiceSeq();
+		
+		$.ajax({
+			url : "/user/invoiceDetail/" + invoiceSeq + "/getBankDetailInputFragment",
+			type : "GET"
+		})
+		.done(function(data, status, jqXHR) {
+			if (isAjaxProcSuccess(jqXHR)) {
+				<!--/* 処理成功 */-->
+				$('.bankDetailFragmentWrap').html(data);
+				$('.bankDetailFragmentWrap').addClass('edit_mode');
+				$('.bankDetailFragmentWrap').removeClass('docBankDetailEdit');
+				return resolve();
+			} else {
+				<!--/* 処理失敗 */-->
+				const errorMsg = getAjaxProcResutlMessage(jqXHR);
+				showErrorMessageFadeOutForJs(errorMsg);
+				return reject();
+			}
+		})
+		.fail(function(jqXHR, status, errorThrown) {
+			showErrorMessageFadeOutForJs(/*[[#{E00091}]]*/ "error");
+			return reject();
+		});
+	});
+}
+
+<!--/* お振込先フラグメント保存 */-->
+const saveBankDetailFunc = (formData) => {
+	return new Promise((resolve, reject) => {
+		const invoiceSeq = getInvoiceSeq();
+		
+		$.ajax({
+			url : "/user/invoiceDetail/" + invoiceSeq + "/saveBankDetail",
+			type : "POST",
+			data : formData
+		})
+		.done(function(data, status, jqXHR) {
+			if (isAjaxProcSuccess(jqXHR)) {
+				<!--/* 処理成功 */-->
+				showInfoMessageForJs(getAjaxProcResutlMessage(jqXHR));
+				return resolve();
+			} else {
+				<!--/* 処理失敗 */-->
+				if (data) {
+					<!--/* HTMLのコンテンツが返却されている場合 */-->
+					<!--/* 対象行部分にHTML表示 */-->
+					$('.bankDetailFragmentWrap').html(data);
+				}
+				const errorMsg = getAjaxProcResutlMessage(jqXHR);
+				showErrorMessageFadeOutForJs(errorMsg);
+				return reject();
+			}
+		})
+		.fail(function(jqXHR, status, errorThrown) {
+			showErrorMessageFadeOutForJs(/*[[#{E00091}]]*/ "error");
+			return reject();
+		});
+	});
+}
+
+<!--/* 備考表示用フラグメント表示 */-->
+function renderRemarksViewFragment() {
+	return new Promise((resolve, reject) => {
+		const invoiceSeq = getInvoiceSeq();
+		
+		$.ajax({
+			url : "/user/invoiceDetail/" + invoiceSeq + "/getRemarksViewFragment",
+			type : "GET"
+		})
+		.done(function(data, status, jqXHR) {
+			if (isAjaxProcSuccess(jqXHR)) {
+				<!--/* 処理成功 */-->
+				$('.remarksFragmentWrap').html(data);
+				$('.remarksFragmentWrap').addClass('docRemarksEdit');
+				$('.remarksFragmentWrap').removeClass('edit_mode');
+				return resolve();
+			} else {
+				<!--/* 処理失敗 */-->
+				const errorMsg = getAjaxProcResutlMessage(jqXHR);
+				showErrorMessageFadeOutForJs(errorMsg);
+				return reject();
+			}
+		})
+		.fail(function(jqXHR, status, errorThrown) {
+			showErrorMessageFadeOutForJs(/*[[#{E00091}]]*/ "error");
+			return reject();
+		});
+	});
+}
+
+<!--/* 備考入力用フラグメント表示 */-->
+function renderRemarksInputFragment() {
+	return new Promise((resolve, reject) => {
+		const invoiceSeq = getInvoiceSeq();
+		
+		$.ajax({
+			url : "/user/invoiceDetail/" + invoiceSeq + "/getRemarksInputFragment",
+			type : "GET"
+		})
+		.done(function(data, status, jqXHR) {
+			if (isAjaxProcSuccess(jqXHR)) {
+				<!--/* 処理成功 */-->
+				$('.remarksFragmentWrap').html(data);
+				$('.remarksFragmentWrap').addClass('edit_mode');
+				$('.remarksFragmentWrap').removeClass('docRemarksEdit');
+				return resolve();
+			} else {
+				<!--/* 処理失敗 */-->
+				const errorMsg = getAjaxProcResutlMessage(jqXHR);
+				showErrorMessageFadeOutForJs(errorMsg);
+				return reject();
+			}
+		})
+		.fail(function(jqXHR, status, errorThrown) {
+			showErrorMessageFadeOutForJs(/*[[#{E00091}]]*/ "error");
+			return reject();
+		});
+	});
+}
+
+<!--/* 備考フラグメント保存 */-->
+const saveRemarksFunc = (formData) => {
+	return new Promise((resolve, reject) => {
+		const invoiceSeq = getInvoiceSeq();
+		
+		$.ajax({
+			url : "/user/invoiceDetail/" + invoiceSeq + "/saveRemarks",
+			type : "POST",
+			data : formData
+		})
+		.done(function(data, status, jqXHR) {
+			if (isAjaxProcSuccess(jqXHR)) {
+				<!--/* 処理成功 */-->
+				showInfoMessageForJs(getAjaxProcResutlMessage(jqXHR));
+				return resolve();
+			} else {
+				<!--/* 処理失敗 */-->
+				if (data) {
+					<!--/* HTMLのコンテンツが返却されている場合 */-->
+					<!--/* 対象行部分にHTML表示 */-->
+					$('.remarksFragmentWrap').html(data);
+				}
+				const errorMsg = getAjaxProcResutlMessage(jqXHR);
+				showErrorMessageFadeOutForJs(errorMsg);
+				return reject();
+			}
+		})
+		.fail(function(jqXHR, status, errorThrown) {
+			showErrorMessageFadeOutForJs(/*[[#{E00091}]]*/ "error");
+			return reject();
+		});
+	});
+}
+
+<!--/* パラメータで受け取った預り金（入金）SEQの既入金行を既入金入力用フラグメントに作成する */-->
+function addRepayInputFragment(nyukinDepositRecvSeqArray) {
+	return Promise.resolve()
+		.then(function() {
+			if($('#repayViewFragment').length && nyukinDepositRecvSeqArray.length > 0) {
+				return Promise.resolve()
+					.then(() => renderRepayInputFragment())
+					.then(() => addNyukinDepositToRepayInputFunc(nyukinDepositRecvSeqArray))
+					.then(() => calcTotalRepayAmountFunc())
+					.catch((errorObj) => console.log())
+					.finally();
+			} else if($('#repayInputFragment').length && nyukinDepositRecvSeqArray.length > 0) {
+				return Promise.resolve()
+					.then(() => addNyukinDepositToRepayInputFunc(nyukinDepositRecvSeqArray))
+					.then(() => calcTotalRepayAmountFunc())
+					.catch((errorObj) => console.log())
+					.finally();
+			}
+		})
+		.catch((errorObj) => console.log())
+		.finally();
+}
+
+<!--/* 預り金入金の既入金入力用フラグメント（複数行）を表示 */-->
+function addNyukinDepositToRepayInputFunc(nyukinDepositRecvSeqArray) {
+	return new Promise((resolve, reject) => {
+		const invoiceSeq = getInvoiceSeq();
+		
+		<!--/* ソート順を振り直す */-->
+		renumberDocRepayOrder();
+		
+		<!--/* 金額のカンマを除去する */-->
+		invoiceDetailUnformatComma();
+		
+		<!--/* リクエストパラメータを取得するためにdisabled解除 */-->
+		repayInputFormUnDesabledItem();
+		
+		<!--/* リクエストパラメータ */-->
+		const formData = $('#repayInputForm').serializeArray();
+		formData.push({name:"depositRecvSeqList", value:String(nyukinDepositRecvSeqArray)});
+		
+		<!--/* 金額のdisabled設定 */-->
+		invoiceDetailDesabledAmount();
+		
+		<!--/* 既入金入力項目のdisabled設定 */-->
+		repayInputFormDesabledItem();
+		
+		$.ajax({
+			url : "/user/invoiceDetail/" + invoiceSeq + "/addNyukinDepositToRepayInput",
+			type : "POST",
+			data : formData,
+		})
+		.done(function(data, status, jqXHR) {
+			if (isAjaxProcSuccess(jqXHR)) {
+				<!--/* 処理成功 */-->
+				$('.repayUl').html(data);
+				<!--/* 金額のカンマを付与する */-->
+				invoiceDetailFormatComma();
+				return resolve();
+			} else {
+				<!--/* 金額のカンマを付与する */-->
+				invoiceDetailFormatComma();
+				<!--/* 処理失敗 */-->
+				const errorMsg = getAjaxProcResutlMessage(jqXHR);
+				showErrorMessageFadeOutForJs(errorMsg);
+				return reject();
+			}
+		}).fail(function() {
+			showErrorMessageFadeOutForJs(/*[[#{E00091}]]*/ "error");
+			return reject();
+		});
+	});
+}
+
+<!--/* パラメータで受け取った預り金（出金）SEQの実費行を請求入力用フラグメントに作成する（請求入力用フラグメントが表示されていなければ表示）。 */-->
+function addInvoiceInputFragment(shukkinDepositRecvSeqArray) {
+	return Promise.resolve()
+		.then(function() {
+			if($('#invoiceViewFragment').length && shukkinDepositRecvSeqArray.length > 0) {
+				return Promise.resolve()
+					.then(() => renderInvoiceInputFragment())
+					.then(() => addShukkinDepositToInvoiceInputFunc(shukkinDepositRecvSeqArray))
+					.catch((errorObj) => console.log())
+					.finally();
+			} else if($('#invoiceInputFragment').length && shukkinDepositRecvSeqArray.length > 0) {
+				return addShukkinDepositToInvoiceInputFunc(shukkinDepositRecvSeqArray);
+			}
+		})
+		.catch((errorObj) => console.log())
+		.finally();
+}
+
+<!--/* 預り金出金の請求入力用フラグメント（複数行）を表示 */-->
+function addShukkinDepositToInvoiceInputFunc(shukkinDepositRecvSeqArray) {
+	return new Promise((resolve, reject) => {
+		const invoiceSeq = getInvoiceSeq();
+		
+		<!--/* ソート順を振り直す */-->
+		renumberDocInvoiceOrder();
+		
+		<!--/* 金額のカンマを除去する */-->
+		invoiceDetailUnformatComma();
+		
+		<!--/* リクエストパラメータを取得するために金額のdisabled解除 */-->
+		invoiceDetailUnDesabledAmount();
+		
+		<!--/* リクエストパラメータ */-->
+		const formData = $('#invoiceInputForm').serializeArray();
+		formData.push({name:"depositRecvSeqList", value:String(shukkinDepositRecvSeqArray)});
+		
+		<!--/* 金額のdisabled設定 */-->
+		invoiceDetailDesabledAmount();
+		
+		$.ajax({
+			url : "/user/invoiceDetail/" + invoiceSeq + "/addShukkinDepositToInvoiceInput",
+			type : "POST",
+			data : formData,
+		})
+		.done(function(data, status, jqXHR) {
+			if (isAjaxProcSuccess(jqXHR)) {
+				<!--/* 処理成功 */-->
+				$('.invoiceUl').html(data);
+				<!--/* 金額のカンマを付与する */-->
+				invoiceDetailFormatComma();
+				return resolve();
+			} else {
+				<!--/* 金額のカンマを付与する */-->
+				invoiceDetailFormatComma();
+				<!--/* 処理失敗 */-->
+				const errorMsg = getAjaxProcResutlMessage(jqXHR);
+				showErrorMessageFadeOutForJs(errorMsg);
+				return reject();
+			}
+		}).fail(function() {
+			showErrorMessageFadeOutForJs(/*[[#{E00091}]]*/ "error");
+			return reject();
+		});
+	});
+}
+
+<!--/* 預り金選択モーダルを開く */-->
+function createAccgInvoiceStatementDepositRecvSelectModal(ankenId, personId, accgDocSeq, depositType) {
+	return new Promise((resolve, reject) => {
+		const depositRecvSeqArray = $(".depositRecvSeq").map(function(){
+			if (!$(this).closest('li').find('.deleteFlg').prop('checked')) {
+				return $(this).val();
+			}
+		}).get();
+		
+		const param = [
+			{name:"ankenId", value:ankenId},
+			{name:"personId", value:personId},
+			{name:"accgDocSeq", value:accgDocSeq},
+			{name:"depositType", value:depositType},
+			{name:"excludeDepositRecvSeqList", value:depositRecvSeqArray}
+		];
+		$.ajax({
+			url : "/common/mvc/accgInvoiceStatementDepositRecvSelect/createAccgInvoiceStatementDepositRecvSelectModal",
+			type : "POST",
+			data : param,
+			dataType: 'html',
+		}).done(function(data, status, jqXHR) {
+			if (isAjaxProcSuccess(jqXHR)) {
+				<!--/* ツールチップを非表示にする */-->
+				$('[data-toggle="tooltip"]').tooltip('hide');
+				<!--/* モーダル表示 */-->
+				$('.accgInvoiceStatementDepositRecvSelectModalFragmentWrap').html(data);
+				<!--/* 預り金追加処理をセットアップ */-->
+				benzo.global.fragment.accgInvoiceStatementDepositRecvSelectModalFragmentObj.setUpObj.depositAddAction = (e) => {
+					<!--/* 2重押下防止 */-->
+					if(ajaxRunning){
+						return false;
+					}
+					ajaxRunning = true;
+					
+					const nyukinDepositRecvSeqArray = benzo.global.fragment.accgInvoiceStatementDepositRecvSelectModalFragmentObj.paramObj.getNyukinDepositRecvSeqArray();
+					const shukkinDepositRecvSeqArray = benzo.global.fragment.accgInvoiceStatementDepositRecvSelectModalFragmentObj.paramObj.getShukkinDepositRecvSeqArray();
+					
+					Promise.resolve()
+						.then(() => addRepayInputFragment(nyukinDepositRecvSeqArray))
+						.then(() => addInvoiceInputFragment(shukkinDepositRecvSeqArray))
+						.then(() => renderInvoiceTotalAmountInputFragment())
+						.catch((errorObj) => console.log()) 
+						.finally(() => {
+							$("#accgInvoiceStatementDepositRecvSelectModal").modal("hide");
+							ajaxRunning = false;
+						});
+				};
+				return resolve();
+			} else {
+				<!--/* 処理失敗 */-->
+				const errorMsg = getAjaxProcResutlMessage(jqXHR);
+				showErrorMessageFadeOutForJs(errorMsg);
+				return reject(errorMsg);
+			}
+		}).fail(function() {
+			showErrorMessageFadeOutForJs(/*[[#{E00059}]]*/ "データの取得に失敗しました。");
+			return reject();
+		})
+	});
+}
+
+</script>
+
+</head>
+<body>
+	<div layout:fragment="main-contents" th:remove="tag">
+		
+		<div class="contents_sidebar_wrapper_user accg_side_menu" th:classappend="${isAccgAnkenSide}? 'contentsSlidebarWrapper':_"
+			th:data-click-open="${isAccgAnkenSide} ? ${customerAnkenMenuOpenClickForSessionValue} : 'true' "
+			th:data-resize-open="${isAccgAnkenSide} ? ${customerAnkenMenuOpenResizeForSessionValue} : 'true' "
+			th:with="isAccgAnkenSide=${T(jp.loioz.common.utility.SessionUtils).getSessionVaule(T(jp.loioz.common.constant.SessionAttrKeyEnum).ACCG_ANKEN_SCREEN_BOOL.codeKey)}">
+			
+			<input type="hidden" id="invoice_detail_view_global_invoice_seq" th:value="${invoiceSeq}">
+			
+	<!--/* 会計管理メニュー */-->
+	<th:block th:if="!${isAccgAnkenSide}">
+			<div id="accgMenuFragmentWrap"
+				th:replace="common/accg/accgMenu::accgMenuFragment(${T(jp.loioz.common.constant.CommonConstant$AccgMenu).INVOICE.getCd()})">
+			</div>
+	</th:block>
+			
+	<!--/* 案件軸の遷移の場合 ->案件メニュー */-->
+	<th:block th:if="${isAccgAnkenSide}">
+			<div th:replace="common/customerAnkenMenu::menuList(
+				sideMenuAnkenId=${viewForm.ankenId},
+				sideMenuCustomerId=null,
+				selectedTabClass='is_invoice_statement',
+				focusPersonId=${viewForm.personId})">
+			</div>
+	</th:block>
+			
+			<!--/* メインコンテンツの外側 */-->
+			<div class="contents_wrapper">
+				<div class="container-fluid">
+					<main class="content">
+						
+						<!--/* 詳細画面 */-->
+						<div class="page_inner">
+							<!--/* ぱんくず */-->
+							<div th:if="!${isAccgAnkenSide}" class="breadcrumb_area">
+								<ul>
+									<li><span><a href="/user/invoiceList/">請求書一覧</a></span></li>
+									<li><i class="fas fa-angle-right"></i></li>
+									<li><span class="selected_menu">請求書</span></li>
+								</ul>
+							</div>
+							
+	<!--/* 案件軸の場合のぱんくず */-->
+	<th:block th:if="${isAccgAnkenSide}">
+							<div th:replace="common/wrapHeader::wrapHeader(
+								returnListScreen=${T(jp.loioz.common.utility.SessionUtils).getSessionVaule(T(jp.loioz.common.constant.SessionAttrKeyEnum).RETURN_LIST_SCREEN.codeKey)},
+								sideMenuAnkenId=${viewForm.ankenId},
+								accgSideMenuPersonId=${viewForm.personId},
+								selectedTabClass = 'is_invoice_detail')"></div>
+	</th:block>
+							
+							<!--/* メッセージエリア */-->
+							<div th:replace="common/messageArea::messageArea"></div>
+							
+							<!--/* 詳細 */-->
+							<div id="invoiceDetailFragmentWrap">
+								<div th:replace="common/accg/accgInvoiceStatementFragment::accgInvoiceStatementDetailFragment(${viewForm})"></div>
+							</div>
+							
+						</div>
+					</main>
+				</div>
+				<!--/* 確認Modal */-->
+				<div id="confirmModal" class="modal fade" tabindex="-1" role="dialog" aria-labelledby="accgDocConfirmTitle" aria-hidden="true" data-backdrop="static">
+					<div class="modal-dialog modal-dialog-centered modal_confirm" role="document">
+						<div class="modal-content">
+							<div class="confirmModalFragmentWrap">
+								<div th:replace="common/mvc/confirm/confirmModal::confirmModalFragment"></div>
+							</div>
+						</div>
+					</div>
+				</div>
+				<!--/* 確認Modal end */-->
+				
+				<!--/* 預り金選択Modal */-->
+				<div id="accgInvoiceStatementDepositRecvSelectModal" class="modal fade" tabindex="-1" role="dialog" aria-labelledby="depositRecvSelectModalTitle" aria-hidden="true" data-backdrop="static">
+					<div class="modal-dialog modal-dialog-centered modal_deposit_recv_select" role="document">
+						<div class="modal-content">
+							<div class="accgInvoiceStatementDepositRecvSelectModalFragmentWrap"></div>
+						</div>
+					</div>
+				</div>
+				<!--/* 預り金選択Modal end */-->
+			</div>
+		</div>
+	</div>
+</body>
+</html>

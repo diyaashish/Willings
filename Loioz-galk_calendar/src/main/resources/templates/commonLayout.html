@@ -1,0 +1,359 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+	xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout">
+<head>
+<meta charset="utf-8" />
+<title layout:fragment="title-contents"></title>
+<th:block th:with="version=${@environment.getProperty('app.version')}">
+	<link href="./css/jquery-ui-1.12.1.min.css" th:href="@{/css/jquery-ui-1.12.1.min.css}" rel="stylesheet" type="text/css" />
+	<link href="./css/bootstrap.min.css" th:href="@{/css/bootstrap.min.css?{ver}(ver=${version})}" rel="stylesheet" type="text/css" /><!--/* ファイル内のmapファイルの参照処理の削除を反映させるためにversionを追加 */-->
+	<link href="./css/bootstrap-grid.min.css" th:href="@{/css/bootstrap-grid.min.css?{ver}(ver=${version})}" rel="stylesheet" type="text/css" /><!--/* ファイル内のmapファイルの参照処理の削除を反映させるためにversionを追加 */-->
+	<link href="./css/bootstrap-reboot.min.css" th:href="@{/css/bootstrap-reboot.min.css?{ver}(ver=${version})}" rel="stylesheet" type="text/css" /><!--/* ファイル内のmapファイルの参照処理の削除を反映させるためにversionを追加 */-->
+	<link href="./css/base.css" th:href="@{/css/base.css?{ver}(ver=${version})}" rel="stylesheet" type="text/css" />
+	<link href="./css/content.css" th:href="@{/css/content.css?{ver}(ver=${version})}" rel="stylesheet" type="text/css" />
+	<link href="./css/bootstrap-overwrite.css" th:href="@{/css/bootstrap-overwrite.css?{ver}(ver=${version})}" rel="stylesheet" type="text/css" />
+	<link href="./css/information.css" th:href="@{/css/information.css?{ver}(ver=${version})}" rel="stylesheet" type="text/css" />
+	<link href="./css/jquery.datetimepicker.css" th:href="@{/css/jquery.datetimepicker.css}" rel="stylesheet" type="text/css" />
+	<link href="./css/slick.css" th:href="@{/css/slick.css}" rel="stylesheet" type="text/css" />
+	<link href="./css/slick-theme.css" th:href="@{/css/slick-theme.css}" rel="stylesheet" type="text/css" />
+	<link href="./css/font-awesome-animation.min.css" th:href="@{/css/font-awesome-animation.min.css}" rel="stylesheet" type="text/css" />
+	<link th:href="@{/css/onboarding/commonOnboarding.css?{ver}(ver=${version})}" rel="stylesheet" type="text/css"/>
+	<link th:href="@{/css/onboarding/firstLoginOnboarding.css?{ver}(ver=${version})}" rel="stylesheet" type="text/css"/>
+	<link th:href="@{/css/application.css?{ver}(ver=${version})}" rel="stylesheet" type="text/css"/>
+	<link th:href="@{/css/table.css?{ver}(ver=${version})}" rel="stylesheet" type="text/css"/>
+	<link th:href="@{/css/modal.css?{ver}(ver=${version})}" rel="stylesheet" type="text/css"/>
+
+	<script type="text/javascript" th:src="@{/webjars/jquery/3.3.1/jquery.min.js}"></script>
+	<script type="text/javascript" th:src="@{/js/jquery-ui-1.12.1.min.js}"></script>
+	<script type="text/javascript" th:src="@{/js/datepicker-ja.js}"></script>
+	<script type="text/javascript" th:src="@{/js/jquery.datetimepicker.full.min.js}"></script>
+	<script type="text/javascript" th:src="@{/js/popper.min.js?{ver}(ver=${version})}"></script><!--/* ファイル内のmapファイルの参照処理の削除を反映させるためにversionを追加 */-->
+	<script type="text/javascript" th:src="@{/js/popper-utils.min.js?{ver}(ver=${version})}"></script><!--/* ファイル内のmapファイルの参照処理の削除を反映させるためにversionを追加 */-->
+	<script type="text/javascript" th:src="@{/js/bootstrap.min.js?{ver}(ver=${version})}"></script><!--/* ファイル内のmapファイルの参照処理の削除を反映させるためにversionを追加 */-->
+	<script type="text/javascript" th:src="@{/js/bootstrap.bundle.min.js?{ver}(ver=${version})}"></script><!--/* ファイル内のmapファイルの参照処理の削除を反映させるためにversionを追加 */-->
+	<script type="text/javascript" th:src="@{/js/fontawesome-5.15.2-all.min.js}"></script>
+	<script type="text/javascript" th:src="@{/js/slick.min.js}"></script>
+	<script type="text/javascript" th:src="@{/js/Sortable.min.js}"></script>
+	<script type="text/javascript" th:src="@{/js/jquery.autoKana.js}"></script>
+	<script type="text/javascript" th:src="@{/js/addclear.js}"></script>
+	<script type="text/javascript" th:src="@{/js/ajaxzip3.js}"></script>
+	<script type="text/javascript" th:src="@{/js/common.js?{ver}(ver=${version})}"></script>
+	<script type="text/javascript" th:src="@{/js/navigation.js?{ver}(ver=${version})}"></script>
+</th:block>
+
+<script type="text/javascript" th:inline="javascript">
+<!--/* Ajax通信時のCSRFトークン設定 */-->
+$(function() {
+	let token = /*[[(${_csrf.token})]]*/ "";
+	let headerName = /*[[(${_csrf.headerName})]]*/ "";
+	$(document).ajaxSend(function(e, xhr, options) {
+		xhr.setRequestHeader(headerName, token);
+	});
+});
+
+<!--/* ajax処理時のセッションタイムアウトによるリダイレクト処理設定 */-->
+$(function() {
+
+	<!--/* 本テンプレートを使用する画面のajax処理では、以下の設定が適用される */-->
+
+	<!--/* ログイン画面へのリダイレクト処理 */-->
+	function ajaxSessionTimeout() {
+		let loginUrl = /*[[${T(jp.loioz.common.constant.UrlConstant).LOGIN_URL}]]*/ ''
+		loginUrl = "/" + loginUrl + "/"
+		window.location.href = loginUrl
+	}
+
+	<!--/* 二重ログインエラー画面へのリダイレクト処理 */-->
+	function ajaxMultiLogin() {
+		let multiLoginErrorUrl = /*[[${T(jp.loioz.common.constant.UrlConstant).MULTI_LOGIN_ERROR_URL}]]*/ ''
+		window.location.href = multiLoginErrorUrl
+	}
+	
+	<!--/* プラン別機能制限エラー画面へのリダイレクト処理 */-->
+	function ajaxPlanFuncRestrict() {
+		let planFuncRestrictErrorUrl = /*[[${T(jp.loioz.common.constant.UrlConstant).PLAN_FUNC_RESTRICT_ERROR_URL}]]*/ ''
+		window.location.href = planFuncRestrictErrorUrl
+	}
+	
+	<!--/* プランが変更した旨のエラー画面へのリダイレクト処理 */-->
+	function ajaxPlanChanged() {
+		let planChangedErrorUrl = /*[[${T(jp.loioz.common.constant.UrlConstant).PLAN_CHANGED_ERROR_URL}]]*/ ''
+		window.location.href = planChangedErrorUrl
+	}
+	
+	<!--/* ロイオズ管理者制御のエラー画面へのリダイレクト処理 */-->
+	function ajaxLoiozAdminControlError() {
+		let loiozAdminControlError = /*[[${T(jp.loioz.common.constant.UrlConstant).PERMISSION_ERROR_URL}]]*/ ''
+		window.location.href = loiozAdminControlError
+	}
+
+	<!--/* ajax処理への設定オプション作成 */-->
+	let ajaxSetupOptions = {}
+
+	<!--/* セッションタイムアウト */-->
+	let sessionTimeoutErrorCode = /*[[${T(jp.loioz.common.constant.CommonConstant).CUSTOM_SESSION_TIMEOUT_ERROR_CODE}]]*/ ''
+	ajaxSetupOptions[sessionTimeoutErrorCode] = ajaxSessionTimeout
+
+	<!--/* 二重ログイン */-->
+	let multiLoginErrorCode = /*[[${T(jp.loioz.common.constant.CommonConstant).CUSTOM_MULTI_LOGIN_ERROR_CODE}]]*/ ''
+	ajaxSetupOptions[multiLoginErrorCode] = ajaxMultiLogin
+	
+	<!--/* プラン別機能制限 */-->
+	let planFuncRestrictErrorCode = /*[[${T(jp.loioz.common.constant.CommonConstant).CUSTOME_PLAN_FUNC_RESTRICT_ERROR_CODE}]]*/ ''
+	ajaxSetupOptions[planFuncRestrictErrorCode] = ajaxPlanFuncRestrict
+	
+	<!--/* プラン変更 */-->
+	let planChangedErrorCode = /*[[${T(jp.loioz.common.constant.CommonConstant).CUSTOME_PLAN_CHANGED_ERROR_CODE}]]*/ ''
+	ajaxSetupOptions[planChangedErrorCode] = ajaxPlanChanged
+
+	<!--/* ロイオズ管理者制御 */-->
+	let loiozAdminControlErrorCode = /*[[${T(jp.loioz.common.constant.CommonConstant).CUSTOME_LOIOZ_ADMIN_CONTROL_ERROR_CODE}]]*/ ''
+	ajaxSetupOptions[loiozAdminControlErrorCode] = ajaxLoiozAdminControlError
+	
+	<!--/* ajax処理への設定適用 */-->
+	$.ajaxSetup({
+		statusCode: ajaxSetupOptions
+	});
+	
+});
+
+<!--/* Ajax通信の処理結果が成功かどうかを判定する */-->
+function isAjaxProcSuccess(jqXHR) {
+	<!--/* Controllerで設定しているvalueと同じ値 */-->
+	const RESPONSE_HEADER_VALUE_OF_AJAX_PROC_RESULT_SUCCESS = /*[[${T(jp.loioz.common.constant.CommonConstant).HEADER_VALUE_OF_AJAX_PROC_RESULT_SUCCESS}]]*/
+	
+	const ajaxResult = getAjaxProcResutl(jqXHR)
+	if (ajaxResult === RESPONSE_HEADER_VALUE_OF_AJAX_PROC_RESULT_SUCCESS) {
+		return true
+	}
+	return false
+}
+<!--/* Ajax通信の処理結果情報をレスポンスヘッダーから取得する */-->
+<!--/* （レスポンスヘッダーの値に独自の値を設定していない限りは、この関数は利用せず、function isAjaxProcSuccess(jqXHR)の関数を利用すること） */-->
+function getAjaxProcResutl(jqXHR) {
+	<!--/* Controllerで設定しているkey名と同じ値 */-->
+	const RESPONSE_HEADER_NAME_OF_AJAX_PROC_RESULT = /*[[${T(jp.loioz.common.constant.CommonConstant).HEADER_NAME_OF_AJAX_PROC_RESULT}]]*/
+	return jqXHR.getResponseHeader(RESPONSE_HEADER_NAME_OF_AJAX_PROC_RESULT)
+}
+<!--/* Ajax通信の処理結果メッセージをレスポンスヘッダーから取得する */-->
+function getAjaxProcResutlMessage(jqXHR) {
+	<!--/* Controllerで設定しているkey名と同じ値 */-->
+	const RESPONSE_HEADER_NAME_OF_AJAX_PROC_RESULT_MESSAGE = /*[[${T(jp.loioz.common.constant.CommonConstant).HEADER_NAME_OF_AJAX_PROC_RESULT_MESSAGE}]]*/
+	const base64Message = jqXHR.getResponseHeader(RESPONSE_HEADER_NAME_OF_AJAX_PROC_RESULT_MESSAGE)
+	// Base64文字をデコードして返却
+	return b64DecodeUnicode(base64Message)
+}
+
+function topPage() {
+	window.location.href = '/user/schedule/';
+}
+
+<!--/* ヘッダーコンテンツの差し替え処理*/-->
+function headerRefresh() {
+	return new Promise((resolve,reject) => {
+		$.ajax({
+		  type: 'GET',
+		  url: "/common/userheader/getUserHeader",
+		  dataType:"html",
+		})
+		.done(function(result) {
+			<!--/* 返却されるHTMLは、複数要素含む形なので */-->
+			const wraped = $("<div>" + result + "</div>");
+			$("#loginHeaderContents").replaceWith($(wraped).find("#loginHeaderContents"));
+			return resolve();
+		})
+		.fail(function(jqXHR) {
+			return reject(jqXHR);
+		})
+		.always(function(){
+		});
+	});
+}
+
+<!--/* ヘッダー（パンくず）部分の差し替え処理*/-->
+function wrapHeaderRefresh(dataObj) {
+	return new Promise((resolve,reject) => {
+		
+		<!--/* オブジェクトのプロパティ値を取得 */-->
+		const {sideMenuPersonId, sideMenuAnkenId, selectedTabClass} = dataObj;
+		
+		let requestData = {
+			sideMenuPersonId: sideMenuPersonId,
+			sideMenuAnkenId: sideMenuAnkenId,
+			selectedTabClass: selectedTabClass
+		}
+		
+		$.ajax({
+			url : "/common/wrapHeader/getWrapHeaderView",
+			type : "GET",
+			dataType: 'html',
+			data : requestData
+		})
+		.done(function(data, status, jqXHR) {
+			
+			if (isAjaxProcSuccess(jqXHR)) {
+				<!--/* ヘッダー（パンくず）部分のID */-->
+				$('#wrapHeaderFragmentWrap').html(data);
+				return resolve();
+			} else {
+				<!--/* 処理失敗 */-->
+				return reject();
+			}
+		})
+		.fail(function(jqXHR, status, errorThrown) {
+			return reject();
+		});
+		
+	});
+}
+
+<!--/* テナント作成時にonboardingを呼び出す処理 */-->
+$(function(){
+	const isTenantCreate = /*[[${isTenantCreate}]]*/false;
+	if (isTenantCreate) {
+		const cd1 = /*[[${T(jp.loioz.common.constant.OnboardingConstant$Onboarding).FIRST_LOGIN.cd}]]*/;
+		getOnboarding(cd1);
+	}
+})
+</script>
+</head>
+<body>
+
+<!--/* GTM start (アプリ監視用) */-->
+<th:block th:if="${T(jp.loioz.common.constant.CommonConstant.SystemFlg).FLG_OFF.equalsByCode(@environment.getProperty('app.devMode'))}">
+
+	<!-- Google Tag Manager (noscript) -->
+	<noscript><iframe src="https://www.googletagmanager.com/ns.html?id=GTM-5SX264G"
+	height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
+	<!-- End Google Tag Manager (noscript) -->
+
+</th:block>
+<!--/* GTM end */-->
+
+<!--/* GTM start (コンバージョン用) */-->
+<th:block th:if="${T(jp.loioz.common.constant.CommonConstant.SystemFlg).FLG_OFF.equalsByCode(@environment.getProperty('app.devMode'))} and ${isTenantCreate}">
+
+	<!-- Google Tag Manager (noscript) -->
+	<noscript><iframe src="https://www.googletagmanager.com/ns.html?id=GTM-TVP5T44"
+	height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
+	<!-- End Google Tag Manager (noscript) -->
+
+</th:block>
+<!--/* GTM end */-->
+	
+	<!--/* ヘッダー */-->
+	<!--/* ※loginHeaderForm以外の値については、SessionUtilの値を利用するフラグメントを利用 */-->
+	<th:block th:replace="commonLayoutFragment::loginHeaderFragmentUseSessionVal(
+		loginHeaderForm   =   ${loginHeaderForm}
+	)"></th:block>
+		
+	<!--/* main-contents ここから */-->
+	<div id="main-contents">
+		<div layout:fragment="main-contents"></div>
+	</div>
+	<!--/* main-contents ここまで */-->
+	
+<script type="text/javascript" th:inline="javascript">
+$(function() {
+
+	<!--/* ログアウトアイコンのクリック */-->
+	$(document).on('click', '#logoutButton', function() {
+		$('#logoutForm').submit();
+	});
+
+	<!--/* プラン設定リンクのクリック */-->
+	let openPlanSettingClickRunning = false;
+	$(document).on('click', '.openPlanSetting', function() {
+
+		if (openPlanSettingClickRunning) {
+			return;
+		}
+
+		openPlanSettingClickRunning = true;
+
+		let requestUrl = /*[[${'/' + T(jp.loioz.common.constant.UrlConstant).PLANSETTING_GATEWAY_URL + '/' + T(jp.loioz.common.constant.plan.PlanConstant).PLAN_SETTING_GATEWAY_PATH}]]*/ ''
+
+		$.ajax({
+		  type: 'GET',
+		  url: requestUrl,
+		})
+		.done(function(result) {
+			if (result.succeeded) {
+				<!--/* 設定メニューが開いている場合は閉じる */-->
+				if($('.headerOfficeMenu_inner').hasClass("activeMenu")) {
+					$('.headerOfficeMenu_btn_close').click()
+				}
+
+				<!--/* アカウントメニューが開いている場合は閉じる */-->
+				if($('.headerAccountMenu_inner').hasClass("activeMenu")) {
+					$('.headerAccountMenu_btn_close').click()
+				}
+
+				<!--/* 下記の画面遷移中（画面ロード中）に再度ボタンが押されないよう、クリックイベントを削除 */-->
+				<!--/* ※画面遷移の完了より前にalwaysの関数が実行され、通常の2重押下防止対応だけでは対応しきれないことによる特別な対応 */-->
+				$(document).off('click','.openPlanSetting');
+
+				<!--/* 画面読み込み */-->
+				window.location.href = result.uriUntilContextPath + '/user/planSetting/'
+			} else {
+				// システムエラー
+			}
+		})
+		.fail(function(jqXHR) {
+			// システムエラー
+		})
+		.always(function(){
+			openPlanSettingClickRunning = false;
+		});
+	});
+
+	<!--/* お知らせリンクのクリック */-->
+	$(document).on('click', '.openInformationTab', function() {
+		<!--/* 設定メニューが開いている場合は閉じる */-->
+		if($('.headerOfficeMenu').hasClass("activeMenu")) {
+			$('.headerOfficeMenu_btn_close').click()
+		}
+
+		<!--/* アカウントメニューが開いている場合は閉じる */-->
+		if($('.headerAccountMenu').hasClass("activeMenu")) {
+			$('.headerAccountMenu_btn_close').click()
+		}
+
+		<!--/* お知らせ画面を開く */-->
+		let url = 'https://www.loioz.co.jp/news/';
+		let childWindow = window.open(url, 'rel=noopener');
+
+	});
+});
+</script>
+
+<!--/* GTM start (アプリ監視用) */-->
+<th:block th:if="${T(jp.loioz.common.constant.CommonConstant.SystemFlg).FLG_OFF.equalsByCode(@environment.getProperty('app.devMode'))}">
+
+	<!-- Google Tag Manager -->
+	<script>(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
+	new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
+	j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
+	'https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);
+	})(window,document,'script','dataLayer','GTM-5SX264G');</script>
+	<!-- End Google Tag Manager -->
+
+</th:block>
+<!--/* GTM end */-->
+
+<!--/* GTM start (コンバージョン用) */-->
+<th:block th:if="${T(jp.loioz.common.constant.CommonConstant.SystemFlg).FLG_OFF.equalsByCode(@environment.getProperty('app.devMode'))} and ${isTenantCreate}">
+
+	<!-- Google Tag Manager -->
+	<script>(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
+	new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
+	j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
+	'https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);
+	})(window,document,'script','dataLayer','GTM-TVP5T44');</script>
+	<!-- End Google Tag Manager -->
+
+</th:block>
+<!--/* GTM end */-->
+
+</body>
+</html>

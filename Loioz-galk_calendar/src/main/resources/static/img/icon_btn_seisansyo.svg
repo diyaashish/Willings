@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="17" height="12" viewBox="0 0 17 12">
+  <g id="icon_btn_seisansyo" transform="translate(-1349.3 -987)">
+    <g id="_123" data-name="123" transform="translate(1349.3 987)" fill="none" stroke="#fff" stroke-miterlimit="10" stroke-width="0.81">
+      <rect width="17" height="11" stroke="none"/>
+      <rect x="0.405" y="0.405" width="16.19" height="10.19" fill="none"/>
+    </g>
+    <line id="線_575" data-name="線 575" x2="7" transform="translate(1356.8 990.5)" fill="none" stroke="#fff" stroke-width="1"/>
+    <line id="線_576" data-name="線 576" x2="7" transform="translate(1356.8 992.5)" fill="none" stroke="#fff" stroke-width="1"/>
+    <line id="線_577" data-name="線 577" x2="4" transform="translate(1356.8 994.5)" fill="none" stroke="#fff" stroke-width="1"/>
+    <line id="線_631" data-name="線 631" y2="10" transform="translate(1353.5 987.5)" fill="none" stroke="#fff" stroke-width="1"/>
+  </g>
+</svg>

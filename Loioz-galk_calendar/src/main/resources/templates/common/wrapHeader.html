@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+	layout:decorator="commonLayout">
+<head>
+<meta charset="utf-8" />
+</head>
+<body>
+	<th:block th:fragment="wrapHeader(returnListScreen)"
+			th:with="
+			personId=${sideMenuPersonId}?: null,
+			accgPersonId=${accgSideMenuPersonId}?: null,
+			ankenId=${sideMenuAnkenId}?: null,
+			invoiceSeq=${accgInvoiceSeq}?: null,
+			statementSeq=${accgStatementSeq}?: null,
+			selectedTabClass=${selectedTabClass}?: null,
+			returnPrevScreenName=${returnPrevScreenName}?: null,
+			returnPrevScreenUrl=${returnPrevScreenUrl}?: null">
+
+	<!--/* 「前の画面へ戻る」のリンク情報が設定されている場合 ->  */-->
+	<th:block th:if="${!#strings.isEmpty(returnPrevScreenName) and !#strings.isEmpty(returnPrevScreenUrl)}">
+		<div class="breadcrumb_area">
+			<ul>
+				<li>
+					<span><a th:href="${returnPrevScreenUrl}"><i class="fa fa-reply mr-3"></i>[[${returnPrevScreenName} + 'へ戻る']]</a></span>
+				</li>
+			</ul>
+		</div>
+	</th:block>
+
+	<!--/* 「前の画面へ戻る」のリンク情報が設定されていない場合 */-->
+	<th:block th:unless="${!#strings.isEmpty(returnPrevScreenName) and !#strings.isEmpty(returnPrevScreenUrl)}">
+		
+		<div class="breadcrumb_area">
+			<ul>
+				<li>
+					<!--/* セッションに戻り先が保存してあれば、保存先へ戻るリンクを表示 */-->
+					<th:block th:if="${(T(jp.loioz.common.constant.CommonConstant$ReturnDestinationScreen).ANKEN_LIST.equalsByCode(returnListScreen))}">
+						<span><a href="/user/ankenList/list">案件一覧</a></span>
+					</th:block>
+					<th:block th:if="${(T(jp.loioz.common.constant.CommonConstant$ReturnDestinationScreen).MEIBO_LIST.equalsByCode(returnListScreen))}">
+						<span><a href="/user/meiboList/list">名簿一覧</a></span>
+					</th:block>
+					<!--/* セッションに戻り先が無い場合、名簿ID、案件IDの有無で戻り先をリンクを変更する */-->
+					<th:block th:if="${#strings.isEmpty(returnListScreen)} and ${#strings.isEmpty(personId)}">
+						<span><a href="/user/ankenList/list">案件一覧</a></span>
+					</th:block>
+					<th:block th:if="${#strings.isEmpty(returnListScreen)} and ${#strings.isEmpty(ankenId)}">
+						<span><a href="/user/meiboList/list">名簿一覧</a></span>
+					</th:block>
+				</li>
+				<li><i class="fas fa-angle-right"></i></li>
+
+		<!--/* 案件軸 */-->
+		<th:block th:if="${ankenId}" th:with="ankenHeader=${wrapAnkenHeader.get(ankenId)}">
+			<!--/* 案件詳細を選択 */-->
+			<th:block th:if="${selectedTabClass} == 'is_anken'">
+				<li>
+					<span class="is_anken selected_menu char_ellipsis" th:text="${#strings.isEmpty(ankenHeader.ankenName)} ? '(案件名未入力)' : ${ankenHeader.ankenName}"></span>
+				</li>
+			</th:block>
+				
+			<!--/* 案件メニューを選択 */-->
+			<th:block th:unless="${selectedTabClass} == 'is_anken'">
+				<li>
+					<span class="char_ellipsis"><a th:href="@{/user/ankenManagement/edit/{ankenId}/(ankenId=${ankenId})}"
+						th:text="${#strings.isEmpty(ankenHeader.ankenName)} ? '(案件名未入力)' : ${ankenHeader.ankenName}">名前</a></span>
+				</li>
+				<li><i class="fas fa-angle-right"></i></li>
+				<th:block th:switch="${selectedTabClass}">
+					<th:block th:case="'is_anken_dashboard'"><li><span class="selected_menu">案件ダッシュボード</span></li></th:block>
+					<th:block th:case="'is_saiban'"><li><span class="selected_menu">裁判管理</span></li></th:block>
+					<th:block th:case="'is_kanyosya'"><li><span class="selected_menu">当事者・関与者</span></li></th:block>
+					<th:block th:case="'is_kaikei'"><li><span class="selected_menu">会計管理</span></li></th:block>
+					<th:block th:case="'is_seisansho'"><li><span class="selected_menu">精算書作成</span></li></th:block>
+					<th:block th:case="'is_gyomu'"><li><span class="selected_menu">業務履歴</span></li></th:block>
+					<th:block th:case="'is_azukari'"><li><span class="selected_menu">預かり品</span></li></th:block>
+					<th:block th:case="'is_file'"><li><span class="selected_menu">ファイル</span></li></th:block>
+					<th:block th:case="'is_case_accounting'"><li><span class="selected_menu">会計管理</span></li></th:block>
+					<th:block th:case="'is_fee'">
+						<li><span class="selected_menu">報酬明細</span></li>
+					</th:block>
+					<th:block th:case="'is_deposit_recv'">
+						<li><span class="selected_menu">預り金／実費明細</span></li>
+					</th:block>
+					<th:block th:case="'is_invoice_statement'">
+						<li><span class="selected_menu">請求書／精算書</span></li>
+					</th:block>
+					<th:block th:case="'is_invoice_detail'">
+						<li><span><a th:href="@{/user/caseInvoiceStatementList/{personId}/{ankenId}/(personId=${accgPersonId}, ankenId=${ankenId})}">請求書／精算書</a></span></li>
+						<li><i class="fas fa-angle-right"></i></li>
+						<li><span class="selected_menu">請求書</span></li>
+					</th:block>
+					<th:block th:case="'is_statement_detail'">
+						<li><span><a th:href="@{/user/caseInvoiceStatementList/{personId}/{ankenId}/(personId=${accgPersonId}, ankenId=${ankenId})}">請求書／精算書</a></span></li>
+						<li><i class="fas fa-angle-right"></i></li>
+						<li><span class="selected_menu">精算書</span></li>
+					</th:block>
+					<th:block th:case="'is_invoice_record_detail'">
+						<li><span><a th:href="@{/user/caseInvoiceStatementList/{personId}/{ankenId}/(personId=${accgPersonId}, ankenId=${ankenId})}">請求書／精算書</a></span></li>
+						<li><i class="fas fa-angle-right"></i></li>
+						<li><span><a th:href="@{/user/invoiceDetail/{invoiceSeq}/?isAccgAnkenSide=true(invoiceSeq=*{invoiceSeq})}">請求書</a></span></li>
+						<li><i class="fas fa-angle-right"></i></li>
+						<li><span class="selected_menu">取引実績</span></li>
+					</th:block>
+					<th:block th:case="'is_statement_record_detail'">
+						<li><span><a th:href="@{/user/caseInvoiceStatementList/{personId}/{ankenId}/(personId=${accgPersonId}, ankenId=${ankenId})}">請求書／精算書</a></span></li>
+						<li><i class="fas fa-angle-right"></i></li>
+						<li><span><a th:href="@{/user/statementDetail/{statementSeq}/?isAccgAnkenSide=true(statementSeq=*{statementSeq})}">精算書</a></span></li>
+						<li><i class="fas fa-angle-right"></i></li>
+						<li><span class="selected_menu">取引実績</span></li>
+					</th:block>
+					
+					<th:block th:case="*"><li><span></span></li></th:block>
+				</th:block>
+			</th:block>
+		</th:block>
+
+		<!--/* 名簿軸 */-->
+		<th:block th:if="${personId}" th:with="personHeader=${wrapCustomerHeader.get(personId)}">
+			<!--/* 名簿詳細を選択 */-->
+			<th:block th:if="${selectedTabClass} == 'is_kokyaku'">
+				<li>
+					<span class="char_ellipsis is_kokyaku selected_menu" th:text="${personHeader.customerName}"></span>
+				</li>
+			</th:block>
+				
+			<!--/* 名簿メニューを選択 */-->
+			<th:block th:unless="${selectedTabClass} == 'is_kokyaku'">
+				<li>
+					<span class="char_ellipsis">
+						<a th:href="@{/user/personManagement/edit/{personId}/(personId=${personId})}" th:text="${personHeader.customerName}">名前</a>
+					</span>
+				</li>
+				<li><i class="fas fa-angle-right"></i></li>
+				<li>
+					<th:block  th:switch="${selectedTabClass}">
+						<span th:case="'is_person_case'" class="selected_menu">案件情報</span>
+						<span th:case="'is_advisor_contract'" class="selected_menu">顧問契約</span>
+						<span th:case="'is_gyomu'" class="selected_menu">業務履歴</span>
+						<span th:case="'is_kaikei'" class="selected_menu">会計管理</span>
+						<span th:case="'is_seisansho'" class="selected_menu">精算書作成</span>
+						<span th:case="'is_file'" class="selected_menu">ファイル</span>
+						<span th:case="*"></span>
+					</th:block>
+				</li>
+			</th:block>
+		</th:block>
+			</ul>
+		</div>
+	</th:block>
+	
+	</th:block>
+</body>
+</html>

@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+	xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+	layout:decorator="commonLayout">
+<head>
+	<meta charset="utf-8" />
+</head>
+<body>
+
+<!--/* 詳細データ */-->
+<div th:fragment="fractionSettingInputFragment(fractionSettingInputFragmentForm)" id="fractionSettingInputFragment" th:object="${fractionSettingInputFragmentForm}">
+	<script type="text/javascript" th:inline="javascript">
+	$(function() {
+		
+		const fractionSettingInputFragment = $('#fractionSettingInputFragment');
+
+		<!--/* 共有の要素セットアップ処理 */-->
+		commonSetUpElement("#fractionSettingFragment");
+		
+		<!--/* 保存ボタン押下時 */-->
+		fractionSettingInputFragment.find("#save").on('click',  function() {
+			if(ajaxRunning){
+				return false;
+			}
+			let formData = $("#officeKaikeiSettingFrom").serializeArray();
+			
+			ajaxRunning = true;
+			Promise.resolve(formData)
+				.then((params) => {
+					return new Promise((resolve, reject) =>{
+						$.ajax({
+							url : '/user/fractionSetting/save',
+							type : "POST",
+							data : params,
+						}).done(function(data, status, jqXHR) {
+							<!--/* 成功 */-->
+							if (isAjaxProcSuccess(jqXHR)) {
+								showInfoMessageForJs(getAjaxProcResutlMessage(jqXHR));
+								return resolve();
+							} else {
+								if (data) {
+									fractionSettingFragmentWrap.html(data);
+								}
+								// 処理失敗
+								const errorMsg = getAjaxProcResutlMessage(jqXHR);
+								showErrorMessageForJs(errorMsg);
+								return reject();
+							}
+						}).fail(function(jqXHR, textStatus, errorThrown) {
+							<!--/* 失敗 */-->
+							const errorMsg = /*[[#{E00091}]]*/ "error";
+							showErrorMessageForJs(errorMsg);
+							return reject();
+						});
+					});
+				})
+				.then(getFractionSettingInputFragment)
+				.catch((errors) => console.log(errors))
+				.finally(() => ajaxRunning = false);
+		});
+		
+	});
+	</script>
+
+	<!--/* コンテンツブロック start */-->
+	<div class="contents_block">
+		<form id="officeKaikeiSettingFrom" >
+			<div class="block_title">端数処理</div>
+			<div class="block_detail">
+				<p>消費税計算や報酬計算に端数が発生した場合の処理を選択します。</p>
+				<p class="text_mark w-75"><i class="fas fa-exclamation-circle mr-2"></i>端数処理の設定を変更した場合、登録済みの会計データが再計算されることはありません。</p>
+			</div>
+
+			<!-- 詳細情報入力エリア -->
+			<div class="detail_input_area">
+				<!-- 端数処理の設定 -->
+				<div class="form-row">
+					<div class="form-group col-md-12 mb-2">
+						<label class="input_parts_label">消費税の端数処理</label>
+					</div>
+					<div class="form-group col-md-8">
+						<label class="radio_btn" th:each="enum : ${T(jp.loioz.common.constant.CommonConstant$TaxHasuType).values()}">
+							<input type="radio" class ="radio_input" th:field="*{taxHasuType}" th:value="${enum.cd}">
+							<span class="radio_txt" th:text="${enum.val}">切り上げ</span>
+						</label>
+						<div th:if="*{#fields.hasErrors('taxHasuType')}" th:errors="*{taxHasuType}" class="error_mag_point">error</div>
+					</div>
+				</div>
+				<!-- 報酬の端数処理 -->
+				<div class="form-row">
+					<div class="form-group col-md-12 mb-2">
+						<label class="input_parts_label">報酬の端数処理</label>
+					</div>
+					<div class="form-group col-md-8">
+						<label class="radio_btn" th:each="enum : ${T(jp.loioz.common.constant.CommonConstant$HoshuHasuType).values()}">
+							<input type="radio" class ="radio_input" th:field="*{hoshuHasuType}" th:value="${enum.cd}">
+							<span class="radio_txt" th:text="${enum.val}">切り上げ</span>
+						</label>
+						<div th:if="*{#fields.hasErrors('hoshuHasuType')}" th:errors="*{hoshuHasuType}" class="error_mag_point">error</div>
+					</div>
+				</div>
+			</div>
+			<!--/* 保存ボタン */-->
+			<div class="input_block_btn_area">
+				<button type="button" id="save" class="btn btn-info"><i class="fas fa-check"></i>保存する</button>
+			</div>
+		</form>
+	</div>
+	</div>
+</body>
+</html>

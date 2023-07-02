@@ -1,0 +1,308 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+	xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+	xmlns:xtra="https://github.com/connect-group/thymeleaf-extras"
+	layout:decorator="commonLayout">
+<head>
+<meta charset="utf-8" th:remove="tag" />
+<title layout:fragment="title-contents">
+	[[${T(jp.loioz.common.utility.LoiozUtils).getHtmlTitle("名簿情報", T(jp.loioz.common.utility.SessionUtils).getTenantName())}]]
+</title>
+<th:block th:with="version=${@environment.getProperty('app.version')}">
+	<link th:href="@{/css/person/person.css?{ver}(ver=${version})}" rel="stylesheet" type="text/css"/>
+</th:block>
+<style th:replace="user/schedule/scheduleModal::css"></style>
+
+<script type="text/javascript" th:replace="user/schedule/scheduleModal::scripts"></script>
+<script type="text/javascript" th:replace="common/js/ageCalculationJs::ageCalculationJs"></script>
+<script type="text/javascript" th:inline="javascript">
+
+<!--/*
+ 二重送信防止対応用の値。
+ このHTMLに差し込まれるfragment内のScriptの処理も、共通してこの変数を利用する。
+*/-->
+let ajaxRunning = false;
+
+<!--/* 以下、各フラグメントをまたいで、共通で利用する関数 */-->
+
+<!--/* 住所情報の再表示関数 */-->
+const renderAddressViewFunc = (dataObj) => {
+	return new Promise((resolve, reject) => {
+		
+		<!--/* 2重押下防止対応はPromiseチェーンのルートで処理するため、チェーン内では行わない */-->
+		$.ajax({
+			url : 'getCustomerAddressView',
+			type : "GET"
+		})
+		.done(function(data, status, jqXHR) {
+			if (isAjaxProcSuccess(jqXHR)) {
+				
+				<!--/* 再描画 */-->
+				<!--/* 親HTMLのID */-->
+				$('#personAddressFragmentWrap').html(data);
+				
+				<!--/* 引数データは後続処理に渡す */-->
+				return resolve(dataObj);
+			} else {
+				<!--/* 処理失敗 */-->
+				const errorMsg = getAjaxProcResutlMessage(jqXHR);
+				showErrorMessageForJs(errorMsg);
+				
+				return reject();
+			}
+		})
+		.fail(function(jqXHR, status, errorThrown) {
+			showErrorMessageForJs(/*[[#{E00091}]]*/ "error");
+			
+			return reject();
+		})
+	});
+}
+
+<!--/* 住所編集フォームエリアに住所表示フォーム表示関数 */-->
+const renderAddressViewWhenInputAddressFunc = (dataObj) => {
+	return new Promise((resolve, reject) => {
+		
+		<!--/* オブジェクトのプロパティ値を取得 */-->
+		const {isBaseAddress, viewFormCustomerTypeCd} = dataObj;
+		
+		<!--/* 2重押下防止対応はPromiseチェーンのルートで処理するため、チェーン内では行わない */-->
+		$.ajax({
+			url : 'renderAddressViewWhenInputAddress',
+			type : "GET",
+			data : {
+				'customerTypeCd' : viewFormCustomerTypeCd
+				}
+		})
+		.done(function(data, status, jqXHR) {
+			if (isAjaxProcSuccess(jqXHR)) {
+				
+				<!--/* 再描画 */-->
+				<!--/* 親HTMLのID */-->
+				$('#personAddressFragmentWrap').html(data);
+				
+				<!--/* 引数データは後続処理に渡す */-->
+				return resolve(dataObj);
+			} else {
+				<!--/* 処理失敗 */-->
+				const errorMsg = getAjaxProcResutlMessage(jqXHR);
+				showErrorMessageForJs(errorMsg);
+				
+				return reject();
+			}
+		})
+		.fail(function(jqXHR, status, errorThrown) {
+			showErrorMessageForJs(/*[[#{E00091}]]*/ "error");
+			
+			return reject();
+		})
+	});
+}
+
+<!--/* 名簿の案件情報表示フォームの再表示関数 */-->
+const renderCustomerAnkenViewFunc = (dataObj) => {
+	return new Promise((resolve, reject) => {
+		
+		<!--/* オブジェクトのプロパティ値を取得 */-->
+		const {allAnkenFlg, customerId} = dataObj;
+		
+		<!--/* 2重押下防止対応はPromiseチェーンのルートで処理するため、チェーン内では行わない */-->
+		$.ajax({
+			type : "GET",
+			url : "getCustomerAnkenView",
+			data : {
+				'isAllAnkenList' : allAnkenFlg,
+				'customerId' : customerId
+				},
+			dataType: 'html',
+		})
+		.done(function(data, status, jqXHR) {
+			if (isAjaxProcSuccess(jqXHR)) {
+				<!-- 親HTMLのID -->
+				$('#customerAnkenFragmentWrap').html(data);
+				
+				<!--/* 引数データは後続処理に渡す */-->
+				resolve(dataObj);
+			} else {
+				<!-- 処理失敗 -->
+				const errorMsg = getAjaxProcResutlMessage(jqXHR);
+				showErrorMessageForJs(errorMsg);
+				
+				reject();
+			}
+		})
+		.fail(function(jqXHR, status, errorThrown) {
+			showErrorMessageForJs(/*[[#{E00091}]]*/ "error");
+			
+			reject();
+		});
+	});
+}
+
+const resetCustomerAnkenViewFunc = () => {
+	return new Promise((resolve, reject) => {
+		
+		<!-- 親HTMLのID -->
+		$('#customerAnkenFragmentWrap').html('');
+	});
+}
+
+</script>
+
+<!--/* スケジュールに関する処理 */-->
+<script type="text/javascript" th:inline="javascript">
+$(function() {
+	let modal = benzo.global.scheduleModal.modal;
+	let scheduleCache = {};
+	
+	benzo.global.scheduleModal.saveAction = function() {}
+	
+	<!--/* 
+		スケジュールモーダル内の共通化しない処理はトリガーのみ親HTMLに記載する
+		保存処理自体は、フラグメント内で記載し、モーダル表示時などに上書きする
+	*/-->
+	modal.find(".saveSchedule").on("click", function(){
+		benzo.global.scheduleModal.saveAction(this);
+	});
+});
+</script>
+
+</head>
+<body>
+	<div layout:fragment="main-contents" th:remove="tag">
+
+		<!--/* ①サイドメニューあり */-->
+		<div class="contents_sidebar_wrapper contentsSlidebarWrapper" th:data-click-open=${customerAnkenMenuOpenClickForSessionValue} th:data-resize-open=${customerAnkenMenuOpenResizeForSessionValue}>
+
+			<!--/* ②名簿・案件 サイドメニュー */-->
+			<div id="customerAnkenMenuFragmentWrap" th:insert="common/customerAnkenMenu::menuList(
+				sideMenuAnkenId=null,
+				sideMenuCustomerId=${viewForm.personBasicViewForm.customerId.asLong()},
+				selectedTabClass='is_kokyaku')">
+			</div>
+
+			<!--/* ③メインコンテンツの外側 */-->
+			<div class="contents_wrapper">
+				<div class="container-fluid">
+					
+					<!--/* メイン */-->
+					<main class="content">
+						
+						<!--/* ぱんくず */-->
+						<div id="wrapHeaderFragmentWrap" th:insert="common/wrapHeader::wrapHeader(
+							returnListScreen=${T(jp.loioz.common.utility.SessionUtils).getSessionVaule(T(jp.loioz.common.constant.SessionAttrKeyEnum).RETURN_LIST_SCREEN.codeKey)},
+							sideMenuPersonId=${viewForm.personBasicViewForm.customerId.asLong()},
+							selectedTabClass='is_kokyaku',
+							returnPrevScreenName=${T(jp.loioz.common.utility.SessionUtils).getSessionVaule(T(jp.loioz.common.constant.SessionAttrKeyEnum).RETURN_PREV_SCREEN_NAME)},
+							returnPrevScreenUrl=${T(jp.loioz.common.utility.SessionUtils).getSessionVaule(T(jp.loioz.common.constant.SessionAttrKeyEnum).RETURN_PREV_SCREEN_URL)})">
+						</div>
+						
+						<!--/* メッセージエリア */-->
+						<div th:replace="common/messageArea::messageArea"></div>
+						
+						<!--/* row */-->
+						<div class="row">
+							<!--/* 左エリア */-->
+							<div class="col-lg-8">
+								
+								<!--/* 名簿ブロック */-->
+								<div id="personBasicFragmentWrap" class="px-2" th:insert="user/personManagement/personEditFragment::personBasicViewFragment(${viewForm.personBasicViewForm})">
+									<!-- 名簿の基本情報の表示 -->
+								</div>
+
+								<!--/* その他情報 */-->
+								<div class="">
+
+									<!--/* row */-->
+									<div class="row">
+
+										<!--/* 左ブロック */-->
+										<div class="col-md-12">
+											<!--/* 住所ブロック */-->
+											<div class="address_block">
+												<div id="personAddressFragmentWrap" th:insert="user/personManagement/personEditFragment::personAddressViewFragment(${viewForm.personAddressViewForm})">
+													<!-- 住所情報の表示 -->
+												</div>
+											</div>
+											
+											<!--/* 連絡先ブロック */-->
+											<div class="contact_block">
+												<div id="personContactFragmentWrap" th:insert="user/personManagement/personEditFragment::personContactViewFragment(${viewForm.personContactViewForm})">
+													<!-- 連絡先情報の表示 -->
+												</div>
+											</div>
+											
+											<!--/* 精算口座ブロック */-->
+											<div class="seisan_koza_block">
+												<div id="personKozaFragmentWrap" th:insert="user/personManagement/personEditFragment::personKozaViewFragment(${viewForm.personKozaViewForm})">
+													<!-- 口座情報の表示 -->
+												</div>
+											</div>
+										</div>
+										<!--/* 左ブロック end */-->
+
+									</div>
+									<!--/* row end */-->
+
+								</div>
+								<!--/* その他情報 end */-->
+
+							</div>
+							<!--/* 左エリア end */-->
+
+							<!--/* 右エリア */-->
+							<div class="col-lg-4">
+
+								<!--/* サイドブロック */-->
+								<div class="side_panel" th:with="isLawyer=${(T(jp.loioz.common.constant.CommonConstant$CustomerType).LAWYER.equalsByCode(viewForm.personBasicViewForm.customerType.cd))}">
+									
+									<!--/* 案件一覧ブロック */-->
+									<div class="list_block mb-0">
+										<div id="customerAnkenFragmentWrap">
+											<th:bock th:unless="${isLawyer}">
+												<div th:replace="user/personManagement/personEditFragment::customerAnkenViewFragment(${viewForm.customerAnkenViewForm})">
+												<!-- 案件情報の表示 -->
+												</div>
+											</th:bock>
+										</div>
+									</div>
+
+									<!--/* 関連案件一覧ブロック */-->
+									<div class="list_block mb-4" th:if="${viewForm.relatedAnkenViewForm.ankenCount > 0}">
+										<div id="relatedAnkenFragmentWrap" th:insert="user/personManagement/personEditFragment::relatedAnkenViewFragment(${viewForm.relatedAnkenViewForm})">
+											<!-- 関連案件情報の表示 -->
+										</div>
+									</div>
+
+									<!--/* 予定一覧ブロック */-->
+									<div class="list_block" 
+										th:classappend="${isLawyer && viewForm.relatedAnkenViewForm.ankenCount == 0} ? '' : 'mt-5'">
+										<div id="personScheduleListFragmentWrap" th:insert="user/personManagement/personEditFragment::personScheduleListViewFragment(${viewForm.personScheduleListViewForm})">
+											<!-- 名簿予定情報の表示 -->
+										</div>
+
+									</div>
+
+								</div>
+								<!--/* サイドブロック end */-->
+
+							</div>
+							<!--/* 右エリア end */-->
+
+						</div>
+						<!--/* row end */-->
+					</main>
+				</div>
+				
+				<!--/* 予定登録モーダル */-->
+				<div th:replace="user/schedule/scheduleModal::modal(
+					createUrl=@{/user/schedule/create},
+					updateUrl=@{/user/schedule/update},
+					deleteUrl=@{/user/schedule/delete})"></div>
+					
+			</div>
+		</div>
+	</div>
+
+</body>
+</html>

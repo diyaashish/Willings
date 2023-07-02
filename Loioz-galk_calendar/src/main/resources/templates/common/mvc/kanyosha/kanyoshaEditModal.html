@@ -1,0 +1,604 @@
+ <!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+<meta charset="utf-8" />
+</head>
+<body>
+
+<th:block>
+
+<!--/* 本処理は、モーダルを扱うFragment領域で定義する */-->
+<script type="text/javascript" th:fragment="kanyoshaEditModalFragmentObjJs" th:inline="javascript">
+	benzo.global.fragment.kanyoshaEditModalFragmentObj = {
+		<!--/* 呼び出し元で定義が可能な処理 */-->
+		setUpObj : {
+			
+			// 登録側
+			registAction: () => {
+				throw new Error('registActionのセットアップ処理がされていません');
+			},
+			updateAction: () => {
+				throw new Error('updateActionのセットアップ処理がされていません');
+			},
+			deleteAction: () => {
+				throw new Error('deleteActionのセットアップ処理がされていません');
+			},
+			initRenderEditViewAction: () => {
+				throw new Error('編集エリアの初期レンダリング処理がセットアップされていません');
+			},
+			
+			// 検索側
+			searchRegistAction: () => {
+				throw new Error('registActionのセットアップ処理がされていません');
+			},
+			searchRenderPromise: () => {
+				throw new Error('renderPromiseのセットアップ処理がされていません');
+			},
+			initRenderSearchViewAction: () => {
+				throw new Error('検索エリアの初期レンダリング処理がセットアップされていません');
+			},
+
+		},
+		
+		<!--/* フラグメントのパラメータに関連する処理 */-->
+		paramObj : {
+			
+			<!--/* モーダルの表示名 ※default値は当事者・関与者*/-->
+			modalNameLabel : '当事者・関与者',
+			
+			<!--/* 顧客種別の除外対象 ※default値は除外なし*/-->
+			excludeCustomerType : [],
+
+			<!--/* フォームパラメータの取得処理 */-->
+			getFormParams: (modal) => {
+				let formParam = $(modal).find("[id='kanyoshaEditModalForm']").serializeArray();
+				let cd = $(modal).find(".customerType").val();
+				switch (cd) {
+					case /*[[${T(jp.loioz.common.constant.CommonConstant$CustomerType).KOJIN}]]*/""
+						:
+							formParam.push({name:"kojin",value: "kojin"});
+							break;
+					case /*[[${T(jp.loioz.common.constant.CommonConstant$CustomerType).HOJIN}]]*/""
+						:
+							formParam.push({name:"hojin",value: "hojin"});
+							break;
+					case /*[[${T(jp.loioz.common.constant.CommonConstant$CustomerType).LAWYER}]]*/""
+						:
+							formParam.push({name:"lawyer",value: "lawyer"});
+							break;
+					default
+						: break;
+				}
+				return formParam;
+			},
+			
+			<!--/* 検索フォームパラメータの取得処理 */-->
+			getSearchFormParams: (modal) => {
+				let formParam = $(modal).find("[id='kanyoshaSaerchModalSearchForm']").serializeArray();
+				return formParam;
+			} ,
+
+			<!--/* 検索結果フォームパラメータの取得処理 */-->
+			getSearchResultFormParams: (modal) => {
+				let formParam = $(modal).find("[id='searchResultForm']").serializeArray();
+				let kanyoshaSeq = $(modal).find("[id='searchResultForm'] .personRadio:checked").data("kanyoshaSeq");
+				formParam.push(
+					{name:'kanyoshaSeq', value: kanyoshaSeq}
+				)
+				return formParam;
+			},
+
+		},
+		
+		<!--/* 
+			本フラグメント以外でも扱う処理
+			基本的には書き換えを行わない。
+		*/-->
+		commonFn : {
+			
+			<!--/* モーダルが閉じたときに発火する処理 */-->
+			modalHiddenAction:(modal) => {
+				const $kanyoshaEditModalFragmentWrap = $(modal).find(".kanyoshaEditModalFragmentWrap");
+				$kanyoshaEditModalFragmentWrap.html("");
+			},
+		},
+	};
+</script>
+
+<!--/* 関与者編集モーダル */-->
+<div id="kanyoshaEditModalFragment" th:fragment="kanyoshaEditModalFragment" th:object="${kanyoshaEditModalInputForm}" th:with="isNew=*{kanyoshaSeq == null}">
+	<script type="text/javascript" th:inline="javascript">
+		$(function() {
+			<!--/* 複数モーダルを表示するということはしない */-->
+			const $kanyoshaEditModalFragment = $("#kanyoshaEditModalFragment");
+			const $kanyoshaEditModal = $kanyoshaEditModalFragment.closest(".modal");
+			const $kanyoshaEditModalFragmentWrap = $kanyoshaEditModal.find(".kanyoshaEditModalFragmentWrap");
+			
+			commonSetUpElement();
+			let ajaxRunning = false;
+			
+			<!--/* 個人フォーム：姓(かな) */-->
+			$.fn.autoKana($kanyoshaEditModalFragment.find("[id='kojin.customerNameSei']"), $kanyoshaEditModalFragment.find("[id='kojin.customerNameSeiKana']"), {
+			});
+			<!--/* 個人フォーム：名(かな) */-->
+			$.fn.autoKana($kanyoshaEditModalFragment.find("[id='kojin.customerNameMei']"), $kanyoshaEditModalFragment.find("[id='kojin.customerNameMeiKana']"), {
+			});
+			
+			<!--/* 法人フォーム：会社・組織名(かな) */-->
+			$.fn.autoKana($kanyoshaEditModalFragment.find("[id='hojin.customerNameSei']"), $kanyoshaEditModalFragment.find("[id='hojin.customerNameSeiKana']"), {
+			});
+			
+			<!--/* 弁護士フォーム：姓(かな) */-->
+			$.fn.autoKana($kanyoshaEditModalFragment.find("[id='lawyer.customerNameSei']"), $kanyoshaEditModalFragment.find("[id='lawyer.customerNameSeiKana']"), {
+			});
+			<!--/* 弁護士フォーム：名(かな) */-->
+			$.fn.autoKana($kanyoshaEditModalFragment.find("[id='lawyer.customerNameMei']"), $kanyoshaEditModalFragment.find("[id='lawyer.customerNameMeiKana']"), {
+			});
+			
+			<!--/* 
+				モーダルのラベル名を設定する 
+				※基本的に表示する内容等はレンダリング処理後は操作しない方針だが、モーダルの表示名は特別扱いする
+			*/-->
+			$kanyoshaEditModalFragment.find(".modalNameLabel").text(benzo.global.fragment.kanyoshaEditModalFragmentObj.paramObj.modalNameLabel);
+			
+			<!--/* 選択できない種別を非表示にする */-->
+			if (benzo.global.fragment.kanyoshaEditModalFragmentObj.paramObj.excludeCustomerType.length) {
+				$kanyoshaEditModalFragment.find(".customerType option").each((i, elem) => {
+					$elem = $(elem);
+					if (benzo.global.fragment.kanyoshaEditModalFragmentObj.paramObj.excludeCustomerType.includes(String($elem.prop("value")))) {
+						$elem.remove();
+					}
+				});
+			}
+			
+			<!--/* 検索エリアに切り替え */-->
+			$kanyoshaEditModalFragment.on("click", ".renderSearchArea", function() {
+				benzo.global.fragment.kanyoshaEditModalFragmentObj.setUpObj.initRenderSearchViewAction($(this));
+			});
+
+			<!--/* 登録処理発火 */-->
+			$kanyoshaEditModalFragment.on("click", ".kanyoshaRegist", function() {
+				benzo.global.fragment.kanyoshaEditModalFragmentObj.setUpObj.registAction($(this));
+			});
+			<!--/* 更新処理発火 */-->
+			$kanyoshaEditModalFragment.on("click", ".kanyoshaUpdate", function() {
+				benzo.global.fragment.kanyoshaEditModalFragmentObj.setUpObj.updateAction($(this));
+			});
+			<!--/* 削除処理発火 */-->
+			$kanyoshaEditModalFragment.on("click", ".kanyoshaDelete", function() {
+				if (!confirm("案件の当事者・関与者から外します。よろしいですか？\r\n※名簿情報は削除されません。")) {
+					return false;
+				}
+				benzo.global.fragment.kanyoshaEditModalFragmentObj.setUpObj.deleteAction($(this));
+			});
+			
+			$kanyoshaEditModalFragment.on("change", ".customerType", function() {
+				const kubunCd = $(this).val();
+				switch (kubunCd) {
+					case /*[[${T(jp.loioz.common.constant.CommonConstant$CustomerType).KOJIN}]]*/""
+						:  
+							$kanyoshaEditModalFragment.find(".kojinNameRow").removeClass("hidden").find("input").attr("form", "kanyoshaEditModalForm");
+							$kanyoshaEditModalFragment.find(".hojinNameRow").addClass("hidden").find("input").attr("form", "");
+							$kanyoshaEditModalFragment.find(".lawyerNameRow").addClass("hidden").find("input").attr("form", "");
+							break;
+					case /*[[${T(jp.loioz.common.constant.CommonConstant$CustomerType).HOJIN}]]*/""
+						:
+							$kanyoshaEditModalFragment.find(".kojinNameRow").addClass("hidden").find("input").attr("form", "");
+							$kanyoshaEditModalFragment.find(".hojinNameRow").removeClass("hidden").find("input").attr("form", "kanyoshaEditModalForm");
+							$kanyoshaEditModalFragment.find(".lawyerNameRow").addClass("hidden").find("input").attr("form", "");
+							break;
+					case /*[[${T(jp.loioz.common.constant.CommonConstant$CustomerType).LAWYER}]]*/""
+						:
+							$kanyoshaEditModalFragment.find(".kojinNameRow").addClass("hidden").find("input").attr("form", "");
+							$kanyoshaEditModalFragment.find(".hojinNameRow").addClass("hidden").find("input").attr("form", "");
+							$kanyoshaEditModalFragment.find(".lawyerNameRow").removeClass("hidden").find("input").attr("form", "kanyoshaEditModalForm");
+							break;
+					default
+						: break;
+				}
+			});
+			
+			<!--/* モーダルを閉じたときの処理 */-->
+			$kanyoshaEditModal.off("hidden.bs.modal.commonHiddenAction");
+			$kanyoshaEditModal.one("hidden.bs.modal.commonHiddenAction", function(){
+				benzo.global.fragment.kanyoshaEditModalFragmentObj.commonFn.modalHiddenAction($kanyoshaEditModal);
+			});
+		});
+	</script>
+	<!--/* ヘッダー */-->
+	<div class="modal-header">
+		<h2 class="modalheader_title modalNameLabel"></h2>
+	</div>
+	
+	<!--/* ボディ */-->
+	<div class="modal-body">
+		<div class="modal_description" th:if="${isNew}">
+			<p>新たに「名簿情報を登録」し、対象案件の「関与者」に設定します。</p>
+			<p><a class="renderSearchArea" href="javascript:void(0);">登録済みの名簿から選択する<i class="far fa-arrow-alt-circle-right ml-2"></i></a></p>
+		</div>
+		<div th:replace="common/messageArea::jsMessageArea"></div>
+		<div class="modal_input_area">
+			<form id="kanyoshaEditModalForm" autocomplete="off">
+				<!--/* Enter対応 */-->
+				<input type="text" class="hidden" value="dummy" />
+			</form>
+			
+			<!--/* フォームオブジェクト */-->
+			<input type="hidden" form="kanyoshaEditModalForm" th:field="*{kanyoshaSeq}">
+			<input type="hidden" form="kanyoshaEditModalForm" th:field="*{ankenId}">
+			
+			<div class="row">
+				<!--/* 左ブロック */-->
+				<div class="col-5">
+					
+	<!--/* 登録モード */-->
+	<th:block th:if="${isNew}">
+					
+					<div class="form-row">
+						<div class="form-group col-6">
+							<label class="input_parts_label">登録種別</label><span class="mark_equired">必須</span>
+							<select class="form-control customerType" form="kanyoshaEditModalForm" th:field="*{customerType}">
+								<option th:each="enum : ${T(jp.loioz.common.constant.CommonConstant$CustomerType).values()}"
+									th:text="${enum.val}" th:value="${enum.cd}"></option>
+							</select>
+							<div th:if="*{#fields.hasErrors('customerType')}" th:errors="*{customerType}" class="error_mag_point">error</div>
+						</div>
+					</div>
+					
+					<div class="form-row kojinNameRow" th:with="show=*{T(jp.loioz.common.constant.CommonConstant$CustomerType).KOJIN == customerType}" th:classappend="${show}? '': 'hidden'">
+						<div class="form-group col-md-12 mb-0">
+							<label class="input_parts_label">名前</label>
+							<span class="mark_equired">必須</span>
+						</div>
+						<!--/* 姓 */-->
+						<div class="form-group col-md-6 mb-2">
+							<input type="text" th:form="${show}? 'kanyoshaEditModalForm' " class="form-control" id="kojin.customerNameSei" th:field="*{customerNameSei}" maxlength="24" placeholder="姓">
+							<div th:if="*{#fields.hasErrors('customerNameSei')}" th:errors="*{customerNameSei}" class="error_mag_point">error</div>
+						</div>
+						<!--/* 名 */-->
+						<div class="form-group col-md-6 mb-2">
+							<input type="text" th:form="${show}? 'kanyoshaEditModalForm' " class="form-control" id="kojin.customerNameMei" th:field="*{customerNameMei}" maxlength="24" placeholder="名">
+							<div th:if="*{#fields.hasErrors('customerNameMei')}" th:errors="*{customerNameMei}" class="error_mag_point">error</div>
+						</div>
+						<!--/* せい */-->
+						<div class="form-group col-md-6 mb-2">
+							<input type="text" th:form="${show}? 'kanyoshaEditModalForm' " class="form-control" id="kojin.customerNameSeiKana" th:field="*{customerNameSeiKana}" maxlength="64" placeholder="せい">
+							<div th:if="*{#fields.hasErrors('customerNameSeiKana')}" th:errors="*{customerNameSeiKana}" class="error_mag_point">error</div>
+						</div>
+						<!--/* めい */-->
+						<div class="form-group col-md-6 mb-2">
+							<input type="text" th:form="${show}? 'kanyoshaEditModalForm' " class="form-control" id="kojin.customerNameMeiKana" th:field="*{customerNameMeiKana}" maxlength="64" placeholder="めい">
+							<div th:if="*{#fields.hasErrors('customerNameMeiKana')}" th:errors="*{customerNameMeiKana}" class="error_mag_point">error</div>
+						</div>
+					</div>
+					
+					<div class="form-row hojinNameRow" th:with="show=*{T(jp.loioz.common.constant.CommonConstant$CustomerType).HOJIN == customerType}" th:classappend="${show}? '': 'hidden'">
+						<div class="form-group col-md-12 mb-0">
+							<label class="input_parts_label">名前</label>
+							<span class="mark_equired">必須</span>
+						</div>
+						<div class="form-group col-md-12 mb-2">
+							<input type="text" th:form="${show}? 'kanyoshaEditModalForm' " class="form-control" id="hojin.customerNameSei" th:field="*{customerNameSei}" maxlength="64" placeholder="企業・団体名">
+							<div th:if="*{#fields.hasErrors('customerNameSei')}" th:errors="*{customerNameSei}" class="error_mag_point">error</div>
+						</div>
+						<div class="form-group col-md-12 mb-2">
+							<input type="text" th:form="${show}? 'kanyoshaEditModalForm' " class="form-control" id="hojin.customerNameSeiKana" th:field="*{customerNameSeiKana}" maxlength="128" placeholder="ふりがな">
+							<div th:if="*{#fields.hasErrors('customerNameSeiKana')}" th:errors="*{customerNameSeiKana}" class="error_mag_point">error</div>
+						</div>
+					</div>
+					
+					<div class="form-row lawyerNameRow" th:with="show=*{T(jp.loioz.common.constant.CommonConstant$CustomerType).LAWYER == customerType}" th:classappend="${show}? '': 'hidden'">
+						<div class="form-group col-md-12 mb-0">
+							<label class="input_parts_label">名前</label>
+							<span class="mark_equired">必須</span>
+						</div>
+						<div class="form-group col-md-6 mb-2">
+							<input type="text" th:form="${show}? 'kanyoshaEditModalForm' " class="form-control" id="lawyer.customerNameSei" th:field="*{customerNameSei}" maxlength="24" placeholder="姓">
+							<div th:if="*{#fields.hasErrors('customerNameSei')}" th:errors="*{customerNameSei}" class="error_mag_point">error</div>
+						</div>
+						<div class="form-group col-md-6 mb-2">
+							<input type="text" th:form="${show}? 'kanyoshaEditModalForm' " class="form-control" id="lawyer.customerNameMei" th:field="*{customerNameMei}" maxlength="24" placeholder="名">
+							<div th:if="*{#fields.hasErrors('customerNameMei')}" th:errors="*{customerNameMei}" class="error_mag_point">error</div>
+						</div>
+						<div class="form-group col-md-6 mb-2">
+							<input type="text" th:form="${show}? 'kanyoshaEditModalForm' " class="form-control" id="lawyer.customerNameSeiKana" th:field="*{customerNameSeiKana}" maxlength="64" placeholder="せい">
+							<div th:if="*{#fields.hasErrors('customerNameSeiKana')}" th:errors="*{customerNameSeiKana}" class="error_mag_point">error</div>
+						</div>
+						<div class="form-group col-md-6 mb-2">
+							<input type="text" th:form="${show}? 'kanyoshaEditModalForm' " class="form-control" id="lawyer.customerNameMeiKana" th:field="*{customerNameMeiKana}" maxlength="64" placeholder="めい">
+							<div th:if="*{#fields.hasErrors('customerNameMeiKana')}" th:errors="*{customerNameMeiKana}" class="error_mag_point">error</div>
+						</div>
+					</div>
+	</th:block>
+	
+	<!--/* 編集モード */-->
+	<th:block th:unless="${isNew}">
+					<div class="modal_kanyosha_info">
+						<div class="mb-3 fs15 fc_sub" th:if="*{!#strings.isEmpty(jimushoName)}">
+							<i class="far fa-building mr-2"></i><span th:text="*{jimushoName}"></span>
+						</div>
+						<div class="img_info_sm">
+							<div class="img_info_sm__image">
+								<!--/* 名簿属性ラベル */-->
+								<div th:class="|person_image_wrapper*{personAttribute.getCd().getCd()}|">
+									<!--/* 個人アイコン */-->
+									<img th:if="*{T(jp.loioz.common.constant.CommonConstant$CustomerType).KOJIN.equalsByCode(customerType?.cd)}" 
+										class="img-thumbnail person_image_sm" th:src="@{/img/person_kojin.svg}"
+										data-boundary="window" data-container="body" data-toggle="tooltip" data-trigger="hover" th:title="個人">
+										
+									<!--/* 企業・団体アイコン */-->
+									<img th:if="*{T(jp.loioz.common.constant.CommonConstant$CustomerType).HOJIN.equalsByCode(customerType?.cd)}"
+										class="img-thumbnail person_image_sm" th:src="@{/img/person_hojin.svg}"
+										data-boundary="window" data-container="body" data-toggle="tooltip" data-trigger="hover" th:title="企業・団体">
+										
+									<!--/* 弁護士アイコン */-->
+									<img th:if="*{T(jp.loioz.common.constant.CommonConstant$CustomerType).LAWYER.equalsByCode(customerType?.cd)}"
+										class="img-thumbnail person_image_sm" th:src="@{/img/person_bengoshi.svg}"
+										data-boundary="window" data-container="body" data-toggle="tooltip" data-trigger="hover" th:title="弁護士">
+								</div>
+								
+							</div>
+							<div class="img_info_sm__info">
+								<div class="fs11 fc_sub">
+									<span th:text="*{customerNameSeiKana}"></span>
+									<span th:text="*{customerNameMeiKana}"></span>
+								</div>
+								<div class="fs18 fw600 fc_sub">
+									<span th:text="*{customerNameSei}"></span>
+									<span th:text="*{customerNameMei}"></span>
+								</div>
+								<div>
+									<a th:href="@{/user/personManagement/edit/{personId}/(personId=*{personId})}" class="app_id_link fs12 py-1"
+										th:text=|名簿ID：*{personId}|
+										data-boundary="window" th:data-container="${fragmentId}" data-toggle="tooltip" data-trigger="hover" title="名簿情報へ"></a>
+								</div>
+							</div>
+						</div>
+						<div class="kanyosha_info__address mt-4">
+							<span class="badge data_label badge_gray badge_square mb-1">住所</span>
+							<div th:text="${!#strings.isEmpty(kanyoshaEditModalInputForm.zipCode)} ? |〒*{zipCode}| "></div>
+		<th:block th:if="${#strings.isEmpty(kanyoshaEditModalInputForm.address1) and #strings.isEmpty(kanyoshaEditModalInputForm.address2)}">
+								<div class="text-warning mt-2">
+									<i class="fas fa-exclamation-triangle mr-2"></i>住所情報の登録がありません。
+								</div> 
+		</th:block>
+							<div th:text="*{address1}"></div>
+							<div th:text="*{address2}"></div>
+						</div>
+					</div>
+	</th:block>
+				</div>
+				<!--/* 左ブロック */-->
+				
+				<!--/* 右ブロック */-->
+				<div class="col-7">
+					<div class="form-row">
+						<div class="form-group col-md-12 mb-2">
+							<label class="input_parts_label">関係</label>
+							<input type="text" form="kanyoshaEditModalForm" class="form-control" id="kankei" th:field="*{kankei}" maxlength="30">
+							<div th:if="*{#fields.hasErrors('kankei')}" th:errors="*{kankei}" class="error_mag_point">error</div>
+						</div>
+					</div>
+
+					<!--/* 備考 */-->
+					<div class="form-row">
+						<div class="form-group col-md-12">
+							<label class="input_parts_label">備考</label>
+							<textarea rows="3" form="kanyoshaEditModalForm" class="form-control col-12" id="remarks" th:field="*{remarks}" maxlength="3000"></textarea>
+							<div th:if="*{#fields.hasErrors('remarks')}" th:errors="*{remarks}" class="error_mag_point">error</div>
+						</div>
+					</div>
+				</div>
+				<!--/* 右ブロック */-->
+			</div>
+			<!--/* フォームオブジェクト end */-->
+		</div>
+	</div>
+	
+	<!--/* フッター */-->
+	<div class="modal-footer">
+		<button th:if="!${isNew}" type="button" class="btn btn-light mr-auto kanyoshaDelete"><i class="fas fa-user-minus"></i>案件から外す</button>
+		<button th:if="!${isNew}" type="button" class="btn btn-info kanyoshaUpdate"><i class="fas fa-check"></i><span>保存</span></button>
+		<button th:if="${isNew}" type="button" class="btn btn-info kanyoshaRegist"><i class="fas fa-check"></i><span>登録</span></button>
+		<button type="button" class="btn btn-light" data-dismiss="modal"><i class="fas fa-times"></i>閉じる</button>
+	</div>
+</div>
+
+<!--/* 関与者検索モーダル */-->
+<div id="kanyoshaSearchModalFragment" th:fragment="kanyoshaSearchModalFragment" th:object="${kanyoshaSearchModalViewForm}">
+		<script type="text/javascript" th:inline="javascript">
+		$(function() {
+			const $kanyoshaSearchModalFragment = $("#kanyoshaSearchModalFragment");
+			const $kanyoshaSearchModal = $kanyoshaSearchModalFragment.closest(".modal");
+			const $kanyoshaSearchModalFragmentWrap = $kanyoshaSearchModal.find("#kanyoshaSearchModalFragmentWrap");
+			
+			commonSetUpElement();
+			let ajaxRunning = false;
+			
+			<!--/* 
+				モーダルのラベル名を設定する 
+				※基本的に表示する内容等はレンダリング処理後は操作しない方針だが、モーダルの表示名は特別扱いする
+			*/-->
+			$kanyoshaSearchModalFragment.find(".modalNameLabel").text(benzo.global.fragment.kanyoshaEditModalFragmentObj.paramObj.modalNameLabel);
+			
+			<!--/* 登録・編集モーダルに戻る処理発火 */-->
+			$kanyoshaSearchModalFragment.on("click", ".renderEditArea", function(){
+				benzo.global.fragment.kanyoshaEditModalFragmentObj.setUpObj.initRenderEditViewAction($(this));
+			});
+
+			<!--/* 登録処理発火 */-->
+			$kanyoshaSearchModalFragment.on("click", ".searchResultRegist", function() {
+				benzo.global.fragment.kanyoshaEditModalFragmentObj.setUpObj.searchRegistAction($(this));
+			});
+			
+			<!--/* モーダルを閉じたときの処理 */-->
+			$kanyoshaSearchModal.off("hidden.bs.modal.commonHiddenAction");
+			$kanyoshaSearchModal.one("hidden.bs.modal.commonHiddenAction", function(){
+				benzo.global.fragment.kanyoshaEditModalFragmentObj.commonFn.modalHiddenAction($kanyoshaSearchModal);
+			});
+			
+			<!--/** ラジオボタン変更時に再検索 */-->
+			$kanyoshaSearchModalFragment.find("[id='kanyoshaSaerchModalSearchForm'] input[type='radio']").on("change", function() {
+				searchFn()
+			});
+
+			<!--/** 検索ボタン押下時に再検索 */-->
+			$kanyoshaSearchModalFragment.find(".personSearch").on("click", function() {
+				searchFn()
+			});
+			
+			<!-- クリアボタン -->
+			$kanyoshaSearchModalFragment.find("#clearButton").on('click',  function(){
+				$('#searchForm')
+					.find("input[type='text']").val('')
+					.end()
+					.find('input[type=radio]:enabled')
+					.first()
+					.prop('checked', true)
+					.end();
+				searchFn();
+			});
+			
+			<!--/* ラジオボタン押下時に登録ボタンの有効化 */-->
+			$kanyoshaSearchModalFragment.find(".personRadio").on("change", function() {
+				if($kanyoshaSearchModalFragment.find(".personRadio:checked").length) {
+					$kanyoshaSearchModalFragment.find(".searchResultRegist").attr("disabled", false);
+				}
+			});
+			
+			function searchFn() {
+				if (ajaxRunning) {
+					return false;
+				}
+				ajaxRunning = true;
+				Promise.resolve()
+					.then(() => benzo.global.fragment.kanyoshaEditModalFragmentObj.setUpObj.searchRenderPromise())
+					.catch((errors) => console.log(errors))
+					.finally(() => ajaxRunning = false);
+			}
+		});
+		</script>
+		<div>
+			<!--/* ヘッダー */-->
+			<div class="modal-header">
+				<h2 class="modalheader_title modalNameLabel"></h2>
+			</div>
+			<!--/* ボディ */-->
+			<div class="modal-body">
+				<div class="modal_description">
+					<p>「登録済みの名簿」から対象案件の「関与者」に設定します。</p>
+					<p><a class="renderEditArea" href="javascript:void(0);"><i class="far fa-arrow-alt-circle-left mr-2"></i>新規追加に戻る</a></p>
+				</div>
+				<div th:replace="common/messageArea::jsMessageArea"></div>
+				<form id="kanyoshaSaerchModalSearchForm" th:autocomplete="off">
+					<input type="text" class="hidden" name="dummy">
+					<input type="hidden" class="" th:field="${kanyoshaSearchModalSearchForm.ankenId}">
+					<div class="list_filters_container mb-3 pb-1">
+						<!--/* 検索条件部 */-->
+						<fieldset>
+							<legend>検索条件</legend>
+							<div class="form-row"  id="searchForm">
+								<div class="form-group col-md-auto">
+									<label class="input_parts_label">種別</label>
+									<div class="pt-1">
+										<label class="radio_btn" th:each="enum : ${T(jp.loioz.common.constant.CommonConstant$CustomerType).values()}"
+										th:classappend="${#strings.contains(kanyoshaSearchModalSearchForm.disabledCustomerType, enum.cd)} ? 'radio_btn_disabled' ">
+											<input type="radio" class="radio_input" th:value="${enum.cd}" th:field="${kanyoshaSearchModalSearchForm.customerType}"
+												th:disabled="${#strings.contains(kanyoshaSearchModalSearchForm.disabledCustomerType, enum.cd)}">
+											<span class="radio_txt" th:text="${enum.val}">すべて</span>
+										</label>
+									</div>
+								</div>
+								<div class="form-group col-md-auto">
+									<label class="input_parts_label">キーワード</label>
+									<input type="text" class="form-control digit20" maxlength="20" th:field="${kanyoshaSearchModalSearchForm.keywords}"
+										placeholder="名前、代表名、担当者名...">
+								</div>
+							</div>
+							<div class="form-row">
+								<div class="form-group col-md-12 text-center">
+									<button type="button" class="btn btn-dark personSearch"><i class="fas fa-search"></i>検索</button>
+									<button type="button" id="clearButton" class="btn btn-light ml-3">キャンセル</button>
+								</div>
+							</div>
+						</fieldset>
+					</div>
+				</form>
+				<form id="searchResultForm">
+					<input type="hidden" th:field="*{ankenId}">
+					<th:block th:if="*{overViewCntFlg}">
+						<div class="pl-2">
+							<div>最大表示件数は[[${T(jp.loioz.common.constant.CommonConstant).OVER_VIEW_LIMIT}]]件までです。</div>
+							該当データが見つからない場合は、再度条件を指定し検索してください。
+						</div>
+					</th:block>
+					
+					<div class="header_fixed_table_wrapper mt-4 custeomerAnkenDialog">
+						<table class="table table_standard table-sm table_fixed table-hover">
+							<thead>
+								<tr>
+									<th class="col_5">選択</th>
+									<th class="col_7">属性</th>
+									<th class="col_20">名前</th>
+									<th class="col_25">住所</th>
+								</tr>
+							</thead>
+							<tbody>
+								<!--/* 名簿一覧 */-->
+<!--/*/ 					<th:block th:if="*{#lists.isEmpty(meiboList)}"> /*/-->
+								<tr>
+									<td colspan="4" class="no_data col_no_data" th:text="#{I00022}">MSG_I00022</td>
+								</tr>
+<!--/*/ 					</th:block> /*/-->
+								
+								<tr class="" th:each="rowData : *{meiboList}" data-click-sync-for-descendants=".personRadio">
+									<td>
+										<label class="radio_btn no_text">
+											<input type="radio" class="radio_input personRadio" th:value="${rowData.personId.asLong()}" name="personId"
+												th:data-kanyosha-seq="${rowData.kanyoshaSeq}">
+											<span class="radio_txt"></span>
+										</label>
+									</td>
+									<td>
+										<th:block  th:switch="${rowData.personAttribute.getCd()}">
+											<span th:case="${T(jp.loioz.common.constant.CommonConstant$PersonAttributeCd).CUSTOMER}"
+												class="badge badge-pill list_attr badge_blue" th:text="${rowData.personAttribute.getName()}">顧客</span>
+											<span th:case="${T(jp.loioz.common.constant.CommonConstant$PersonAttributeCd).ADVISOR}"
+												class="badge badge-pill list_attr badge_wine_red" th:text="${rowData.personAttribute.getName()}">顧問先</span>
+											<span th:case="${T(jp.loioz.common.constant.CommonConstant$PersonAttributeCd).LAWYER}"
+												class="badge badge-pill list_attr badge_purple" th:text="${rowData.personAttribute.getName()}">弁護士</span>
+											<span th:case="${T(jp.loioz.common.constant.CommonConstant$PersonAttributeCd).OTHER}"
+												class="badge badge-pill list_attr badge_green" th:text="${rowData.personAttribute.getName()}">その他</span>
+											<span th:case="*"></span>
+										</th:block>
+									</td>
+									<td>
+										<div class="char_ellipsis" th:text="${rowData.personName}"></div>
+										<div class="row_sub_data sub_text" th:text="${rowData.personId}"></div>
+									</td>
+									<td>
+										<div class="row_sub_data lh1" th:text="${!#strings.isEmpty(rowData.zipCode)} ? |〒${rowData.zipCode}| : ''"></div>
+										<div>
+											<span th:text="${rowData.address1}"></span>
+											<span th:text="${rowData.address2}"></span>
+										</div>
+									</td>
+								</tr>
+							</tbody>
+						</table>
+					</div>
+				</form>
+			</div>
+			
+			<!--/* フッター */-->
+			<div class="modal-footer">
+				<button type="button" class="btn btn-info searchResultRegist" disabled><i class="fas fa-check"></i><span>登録</span></button>
+				<button type="button" class="btn btn-light" data-dismiss="modal"><i class="fas fa-times"></i>閉じる</button>
+			</div>
+		</div>
+	</div>
+	
+</th:block>
+
+</body>
+</html>

@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+	xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+	layout:decorator="globalCommonLayout">
+<head>
+<meta name="viewport" content="width=device-width,initial-scale=1.0,minimum-scale=1.0">
+<meta charset="utf-8">
+<meta content="IE=edge" http-equiv="X-UA-Compatible">
+<meta name="robots" content="noindex,nofollow">
+<title layout:fragment="title-contents">
+	[[${T(jp.loioz.common.utility.LoiozUtils).getHtmlTitle("認証", null)}]]
+</title>
+
+<script type="text/javascript" th:inline="javascript">
+<!--/*
+ 二重送信防止対応用の値。
+ このHTMLに差し込まれるfragment内のScriptの処理も、共通してこの変数を利用する。
+*/-->
+let ajaxRunning = false;
+
+</script>
+
+</head>
+<body>
+	<header layout:fragment="headerContainerFragment" th:remove="all"></header>
+	
+	<main layout:fragment="mainContainerFragment">
+		
+		<!--/* main_container */-->
+		<div class="main_container">
+			
+			<!--/* main_content */-->
+			<div class="main_content">
+			
+				<!--/* メッセージエリア */-->
+				<div th:replace="common/messageArea::messageArea"></div>
+				
+				<!--/* container */-->
+				<div class="container">
+					
+					<!--/* 認証 */-->
+					<div id="downloadAuthFragmentWrap">
+						<div th:replace="global/downloadAuth/downloadAuthFragment::downloadAuthFragment(${downloadAuthForm})"></div>
+					</div>
+					
+				</div>
+				<!--*/ container /*-->
+				
+			</div>
+			<!--/* main_content */-->
+			
+		</div>
+		<!--/* main_container */-->
+		
+	</main>
+	
+</body>
+</html>

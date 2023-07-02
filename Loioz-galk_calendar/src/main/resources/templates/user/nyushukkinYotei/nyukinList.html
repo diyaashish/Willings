@@ -1,0 +1,732 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+	xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+	xmlns:xtra="https://github.com/connect-group/thymeleaf-extras"
+	layout:decorator="commonLayout">
+<head>
+<title layout:fragment="title-contents">
+	[[${T(jp.loioz.common.utility.LoiozUtils).getHtmlTitle("入金予定一覧", T(jp.loioz.common.utility.SessionUtils).getTenantName())}]]
+</title>
+<style th:replace="user/nyushukkinYotei/shukkinList::css"></style>
+<script type="text/javascript" th:replace="user/nyushukkinYotei/shukkinList::tabLink"></script>
+<script type="text/javascript">
+$(function(){
+	$(document).on('click', '#outputNyukinList', function() {
+		const url = "/user/nyushukkinYotei/nyukin/excel"
+		const button = $(this);
+		let formData;
+		downloadFileAjax(url, button, formData);
+	});
+});
+</script>
+<script type="text/javascript">
+<!--/*入金口座情報関連 */-->
+$(function(){
+	/*初期遷移時に切り替えJSを発火 */
+	$(document).ready(function(){
+		$("#search-kozaName").trigger("change");
+	});
+
+	/* 入金口座種別切り替え処理 */
+	$(document).on("change", "#search-type", function(){
+
+		$("#search-kozaName").val($("#search-kozaName option:first").val());
+		$("#search-kozaName").trigger("change");
+
+		let selected = $(this).find("option:selected");
+		let dispTarget = $(selected.data("dispTarget"));
+		let hiddenTarget = $(selected.data("hiddenTarget"));
+		dispTarget.each(function(i,target){
+			$(target).removeClass("hidden");
+		});
+		hiddenTarget.each(function(i,target){
+			$(target).addClass("hidden");
+		});
+	});
+
+	/* 入金口座選択時処理 */
+	$(document).on("change", "#search-kozaName", function(){
+		let selectedKoza = $(this).find("option:selected");
+		$("[data-target='ginkoName']").text(selectedKoza.data("ginkoName"));
+		$("[data-target='shitenName']").text(selectedKoza.data("shitenName"));
+		$("[data-target='shitenNo']").text(selectedKoza.data("shitenNo"));
+		$("[data-target='kozaType']").text(selectedKoza.data("kozaType"));
+		$("[data-target='kozaNo']").text(selectedKoza.data("kozaNo"));
+		$("[data-target='kozaName']").text(selectedKoza.data("kozaName"));
+	});
+});
+<!--/*入金口座情報関連 end */-->
+
+<!--/* 検索エリア制御系 */-->
+$(function(){
+
+	$(document).on("change", "input[name='nyukinSearchYoteiDateType']", function(){
+		if($(this).data("addDisabled")){
+			yoteiFromToDisabled();
+		}else{
+			yoteiFromToUnDisabled();
+		}
+	});
+
+	/* 入金予定日種別 無効化*/
+	function yoteiFromToDisabled(){
+		$("#searchDaysFrom").prop("disabled",true);
+		$("#searchDaysTo").prop("disabled",true);
+	};
+
+	/* 入金予定日種別 有効化*/
+	function yoteiFromToUnDisabled(){
+		$("#searchDaysFrom").prop("disabled",false);
+		$("#searchDaysTo").prop("disabled",false);
+	};
+
+});
+<!--/* 検索エリア制御系 end */-->
+
+<!--/* 検索関連 */-->
+$(function(){
+	/* 検索ボタン横のクリアボタン押下時 */
+	$(document).on('click', '#clear', function() {
+		$('#searchForm')
+			.find('input[type="text"]').val('').end()
+			.find('select option').prop("selected", false).end()
+			.find('input[name="nyukinSearchYoteiDateType"]:first').trigger("click").end()
+			.find('input[name="nyukinSearchRifineType"]:first').trigger("click").end()
+			.find("input[name='LimitOver']").prop("checked", false).end()
+			.find("input[name='hasRemaining']").prop("checked", false).end();
+
+		$("#search-kozaName").trigger("change");
+	});
+
+	/* ヘッダーカレンダーの次へ前へボタン */
+	$("#searchCalHeader").find(".calSearch").on("click",function(){
+		let date =$(this).data("date");
+		$("#searchForm").find($(this).data("linked")).val(date);
+		$("#searchBtn").trigger("click");
+	});
+});
+<!--/* 検索関連 end*/-->
+</script>
+<script type="text/javascript" th:inline="javascript">
+<!-- /** 入金登録の表示 */  -->
+$(function(){
+	let ajaxRunning = false;
+	$(document).on("click", ".nyukinListRow", function(){
+		const selected = $(this);
+		const nyushukkinYoteiSeq = selected.data("seq");
+		getNyukinDetail(nyushukkinYoteiSeq,ajaxRunning);
+	});
+
+	<!-- /** 詳細画面の取得Ajax ※コールバックで使わないこと*/ -->
+	function getNyukinDetail(nyushukkinYoteiSeq,ajaxRunning){
+		const url = "/user/nyushukkinYotei/nyukin/nyukinDetail";
+		const formData = [];
+		formData.push({name : "nyushukkinYoteiSeq", value : nyushukkinYoteiSeq});
+
+		if(ajaxRunning){
+			return false;
+		}
+		ajaxRunning = true;
+		const getNyukinDetailRequest = $.ajax({
+			url : url,
+			type : "POST",
+			data : formData,
+		});
+
+		// 成功時
+		getNyukinDetailRequest.done(function(result){
+			const newContents = $(result);
+			$("#nyukinRegistForm").replaceWith(newContents);
+
+			//表示しているRowにスタイルを追加
+			$(".nyukinListRow").each(function(i,row){
+				$(row).removeClass("row_active");
+			});
+			const selectedRow = $(".nyukinListRow[data-seq='"+nyushukkinYoteiSeq+"']");
+			selectedRow.addClass("row_active");
+
+			// 次へボタンの設定
+			const nextRow = selectedRow.next();
+			if (nextRow.length) {
+				newContents.find("#nextNyukin").attr("data-click-sync", "#"+nextRow.prop("id"));
+			} else{
+				// 次へボタンを無効化
+				newContents.find("#nextNyukin").addClass("visibility");
+			}
+
+			// 前へボタンの設定
+			const prevRow = selectedRow.prev();
+			if (prevRow.length) {
+				newContents.find("#prevNyukin").attr("data-click-sync", "#"+prevRow.prop("id"));
+			} else{
+				// 前へボタンを無効化
+				newContents.find("#prevNyukin").addClass("visibility");
+			}
+
+			// datepickedの設定
+			setUpDatepickerButton(newContents.find(".btn_popcal"));
+		});
+
+		// 失敗時
+		getNyukinDetailRequest.fail(function(jqXHR, textStatus, errorThrown){
+			window.location.href = "/systemError";
+		});
+
+		// どちらでも
+		getNyukinDetailRequest.always(function(){
+			ajaxRunning = false;
+		});
+	};
+
+	const selectedYoteiSeq = /*[[${nyukinListSearchForm.nyushukkinYoteiSeq}]]*/null;
+	if(selectedYoteiSeq){
+		$(".nyukinListRow[data-seq="+selectedYoteiSeq+"]").trigger("click");
+	}
+
+});
+<!-- /** 入金登録の表示 end */  -->
+
+<!-- /** 金額のhidden値を最新化 */  -->
+$(function(){
+	$(document).on("blur", "#dispNyushukkinGaku", function(){
+		const target = $(this).data("target");
+		const price = unformatComma($(this).val());
+		$(target).val(price);
+	});
+});
+<!-- /** 金額のhidden値を最新化 end */  -->
+
+<!--/* 入金登録エリア ボタンアクション */-->
+$(function(){
+
+	/* キャンセルボタン */
+	$(document).on("click", "#closeDetail", function(){
+		let contents = $(this).closest("#detailContents");
+		const selectedYoteiSeq = contents.find("[name='nyushukkinYoteiSeq']").val();
+		if(selectedYoteiSeq){
+			$(".nyukinListRow[data-seq="+selectedYoteiSeq+"]").removeClass("row_active");
+		}
+		contents.find("#nyukinRegistForm").html('<h4 class="text-danger font-weight-bold pt-4">※入金予定を選択してください。</h4>');
+		clearAllMessages(contents);
+	});
+
+	/* 登録ボタン */
+	let ajaxRunning = false;
+	$(document).on("click","#saveNyukinDetail",function(){
+
+		// メッセージ表示範囲を指定
+		let contents = $(this).closest("#detailContents");
+
+		// 二重通信チェック
+		if(ajaxRunning){
+			return false;
+		}
+		const url ="/user/nyushukkinYotei/nyukin/saveNyukinDetail"
+		const formData = $("#nyukinRegistForm").serializeArray();
+
+		ajaxRunning = true;
+		const detailSaveRequest = $.ajax({
+			url : url,
+			type : "POST",
+			data : formData,
+			dataType : "json",
+		});
+
+		// 成功時
+		detailSaveRequest.done(function(result) {
+			if(result.succeeded){
+				// 完了メッセージ表示
+				alert(result.message);
+				window.location.reload();
+			}else{
+				// エラーメッセージの表示
+				showErrorMessage(result.message, contents, result.errors);
+			}
+		});
+
+		// 失敗時
+		detailSaveRequest.fail(function(jqXHR, textStatus, errorThrown) {
+			window.location.href = "/systemError";
+		});
+
+		// どちらも行う
+		detailSaveRequest.always(function() {
+			ajaxRunning = false;
+		});
+
+	});
+});
+<!--/* 入金実績を登録処理 end */-->
+</script>
+</head>
+<body class="bg2">
+
+	<!--/* メインコンテンツ */-->
+	<div layout:fragment="main-contents">
+		<div class="wrapper">
+			<div class="block_content py-2 px-4">
+				<ul class="nav nav-tabs mt-1 ml-3">
+					<li class="nav-item nav-link tab-title shukkinLink">
+						出金予定
+					</li>
+					<li class="nav-item nav-link tab-title nyukinLink selected">
+						入金予定
+					</li>
+				</ul>
+
+				<div>
+					<!--/* 検索条件領域 */-->
+					<form id="searchForm" th:action="@{/user/nyushukkinYotei/nyukin/search}" th:object="${nyukinListSearchForm}" method="get" autocomplete="off">
+						<input type="hidden" id="yearMonth" th:field="*{yearMonth}">
+						<input type="hidden" id="detailSearchFlg" th:field="*{detailSearchFlg}">
+						
+						<div class="searchform_wrapper">
+							<div class="searchform_block">
+								<h3 class="searchform_block_title">検索条件</h3>
+								<!--/* 検索条件部 */-->
+								<div class="searchform_block_main">
+									<!--/* 基本検索 */-->
+									<div class="row row_list border-top-0">
+										<div class="col-auto pr-4">
+											<label class="searchLabel">入金予定日</label>
+											<div class="d-flex align-items-end">
+												<label class="radio_btn" th:each= "enum : ${T(jp.loioz.app.user.nyushukkinYotei.nyukin.enums.NyukinSearchYoteiDateType).ALL}">
+													<input type="radio" class="radio_input" th:value="${enum.getCd()}" th:field="*{nyukinSearchYoteiDateType}" data-add-disabled="true" />
+													<span class="radio_txt" th:text="${enum.getVal()}">すべて</span>
+												</label>
+												<label class="radio_btn" th:each= "enum : ${T(jp.loioz.app.user.nyushukkinYotei.nyukin.enums.NyukinSearchYoteiDateType).SPECIFICATION}">
+													<input type="radio" class="radio_input" th:value="${enum.getCd()}" th:field="*{nyukinSearchYoteiDateType}" data-add-disabled="false" />
+													<span class="radio_txt" th:text="${enum.getVal()}">日付指定</span>
+												</label>
+												<th:block th:with="disabled=*{nyukinSearchYoteiDateType == T(jp.loioz.app.user.nyushukkinYotei.nyukin.enums.NyukinSearchYoteiDateType).ALL}">
+													<select id="searchDaysFrom" class="form-control digit5" th:field="*{searchDaysFrom}" th:disabled = ${disabled}>
+														<option th:each="i : *{#numbers.sequence(1, yearMonth.lengthOfMonth())}" th:value="${i}" th:text="|${i}日|">1日</option>
+													</select>
+													<div class="mx-2 my-auto">〜</div>
+													<select id="searchDaysTo" class="form-control digit5" th:field="*{searchDaysTo}" th:disabled = ${disabled}>
+														<option th:each="i : *{#numbers.sequence(1, yearMonth.lengthOfMonth())}" th:value="${i}" th:text="|${i}日|">1日</option>
+													</select>
+												</th:block>
+											</div>
+										</div>
+										<div class="col-auto pr-4">
+											<div class="mt-5 mb-3">引出口座：</div>
+										</div>
+										<div class="col-auto pr-4">
+											<label class="searchLabel">種別</label>
+											<div class="d-flex align-items-end">
+												<select class="form-control digit8" id="search-type" th:field="*{kozaRelateType}">
+													<option value="" data-hidden-target="#search-kozaName optgroup">-</option>
+													<option th:with="enum=${T(jp.loioz.common.constant.CommonConstant$KozaRelateType).TENANT}" th:value="${enum.getCd()}" th:label="${enum.getVal()}"
+														data-disp-target=".tenantKozaGroup" data-hidden-target=".lawyerKozaGroup"></option>
+													<option th:with="enum=${T(jp.loioz.common.constant.CommonConstant$KozaRelateType).ACCOUNT}" th:value="${enum.getCd()}" th:label="${enum.getVal()}"
+														data-disp-target=".lawyerKozaGroup" data-hidden-target=".tenantKozaGroup"></option>
+												</select>
+											</div>
+										</div>
+										<div class="col-auto pr-4">
+											<label class="searchLabel">口座名</label>
+											<div class="d-flex align-items-end">
+												<select class="form-control digit12" id="search-kozaName" th:field="*{kozaSeq}">
+													<option value="" label="-"
+														data-ginko-name="&nbsp;"
+														data-shiten-name="&nbsp;"
+														data-shiten-no="&nbsp;"
+														data-koza-type="&nbsp;"
+														data-koza-no="&nbsp;"
+														data-koza-name="&nbsp;">-</option>
+													<optgroup class="tenantKozaGroup" th:if="${!#lists.isEmpty(nyukinListViewForm.tenantKozaList)}" th:label="${nyukinListViewForm.tenantKozaList.get(0).getTenantName()}"
+														th:classappend="*{kozaRelateType} != ${T(jp.loioz.common.constant.CommonConstant$KozaRelateType).TENANT} ? 'hidden'">
+														<option th:each="tenantKoza : ${nyukinListViewForm.tenantKozaList}"
+															th:value="${tenantKoza.ginkoAccountSeq}" th:label="${tenantKoza.labelName}"
+															th:data-ginko-name="${tenantKoza.dispGinkoName()}"
+															th:data-shiten-name="${tenantKoza.dispShitenName()}"
+															th:data-shiten-no="${tenantKoza.dispShitenNo()}"
+															th:data-koza-type="${tenantKoza.dispKozaType()}"
+															th:data-koza-no="${tenantKoza.dispKozaNo()}"
+															th:data-koza-name="${tenantKoza.dispKozaName()}"></option>
+													</optgroup>
+													<optgroup class="lawyerKozaGroup" th:each="tantoLawyer : ${nyukinListViewForm.tantoLawyerOptionList}" th:label="${tantoLawyer.getLabel()}"
+														th:if="${nyukinListViewForm.accountKozaList[__${tantoLawyer.getValue()}__]}"
+														th:classappend="*{kozaRelateType} != ${T(jp.loioz.common.constant.CommonConstant$KozaRelateType).ACCOUNT} ? 'hidden'">
+														<option th:each="lawyerKoza : ${nyukinListViewForm.accountKozaList[__${tantoLawyer.getValue()}__]}"
+															th:value="${lawyerKoza.ginkoAccountSeq}" th:label="${lawyerKoza.labelName}"
+															th:data-ginko-name="${lawyerKoza.dispGinkoName()}"
+															th:data-shiten-name="${lawyerKoza.dispShitenName()}"
+															th:data-shiten-no="${lawyerKoza.dispShitenNo()}"
+															th:data-koza-type="${lawyerKoza.dispKozaType()}"
+															th:data-koza-no="${lawyerKoza.dispKozaNo()}"
+															th:data-koza-name="${lawyerKoza.dispKozaName()}"></option>
+													</optgroup>
+												</select>
+											</div>
+										</div>
+										<div class="col-auto pr-4">
+											<label for="search-kozaInfo" class="searchLabel">口座情報</label>
+											<div class="ml-2">
+												<label class="mb-0"><span class="pr-2" data-target="ginkoName"></span></label>
+												<label class="mb-0"><span class="pr-2" data-target="shitenName"></span><span class="pr-2" data-target="shitenNo"></span></label>
+											</div>
+											<div class="ml-2">
+												<label class="mb-0"><span class="pr-2" data-target="kozaType"></span><span class="pr-2" data-target="kozaNo"></span></label>
+												<label class="mb-0"><span class="pr-2" data-target="kozaName"></span></label>
+											</div>
+										</div>
+									</div>
+								
+									<!--/* 詳細検索 */-->
+									<div class="searchform_detail_block_header">
+										<h4 class="searchform_detail_block_title" th:classappend="*{detailSearchFlg} == 0 ? '' : 'detail_open'" data-container=".global_header" data-toggle="tooltip" th:title="*{detailSearchFlg} == 0 ? '詳細検索を開く' : '詳細検索を閉じる'" data-trigger="hover">詳細検索</h4>
+									</div>
+									<div class="row row_list border-top-0 detail_block_multiLine  align-items-start" th:classappend="*{detailSearchFlg} == 0 ? 'hidden' : ''">
+										<div class="col-auto pr-4">
+											<label class="searchLabel">絞り込み</label>
+											<div class="d-flex pt-2">
+												<label class="radio_btn" th:each="enum : ${T(jp.loioz.app.user.nyushukkinYotei.nyukin.enums.NyukinSearchRifineType).values()}">
+													<input type="radio" class="radio_input" th:value="${enum.getCd()}" th:field="*{nyukinSearchRifineType}" />
+													<span class="radio_txt" th:text="${enum.getVal()}"></span>
+												</label>
+											</div>
+											<ul class="searchform_innerList">
+												<li>
+													<label class="checkbox_btn">
+														<input type="checkbox" class="checkbox_input" th:field="*{LimitOver}">
+														<span class="checkbox_txt">予定を超過したデータを表示する</span>
+													</label>
+													<label class="checkbox_btn">
+														<input type="checkbox" class="checkbox_input" th:field="*{hasRemaining}">
+														<span class="checkbox_txt">残金のあるデータを表示する</span>
+													</label>
+												</li>
+											</ul>
+										</div>
+										<div class="col-auto pr-4">
+											<label for="search-customerId" class="searchLabel">名簿ID</label>
+											<div class="d-flex">
+												<input type="text" id="search-customerId" class="form-control digit6 input_number_only fcAddTextClear" th:field="*{customerId}" maxlength="11">
+											</div>
+										</div>
+										<div class="col-auto pr-4">
+											<label for="search-customerName" class="searchLabel">顧客名</label>
+											<div class="d-flex">
+												<input type="text" id="search-customerName" class="form-control fcAddTextClear" th:field="*{customerName}" maxlength="128">
+											</div>
+										</div>
+										<div class="col-auto pr-4">
+											<label for="search-tantoLawyer" class="searchLabel">担当弁護士</label>
+											<select multiple="multiple" class="form-control select_multiple digit12" id="search-tantoLawyer" th:field="*{tantoLawyerSeqList}">
+												<option th:each="tantoLawyer : ${nyukinListViewForm.tantoLawyerOptionList}"
+													th:value="${tantoLawyer.getValue()}" th:text="${tantoLawyer.getLabel()}"></option>
+											</select>
+										</div>
+										<div class="col-auto pr-4">
+											<label for="search-tantoJimu" class="searchLabel">担当事務</label>
+											<select multiple="multiple" class="form-control select_multiple digit12" id="search-tantoJimu" th:field="*{tantoJimuSeqList}">
+												<option th:each="tantoJimu : ${nyukinListViewForm.tantoJimuOptionList}"
+													th:value="${tantoJimu.getValue()}" th:text="${tantoJimu.getLabel()}"></option>
+											</select>
+										</div>
+									</div>
+								</div>
+								<div class="searchform_block_bottom mt-3">
+									<button id="searchBtn" type="submit" class="btn btn-dark" onclick="setDetailSearchOpen(); submit();"><i class="fas fa-search"></i>検索</button>
+									<button id="clear" type="button" class="btn btn-light">キャンセル</button>
+								</div>
+							</div>
+						</div>
+					</form>
+					<!-- 検索 end -->
+				</div>
+
+				<!-- 検索結果情報 -->
+<!--/*/		<th:block th:if="${nyukinListViewForm.OpenSearchArea}"> /*/-->
+				<div class="row my-4">
+				
+					<!-- 一覧情報 -->
+					<div id="listContents" class="col-lg-8" th:object="${nyukinListViewForm}">
+						
+						<section class="section_nyushukkin">
+							<div class="section_block_header">
+								<div class="section_block_title d-flex align-items-center">
+									<div class="pt-2">
+										入金予定【<span th:text ="${#temporals.format(nyukinListSearchForm.yearMonth, 'yyyy年MM月')}"></span>】
+									</div>
+									<div id="searchCalHeader" class="ml-4">
+										<button type="button" class="btn btn-primary calSearch py-1 pl-3 pr-4" th:data-date="${#temporals.format(nyukinListSearchForm.yearMonth.minusMonths(1), 'yyyy/MM/dd')}" data-linked ="#yearMonth">
+											<i class="fas fa-caret-left fa-lg mr-0"></i>
+										</button>
+										<button type="button" class="btn btn-light btn-sm px-4 calSearch" th:data-date="${#temporals.format(nyukinListSearchForm.yearMonth.now(), 'yyyy/MM/dd')}" data-linked ="#yearMonth">当月</button>
+										<button type="button" class="btn btn-primary calSearch py-1 pr-3 pl-4" th:data-date="${#temporals.format(nyukinListSearchForm.yearMonth.plusMonths(1), 'yyyy/MM/dd')}" data-linked ="#yearMonth">
+											<i class="fas fa-caret-right fa-lg mr-0"></i>
+										</button>
+									</div>
+								</div>
+								<div class="section_block_action">
+									<button type="button" class="btn btn-light" id="outputNyukinList">
+										<i class="fas fa-download text-primary mr-2"></i>
+										<i class="fas fa-spinner mr-2 text-primary faa-spin animated hidden"></i>
+										一覧出力
+									</button>
+								</div>
+							</div>
+							<div class="section_block_body">
+								<div class="section_nyushukkin_detail_list py-2">
+									<div class="header_fixed_table_wrapper table_shukkin_nyukin">
+										<table id="nyushukkinList" class="table table_standard table-sm table_fixed table-hover bg-white">
+											<thead>
+												<tr>
+													<th class="col_15 bg-white">顧客名</th>
+													<th class="col_15 bg-white">案件</th>
+													<th class="col_10 bg-white">請求先</th>
+													<th class="col_10 bg-white">入金口座</th>
+													<th class="col_15 bg-white">入金予定日</th>
+													<th class="col_10 bg-white">入金予定額</th>
+													<th class="col_10 bg-white">残金</th>
+													<th class="col_5 bg-white">精算ID</th>
+													<th class="col_10 bg-white">状態</th>
+												</tr>
+											</thead>
+											<tbody>
+												<!--/** 0件の場合 */-->
+												<tr th:if="*{nyukinList.size() == 0}">
+													<td colspan="11" class="no_data_table_list">
+														<span th:text="#{I00035('入金予定')}">MSG_I00035</span>
+													</td>
+												</tr>
+												<!--/** 0件の場合 end*/-->
+	
+												<tr th:id="|rowNo${stat.count}|" class="nyukinListRow" th:each ="nyukinData,stat : *{nyukinList}" th:object="${nyukinData}"
+													th:with="selected=${nyukinListSearchForm.nyushukkinYoteiSeq == nyukinData.nyushukkinYoteiSeq}"
+													th:classappend="${(nyukinData.LimitOver && !nyukinData.Completed ? 'dateover ' : '') + (selected ? 'row_active ' : '') + (nyukinData.Completed ? 'row_completed' : '')}"
+													th:data-seq ="*{nyushukkinYoteiSeq}" th:data-seisan-seq="*{seisanSeq}">
+													<td class="char_ellipsis">
+														<span th:text="*{customerName}">秋葉原 三郎</span>
+														<div class="stop-events sub_text lh1_1">
+															<a th:text="*{customerId}" th:href="@{/user/personManagement/edit/{customerId}/(customerId=*{customerId.asLong()})}"></a>
+														</div>
+													</td>
+													<td class="char_ellipsis">
+														<span th:text="*{#strings.isEmpty(ankenName)} ? '(案件名未入力)' : *{ankenName}">案件名</span>
+														<div class="stop-events sub_text lh1_1">
+															<a th:text="*{ankenId}" th:href="@{/user/ankenManagement/edit/{ankenId}/(ankenId=*{ankenId.asLong()})}"></a>
+														</div>
+													</td>
+													<td class="char_ellipsis" th:text="*{shiharaishaName}">支払　次郎</td>
+													<td class="char_ellipsis" th:text ="*{shiharaiSakiName}">支払　次郎</td>
+													<td class="col_plan" th:text="*{#temporals.format(nyushukkinYoteiDate, 'yyyy/MM/dd')}">2018/10/10</td>
+													<td class="text-right col_plan" th:classappend="*{T( jp.loioz.common.utility.StringUtils).isMinusDicimalStr(dispNyushukkinYoteiGaku)}? 'minus_money_text':_"><span th:text ="*{dispNyushukkinYoteiGaku}">170,000</span></td>
+													<td class="text-right" th:classappend="*{T( jp.loioz.common.utility.StringUtils).isMinusDicimalStr(dispZankin)}? 'minus_money_text':_"><span th:text ="*{dispZankin}"></span></td>
+													<!-- /** 精算に紐づくデータ */ -->
+													<th:block th:if="*{seisanSeq}">
+													<td>
+														<a th:if="*{seisanId}" class="stop-events" 
+															th:href="@{/user/kaikeiManagement/list(transitionCustomerId=*{seisanId.getCustomerId().asLong()}, transitionAnkenId=null, isSeisanshoTab=true)}"
+															data-boundary="window" data-container="#nyushukkinList" data-toggle="tooltip" data-trigger="hover" title="精算管理へ" 
+															th:text="*{seisanId}"></a>
+													</td>
+													</th:block>
+													<!-- /** 精算に紐づくデータ */ -->
+													<!-- /** 精算に紐づかないデータ */ -->
+													<th:block th:if="!*{seisanSeq}">
+														<td>-</td>
+													</th:block>
+													<!-- /** 精算に紐づかないデータ end */ -->
+													<td>
+														<th:block th:if="${T(jp.loioz.app.user.nyushukkinYotei.nyukin.enums.NyukinSearchRifineType).PROCESSED.equalsByCode(nyukinData.nyukinSearchRifineType.getCd())}">
+															<i class="far fa-check-circle"></i>
+														</th:block>
+														<span th:text="*{nyukinSearchRifineType.getVal()}"></span>
+													</td>
+												</tr>
+											</tbody>
+										</table>
+									</div>
+									<th:block th:if="*{page.hasPrevious() || page.hasNext()}">
+										<div th:replace="common/pager::pager(page=*{page}, url=@{/user/nyushukkinYotei/nyukin/pageList}) " ></div>
+									</th:block>
+								</div>
+							</div>
+						</section>
+					</div>
+					<!-- 一覧情報 end -->
+
+					<!-- 詳細情報 -->
+					<div id="detailContents" class="col-lg-4">
+						<section class="section_nyushukkin_detail">
+							<div class="section_block_header">
+								<div class="section_block_title">
+									入金登録
+								</div>
+							</div>
+							
+							<div class="section_block_body">
+								<!--/* 入金登録 詳細エリア */-->
+								<form id="nyukinRegistForm" th:fragment="nyukinRegistForm" autocomplete="off">
+<!--/*/ 						<th:block th:if="!${nyukinDetailViewForm}"> /*/-->
+									<h4 class="text-danger font-weight-bold pt-4">
+										※入金予定を選択してください。
+									</h4>
+<!--/*/ 						</th:block> /*/-->
+<!--/*/ 						<th:block th:if="${nyukinDetailViewForm}" th:object="${nyukinDetailViewForm}" th:with="isRegisted=*{nyukinSearchRifineType == T(jp.loioz.app.user.nyushukkinYotei.nyukin.enums.NyukinSearchRifineType).PROCESSED}"> /*/-->
+									<div class="detail_input_area" th:classappend="*{LimitOver}? 'dateover'">
+										<!--/* メッセージエリア */-->
+										<div th:replace="common/messageArea::jsMessageArea"></div>
+
+										<input type="hidden" th:field="*{versionNo}">
+										<input type="hidden" th:field="*{nyushukkinYoteiSeq}">
+										
+										<div th:if="!${isRegisted} and *{SeisanCompleted}" class="form-row">
+											<div class="form-group col-md-12 mt-4 text-danger font-weight-bold">
+												[[#{I00047}]]
+											</div>
+										</div>
+										
+										<div class="form-row">
+											<div class="form-group col-md-12">
+												<label class="input_parts_label"><i class="far fa-user mr-3"></i>顧客情報</label>
+												<div>
+													<span th:text="*{customerName}"></span><span class="sub_text ml-1" th:text="|(*{customerId})|"></span>
+												</div>
+											</div>
+										</div>
+										<div class="form-row">
+											<div class="form-group col-md-12">
+												<label class="input_parts_label"><i class="far fa-file-alt mr-3"></i>案件情報</label>
+												<div>
+													<span th:text="*{#strings.isEmpty(ankenName)} ? '(案件名未入力)' : *{ankenName}"></span><span class="sub_text ml-1" th:text="|(*{ankenId})|"></span>
+												</div>
+											</div>
+										</div>
+										<div class="form-row">
+											<div class="form-group col-md-6">
+												<label class="input_parts_label">担当弁護士</label>
+												<div class="data_content">
+													<th:block th:if="*{tantoLawyer.size() == 0}">(未設定)</th:block>
+													<div class="row">
+														<th:block th:each="lawyer : *{tantoLawyer}">
+															<div class="col-auto mw-100">
+																<div class="d-flex">
+																	<div th:text="${lawyer}"></div>
+																</div>
+															</div>
+														</th:block>
+													</div>
+												</div>
+											</div>
+											<div class="form-group col-md-6">
+												<label class="input_parts_label">担当事務</label>
+												<div class="data_content">
+													<th:block th:if="*{tantoJimu.size() == 0}">(未設定)</th:block>
+													<div class="row">
+														<th:block th:each="jimu : *{tantoJimu}">
+															<div class="col-auto mw-100">
+																<div class="d-flex">
+																	<div th:text="${jimu}"></div>
+																</div>
+															</div>
+														</th:block>
+													</div>
+												</div>
+											</div>
+										</div>
+										<div class="form-row">
+											<div class="form-group col-md-6">
+												<label class="input_parts_label">請求先</label>
+												<div th:text="*{shiharaishaName}"></div>
+<!--/*/ 									<th:block th:if="*{noDatashiharaisakiKoza}"> /*/-->
+													<div class="text-danger font-weight-bold">※請求先口座が設定されていません。</div>
+<!--/*/ 									</th:block> /*/-->
+<!--/*/ 									<th:block th:unless="*{noDatashiharaisakiKoza}"> /*/-->
+												<div class="koza_area">
+													<span class="pr-2" th:if="*{!#strings.isEmpty(shiharaishaGinkoName)}" th:text="*{shiharaishaGinkoName}">銀行名(MAX30)</span>
+													<span class="pr-2" th:if="*{!#strings.isEmpty(shiharaishaShitenName)}" th:text="*{shiharaishaShitenName}">支店名(MAX20)</span>
+													<span class="pr-2" th:if="*{!#strings.isEmpty(shiharaishaShitenNo)}" th:text="*{shiharaishaShitenNo}">支店番号(MAX6)</span>
+													<br th:if="*{shiharaishaKozaType != null || !#strings.isEmpty(shiharaishaKozaNo) || !#strings.isEmpty(shiharaishaKozaName)}">
+													<span class="pr-2" th:if="*{shiharaishaKozaType}" th:text="*{shiharaishaKozaType.getVal()}">口座種別</span>
+													<span class="pr-2" th:if="*{!#strings.isEmpty(shiharaishaKozaNo)}" th:text="*{shiharaishaKozaNo}">口座番号(MAX6)</span>
+													<span class="pr-2" th:if="*{!#strings.isEmpty(shiharaishaKozaName)}" th:text="*{shiharaishaKozaName}">口座名(MAX30)</span>
+												</div>
+<!--/*/ 									</th:block> /*/-->
+											</div>
+											<div class="form-group col-md-6">
+												<label class="input_parts_label">入金口座</label>
+												<div th:text="*{shiharaiSakiName}"></div>
+												<div th:if="*{!shiharaiSakiKozaAllEmpty()}" class="koza_area">
+													<span class="pr-2" th:if="*{!#strings.isEmpty(shiharaiSakiGinkoName)}" th:text="*{shiharaiSakiGinkoName}"></span>
+													<span class="pr-2" th:if="*{!#strings.isEmpty(shiharaiSakiShitenName)}" th:text="*{shiharaiSakiShitenName}"></span>
+													<span class="pr-2" th:if="*{!#strings.isEmpty(shiharaiSakiShitenNo)}" th:text="*{shiharaiSakiShitenNo}"></span>
+													<br th:if="*{shiharaiSakiKozaType != null || !#strings.isEmpty(shiharaiSakiKozaNo) || !#strings.isEmpty(shiharaiSakiKozaName)}">
+													<span class="pr-2" th:if="*{shiharaiSakiKozaType}" th:text="*{shiharaiSakiKozaType.getVal()}"></span>
+													<span class="pr-2" th:if="*{!#strings.isEmpty(shiharaiSakiKozaNo)}" th:text="*{shiharaiSakiKozaNo}"></span>
+													<span class="pr-2" th:if="*{!#strings.isEmpty(shiharaiSakiKozaName)}" th:text="*{shiharaiSakiKozaName}"></span>
+												</div>
+											</div>
+										</div>
+										<div class="form-row">
+											<div class="form-group col-md-6">
+												<label class="input_parts_label">入金予定日</label>
+												<div th:text="*{nyushukkinYoteiDate}"></div>
+											</div>
+											<div class="form-group col-md-6">
+												<label class="input_parts_label">入金予定額</label>
+												<div class="col_plan" th:classappend="*{T( jp.loioz.common.utility.StringUtils).isMinusDicimalStr(nyushukkinYoteiGaku)}? 'minus_money_text':_">
+													<span th:text="*{dispNyushukkinYoteiGaku}" th:data-decimal="*{nyushukkinYoteiGaku}"></span>
+													<span>円</span>
+												</div>
+											</div>
+										</div>
+										<div class="form-row">
+											<div class="form-group col-md-6">
+												<label class="input_parts_label">入金日</label><span th:if="!${isRegisted}" class="mark_equired">必須</span>
+												<div>
+													<span th:if="${isRegisted}" th:text="*{nyushukkinDate}"></span>
+													<th:block th:if="!${isRegisted}">
+														<input type="text" id="nyushukkinDate" class="form-control digit7 inputDateSlash addTextClear" th:field="*{nyushukkinDate}" data-click-sync="#nyushukkinDateCal" th:disabled="*{SeisanCompleted}" />
+														<button type="button" id="nyushukkinDateCal" class="btn btn_popcal hidden" data-toggle="datepicker" data-target="#nyushukkinDate">カレンダー</button>
+													</th:block>
+													<div class="error_mag_point hidden" id="itemMsg_nyushukkinDate"></div>
+												</div>
+											</div>
+											<div class="form-group col-md-6">
+												<label class="input_parts_label">入金額</label><span th:if="!${isRegisted}" class="mark_equired">必須</span>
+												<th:block th:if="${isRegisted}">
+													<div th:classappend="*{T( jp.loioz.common.utility.StringUtils).isMinusDicimalStr('-'+dispNyushukkinGaku)}? 'minus_money_text':_">
+														<span th:text="*{dispNyushukkinGaku}"></span>
+														<span>円</span>
+													</div>
+												</th:block>
+												<th:block th:if="!${isRegisted}">
+													<div class="d-flex align-items-center">
+														<input type="text" id="dispNyushukkinGaku" class="form-control input_money digit7 commaFormat input_number_only addTextClear" data-target="#nyushukkinGaku" th:value="*{dispNyushukkinGaku}" th:disabled="*{SeisanCompleted}" />
+														<span class="ml-2">円</span>
+													</div>
+													<input type="hidden" id="nyushukkinGaku" th:field="*{nyushukkinGaku}" />
+												</th:block>
+												<div class="error_mag_point hidden" id="itemMsg_nyushukkinGaku"></div>
+											</div>
+										</div>
+										<ul class="navi_list mt-4">
+											<li class="">
+												<button id="prevNyukin" type="button" class="btn btn-light"><i class="fas fa-caret-left mt-1 text-primary fa-lg"></i>前へ</button>
+												<button id="nextNyukin" type="button" class="btn btn-light">次へ<i class="fas fa-caret-right ml-3 mr-0 mt-1 text-primary fa-lg"></i></button>
+											</li>
+											<li class="ml-auto">
+												<button th:if="!${isRegisted}" th:unless="*{SeisanCompleted}" id="saveNyukinDetail" type="button" class="btn btn-info"><i class="fas fa-check"></i>登録</button>
+												<button id="closeDetail" type="button" class="btn btn-light"><i class="fas fa-times"></i>閉じる</button>
+											</li>
+										</ul>
+									</div>
+<!--/*/ 						</th:block> /*/-->
+								</form>
+							</div>
+						</section>
+						<!-- 詳細情報 end -->
+					</div>
+				</div>
+<!--/*/		</th:block> /*/-->
+				<!-- 検索結果情報 end -->
+			</div>
+		</div>
+	</div>
+</body>
+</html>

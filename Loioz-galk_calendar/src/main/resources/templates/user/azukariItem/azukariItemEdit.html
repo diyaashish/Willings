@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+		xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+		layout:decorator="commonLayout">
+	<head>
+		<meta charset="utf-8" />
+	</head>
+	<body>
+	<!-- 預り品登録モーダル -->
+	<div th:fragment="azukariEditModal" th:object="${azukariItemEditForm}">
+		<form id="editForm" th:action="@{/user/azukariItem/}" method="post" autocomplete="off">
+			<div class="modal-header">
+				<h2 class="modalheader_title" th:text="*{azukariItemDto.ankenItemSeq} ? '預り品編集' : '預り品登録'"></h2>
+			</div>
+			
+			<div class="modal-body">
+				<!-- メッセージ表示エリア -->
+				<div th:replace="common/messageArea::jsMessageArea"></div>
+				
+				<!--/* 入力エリア */-->
+				<div class="modal_input_area">
+					<div class="form-row">
+						<div class="form-group col-md-8">
+							<label class="input_parts_label">品目</label>
+							<span class="mark_equired">必須</span>
+							<input type="text" class="form-control col-12" th:field="*{azukariItemDto.hinmoku}" maxlength="50">
+							<div class="error_mag_point hidden" id="itemMsg_azukariItemDto.hinmoku"></div>
+						</div>
+						<div class="form-group col-md-4">
+							<label class="input_parts_label">数量</label>
+							<input type="text" class="form-control" th:field="*{azukariItemDto.azukariCount}" autocomplete="off" maxlength="30" style="ime-mode: inactivate;">
+							<div class="error_mag_point hidden" id="itemMsg_azukariItemDto.azukariCount"></div>
+						</div>
+					</div>
+					
+					<div class="form-row">
+						<div class="form-group col-md-12">
+							<label class="input_parts_label">預り元</label>
+							<span class="mark_equired">必須</span>
+							<!-- 預り元 ラジオボタン -->
+							<div>
+								<label class="radio_btn azukarimoto_type_radio" th:if="!${#lists.isEmpty(azukariItemEditForm.customerList)}">
+									<input type="radio" th:field="*{azukariItemDto.azukariFromType}" class="radio_input" th:value="${T(jp.loioz.common.constant.CommonConstant$TargetType).CUSTOMER.getCd()}">
+									<span class="radio_txt">顧客から選択</span>
+								</label>
+								<label class="radio_btn azukarimoto_type_radio" th:if="!${#lists.isEmpty(azukariItemEditForm.kanyoshaList)}">
+									<input type="radio" th:field="*{azukariItemDto.azukariFromType}" class="radio_input" th:value="${T(jp.loioz.common.constant.CommonConstant$TargetType).KANYOSHA.getCd()}">
+									<span class="radio_txt">関与者から選択</span>
+								</label>
+								<label class="radio_btn azukarimoto_type_radio">
+									<input type="radio" th:field="*{azukariItemDto.azukariFromType}" class="radio_input" th:value="${T(jp.loioz.common.constant.CommonConstant$TargetType).FREE.getCd()}">
+									<span class="radio_txt">自由入力</span>
+								</label>
+							</div>
+							<select id="azukarimotoCustomerSelect" class="form-control" th:if="!${#lists.isEmpty(azukariItemEditForm.customerList)}" th:field="*{azukariItemDto.azukariFromCustomerId}">
+								<option value="">-</option>
+								<option th:each="customer : ${azukariItemEditForm.customerList}" th:value="${customer.id}" >[[${customer.name}]]</option>
+							</select>
+							<select id="azukarimotoKanyoshaSelect" class="form-control" th:if="!${#lists.isEmpty(azukariItemEditForm.kanyoshaList)}" th:field="*{azukariItemDto.azukariFromKanyoshaSeq}">
+								<option value="">-</option>
+								<option th:each="kanyosha : ${azukariItemEditForm.kanyoshaList}" th:value="${kanyosha.id}" >[[${kanyosha.name}]]</option>
+							</select>
+							<input id="azukarimotoText" type="text" class="form-control" maxlength="50" th:field="*{azukariItemDto.azukariFrom}">
+							<div class="error_mag_point hidden" id="itemMsg_azukariItemDto.azukariFromType"></div>
+							<div class="error_mag_point hidden" id="itemMsg_azukariItemDto.azukariFrom"></div>
+							<div class="error_mag_point hidden" id="itemMsg_azukariItemDto.azukariFromCustomerId"></div>
+							<div class="error_mag_point hidden" id="itemMsg_azukariItemDto.azukariFromKanyoshaSeq"></div>
+						</div>
+					</div>
+					
+					<div class="form-row">
+						<div class="form-group col-md-4">
+							<label class="input_parts_label">預り日</label>
+							<input type="text" class="form-control  modal_date digit7 inputDateSlash" th:field="*{azukariItemDto.azukariDate}" data-click-sync="#azukariDateCal">
+							<button type="button" id="azukariDateCal" class="btn btn_popcal hidden" data-toggle="datepicker" th:data-target-name="azukariItemDto.azukariDate">カレンダー</button>
+							<div class="error_mag_point hidden" id="itemMsg_azukariItemDto.azukariDate"></div>
+						</div>
+						<div class="form-group col-md-8">
+							<label class="input_parts_label">保管場所</label>
+							<input type="text" class="form-control" th:field="*{azukariItemDto.hokanPlace}" maxlength="100">
+							<div class="error_mag_point hidden" id="itemMsg_azukariItemDto.hokanPlace"></div>
+						</div>
+					</div>
+					
+					<div class="form-row">
+						<div class="form-group col-md-4">
+							<label class="input_parts_label">返却期限</label>
+							<input type="text" class="form-control  modal_date digit7 inputDateSlash" th:field="*{azukariItemDto.returnLimitDate}" data-click-sync="#returnLimitDateCal">
+							<button type="button" id="returnLimitDateCal" class="btn btn_popcal hidden" data-toggle="datepicker" th:data-target-name="azukariItemDto.returnLimitDate">カレンダー</button>
+							<div class="error_mag_point hidden" id="itemMsg_azukariItemDto.returnLimitDate"></div>
+						</div>
+						<div class="form-group col-md-8">
+							<label class="input_parts_label">返却日</label>
+							<input type="text" class="form-control  modal_date digit7 inputDateSlash" th:field="*{azukariItemDto.returnDate}" data-click-sync="#returnDateCal">
+							<button type="button" id="returnDateCal" class="btn btn_popcal hidden" data-toggle="datepicker" th:data-target-name="azukariItemDto.returnDate">カレンダー</button>
+							<div class="error_mag_point hidden" id="itemMsg_azukariItemDto.returnDat"></div>
+						</div>
+					</div>
+					
+					<div class="form-row">
+						<div class="form-group col-md-12">
+							<label class="input_parts_label">返却先</label>
+							<!-- 返却先 ラジオボタン -->
+							<div>
+								<label class="radio_btn henkyakusakitype_radio" th:if="!${#lists.isEmpty(azukariItemEditForm.customerList)}">
+									<input type="radio" th:field="*{azukariItemDto.returnToType}" class="radio_input" th:value="${T(jp.loioz.common.constant.CommonConstant$TargetType).CUSTOMER.getCd()}">
+									<span class="radio_txt">顧客から選択</span>
+								</label>
+								<label class="radio_btn henkyakusakitype_radio" th:if="!${#lists.isEmpty(azukariItemEditForm.kanyoshaList)}">
+									<input type="radio" th:field="*{azukariItemDto.returnToType}" class="radio_input" th:value="${T(jp.loioz.common.constant.CommonConstant$TargetType).KANYOSHA.getCd()}">
+									<span class="radio_txt">関与者から選択</span>
+								</label>
+								<label class="radio_btn henkyakusakitype_radio">
+									<input type="radio" th:field="*{azukariItemDto.returnToType}" class="radio_input" th:value="${T(jp.loioz.common.constant.CommonConstant$TargetType).FREE.getCd()}">
+									<span class="radio_txt">自由入力</span>
+								</label>
+							</div>
+							<select id="henkyakusakiCustomerSelect" class="form-control" th:field="*{azukariItemDto.returnToCustomerId}">
+								<option value="">-</option>
+								<option th:each="customer : ${azukariItemEditForm.customerList}" th:value="${customer.id}" >[[${customer.name}]]</option>
+							</select>
+							<select id="henkyakusakiKanyoshaSelect" class="form-control" th:if="!${#lists.isEmpty(azukariItemEditForm.kanyoshaList)}" th:field="*{azukariItemDto.returnToKanyoshaSeq}">
+								<option value="">-</option>
+								<option th:each="kanyosha : ${azukariItemEditForm.kanyoshaList}" th:value="${kanyosha.id}">[[${kanyosha.name}]]</option>
+							</select>
+							<input id="henkyakusakiText" type="text" class="form-control" maxlength="50" th:field="*{azukariItemDto.returnTo}">
+							<div class="error_mag_point hidden" id="itemMsg_azukariItemDto.returnToType"></div>
+							<div class="error_mag_point hidden" id="itemMsg_azukariItemDto.returnTo"></div>
+						</div>
+					</div>
+					
+					<div class="form-row">
+						<div class="form-group col-md-12">
+							<label class="input_parts_label">備考</label>
+							<textarea rows="2" class="form-control col-12" th:field="*{azukariItemDto.remarks}" maxlength="3000"></textarea>
+						</div>
+					</div>
+					
+					<div class="form-row" th:if="*{azukariItemDto.createdByName}">
+						<div class="form-group col-md-6">
+							<label class="input_parts_label">登録者</label>
+							<div>
+								<span th:text="*{azukariItemDto.createdByName}"></span>
+								<span th:text="*{azukariItemDto.createdAt}"></span>
+							</div>
+						</div>
+						<div class="form-group col-md-6" th:if="*{azukariItemDto.lastEditByName}">
+							<label class="input_parts_label">更新者</label>
+							<div>
+								<span th:text="*{azukariItemDto.lastEditByName}"></span>
+								<span th:text="*{azukariItemDto.lastEditAt}"></span>
+							</div>
+						</div>
+					</div>
+					
+				</div>
+			</div>
+			
+			<div class="modal-footer">
+				<input type="hidden" th:field="*{azukariItemDto.ankenItemSeq}">
+				<th:block th:if="*{azukariItemDto.ankenItemSeq}">
+					<button type="button" class="btn btn-light mr-auto" name="delete" th:data-action="@{/user/azukariItem/delete}"><i class="far fa-trash-alt"></i>削除</button>
+					<button type="button" class="btn btn-info" name="update" th:data-action="@{/user/azukariItem/update}"><i class="fas fa-check"></i>保存</button>
+				</th:block>
+				<th:block th:if="!*{azukariItemDto.ankenItemSeq}">
+					<button type="button" class="btn btn-info mr-4" name="multiRegist" th:data-action="@{/user/azukariItem/save}"><i class="fas fa-plus-circle mr-2"></i>連続登録</button>
+					<button type="button" class="btn btn-info" name="regist" th:data-action="@{/user/azukariItem/save}"><i class="fas fa-check"></i>登録</button>
+				</th:block>
+				<button type="button" class="btn btn-light" data-dismiss="modal"><i class="fas fa-times"></i>閉じる</button>
+			</div>
+		</form>
+	</div>
+	</body>
+</html>

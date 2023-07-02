@@ -1,0 +1,483 @@
+@charset "UTF-8";
+
+/********************************************************
+ * 顧客・案件一覧
+*********************************************************/
+/* IDラベル */
+.id_label {
+	padding: 3px 40px 0 6px;
+	width: 80px;
+}
+
+/* カットするデータ */
+.cut_data {
+	max-width: 70%;
+}
+
+/********************************************************
+ * 顧客情報
+*********************************************************/
+/* 1行編集 */
+.block_view_input_row {
+	padding: 7px 7px 0;
+}
+/* 生年月日選択 */
+.birth_select_month option:disabled,
+.birth_select_day option:disabled {
+	background-color: #d9d9d9!important;
+	color: #4D4D4D!important;
+}
+/* 死亡日選択 */
+.death_select_month option:disabled,
+.death_select_day option:disabled {
+	background-color: #d9d9d9!important;
+	color: #4D4D4D!important;
+}
+
+/* 住所情報 */
+/* 住所カテゴリ */
+.address_item_category {
+	flex: 0 1 95px;
+}
+/* 住所データ */
+.address_item_val {
+	flex: 1 1;
+	padding-left: 10px;
+}
+
+/* 連絡先情報 */
+.contact_type_block {
+	width: 70px;
+}
+.contact_priority_block {
+	width: 65px;
+	text-align: right;
+}
+.contact_value_block {
+	padding-left: 20px;
+	word-wrap: break-word;
+	max-width: -moz-available;
+	max-width: -webkit-fill-available;
+}
+/* 優先マーク */
+.contact_priority_mark {
+	color: var(--red);
+	padding: 0 5px;
+	border-radius: 3px;
+	text-align: center;
+	display: inline-block;
+	box-shadow: inset 0 0 0 1px var(--red);
+}
+/* 優先チェック */
+.priority_check_container input.check {
+  position: absolute;
+  left: -9999px;
+}
+
+.priority_check_container label.label {
+  display: block;
+  position: relative;
+  cursor: pointer;
+  padding: 5px;
+  text-align: center;
+  border: 1px solid #ced4da;
+  color: var(--text-color-gray);
+  border-radius: 3px;
+  font-size: 1.1rem;
+  background-color: var(--white);
+  font-weight: normal;
+  line-height: normal;
+  height: auto;
+}
+
+.priority_check_container label.label:hover {
+  text-decoration: none;
+}
+
+.priority_check_container input.check:checked + label.label {
+  text-decoration: none;
+  border: 1px solid var(--red);
+  color: var(--red);
+}
+
+.allow_type_block_wrapper {
+	padding-bottom: 2px;
+	border-bottom: 1px solid var(--bor-color-main);
+}
+.allow_type_block {
+	padding: 5px;
+	margin-bottom: 2px;
+}
+.allow_type_block:hover {
+	box-shadow: 0px 0px 0px 1px var(--bor-color-main);
+	background-color: var(--bg-color-edit);
+	cursor: pointer;
+}
+
+/* 電話、FAX、メールアドレス */
+.contract_item_category {
+	flex: 0 0 140px;
+	max-width: 140px;
+}
+/* 優先マーク */
+.contract_item_priority {
+	flex: 0 1 80px;
+}
+/* 連絡先種別 */
+.contract_item_type {
+	flex: 0 0 60px;
+}
+/* 値 */
+.contract_item_val {
+	flex: 0 1 240px;
+	word-break: break-all;
+}
+/* 備考 */
+.contract_item_remarks {
+	flex: 1 1 40%;
+	padding-left: 10px;
+}
+
+
+/************** 顧客-左ブロック ************/
+/* 住所と連絡先と精算口座ブロック */
+.address_block, .contact_block, .seisan_koza_block {
+	margin: 0  0 30px 0;
+}
+
+/* 住所一覧 */
+.edit_address {
+	border-bottom: none;
+}
+/* 郵送先のラベル */
+.input_parts label.mailing_type_label {
+	height: 12px;
+	padding: 0;
+}
+/* 住所一覧（郵送先住所など） */
+.address_option_text {
+	color: var(--loioz-danger);
+	margin-top: 4px;
+	line-height: 1.3;
+}
+.address_option_text svg {
+	font-size: 1.5rem;
+}
+.col_address {
+	letter-spacing: .8px;
+}
+
+.person_edit_top {
+	-ms-flex-align: center;
+	align-items: center;
+	display: -ms-flexbox;
+	display: flex;
+	flex-wrap: wrap;
+	min-height: 45px;
+	justify-content: space-between;
+	gap: 10px 30px;
+}
+.person_edit_top__attribute {
+	-ms-flex-align: center;
+	align-items: center;
+	display: -ms-flexbox;
+	display: flex;
+	flex: 1 0 auto;
+	flex-wrap: wrap;
+	margin-top: 3px;
+}
+.person_edit_top__attribute .badge {
+	margin-right: 10px;
+	margin-bottom: 2px;
+}
+.person_name_top__edit {
+	display: -ms-flexbox;
+	display: flex;
+	gap: 10px;
+	margin-top: 10px;
+}
+.person_name_top__edit_btn {
+	display: -ms-flexbox;
+	display: flex;
+	margin-left: auto;
+	min-width: 200px;
+	gap: 15px;
+	justify-content: flex-end;
+}
+
+.person_edit_split {
+	display: -ms-flexbox;
+	display: flex;
+	flex-wrap: wrap;
+	row-gap: 10px;
+	padding: 0 3px;
+	margin-bottom: 15px;
+	margin-top: 15px;
+}
+.person_edit_split__left {
+	flex: 1 1 50%;
+	padding-right: 20px;
+}
+.person_edit_split__right {
+	flex: 1 1 50%;
+}
+
+.person_edit_row {
+	display: -ms-flexbox;
+	display: flex;
+	flex-wrap: wrap;
+	gap: 10px 20px;
+	margin-bottom: 10px;
+}
+.person_edit_row .data_date {
+	flex: 0 0 190px;
+}
+
+/************** 名簿情報（右ブロック） ************/
+.section_card_list_frame {
+	border: 1px solid var(--bor-color-main);
+	overflow-y: auto;
+	overflow-x: hidden;
+	max-height: 100vh;
+}
+section.section_card .section_block_body.kanyosha_list {
+	background-color: #eaf7f2;
+}
+
+/*【共通】案件一覧 */
+ul.card_anken_list > li {
+	background-color: var(--white);
+	color: var(--text-color-sub);
+	cursor: pointer;
+	height: 100%;
+	position: relative;
+	z-index: 1;
+	padding: 8px 10px 12px 6px;
+	margin-bottom: -1px;
+}
+ul.card_anken_list > li:hover {
+	background-color: var(--lz-gray-100);
+	-webkit-transition: 0.2s ease-in-out;
+	-moz-transition: 0.2s ease-in-out;
+	-o-transition: 0.2s ease-in-out;
+	transition: 0.2s ease-in-out;
+}
+ul.card_anken_list > li + li {
+	border-top: 1px solid var(--bor-color-main);
+}
+ul.section_card_list.card_anken_list .section_card_list_item .item_title {
+	display: -ms-flexbox!important;
+	display: flex!important;
+	border-left: 0px;
+	gap: 15px;
+}
+.item_title__img {
+	flex: 0 0 auto;
+}
+ul.section_card_list.card_anken_list .section_card_list_item .item_title.row_completed {
+	border-left: 0px;
+	color: var(--lz-gray-600);
+}
+ul.card_anken_list .section_card_list_item .item_content_block {
+	align-items: center;
+	display: flex;
+	flex-wrap: wrap;
+	gap: 5px;
+	margin-top: 8px;
+	padding-left: 15px;
+}
+ul.card_anken_list .section_card_list_item .item_content_block .row_completed {
+	color: var(--lz-gray-600);
+}
+ul.section_card_list.card_anken_list .section_card_list_item .item_sub {
+	font-size: 1.2rem;
+	color: var(--text-color-title);
+}
+ul.section_card_list.card_anken_list .section_card_list_item .item_sub.row_completed {
+	color: var(--lz-gray-600)!important;
+}
+
+/************** 顧客-案件検索モーダル ************/
+.custeomerAnkenDialog .col_select {
+	width: 50px;
+	max-width: 50px;
+	min-width: 50px;
+}
+.custeomerAnkenDialog .col_ankenName {
+	width: 180px;
+	max-width: 180px;
+}
+.custeomerAnkenDialog .col_aitegata {
+	width: 159px;
+	max-width: 159px;
+}
+.custeomerAnkenDialog .col_customerName {
+	width: 250px;
+	max-width: 250px;
+}
+.custeomerAnkenDialog .col_no_data {
+	width: 908px;
+	max-width: 908px;
+}
+<!--/* 項目を削除するボタンはアニメーションOFF */-->
+#editForm .clearOnHide.collapsing {
+	transition: none;
+}
+.modal_deleteSelect_simple {
+    width: 520px;
+    max-width: 96%;
+}
+.popover_delete_customer_msg {
+    font-size: 1.2rem;
+    max-width: 400px;
+}
+.popover_delete_customer_msg ul {
+    padding-left: 3rem!important;
+}
+.btn.disabled, .btn:disabled {
+    opacity: 1;
+}
+
+
+/***************** 顧問契約一覧 ****************/
+.contract_haed {
+	align-items: center;
+	display: flex;
+	flex-wrap: wrap;
+}
+.contract_body {
+	padding: 8px 10px;
+}
+.item_split {
+	display: -ms-flexbox;
+	display: flex;
+	flex-wrap: wrap;
+}
+.item_split__main_block {
+	flex: 1 1 50%;
+}
+.item_split__detail_block {
+	flex: 1 1 50%;
+}
+.item_split__block {
+	flex-basis: 50%;
+}
+.advisor_tanto_block, .advisor_contract_block {
+	display: flex;
+	align-items: flex-start;
+}
+.advisor_tanto_block__label, .advisor_contract_block__label {
+	flex: 0 0 auto;
+}
+
+/***************** 名簿-案件 ****************/
+ul.section_list > li.case_list {
+	border-bottom: 1px solid var(--bor-color-main);
+	padding: 15px 10px 15px 10px;
+}
+ul.section_list > li.case_list:last-child {
+	border-bottom: none;
+}
+.accg_person_summary {
+	max-width: 750px;
+	padding: 0 5px;
+}
+.accg_person_summary .accg_item_sum__split {
+	flex: 0 0 25px;
+}
+.case_data {
+	display: -ms-flexbox;
+	display: flex;
+	gap: 20px 18px;
+}
+.case_data__img {
+	flex: 0 0 60px;
+}
+.case_data__img > .img-thumbnail {
+	width: 75px;
+}
+.case_data__detail {
+	flex: 1;
+}
+.case_data__row1 {
+	display: -ms-flexbox;
+	display: flex;
+}
+.case_data__row1__col1 {
+	flex: 1;
+}
+.case_name {
+	flex: 1 0 auto;
+}
+.case_data__row1__col2 {
+	margin-left: auto;
+}
+.case_data__row2 {
+	display: -ms-flexbox;
+	display: flex;
+	flex-wrap: wrap;
+	column-gap: 30px;
+	row-gap: 10px;
+	margin: 20px 0 0;
+}
+.row2__col2 {
+	flex: 1 1;
+}
+.case_contact {
+	-ms-flex-align: center;
+	align-items: center;
+	display: -ms-flexbox;
+	display: flex;
+	-ms-flex-wrap: wrap;
+	flex-wrap: wrap;
+	row-gap: 10px
+}
+
+.person_sales_card {
+	width: 220px;
+}
+
+.case_menu.output_nav_list .btn:hover {
+	color: var(--text-color-link);
+	opacity: 1;
+}
+
+.case_menu.output_nav_list li a {
+	color: var(--text-color-main);
+}
+
+.accg_case_sum {
+	display: -ms-flexbox;
+	display: flex;
+	-ms-flex-wrap: wrap;
+	flex-wrap: wrap;
+	gap: 10px
+}
+.accg_case_sum__left {
+	flex: 0 1 auto;
+	text-align: right;
+}
+.accg_case_sum__right {
+	flex: 1 0 46%;
+}
+.accg_case_sum_label {
+	background-color: #f5f5f5;
+	font-size: 1.2rem;
+	margin: 10px 0 5px;
+	padding: 2px 5px 1px;
+}
+.accg_case_sum_item {
+	align-items: baseline;
+	display: -ms-flexbox;
+	display: flex;
+	-ms-flex-wrap: wrap;
+	flex-wrap: wrap;
+	gap: 10px
+}
+.accg_case_sum_item__left {
+	flex: 0 0 130px;
+}
+.accg_case_sum_item__right {
+	flex: 1 0;
+	text-align: right;
+}

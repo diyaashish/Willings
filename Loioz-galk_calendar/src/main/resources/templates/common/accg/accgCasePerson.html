@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+	layout:decorator="commonLayout">
+<head>
+<meta charset="utf-8" />
+</head>
+<body>
+
+<!--/* 会計管理 顧客リストフラグメント */-->
+<div id="accgCasePersonFragment" th:fragment="accgCasePersonFragment(accgCasePersonForm)" th:object="${accgCasePersonForm}"
+	th:with="
+		isAccgAnkenSide=${T(jp.loioz.common.utility.SessionUtils).getSessionVaule(T(jp.loioz.common.constant.SessionAttrKeyEnum).ACCG_ANKEN_SCREEN_BOOL.codeKey)},
+		isFee=${isFee}?:false,
+		isDeposit=${isDeposit}?:false,
+		isInvoiceStatement=${isInvoiceStatement}?:false">
+	
+	<!--/* スクリプト */-->
+	<script th:inline="javascript">
+	$(function(){
+		<!--/* 共有の要素セットアップ処理 */-->
+		commonSetUpElement("#accgCasePersonFragment");
+		
+		const accgCasePersonFragment = $('#accgCasePersonFragment');
+		const isAccgAnkenSide = (function(){
+			let isAnken = /*[[${isAccgAnkenSide}]]*/false;
+			return toBoolean(isAnken);
+		}());
+		
+		
+	});
+	</script>
+	
+	<section class="mt-3">
+		<div class="section_header">
+			<div class="section_header__title">顧客情報</div>
+		</div>
+		<div class="section_body">
+			<div class="section_body__contents p-1">
+			<!--/* 顧客情報一覧 */-->
+	<th:block th:if="*{relatedCustomer.size() > 0}">
+				<div class="section_card_list_frame hover_scroll">
+					<ul class="section_card_list">
+						
+						<li class="section_card_list__item" th:each="customer : *{relatedCustomer}" th:object="${relatedCustomer}"
+							data-click-sync-for-descendants=".transitionCaseAccgInvoiceStatement">
+							
+		<!--/* 報酬明細へ */-->
+		<th:block th:if="${isFee}">
+							<a th:href="@{/user/feeDetail/{personId}/{ankenId}/?isAccgAnkenSide={isAccgAnkenSide}(personId=${customer.personId}, ankenId=${accgCasePersonForm.ankenId}, isAccgAnkenSide=${isAccgAnkenSide})}"
+								class="transitionCaseAccgInvoiceStatement hidden"></a>
+		</th:block>
+		<!--/* 預り金明細へ */-->
+		<th:block th:if="${isDeposit}">
+							<a th:href="@{/user/depositRecvDetail/{personId}/{ankenId}/?isAccgAnkenSide={isAccgAnkenSide}(personId=${customer.personId}, ankenId=${accgCasePersonForm.ankenId}, isAccgAnkenSide=${isAccgAnkenSide})}"
+								class="transitionCaseAccgInvoiceStatement hidden"></a>
+		</th:block>
+		<!--/* 請求書／精算書へ */-->
+		<th:block th:if="${isInvoiceStatement}">
+							<a th:href="@{/user/caseInvoiceStatementList/{personId}/{ankenId}/(personId=${customer.personId}, ankenId=${accgCasePersonForm.ankenId})}"
+								class="transitionCaseAccgInvoiceStatement hidden"></a>
+		</th:block>
+
+							<!--/* 名簿 */-->
+							<div class="img_info_sm flex-wrap">
+								<!--/* 名前 */-->
+								<div class="img_info_sm__info">
+									<div class="mt-1">
+		<th:block th:if="${accgCasePersonForm.personId.equals(customer.personId)}">
+										<i class="fas fa-check-circle status_comp fs16"></i>
+		</th:block>
+										<span class="fs16" th:classappend="${accgCasePersonForm.personId.equals(customer.personId)} ? 'fw600' "
+											th:text="${customer.personName}">山田　太郎</span> 
+									</div>
+									<div class="d-flex flex-wrap">
+										<div>
+											<span class="app_id_link fs12 py-1 mr-3" th:text=|名簿ID：${customer.personId}|></span>
+										</div>
+										<!-- /* 契約ステータス */ -->
+										<div>
+											<i class="fas fa-circle fa-xs" th:if="${customer.ankenStatus} != null"
+												th:classappend="${customer.ankenStatus} ? |anken_status_${customer.ankenStatus?.cd}| :_"></i>
+											<span class="fs12 fc_sub" th:text="${customer.ankenStatus?.val}"></span>
+										</div>
+									</div>
+								</div>
+								<!--/* 名前 end */-->
+								
+							</div>
+							<!--/* 名簿 end */-->
+						</li>
+					</ul>
+				</div>
+	</th:block>
+			</div>
+		</div>
+	</section>
+	
+</div>
+</body>
+</html>

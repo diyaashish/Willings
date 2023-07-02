@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+	xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+	layout:decorator="commonLayout">
+<head>
+<meta charset="UTF-8">
+<title layout:fragment="title-contents">
+	[[${T(jp.loioz.common.utility.LoiozUtils).getHtmlTitle(T(jp.loioz.common.constant.CommonConstant$SystemSettingMenu).OFFICE_BUMON.getVal(), T(jp.loioz.common.utility.SessionUtils).getTenantName())}]]
+</title>
+<script type="text/javascript">
+$(function() {
+
+	// ダイアログ表示(登録／更新)
+	$(document).on("click", '.saveModal', function() {
+		let action = "create";
+		let bushoId = $(this).attr('data-id');
+		let addFlg = $(this).attr('data-add');
+		if (bushoId) {
+			action = "edit";
+		}
+		$.ajax({
+				url : "/user/bushoManagement/" + action,
+				type : "POST",
+				data :{ 'bushoEditData.bushoId' : bushoId,
+							'bushoId' : bushoId
+				},
+			}).done(function(val) {
+				// モーダルの表示
+				$('.targetModalBody').html(val);
+			}).fail(function(jqXHR, textStatus, errorThrown) {
+			}).always(function() {
+		});
+	});
+	// モーダル閉じる処理
+	$('#selectModal').on('hide.bs.modal', function (e) {
+		// 初期化する
+		$('.targetModalBody').html('');
+	})
+
+	<!--/* 登録・更新・削除ボタン */-->
+	let ajaxRunning = false;
+	$('.targetModalBody').on("click", '#regist, #update', function() {
+		// 2重押下防止
+		if(ajaxRunning){
+			return false;
+		}
+		// 押下したボタンのIDをアクションとして取得し実行する
+		let action = $(this).attr('id');
+		let modal = $(this).closest('.modal');
+		let params = $('form#editForm').serializeArray();
+		params.push(
+				{name : "bushoEditData.accountSeqList", value : getSelectedAccountSeqList()});
+		ajaxRunning = true;
+		$.ajax({
+			type : "POST",
+			url : "/user/bushoManagement/" + action,
+			data : params,
+		}).done(function(result) {
+			if(result.succeeded){
+				alert(result.message);
+				modal.modal("hide");
+				location.reload();
+			} else {
+				showErrorMessage(result.message, modal, result.errors);
+			}
+		}).fail(function() {
+			// システムエラー
+			window.location.href = "/systemError";
+		}).always(function(){
+			ajaxRunning = false;
+		});
+	});
+
+	// 削除処理
+	$('.targetModalBody').on("click", '#delete', function() {
+		if (!confirm('削除します。よろしいですか?')){
+			return false;
+		}
+		// 2重押下防止
+		if(ajaxRunning){
+			return false;
+		}
+		let modal = $(this).closest('.modal');
+		let params = $('form#editForm').serializeArray();
+		ajaxRunning = true;
+		$.ajax({
+			url : "/user/bushoManagement/delete",
+			type : "POST",
+			data : params,
+		}).done(function(result) {
+			if(result.succeeded){
+				alert(result.message);
+				modal.modal("hide");
+				location.reload();
+			} else {
+				showErrorMessage(result.message, modal, result.errors);
+			}
+		}).fail(function() {
+			// システムエラー
+			window.location.href = "/systemError";
+		}).always(function(){
+			ajaxRunning = false;
+		});
+	});
+
+	<!--/* 現在選択されている所属のアカウントSEQリストを取得する関数 */-->
+	function getSelectedAccountSeqList() {
+		let accountSeqList = [];
+		$('.targetModalBody .memberList .member').each(function () {
+			accountSeqList.push($(this).attr('data-seq'));
+		});
+		return accountSeqList;
+	}
+
+});
+</script>
+<th:block th:replace="user/bushoManagement/bushoEdit::js"></th:block>
+<th:block th:replace="user/bushoManagement/bushoEdit::css"></th:block>
+</head>
+<body>
+	<div class="contents_sidebar_wrapper_setting" layout:fragment="main-contents">
+		<!-- サイドメニュー -->
+		<div th:replace="common/systemSettingMenu::selectMenu(${T(jp.loioz.common.constant.CommonConstant$SystemSettingMenu).OFFICE_BUMON.getCd()})"></div>
+
+		<!-- コンテンツ -->
+		<div class="contents_wrapper" th:object="${viewForm}">
+			<!--/* メッセージエリア */-->
+			<div th:replace="common/messageArea::messageArea"></div>
+
+			<!-- contents_limited_width_setting サイズ幅(maxサイズ）start -->
+			<div class="container-fluid contents_limited_width_setting">
+
+				<!-- パンくず-->
+				<div class="breadcrumb_area">
+					<ul>
+						<li><span>事務所設定</span></li>
+						<li><i class="fas fa-angle-right"></i></li>
+						<li>部門の設定</li>
+					</ul>
+				</div>
+
+				<!--/* コンテンツブロック start */-->
+				<div class="contents_block">
+					<div class="block_title">部門</div>
+					<div class="block_detail d-flex">
+						<div>
+							<p>ユーザーアカウントを部門、弁護士や事務局などの単位でグループ化することができます。</p>
+							<p>部門データは、カレンダーの参加者選択一覧などloioz内の様々な機能に利用されます。</p>
+						</div>
+						<div class="block_action">
+							<button type="button" class="btn btn-primary saveModal" data-toggle="modal" data-target="#selectModal">
+							<i class="fas fa-plus"></i>新規登録</button>
+						</div>
+					</div>
+
+					<!--/* 一覧表示 */-->
+					<div class="list_area">
+						<table class="table table_standard table_sort table-sm table_fixed table-striped">
+							<thead>
+								<tr>
+									<th class="col_5"><i class="fas fa-grip-vertical fc_sub"></i></th>
+									<th class="col_40">名称</th>
+									<th class="col_45">所属ユーザーアカウント</th>
+									<th class="col_10">操作</th>
+								</tr>
+							</thead>
+							<tbody id="sortTargetList">
+<!--/*/ 				<th:block th:if="${viewForm.bushoList.size() == 0}"> /*/-->
+								<tr>
+									<td colspan="4" class="no_data_table_list">
+										<span th:text="#{I00021}">MSG_I00021</span>
+									</td>
+								</tr>
+<!--/*/ 				</th:block> /*/-->
+								<tr th:each="busho : *{bushoList}" th:object="${busho}" th:data-target-id="*{bushoId}">
+									<td class="col_5">
+										<div class="move_point sortableObj">
+											<svg class="icon_drag_indicator hidden"></svg>
+											<div class="sortableIdx hidden" th:text="*{dispOrder}"></div>
+										</div>
+									</td>
+									<td class="col_40" th:text="*{bushoName}"/>
+									<td class="col_45" th:text="*{shozokuAccountName}"/>
+									<td class="col_10">
+										<span class="d-inline-block" data-toggle="tooltip" title="部門を編集" data-trigger="hover">
+											<button class="btn btn-sm btn-light saveModal" data-toggle="modal" data-target="#selectModal" th:data-id="*{bushoId}">
+												<i class="fas fa-edit mr-1"></i>
+												<span>編集</span>
+											</button>
+										</span>
+									</td>
+								</tr>
+							</tbody>
+						</table>
+					</div>
+				</div>
+				<div id="selectEditModal">
+					<div th:replace="::modalTemplate(target='targetModalBody')"></div>
+				</div>
+			</div>
+		</div>
+
+		<!-- /** モーダルテンプレート */ -->
+		<div th:fragment="modalTemplate(target)" id="selectModal" class="modal fade" tabindex="-1" role="dialog" aria-hidden="true" data-backdrop="static">
+			<div class="modal-dialog modal-dialog-centered" role="document">
+				<div class="modal-content">
+					<div th:class="${target}"></div>
+				</div>
+			</div>
+		</div>
+		<!-- /** モーダルテンプレート end */ -->
+	</div>
+</body>
+</html>

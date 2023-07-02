@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="20" height="16" viewBox="0 0 20 16">
+  <g id="icon_btn_cal" transform="translate(-25.5 -29.5)">
+    <path id="icalbt8" d="M41.38,45H29.294A3.3,3.3,0,0,1,26,41.706V33.294A3.3,3.3,0,0,1,29.294,30H41.38a3.3,3.3,0,0,1,3.294,3.294v8.412A3.3,3.3,0,0,1,41.38,45Z" fill="none" stroke="#fff" stroke-miterlimit="10" stroke-width="1"/>
+    <line id="icalbt7" x2="18.52" transform="translate(26.306 33.98)" fill="none" stroke="#fff" stroke-miterlimit="10" stroke-width="1"/>
+    <line id="icalbt6" x2="18.52" transform="translate(26.306 37.347)" fill="none" stroke="#fff" stroke-miterlimit="10" stroke-width="1"/>
+    <line id="icalbt5" x2="18.52" transform="translate(26.306 40.714)" fill="none" stroke="#fff" stroke-miterlimit="10" stroke-width="1"/>
+    <line id="icalbt4" y2="14.694" transform="translate(29.98 30.153)" fill="none" stroke="#fff" stroke-miterlimit="10" stroke-width="1"/>
+    <line id="icalbt3" y2="11.02" transform="translate(33.754 33.673)" fill="none" stroke="#fff" stroke-miterlimit="10" stroke-width="1"/>
+    <line id="icalbt2" y2="11.02" transform="translate(37.532 33.673)" fill="none" stroke="#fff" stroke-miterlimit="10" stroke-width="1"/>
+    <line id="icalbt1" y2="11.02" transform="translate(41.306 33.673)" fill="none" stroke="#fff" stroke-miterlimit="10" stroke-width="1"/>
+  </g>
+</svg>

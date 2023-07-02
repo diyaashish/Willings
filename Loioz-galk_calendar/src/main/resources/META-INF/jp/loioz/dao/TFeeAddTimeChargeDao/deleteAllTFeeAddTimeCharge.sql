@@ -1,0 +1,1 @@
+DELETE FROM t_fee_add_time_charge;

@@ -1,0 +1,71 @@
+@charset "UTF-8";
+
+/*******************************************
+/* スケジュールトップ（タスクエリア）
+/*******************************************/
+.info_mark_counter {
+    display: inline-block;
+    background-color: #DE3D64;
+    font-size: 1rem;
+    border-radius: 100px;
+    height: 18px;
+    width: 40px;
+    border: 1px solid #fff;
+    text-align: center;
+    padding: 2px 4px 0;
+    color: white;
+}
+
+/*******************************************
+/* カレンダートップ（お知らせ表示）
+/*******************************************/
+.information_area {
+	padding: 0 0 10px 0;
+}
+.information_inner {
+	border-radius: 6px;
+	background-color: var(--white);
+	box-shadow: 0px 3px 6px rgba(0, 0, 0, 0.16);
+	padding: 5px 0 1px 0;
+}
+.information_inner ul li {
+	margin: 6px 0;
+}
+.information_inner .info_close {
+	background-image: url(../../img/icon_btn_close.svg);
+	background-repeat: no-repeat;
+	background-position: 7px;
+	background-size: 10px;
+	padding: 2px 12px;
+	cursor: pointer;
+}
+.information_inner .info_close:hover {
+	border-radius: 50%;
+	background-color: var(--lz-gray-200);
+}
+.info_body {
+	overflow: hidden;
+}
+/* お知らせラベル */
+.info_type_label {
+	width: 120px;
+	margin-right: 8px;
+	border-radius: 4px;
+	color: #fff;
+	padding: 2px 0 0;
+	font-size: 1.2rem;
+	text-align: center;
+	white-space: nowrap;	
+}
+/* 1：お知らせ */
+.info_type1 {
+	background-color: var(--loioz-blue);
+}
+/* 2：アップデート情報 */
+.info_type2 {
+	background-color: #154aa5;
+}
+/* 3：メンテナンス情報 */
+.info_type3 {
+	background-color: #eea426;
+}

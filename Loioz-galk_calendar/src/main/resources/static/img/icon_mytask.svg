@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="13px" height="10px" viewBox="0 0 13 10" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" preserveAspectRatio="none">
+    <!-- Generator: Sketch 51.3 (57544) - http://www.bohemiancoding.com/sketch -->
+    <title>icon_mytask</title>
+    <desc>Created with Sketch.</desc>
+    <defs></defs>
+    <g id="Page-1" stroke="none" stroke-width="1" fill="none" fill-rule="evenodd">
+        <g id="dashboard" transform="translate(-1013.000000, -120.000000)" fill="#316191" fill-rule="nonzero">
+            <g id="icon_mytask" transform="translate(1013.000000, 120.000000)">
+                <circle id="03" cx="1" cy="1" r="1"></circle>
+                <rect id="r3" x="4" y="0" width="9" height="2" rx="1"></rect>
+                <circle id="o2" cx="1" cy="5" r="1"></circle>
+                <rect id="r2" x="4" y="4" width="9" height="2" rx="1"></rect>
+                <circle id="o1" cx="1" cy="9" r="1"></circle>
+                <rect id="r1" x="4" y="8" width="9" height="2" rx="1"></rect>
+            </g>
+        </g>
+    </g>
+</svg>

@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+	xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+	layout:decorator="commonLayout">
+<head>
+<meta charset="UTF-8">
+<title layout:fragment="title-contents">
+	[[${T(jp.loioz.common.utility.LoiozUtils).getHtmlTitle(T(jp.loioz.common.constant.CommonConstant$AccountSettingMenu).TOIAWASE.getVal(), T(jp.loioz.common.utility.SessionUtils).getTenantName())}]]
+</title>
+<script type="text/javascript">
+$(function() {
+	$("#toiawaseSearchForm").on("change", "select", function() {
+		$("#toiawaseSearchForm").submit();
+	});
+});
+</script>
+</head>
+<body>
+	<div class="contents_sidebar_wrapper_setting" layout:fragment="main-contents">
+
+		<!--/* サイドメニュー */-->
+		<div th:replace="common/accountSettingMenu::selectMenu(${T(jp.loioz.common.constant.CommonConstant$AccountSettingMenu).TOIAWASE.getCd()})"></div>
+
+		<!--/* コンテンツ */-->
+		<div class="contents_wrapper">
+
+			<!--/* メッセージ表示領域 */-->
+			<div th:replace="common/messageArea::messageArea"></div>
+
+			<!--/* contents_limited_width_setting サイズ幅(maxサイズ） */-->
+			<div class="container-fluid contents_limited_width_setting">
+
+				<!--/* パンくず */-->
+				<div class="breadcrumb_area">
+					<ul>
+						<li><span>サポート</span></li>
+						<li><i class="fas fa-angle-right"></i></li>
+						<li th:text="${T(jp.loioz.common.constant.CommonConstant$AccountSettingMenu).TOIAWASE.getVal()}">サポートセンターへのお問い合わせ</li>
+					</ul>
+				</div>
+				<!--/* ブロック */-->
+				<div class="contents_block">
+
+					<!--/* 画面タイトル */-->
+					<div class="block_title" th:text="${T(jp.loioz.common.constant.CommonConstant$AccountSettingMenu).TOIAWASE.getVal()}">サポートセンターへのお問い合わせ</div>
+
+					<!--/* 画面詳細エリア */-->
+					<div class="block_detail">
+						<p>お困りの内容をサポートセンターへお問い合わせいただけます。</p>
+						<p>※このページは全てのアカウントで閲覧することができます。</p>
+
+						<!--/* 検索 */-->
+						<div class="search_conditions">
+							<form id="toiawaseSearchForm" action="/user/toiawase/search" method="get" th:autocomplete="off" th:object="${toiawaseListSearchForm}">
+								<div class="form-row">
+									<!--/* 検索条件部 */-->
+									<div class="col-sm-2">
+										<label for="search-toiawaseStatus" class="input_parts_label">ステータス</label>
+										<select th:field="*{toiawaseStatusCd}" class="form-control col-10" id="search-toiawaseStatus">
+											<option value="">-</option>
+											<option th:each="enum : ${T(jp.loioz.common.constant.CommonConstant$ToiawaseStatus).values()}"
+												th:label="${enum.val}" th:text="${enum.val}" th:value="${enum.cd}"></option>
+										</select>
+									</div>
+									<div class="col-sm">
+										<label for="search-text" class="input_parts_label">タイトル・お問い合わせ内容</label>
+										<div class="input-group mb-3">
+											<input type="text" class="form-control fcAddTextClear" id="search-saibanshoName" 
+												th:field="*{text}" maxlength="30">
+											<div class="input-group-append">
+											 	<button class="btn btn-dark pt-1 pb-0 px-3" type="submit" onclick="submit();"><i class="fas fa-search fa-lg mr-0"></i></button>
+											</div>
+										</div>
+									</div>
+
+									<!--/* アクションボタン */-->
+									<div class="block_action mb-2">
+										<button type="button" class="btn btn-primary" th:onclick="|location.href='@{/user/toiawase/create}'|">
+											<i class="fas fa-plus"></i>新規お問い合わせ</button>
+									</div>
+								</div>
+							</form>
+						</div>
+					</div>
+
+					<!-- 一覧表示 -->
+					<div class="list_area">
+						<table class="table table_standard table-sm table_fixed table-hover">
+							<thead>
+								<tr>
+									<th class="col_15">ステータス</th>
+									<th class="col_50">タイトル</th>
+									<th class="col_15">直近のアクティビティ</th>
+									<th class="col_15">初回問い合わせ日時</th>
+								</tr>
+							</thead>
+							<tbody>
+<!--/*/ 					<th:block th:if="${viewForm.toiawaseList.size() == 0}"> /*/-->
+								<tr>
+									<td colspan="4" class="no_data_table_list">
+										<span th:text="#{I00021}">MSG_I00021</span>
+									</td>
+								</tr>
+<!--/*/ 					</th:block> /*/-->
+								<tr th:each="toiawase : ${viewForm.toiawaseList}" data-click-sync-for-descendants=".detailToiawase"
+									th:classappend="${T(jp.loioz.common.constant.CommonConstant$ToiawaseStatus).COMPLETED == toiawase.toiawaseStatus} ? 'table-secondary' :_">
+									<td>
+										<!--/* 未返信 */-->
+										<th:block th:if="${T(jp.loioz.common.constant.CommonConstant$ToiawaseStatus).HAS_REPLY == toiawase.toiawaseStatus}">
+											<i class="fas fa-exclamation-circle text-danger"></i>
+										</th:block>
+										<!--/* 解決済み */-->
+										<th:block th:if="${T(jp.loioz.common.constant.CommonConstant$ToiawaseStatus).COMPLETED == toiawase.toiawaseStatus}">
+											<i class="fas fa-check-circle text-success"></i>
+										</th:block>
+										<!--/* 問い合わせ中 */-->
+										<th:block th:if="${T(jp.loioz.common.constant.CommonConstant$ToiawaseStatus).INQUIRING == toiawase.toiawaseStatus}">
+											<i class="fas fa-circle-notch text-primary"></i>
+										</th:block>
+										<span th:text="${toiawase.toiawaseStatus?.val}"></span>
+									</td>
+									<td class="char_ellipsis">
+										<div class="mb-2" th:text="|【${toiawase.toiawaseType?.val}】|"></div>
+										<span th:text="${toiawase.subject}"></span>
+										<a class="detailToiawase hidden" th:href="@{/user/toiawase/{toiawaseSeq}/(toiawaseSeq=${toiawase.toiawaseSeq})}"></a>
+									</td>
+									<td th:text="${toiawase.updatedAt}"></td>
+									<td th:text="${toiawase.createdAt}"></td>
+								</tr>
+							</tbody>
+						</table>
+					</div>
+					<th:block th:if="*{viewForm.page.hasPrevious() || viewForm.page.hasNext()}">
+						<div th:replace="common/pager::pager(page=${viewForm.page}, url=@{/user/toiawase/pageList})"></div>
+					</th:block>
+				</div>
+			</div>
+		</div>
+	</div>
+</body>
+</html>

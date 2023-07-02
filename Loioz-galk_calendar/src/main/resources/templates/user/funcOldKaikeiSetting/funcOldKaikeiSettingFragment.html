@@ -1,0 +1,676 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+	xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+	layout:decorator="commonLayout">
+<head>
+	<meta charset="utf-8" />
+</head>
+<body>
+
+<!--/* 旧会計機能の基本設定フラグメント */-->
+<div th:fragment="funcOldKaikeiBasicSettingFragment(funcOldKaikeiBasicSettingInputForm)" id="funcOldKaikeiBasicSettingFragment">
+	
+	<script type="text/javascript" th:inline="javascript">
+	$(function() {
+		
+		<!--/* 共有の要素セットアップ処理 */-->
+		commonSetUpElement("#funcOldKaikeiBasicSettingFragment");
+		
+		<!--/* 保存ボタンクリック */-->
+		$('#funcOldKaikeiBasicSettingFragment #funcOldKaikeiBasicSettingSave').on('click', function() {
+			
+			let formData = $("#funcOldKaikeiBasicSettingFragment #funcOldKaikeiBasicSettingInputForm").serializeArray();
+			
+			let dataObj = {
+				"formData" : formData
+			}
+			
+			if(ajaxRunning){
+				return false;
+			}
+			
+			ajaxRunning = true;
+			
+			Promise.resolve(dataObj)
+				<!--/* 保存 */-->
+				.then(saveBasicSettingFunc)
+				<!--/* 機能設定フラグメント再表示 */-->
+				.then(renderSaveFuncOldKaikeiBasicSettingFragment)
+				<!--/* 一覧ラップフラグメント再表示 */-->
+				.then(renderFuncOldKaikeiSettingViewWrapFragment)
+				<!--/* 共通ヘッダー再表示 */-->
+				.then(headerRefresh)
+				.catch((errorObj) => {
+					<!--/* 異常系の対応は各処理側で行っており、全体共通での異常系の処理は現状ない */-->
+				})
+				.finally(() => {
+					ajaxRunning = false;
+				});
+		})
+		
+		<!--/* 設定情報を保存する */-->
+		function saveBasicSettingFunc(dataObj) {
+			return new Promise((resolve, reject) =>{
+				
+				<!--/* オブジェクトのプロパティ値を取得 */-->
+				const {formData} = dataObj;
+				
+				$.ajax({
+					url : '/user/funcOldKaikeiSetting/saveFuncOldKaikeiBasicSetting',
+					type : "POST",
+					data : formData,
+					dataType: 'json'
+				}).done(function(result) {
+					<!--/* 成功 */-->
+					if (result.succeeded) {
+						showInfoMessageForJs(result.message);
+						return resolve();
+					} else {
+						// 処理失敗
+						showErrorMessageForJs(result.message);
+						return reject();
+					}
+				}).fail(function(jqXHR, textStatus, errorThrown) {
+					<!--/* 失敗 */-->
+					const errorMsg = /*[[#{E00091}]]*/ "error";
+					showErrorMessageForJs(errorMsg);
+					return reject();
+				});
+			});
+		}
+		
+		<!--/* 機能設定フラグメントを表示する */-->
+		function renderSaveFuncOldKaikeiBasicSettingFragment() {
+			return new Promise((resolve, reject) =>{
+				
+				$.ajax({
+					url : '/user/funcOldKaikeiSetting/getFuncOldKaikeiBasicSettingFragment',
+					type : "GET",
+					dataType: 'html'
+				}).done(function(data, status, jqXHR) {
+					<!--/* 成功 */-->
+					if (isAjaxProcSuccess(jqXHR)) {
+
+						<!--/* 親HTMLに記載のID */-->
+						$('#funcOldKaikeiBasicSettingFragmentWrap').html(data);
+						return resolve();
+						
+					} else {
+						// 処理失敗
+						const errorMsg = getAjaxProcResutlMessage(jqXHR);
+						showErrorMessageForJs(errorMsg);
+						return reject();
+					}
+				}).fail(function(jqXHR, textStatus, errorThrown) {
+					<!--/* 失敗 */-->
+					const errorMsg = /*[[#{E00091}]]*/ "error";
+					showErrorMessageForJs(errorMsg);
+					return reject();
+				});
+			});
+		}
+		
+	});
+	</script>
+	
+	<div class="contents_block">
+		<div class="block_title">旧会計管理の機能設定</div>
+		<div class="block_detail">
+			<p>旧会計管理の機能の有効／無効を設定をします。</p>
+			<p>機能を無効とすることで、メニューから「旧）会計管理」を非表示にすることができます。</p>
+			<p>※無効に設定した場合も、旧会計管理のデータが存在する名簿／案件メニューには表示されます</p>
+		</div>
+		<form id="funcOldKaikeiBasicSettingInputForm" th:object="${funcOldKaikeiBasicSettingInputForm}">
+
+			<div class="form-row">
+				<div class="form-group col-md-12">
+					<label class="radio_btn" th:each="option : *{getIsOldKaikeiOnOptionList()}">
+						<input type="radio" class="radio_input" th:field="*{isOldKaikeiOn}" th:value="${option.value}">
+						<span class="radio_txt" th:text="${option.label}">有効にする</span>
+					</label>
+				</div>
+			</div>
+			
+			<div class="input_block_btn_area">
+				<button type="button" id="funcOldKaikeiBasicSettingSave" class="btn btn-info save"><i class="fas fa-check"></i>保存する</button>
+			</div>
+		</form>
+	</div>
+	
+</div>
+
+<!--/* 詳細データラップフラグメント */-->
+<!--/* ※機能設定の保存後、保存した値（有効／無効など）の状態により、詳細部分の表示制御（再レンダリング）をするためにフラグメント化 */-->
+<div th:fragment="funcOldKaikeiSettingViewWrapFragment(viewForm)" id="funcOldKaikeiSettingViewWrapFragment">
+
+	<!--/* テナント機能設定による利用判定 */-->
+	<th:block th:if="${T(jp.loioz.common.constant.CommonConstant$SystemFlg).FLG_ON.equalsByCode(
+		T(jp.loioz.common.utility.SessionUtils).getTenantFuncSettingValue(T(jp.loioz.common.constant.TenantFuncSettingConstant$TenantFuncSetting).OLD_KAIKEI_ON_OFF)
+	)}">
+				<hr>
+				
+				<!--/* 詳細 */-->
+				<div id="funcOldKaikeiSettingFragmentWrap" th:insert="::funcOldKaikeiSettingViewFragment(${viewForm.funcOldKaikeiSettingListViewForm})"></div>
+	</th:block>
+
+</div>
+
+<!--/* 詳細データ */-->
+<div th:fragment="funcOldKaikeiSettingViewFragment(funcOldKaikeiSettingListViewForm)" id="funcOldKaikeiSettingViewFragment" th:object="${funcOldKaikeiSettingListViewForm}">
+	<script type="text/javascript" th:inline="javascript">
+	$(function() {
+		
+		<!--/* 定数 */-->
+		const funcOldKaikeiSettingFragmentWrap = $('#funcOldKaikeiSettingFragmentWrap');
+		const funcOldKaikeiSettingViewFragment = $('#funcOldKaikeiSettingViewFragment');
+		const funcOldKaikeiSettingEditModal = $('#funcOldKaikeiSettingEditModal');
+		const funcOldKaikeiSettingEditModalFragmentWrap = $('#funcOldKaikeiSettingEditModalFragmentWrap');
+		
+		<!--/* 共有の要素セットアップ処理 */-->
+		commonSetUpElement("#funcOldKaikeiSettingViewFragment");
+		setUpSortTargetFragment("#funcOldKaikeiSettingSortTargetList");
+		
+		<!--/* 検索処理 */-->
+		funcOldKaikeiSettingViewFragment.find("#funcOldKaikeiSettingListSearchForm input[type='radio']").on('change', function() {
+			if (ajaxRunning) {
+				return false;
+			}
+			const formParam = $('#funcOldKaikeiSettingListSearchForm').serializeArray();
+			ajaxRunning = true;
+			$.ajax({
+				url : '/user/funcOldKaikeiSetting/getFuncOldKaikeiSettingListSearch',
+				type : "GET",
+				data : formParam,
+			}).done(function(data, status, jqXHR) {
+				<!--/* 成功 */-->
+				if (isAjaxProcSuccess(jqXHR)) {
+					funcOldKaikeiSettingFragmentWrap.html(data);
+				} else {
+					// 処理失敗
+					const errorMsg = getAjaxProcResutlMessage(jqXHR);
+					showErrorMessageForJs(errorMsg);
+				}
+			}).fail(function(jqXHR, textStatus, errorThrown) {
+				<!--/* 失敗 */-->
+				const errorMsg = /*[[#{E00091}]]*/ "error";
+				showErrorMessageForJs(errorMsg);
+			}).always(function() {
+				ajaxRunning = false;
+			});
+		});
+		
+		<!--/* モーダルの表示 */-->
+		funcOldKaikeiSettingViewFragment.find('.openFucOldKaikeiSettingEditModal').on('click', function() {
+			if (ajaxRunning) {
+				return false;
+			}
+			const nyushukkinKomokuId = $(this).data('id');
+			let action = "create";
+			if (nyushukkinKomokuId) {
+				action = "edit";
+			}
+			ajaxRunning = true;
+			$.ajax({
+				url : "/user/funcOldKaikeiSetting/" + action,
+				type : "GET",
+				data :{ 'nyushukkinKomokuId' : nyushukkinKomokuId},
+			}).done(function(data, status, jqXHR) {
+				<!--/* 成功 */-->
+				if (isAjaxProcSuccess(jqXHR)) {
+					funcOldKaikeiSettingEditModalFragmentWrap.html(data);
+					funcOldKaikeiSettingEditModal.modal('show');
+				} else {
+					// 処理失敗
+					const errorMsg = getAjaxProcResutlMessage(jqXHR);
+					showErrorMessageForJs(errorMsg);
+				}
+			}).fail(function(jqXHR, textStatus, errorThrown) {
+				<!--/* 失敗 */-->
+				const errorMsg = /*[[#{E00091}]]*/ "error";
+				showErrorMessageForJs(errorMsg);
+			}).always(function() {
+				ajaxRunning = false;
+			});
+		});
+		
+		<!--/* モーダル閉じる処理 */-->
+		funcOldKaikeiSettingEditModal.on('hidden.bs.modal', function (e) {
+			<!--/* 初期化する */-->
+			funcOldKaikeiSettingEditModalFragmentWrap.html('');
+		});
+		
+	});
+	</script>
+	
+	<div class="contents_block">
+		<div class="block_title">入出金項目</div>
+		<div class="block_detail">
+			<p>旧会計管理の入出金項目として利用します。</p>
+			<div class="search_conditions">
+				<form id="funcOldKaikeiSettingListSearchForm" th:object="${funcOldKaikeiSettingSearchForm.funcOldKaikeiSettingListSearchForm}">
+					<div class="form-row">
+						<div class="col-sm-10 my-auto">
+							<label class="side_parts_label">絞り込み：</label>
+							<label class="radio_btn">
+								<input type="radio" class ="radio_input" th:field="*{nyushukkinType}" value="">
+								<span class="radio_txt">すべて</span>
+							</label>
+							<label class="radio_btn">
+								<input type="radio" class ="radio_input" th:field="*{nyushukkinType}" th:value="${T(jp.loioz.common.constant.CommonConstant$DepositType).NYUKIN.getCd()}">
+								<span class="radio_txt">入金項目</span>
+							</label>
+							<label class="radio_btn">
+								<input type="radio" class ="radio_input" th:field="*{nyushukkinType}" th:value="${T(jp.loioz.common.constant.CommonConstant$DepositType).SHUKKIN.getCd()}">
+								<span class="radio_txt">出金項目</span>
+							</label>
+						</div>
+						<div class="block_action">
+							<button type="button" class="btn btn-primary openFucOldKaikeiSettingEditModal">
+								<i class="fas fa-plus"></i>新規登録</button>
+						</div>
+					</div>
+				</form>
+			</div>
+		</div>
+		
+		<!--/* 一覧表示 */-->
+		<div class="list_area">
+			<table class="table table_standard table_sort table-sm table_fixed table-striped" th:with="canSort=*{canSort}">
+				<thead>
+					<tr>
+						<th class="col_5"><i class="fas fa-grip-vertical fc_sub"></i></th>
+						<th class="col_35">項目名</th>
+						<th class="col_15">入金／出金</th>
+						<th class="col_20">課税区分</th>
+						<th class="col_15">状態</th>
+						<th class="col_10">操作</th>
+					</tr>
+				</thead>
+				<tbody th:id="${canSort} ? 'funcOldKaikeiSettingSortTargetList' : '' ">
+<!--/*/ 		<th:block th:if="*{#lists.isEmpty(funcOldKaikeiSettingListItemDtoList)}"> /*/-->
+						<tr>
+							<td colspan="6" class="no_data_table_list">
+								<span th:text="#{I00021}">MSG_I00021</span>
+							</td>
+						</tr>
+<!--/*/ 		</th:block> /*/-->
+					<tr th:each="item : *{funcOldKaikeiSettingListItemDtoList}" th:object="${item}" th:data-target-id="*{nyushukkinKomokuId}"
+						th:classAppend="${T(jp.loioz.common.constant.CommonConstant$DisabledFlg).NOT_AVAILABLE.equalsByCode(item.disabledFlg?.cd)} ? 'table-secondary' : '' ">
+						<th:block th:if="${canSort}">
+							<td class="col_5">
+								<div class="move_point sortableObj">
+									<svg class="icon_drag_indicator hidden"></svg>
+									<div class="sortableIdx hidden" th:text="*{dispOrder}"></div>
+								</div>
+							</td>
+						</th:block>
+						<th:block th:unless="${canSort}">
+							<td class="col_5"></td>
+						</th:block>
+						<td class="col_35" th:text="*{komokuName}"></td>
+						<td class="col_15">
+							<span th:text="*{nyushukkinType?.val}"></span>
+						</td>
+						<td class="col_20">
+							<span th:text="*{taxFlg?.val}"></span>
+						</td>
+						<td class="col_15">
+							<span th:text="*{disabledFlg?.val}"></span>
+						</td>
+						<td class="col_10">
+							<div class="d-inline-block" data-toggle="tooltip" title="入出金項目を編集" data-trigger="hover" data-container="#funcOldKaikeiSettingViewFragment">
+								<button class="btn btn-light btn-sm openFucOldKaikeiSettingEditModal" th:data-id="*{nyushukkinKomokuId}">
+									<i class="fas fa-edit mr-1"></i>
+									<span>編集</span>
+								</button>
+							</div>
+						</td>
+					</tr>
+				</tbody>
+			</table>
+		</div>
+	</div>
+	
+	<!--/* モーダル */-->
+	<div id="funcOldKaikeiSettingEditModal" class="modal fade" tabindex="-1" role="dialog" aria-hidden="true" data-backdrop="static">
+		<div class="modal-dialog modal-dialog-centered" role="document">
+			<div class="modal-content">
+				<div id="funcOldKaikeiSettingEditModalFragmentWrap"></div>
+			</div>
+		</div>
+	</div>
+</div>
+
+<!--/* 入出金項目編集モーダル */-->
+<div th:fragment="funcOldKaikeiSettingEditModalFragment" id="funcOldKaikeiSettingEditModalFragment" th:object="${funcOldKaikeiSettingEditModalInputForm}">
+	<script type="text/javascript" th:inline="javascript">
+	$(function() {
+		
+		<!--/* 定数 */-->
+		const funcOldKaikeiSettingEditModalFragmentWrap = $('#funcOldKaikeiSettingEditModalFragmentWrap');
+		const funcOldKaikeiSettingEditModalFragment = $('#funcOldKaikeiSettingEditModalFragment');
+		const modal = funcOldKaikeiSettingEditModalFragment.closest(".modal");
+		
+		<!--/* 初期処理 */-->
+		commonSetUpElement("#funcOldKaikeiSettingEditModalFragment");
+		checkNyushukkinType();
+		
+		<!--/* 入金・出金の切り替え */-->
+		$('.changeNyushukkinType').change(function() {
+			let id = $('#nyushukkinKomokuId').val();
+			if (id == '') {
+				checkNyushukkinType();
+			}
+		});
+
+		<!--/* 入金・出金による課税区分の表示制御 */-->
+		function checkNyushukkinType() {
+			// 入出金項目ID
+			let id = $('#nyushukkinKomokuId').val();
+			// 入力／出金
+			let nyushukkinType = $('[name="nyushukkinType"]:checked').val();
+			// 課税区分
+			let taxFlg =  $('[name="taxFlg"]:checked').val();
+			// 1：入金、2：出金
+			if (nyushukkinType === '1') {
+				// 1：入金
+				$('[id="taxFlg1"]').parent().removeClass('hidden');
+				$('[id="taxFlg2"]').parent().addClass('hidden');
+				if (id !== '') {
+					// 更新時
+					$('[id="nyushukkinType2"]').parent().addClass('hidden');
+				} else {
+					// 新規登録
+					$('[id="taxFlg1"]').prop('checked', true);
+				}
+			} else {
+				// 2：出金
+				$('[id="taxFlg2"]').parent().removeClass('hidden');
+				if (id !== '') {
+					// 更新時
+					// 出金ラジオボタン-非表示
+					$('[id="nyushukkinType1"]').parent().addClass('hidden');
+					// 出金ラジオボタン-左寄せ
+					$('[id="nyushukkinType2"]').parent().addClass('ml-0');
+
+					// 課税区分
+					switch (taxFlg) {
+						case '0':
+							// 非課税
+							$('[id="taxFlg1"]').parent().addClass('ml-0');
+							$('[id="taxFlg2"]').parent().addClass('hidden');
+							break;
+						case '1':
+							// 課税（内税）
+							$('[id="taxFlg1"]').parent().addClass('hidden');
+							$('[id="taxFlg2"]').parent().addClass('ml-0');
+							break;
+						default :
+							break;
+					}
+				}
+			}
+		}
+		
+		
+		<!--/* 登録 */-->
+		funcOldKaikeiSettingEditModalFragment.find('#regist').on("click", function() {
+			<!--/* 2重押下防止 */-->
+			if (ajaxRunning){
+				return false;
+			}
+			
+			let formData = funcOldKaikeiSettingEditModalFragment.find('#editForm').serializeArray();
+			ajaxRunning = true;
+			
+			Promise.resolve(formData)
+				.then((params) => {
+					return new Promise((resolve, reject) => {
+						$.ajax({
+							type : "POST",
+							url : "/user/funcOldKaikeiSetting/regist",
+							data : params,
+						}).done(function(data, status, jqXHR) {
+							if (isAjaxProcSuccess(jqXHR)) {
+								showInfoMessageForJs(getAjaxProcResutlMessage(jqXHR));
+								return resolve();
+							} else {
+								if (data) {
+									funcOldKaikeiSettingEditModalFragmentWrap.html(data);
+								}
+								// 処理失敗
+								const errorMsg = getAjaxProcResutlMessage(jqXHR);
+								showErrorMessage(errorMsg, modal);
+								return reject();
+							}
+						}).fail(function(jqXHR, textStatus, errorThrown) {
+							<!--/* 失敗 */-->
+							const errorMsg = /*[[#{E00091}]]*/ "error";
+							showErrorMessage(errorMsg, modal);
+							return reject();
+						});
+					});
+				})
+				.then(() => modalHidePromise(modal))
+				.then(getFucOldKaikeiSettingListSearch)
+				.catch((errors) => console.log(errors))
+				.finally(() => ajaxRunning = false);
+		});
+		
+		<!--/* 更新 */-->
+		funcOldKaikeiSettingEditModalFragment.find('#update').on("click", function() {
+			<!--/* 2重押下防止 */-->
+			if (ajaxRunning){
+				return false;
+			}
+			
+			let formData = funcOldKaikeiSettingEditModalFragment.find('#editForm').serializeArray();
+			ajaxRunning = true;
+			
+			Promise.resolve(formData)
+				.then((params) => {
+					return new Promise((resolve, reject) => {
+						$.ajax({
+							type : "POST",
+							url : "/user/funcOldKaikeiSetting/update",
+							data : params,
+						}).done(function(data, status, jqXHR) {
+							if (isAjaxProcSuccess(jqXHR)) {
+								showInfoMessageForJs(getAjaxProcResutlMessage(jqXHR));
+								return resolve();
+							} else {
+								if (data) {
+									funcOldKaikeiSettingEditModalFragmentWrap.html(data);
+								}
+								// 処理失敗
+								const errorMsg = getAjaxProcResutlMessage(jqXHR);
+								showErrorMessage(errorMsg, modal);
+								return reject();
+							}
+						}).fail(function(jqXHR, textStatus, errorThrown) {
+							<!--/* 失敗 */-->
+							const errorMsg = /*[[#{E00091}]]*/ "error";
+							showErrorMessage(errorMsg, modal);
+							return reject();
+						});
+					});
+				})
+				.then(() => modalHidePromise(modal))
+				.then(getFucOldKaikeiSettingListSearch)
+				.catch((errors) => console.log(errors))
+				.finally(() => ajaxRunning = false);
+		});
+		
+		<!--/* 停止 */-->
+		funcOldKaikeiSettingEditModalFragment.find('#using').on("click", function() {
+			<!--/* 2重押下防止 */-->
+			if (ajaxRunning){
+				return false;
+			}
+			const disabledFlg = funcOldKaikeiSettingEditModalFragment.find('input[name="disabledFlg"]').val();
+			let msg = '利用停止します。よろしいですか?';
+			if (disabledFlg === '1') {
+				msg = '利用再開します。よろしいですか?';
+			}
+			if (!confirm(msg)){
+				return false;
+			}
+			
+			const nyushukkinKomokuId = funcOldKaikeiSettingEditModalFragment.find('input[name="nyushukkinKomokuId"]').val();
+			ajaxRunning = true;
+			Promise.resolve(nyushukkinKomokuId)
+				.then((params) => {
+					return new Promise((resolve, reject) => {
+						$.ajax({
+							type : "POST",
+							url : "/user/funcOldKaikeiSetting/using",
+							data : {"nyushukkinKomokuId": nyushukkinKomokuId},
+						}).done(function(data, status, jqXHR) {
+							if (isAjaxProcSuccess(jqXHR)) {
+								showInfoMessageForJs(getAjaxProcResutlMessage(jqXHR));
+								return resolve();
+							} else {
+								// 処理失敗
+								const errorMsg = getAjaxProcResutlMessage(jqXHR);
+								showErrorMessage(errorMsg, modal);
+								return reject();
+							}
+						}).fail(function(jqXHR, textStatus, errorThrown) {
+							<!--/* 失敗 */-->
+							const errorMsg = /*[[#{E00091}]]*/ "error";
+							showErrorMessage(errorMsg, modal);
+							return reject();
+						});
+					});
+				})
+				.then(() => modalHidePromise(modal))
+				.then(getFucOldKaikeiSettingListSearch)
+				.catch((errors) => console.log(errors))
+				.finally(() => ajaxRunning = false);
+		});
+		
+		<!--/* 削除 */-->
+		funcOldKaikeiSettingEditModalFragment.find('#delete').on("click", function() {
+			<!--/* 2重押下防止 */-->
+			if (ajaxRunning){
+				return false;
+			}
+			
+			if (!confirm('削除します。よろしいですか?')){
+				return false;
+			}
+			
+			const nyushukkinKomokuId = funcOldKaikeiSettingEditModalFragment.find('input[name="nyushukkinKomokuId"]').val();
+			ajaxRunning = true;
+			Promise.resolve(nyushukkinKomokuId)
+				.then((params) => {
+					return new Promise((resolve, reject) => {
+						$.ajax({
+							type : "POST",
+							url : "/user/funcOldKaikeiSetting/delete",
+							data : {"nyushukkinKomokuId": nyushukkinKomokuId},
+						}).done(function(data, status, jqXHR) {
+							if (isAjaxProcSuccess(jqXHR)) {
+								showInfoMessageForJs(getAjaxProcResutlMessage(jqXHR));
+								return resolve();
+							} else {
+								// 処理失敗
+								const errorMsg = getAjaxProcResutlMessage(jqXHR);
+								showErrorMessage(errorMsg, modal);
+								return reject();
+							}
+						}).fail(function(jqXHR, textStatus, errorThrown) {
+							<!--/* 失敗 */-->
+							const errorMsg = /*[[#{E00091}]]*/ "error";
+							showErrorMessage(errorMsg, modal);
+							return reject();
+						});
+					});
+				})
+				.then(() => modalHidePromise(modal))
+				.then(getFucOldKaikeiSettingListSearch)
+				.catch((errors) => console.log(errors))
+				.finally(() => ajaxRunning = false);
+		});
+
+		<!--/* モーダル閉じる処理をPromise化 */-->
+		function modalHidePromise(modal){
+			return new Promise((resolve) => {
+				$(modal).one('hidden.bs.modal', function() {
+					resolve();
+				});
+				$(modal).modal("hide");
+			});
+		};
+		
+	});
+	</script>
+	<form id="editForm">
+		<div class="modal-header">
+			<h2 class="modalheader_title" th:text="*{isNew()} ? '入出金項目登録' : '入出金項目更新'"></h2>
+		</div>
+		<div class="modal-body">
+			<div th:replace="common/messageArea::jsMessageArea"></div>
+			<input type="hidden" th:field="*{nyushukkinKomokuId}">
+			<input type="hidden" th:field="*{disabledFlg}">
+			<!--/* 入力エリア */-->
+				<!--/* 名称 */-->
+				<div class="form-row">
+					<div class="form-group col-md-12">
+						<label class="input_parts_label">項目名</label>
+						<span class="mark_equired">必須</span>
+						<input type="text" class="form-control" th:field="*{komokuName}" placeholder="全角半角10文字" maxlength="10">
+						<!--/* Enter key対応のダミー */-->
+						<input type="text" name="dummy" style="display:none;">
+						<div th:if="*{#fields.hasErrors('komokuName')}" th:errors="*{komokuName}" class="error_mag_point">error</div>
+					</div>
+				</div>
+				<!--/* 名称 end */-->
+				
+				<!--/* 入金/出金 */-->
+				<div class="form-row">
+					<div class="form-group col-md-12">
+						<label class="input_parts_label">入金／出金</label>
+						<div>
+							<label class="radio_btn" th:each="enum : ${T(jp.loioz.common.constant.CommonConstant$NyushukkinType).values()}">
+								<input type="radio" class="radio_input changeNyushukkinType" th:field="*{nyushukkinType}" th:value="${enum.cd}">
+								<span class="radio_txt" th:text="${enum.val}"></span>
+							</label>
+							<div th:if="*{#fields.hasErrors('nyushukkinType')}" th:errors="*{nyushukkinType}" class="error_mag_point">error</div>
+						</div>
+					</div>
+				</div>
+				<!--/* 入金/出金 end */-->
+				
+				<!--/* 課税区分 */-->
+				<div class="form-row">
+					<div class="form-group col-md-12">
+						<label class="input_parts_label">課税区分</label>
+						<div>
+							<label class="radio_btn">
+								<input type="radio" class="radio_input" th:field="*{taxFlg}" th:value="${T(jp.loioz.common.constant.CommonConstant$TaxFlg).FREE_TAX.getCd()}">
+								<span class="radio_txt" th:text="${T(jp.loioz.common.constant.CommonConstant$TaxFlg).FREE_TAX.getVal()}"></span>
+							</label>
+							<label class="radio_btn">
+								<input type="radio" class="radio_input" th:field="*{taxFlg}" th:value="${T(jp.loioz.common.constant.CommonConstant$TaxFlg).INTERNAL_TAX.getCd()}">
+								<span class="radio_txt" th:text="${T(jp.loioz.common.constant.CommonConstant$TaxFlg).INTERNAL_TAX.getVal()}"></span>
+							</label>
+							<div th:if="*{#fields.hasErrors('taxFlg')}" th:errors="*{taxFlg}" class="error_mag_point">error</div>
+						</div>
+				</div>
+			</div>
+		</div>
+		<div class="modal-footer">
+			<button th:if="*{!isNew()}" type="button" class="btn btn-light" id="delete"><i class="far fa-trash-alt"></i>削除</button>
+			<button th:if="*{!isNew()}" type="button" class="btn btn-light mr-auto" id="using" th:text="*{isDisbled()} ? '再開' : '停止'">停止</button>
+			<div>
+				<button th:if="*{!isNew()}" type="button" class="btn btn-info" id="update"><i class="fas fa-check"></i>保存</button>
+				<button th:if="*{isNew()}" type="button" class="btn btn-info" id="regist"><i class="fas fa-check"></i>登録</button>
+				<button type="button" class="btn btn-light" data-dismiss="modal"><i class="fas fa-times"></i>閉じる</button>
+			</div>
+		</div>
+	</form>
+</div>
+
+</body>
+</html>

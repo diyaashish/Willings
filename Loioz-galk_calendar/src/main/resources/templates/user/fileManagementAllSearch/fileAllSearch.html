@@ -1,0 +1,465 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+	xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+	xmlns:xtra="https://github.com/connect-group/thymeleaf-extras"
+	layout:decorator="commonLayout">
+<head>
+<meta charset="utf-8" th:remove="tag" />
+<title layout:fragment="title-contents">
+	[[${T(jp.loioz.common.utility.LoiozUtils).getHtmlTitle("ファイル一覧", T(jp.loioz.common.utility.SessionUtils).getTenantName())}]]
+</title>
+<th:block th:with="version=${@environment.getProperty('app.version')}">
+	<link href="./css/dropzone.css" th:href="@{/css/dropzone.css?{ver}(ver=${version})}" rel="stylesheet" type="text/css" />
+	<link href="./css/fileManagement/file.css" th:href="@{/css/fileManagement/file.css?{ver}(ver=${version})}" rel="stylesheet" type="text/css" />
+</th:block>
+<style type="text/css">
+	<!--/* 検索条件部分関連 START */-->
+	.datetime_from {
+		display: flex;
+	}
+	.datetime_to {
+		display: flex;
+	}
+	.time_separator {
+		font-weight: bold;
+	}
+	.period_separator {
+		padding-top: 7px;
+		padding-right: 15px;
+		padding-left: 15px;
+	}
+	.time {
+		padding-left: 10px;
+	}
+	<!--/* 検索条件部分関連 END */-->
+	<!--/* 検索結果部分関連 START */-->
+	.result_count .search_result_count {
+		border-color: #F0AF3F;
+	}
+	.search_result_header_right {
+		list-style: none;
+		margin-top: 0px;
+		border-top-width: 10px;
+		padding-left: 0px;
+		margin-bottom: 0px;
+	}
+	 .col_file_name {
+		width: 400px;
+		max-width: 400px;
+	}
+	.col_file_path{
+		width: 700px;
+		max-width: 700px;
+	}
+	.file_list_row_style{
+		height:43px;
+	}
+	<!--/* 検索結果部分関連 END */-->
+</style>
+<script type="text/javascript" th:inline="javascript">
+/*<![CDATA[*/
+$(document).ready(function() {
+	let errorMsg = /*[[${msgHolder.errorMsg} ]]*/
+	  if(errorMsg != null){
+		let contents =$(".wrapper");
+		showErrorMessage(errorMsg, contents);
+	  }
+});
+/*]]>*/
+</script>
+<script type="text/javascript" th:inline="javascript">
+/*<![CDATA[*/
+$(function() {
+
+	const isRootFolderKubun = /*[[${T(jp.loioz.common.constant.CommonConstant.FileKubun).IS_ROOT_FOLDER.getCd()}]]*/;
+	const isFolderKubun = /*[[${T(jp.loioz.common.constant.CommonConstant.FileKubun).IS_FOLDER.getCd()}]]*/;
+	const isfileKubun = /*[[${T(jp.loioz.common.constant.CommonConstant.FileKubun).IS_FILE.getCd()}]]*/;
+
+	<!--/* クリアボタン押下時処理 */-->
+	$('#clearButton').click(function(){
+		$('#searchForm')
+			.find('input').val('').end()
+			.find("select").prop('selectedIndex', 0).end();
+	});
+	<!--/* 行クリック時 */-->
+	$('.file_list_row').click(function(){
+		$('.file_list_row').removeClass("clicked");
+		$(this).addClass("clicked");
+	});
+	<!--/* 行ダブルクリック時 */-->
+	$('.file_list_row').dblclick(function(){
+		if($(this).hasClass("isLimit")){
+			let contents =$(".wrapper_contents");
+			showErrorMessageForJs(/*[[#{E00077}]]*/, contents);
+		}else{
+			let fileKubun = $(this).children().find('[id^="fileKubun"]').val();
+			let url = /*[[@{/user/fileManagement/list/folder}]]*/'/user/fileManagement/list/folde/';
+			if(isfileKubun == fileKubun){
+				url += '?fileConfigurationManagementId=' + $(this).children().find('[id^="parentFileConfigurationManagementId"]').val();
+				if($(this).children().find('[id^="ankenId"]').val()){
+					url += '&transitionAnkenId=' + $(this).children().find('[id^="ankenId"]').val();
+				}else{
+					url += '&transitionCustomerId=' + $(this).children().find('[id^="customerId"]').val();
+				}
+			}else if(isFolderKubun ==fileKubun){
+				url += '?fileConfigurationManagementId=' + $(this).children().find('[id^="fileConfigurationManagementId"]').val();
+				if($(this).children().find('[id^="ankenId"]').val()){
+					url += '&transitionAnkenId=' + $(this).children().find('[id^="ankenId"]').val();
+				}else{
+					url += '&transitionCustomerId=' + $(this).children().find('[id^="customerId"]').val();
+				}
+			}
+			window.location.href = url;
+		}
+
+	});
+	<!--/* ダウンロードボタン押下時処理 */-->
+	<!--/* アイコンからダウンロードボタン押下時 */-->
+	$(document).on('click', '.downloadBtn', function(e) {
+		$(this).find('.fa-download').addClass('hidden');
+		$(this).find('.fa-spinner').removeClass('hidden');
+		let fileConfigurationManagementId = $(this).closest('tr').find('[id^="fileConfigurationManagementId"]').val();
+		fileCheckAndDownload(fileConfigurationManagementId,$(this));
+	});
+
+	function fileCheckAndDownload(fileConfigurationManagementId,button){
+		$.ajaxSetup({
+			cache : false,
+		});
+		const downloadPreCheckReques = $.ajax({
+			url : "/user/fileManagement/list/downloadPreCheck",
+			type : "POST",
+			data : {"fileConfigurationManagementId" : fileConfigurationManagementId},
+		})
+
+		// 成功時
+		downloadPreCheckReques.done(function(result) {
+			if(result.success){
+				// 履歴の再取得処理 -> コールバック内のコールバック取得
+				const fileDownloadRequest = $.when(fileDownload(fileConfigurationManagementId,button));
+
+			}else{
+				showErrorMessageForJs(result.message);
+				$(button).find('.fa-download').removeClass('hidden');
+				$(button).find('.fa-spinner').addClass('hidden');
+			}
+		});
+
+		// 失敗時
+		downloadPreCheckReques.fail(function(jqXHR, textStatus, errorThrown) {
+			window.location.href = "/systemError";
+		});
+
+		// どちらも行う処理
+		downloadPreCheckReques.always(function() {
+			ajaxRunning = false;
+		});
+	};
+		<!-- /* ダウンロード処理 */ -->
+		function fileDownload(fileConfigurationManagementId,button){
+			const def= $.Deferred();
+			const  fileDownloadRequest = $.ajax({
+				url : "/user/fileManagement/list/download",
+				type : "POST",
+				data : {"fileConfigurationManagementId" : fileConfigurationManagementId},
+				xhrFields : {
+					responseType: 'blob'
+				},
+			})
+			// 成功時
+			fileDownloadRequest.done(function(response, status, xhr) {
+				def.resolve(response);
+				let filename = "";
+				let disposition = xhr.getResponseHeader('Content-Disposition');
+				if (disposition) {
+					const filenameRegex = /filename[^;=\n]*=((['"]).*?\2|[^;\n]*)/;
+					const matches = filenameRegex.exec(disposition);
+					// ファイル名をデコード
+					if (matches !== null && matches[1]) {
+						filename = decodeURI(decodeURI(matches[1].replace(/['"]/g, '')));
+					}
+				}
+				try {
+					var blob = new Blob([response], { type: 'application/octet-stream' });
+					if (typeof window.navigator.msSaveBlob !== 'undefined') {
+						window.navigator.msSaveBlob(blob, filename);
+					}
+					else {
+						const URL = window.URL || window.webkitURL;
+						const downloadUrl = URL.createObjectURL(blob);
+						if (filename) {
+							const aElement = document.createElement("a");
+							if (typeof aElement.download === 'undefined') {
+								window.location = downloadUrl;
+							}
+							else {
+								aElement.href = downloadUrl;
+								aElement.download = filename;
+								document.body.appendChild(aElement);
+								aElement.target = "_blank";
+								aElement.click();
+							}
+						}
+						else {
+							window.location = downloadUrl;
+						}
+					}
+				} catch (ex) {
+					alert([[#{E00034}]]);
+				}
+			})
+
+			// 失敗時
+			fileDownloadRequest.fail(function(jqXHR, textStatus, errorThrown) {
+				alert([[#{E00034}]]);
+			})
+
+			// どちらも行う処理
+			fileDownloadRequest.always(function() {
+				$(button).find('.fa-download').removeClass('hidden');
+				$(button).find('.fa-spinner').addClass('hidden');
+			});
+
+			// 結果を返却
+			return def.promise(this);
+		}
+	<!--/* プレビューボタン押下時 */-->
+	<!--/* アイコンからプレビューボタン押下時 */-->
+	$(document).on('click', '.previewBtn', function(e) {
+		let fileConfigurationManagementId = $(this).closest('tr').find('[id^="fileConfigurationManagementId"]').val();
+		filePreview(fileConfigurationManagementId,$(this));
+	});
+
+	function filePreview(fileConfigurationManagementId,button){
+		const url = "/user/fileManagement/list/preview";
+		$.ajaxSetup({
+			cache : false,
+		});
+		$.ajax({
+			url : url,
+			type : "POST",
+			data : { "fileConfigurationManagementId" : fileConfigurationManagementId},
+			xhrFields : { responseType: 'blob' },
+		}).done(function (response, status, xhr) {
+			<!--/* プレビュー可能なコンテンツタイプ一覧 */-->
+			const availableContentsTypes = [
+				/*[[${T(org.springframework.http.MediaType).APPLICATION_PDF_VALUE}]]*/"application/pdf"
+				,/*[[${T(org.springframework.http.MediaType).IMAGE_PNG_VALUE}]]*/"image/png"
+				,/*[[${T(org.springframework.http.MediaType).IMAGE_JPEG_VALUE}]]*/"image/jpeg"
+			];
+			const contentsTypeOfTargetFile = response.type.toString();
+			if(!availableContentsTypes.includes(contentsTypeOfTargetFile)) {
+				alert("申し訳ございません。ご指定のファイル形式はプレビュー未対応となっております。");
+				return false;
+			}
+			let filename = "";
+			let disposition = xhr.getResponseHeader('Content-Disposition');
+			if (disposition) {
+				const filenameRegex = /filename[^;=\n]*=((['"]).*?\2|[^;\n]*)/;
+				const matches = filenameRegex.exec(disposition);
+				// ファイル名をデコード
+				if (matches !== null && matches[1]) {
+					filename = decodeURI(decodeURI(matches[1].replace(/['"]/g, '')));
+				}
+			}
+			const file = new Blob([response], {type: contentsTypeOfTargetFile});
+			const fileURL = URL.createObjectURL(file);
+			window.open(fileURL);
+
+		}).fail(function(jqXHR, textStatus, errorThrown) {
+			alert("想定外のエラーが発生しました。");
+		}).always(function() {
+		});
+	};
+
+});
+/*]]>*/
+</script>
+</head>
+<body class="bg2">
+	
+	<!--/* メインコンテンツ */-->
+	<div layout:fragment="main-contents" th:remove="tag">
+	
+		<!--/* メインコンテンツの外側 */-->
+		<div class="contents_wrapper">
+			<div class="container-fluid">
+				
+				<!--/* メイン */-->
+				<main class="content">
+					
+					<!--/* メッセージコンテンツ*/-->
+					<div th:replace="common/messageArea::messageArea"></div>
+					
+					<form id="searchForm" th:action="@{/user/fileManagementAllSearch/search}" th:object="${fileAllSearchViewForm}" method="get" data-enter-sync="#searchButton">
+						<input type="hidden" id="detailSearchFlg" th:field="*{detailSearchFlg}">
+						
+						<!--/* 検索条件項目群 START */-->
+						<div class="searchform_wrapper mt-4">
+							<div class="searchform_block">
+								<h3 class="searchform_block_title">検索条件<span class="mark_equired mt-1 ml-3">必須</span></h3>
+								<!--/* 検索条件部 */-->
+								<div class="searchform_block_main mt-3 pl-0">
+									<!--/* 基本検索 */-->
+									<div class="row row_list border-top-0">
+										<div class="col-auto pr-4">
+											<label for="search-fileName" class="input_parts_label">ファイル／フォルダ名</label>
+											<div class="d-flex">
+												<input type="text" id="search-fileName" class="form-control digit20 fcAddTextClear" th:field="*{fileName}" maxlength="255">
+											</div>
+										</div>
+										<div class="col-auto pr-4">
+											<label for="search-upLoadUser" class="input_parts_label">アップロードユーザー</label>
+											<div class="d-flex">
+												<input type="text" id="search-upLoadUser" class="form-control digit10 search_item_upload_user fcAddTextClear" th:field="*{uploadUser}" maxlength="24">
+											</div>
+										</div>
+										<div class="col-auto pr-4">
+											<label for="search-file-type" class="input_parts_label">ファイル種類</label>
+											<select class="form-control" id="search-file-type" th:field="*{fileType}">
+												<option value="">-</option>
+												<option th:each="enum : ${T(jp.loioz.common.constant.CommonConstant$FileType).values()}"
+												th:value="${enum.cd}" th:text="${enum.val}"></option>
+											</select>
+										</div>
+									</div>
+									<!-- コマンド -->
+									<div class="searchform_block_bottom mt-3">
+										<button id="searchBtn" type="submit" class="btn btn-dark" onclick="setDetailSearchOpen(); submit();"><i class="fas fa-search"></i>検索</button>
+										<button id="clearButton" type="button" class="btn btn-light">キャンセル</button>
+									</div>
+								</div>
+							</div>
+						</div>
+					</form>
+					<!--/* 検索条件項目群 END */-->
+					
+					<!--/* 検索結果一覧 START */-->
+					<th:block th:if="${fileAllSearchViewForm.searchResultInfoList}">
+					<div class="search_result_area">
+						<div class="d-flex my-3">
+							<ul class="result_count">
+								<li class="search_result_count">該当件数： <span th:text="${fileAllSearchViewForm.searchResultTotalCount}">0</span> 件</li>
+							</ul>
+							<div class="ml-auto d-flex align-items-center">
+								<div class="dispUsingStrage mb-0 d-inline-block" th:text="${fileAllSearchViewForm.dispStrageInfo}"></div>
+								<div class="ml-5">
+									<a th:if="${T(jp.loioz.common.utility.SessionUtils).isManager()}" class="openPlanSetting" href="javascript:void(0);"><i class="fas fa-database mr-2"></i>容量を変更する</a>
+								</div>
+							</div>
+						</div>
+						<div th:object="${fileAllSearchViewForm}" th:if="${fileAllSearchViewForm.searchResultInfoList}">
+							<table class="table table-sm table-hover table_fixed">
+								<thead class="bg-info">
+									<tr>
+										<th class="col_60" colspan="2">ファイル／フォルダ名</th>
+										<th class="col_40">パス</th>
+									</tr>
+								</thead>
+								<tbody>
+<!--/*/ 					<th:block th:if="${#lists.isEmpty(fileAllSearchViewForm.searchResultInfoList)}"> /*/-->
+									<tr>
+										<td colspan="5" class="no_data"><span th:text="#{I00022}">MSG_I00022</span></td>
+									</tr>
+<!--/*/ 					</th:block> /*/-->
+									<tr th:each="fileInfo, stat : ${fileAllSearchViewForm.searchResultInfoList}" class="file_list_row file_list_row_style"
+										th:classappend="|${fileInfo.fileKubun ne T(jp.loioz.common.constant.CommonConstant.FileKubun).IS_FILE.getCd() ? 'isFolderRow' : '' } ${fileInfo.dispLimit ? 'isLimit' :''}|">
+										<td>
+											<input type="hidden" th:id="index" th:value="${stat.index}">
+											<input type="hidden" th:id="'fileConfigurationManagementId' + ${stat.index}" th:value="${fileInfo.fileConfigurationManagementId}">
+											<input type="hidden" th:id="'fileKubun' + ${stat.index}" th:value="${fileInfo.fileKubun}">
+											<input type="hidden" th:id="'parentFileConfigurationManagementId' + ${stat.index}" th:value="${fileInfo.parentFileConfigurationManagementId}">
+											<input th:if="${fileInfo.ankenId}" type="hidden" th:id="'ankenId' + ${stat.index}" th:value="${fileInfo.ankenId.asLong()}">
+											<input th:if="${fileInfo.customerId}" type="hidden" th:id="'customerId' + ${stat.index}" th:value="${fileInfo.customerId.asLong()}">
+											<div>
+												<th:block th:if="${T(jp.loioz.common.constant.CommonConstant.FileKubun).IS_ROOT_FOLDER.getCd()} eq ${fileInfo.fileKubun}">
+													<th:block th:if="${fileInfo.ankenId != null}">
+														<i class="fas fa-folder-open anken_folder mr-2"></i>
+														<span class="span_anken_Name" th:text="${#strings.defaultString(fileInfo.ankenName, '&#40;案件名未入力&#41;')}"></span>
+														<div>
+															<a th:href="@{/user/fileManagement/list(transitionAnkenId=${fileInfo.ankenId.asLong()})}">
+																<span class="sub_text" th:text="|&#40;${fileInfo.ankenId}&#41;|"></span>
+															</a>
+														</div>
+													</th:block>
+													<th:block th:if="${fileInfo.customerId != null}">
+														<i class="fas fa-folder-open meibo_folder mr-2"></i>
+														<span class="span_customer_Name" th:text="${#strings.defaultString(fileInfo.customerName,'')}"></span>
+														<div>
+															<a th:href="@{/user/fileManagement/list(transitionCustomerId=${fileInfo.customerId.asLong()})}">
+																<span 	class="sub_text" th:text="|&#40;${fileInfo.customerId}&#41;|"></span>
+															</a>
+														</div>
+													</th:block>
+												</th:block>
+												<th:block th:if="${T(jp.loioz.common.constant.CommonConstant.FileKubun).IS_FILE.getCd()} eq ${fileInfo.fileKubun}">
+													 <th:block th:if="${fileInfo.getFileType() != null}">
+													 	<th:block th:switch="${fileInfo.getFileType()}">
+															<img th:case="${T(jp.loioz.common.constant.CommonConstant.FileType).EXCEL.getCd()}" src="/img/icon_data_x.svg" width="20" height="20">
+															<img th:case="${T(jp.loioz.common.constant.CommonConstant.FileType).WORD.getCd()}" src="/img/icon_data_w.svg" width="20" height="20">
+															<img th:case="${T(jp.loioz.common.constant.CommonConstant.FileType).PDF.getCd()}" src="/img/icon_file_pdf.svg" width="20" height="20">
+															<img th:case="${T(jp.loioz.common.constant.CommonConstant.FileType).JPEG.getCd()}" src="/img/icon_file_jpeg.svg" width="20" height="20">
+															<img th:case="${T(jp.loioz.common.constant.CommonConstant.FileType).PNG.getCd()}" src="/img/icon_file_png.svg" width="20" height="20">
+															<img th:case="${T(jp.loioz.common.constant.CommonConstant.FileType).TEXT.getCd()}" src="/img/icon_file_textFile.svg" width="20" height="20">
+															<img th:case="*" src="/img/icon_file_textFile.svg" width="20" height="20">
+															<span class="fileName" th:text="${fileInfo.fileName  + fileInfo.fileExtension}"></span>
+														</th:block>
+													</th:block>
+													<th:block th:if="${fileInfo.getFileType() == null}">
+															<img src="/img/icon_file_textFile.svg" width="20" height="20">
+														<span class="fileName" th:text="${fileInfo.fileName}"></span>
+													</th:block>
+												</th:block>
+												<th:block th:if="${T(jp.loioz.common.constant.CommonConstant.FileKubun).IS_FOLDER.getCd()} eq ${fileInfo.fileKubun} and ${!fileInfo.dispLimit}">
+													<i class="fas fa-folder-open nomal_folder"></i>
+													<span class="fileName" th:text="${fileInfo.fileName}"></span>
+												</th:block>
+											</div>
+										</td>
+										<td class="text-right border-left-0">
+											<th:block th:if="${T(jp.loioz.common.constant.CommonConstant.FileType).PDF.getCd()} eq ${fileInfo.getFileType()} or ${T(jp.loioz.common.constant.CommonConstant.FileType).JPEG.getCd()} eq ${fileInfo.getFileType()} or ${T(jp.loioz.common.constant.CommonConstant.FileType).PNG.getCd()} eq ${fileInfo.getFileType()}">
+												<button type=button class="btn btn-light btn_icon_only previewBtn" 
+													th:data-prevseq="${fileInfo.fileConfigurationManagementId}" data-toggle="tooltip" title="" data-trigger="hover" data-original-title="プレビュー">
+													<i class="fas fa-search"></i>
+												</button>
+											</th:block>
+											<th:block th:unless="${T(jp.loioz.common.constant.CommonConstant.FileType).PDF.getCd()} eq ${fileInfo.getFileType()} or ${T(jp.loioz.common.constant.CommonConstant.FileType).JPEG.getCd()} eq ${fileInfo.getFileType()} or ${T(jp.loioz.common.constant.CommonConstant.FileType).PNG.getCd()} eq ${fileInfo.getFileType()}">
+												<span class="preview_space"></span>
+											</th:block>
+											<button  th:if="${!fileInfo.dispLimit}"  type=button class="btn btn-light btn_icon_only downloadBtn"
+												th:data-downloadseq="${fileInfo.fileConfigurationManagementId}" data-toggle="tooltip" title="" data-trigger="hover" data-original-title="ダウンロード">
+												<i class="fas fa-download text-primary"></i>
+												<i class="fas fa-spinner text-primary faa-spin animated hidden"></i>
+											</button>
+										</td>
+										<!--/* パス START */-->
+										<td>
+											<th:block th:if="${fileInfo.ankenId}">
+												<i class="fas fa-folder-open anken_folder mr-2"></i>
+												<span class="span_anken_Name" th:text="${#strings.defaultString(fileInfo.ankenName, '&#40;案件名未入力&#41;')}"></span>
+												<span class="sub_text" th:text="|&#40;${fileInfo.ankenId}&#41;|"></span>
+											</th:block>
+											<th:block th:if="${fileInfo.customerId}">
+												<i class="fas fa-folder-open meibo_folder mr-2"></i>
+												<span class="span_customer_Name" th:text="${#strings.defaultString(fileInfo.customerName,'')}"></span>
+												<span 	class="sub_text" th:text="|&#40;${fileInfo.customerId}&#41;|"></span>
+											</th:block>
+											<span th:text="${fileInfo.folderPath}"></span>
+										</td>
+									</tr>
+								</tbody>
+							</table>
+							<!--/* ページャー */-->
+							<th:block th:if="*{pageInfo.hasPrevious() || pageInfo.hasNext()}">
+								<div th:replace="common/pager::pager(page=*{pageInfo}, url=@{/user/fileManagementAllSearch/pager})"></div>
+							</th:block>
+						</div>
+					</div>
+				</th:block>
+				<!--/* 検索結果一覧 END */-->
+				</main>
+			</div>
+		</div>
+	</div>
+</body>
+</html>

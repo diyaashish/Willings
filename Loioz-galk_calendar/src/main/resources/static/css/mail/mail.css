@@ -1,0 +1,808 @@
+@charset "UTF-8";
+
+/***** 新規作成、ごみ箱、３点リーダ、フィルタエリア *****/
+.msg_header {
+	height: 40px;
+}
+/* メニューエリア */
+.msg_header_navi {
+	max-width: 750px;
+	list-style: none;
+	margin: 0;
+	padding: 0;
+	display: flex;
+	align-items: center;
+}
+.msg_header_navi li {
+	margin-right: 8px;
+}
+.msg_header_navi li.msg_header_navi_last {
+	margin-left: auto;
+	margin-right: 0;
+	height: 30px;
+	padding-top: 1px;
+}
+.msg_header_navi .filter_row .form_select {
+	height: 28px;
+}
+.msg_header_navi .filter_row .filter_label {
+	height: 28px;
+}
+.msg_filter_label {
+	height: 29px;
+}
+/* サブメニュー */
+.msg_header_navi_sub {
+	margin: 0;
+	padding: 0;
+	position: relative;
+}
+.msg_header_navi_sub > dt {
+	width: 26px;
+	height: 20px;
+	text-indent: -9999px;
+	background-image: url(/img/icon_msg_btn_etc.svg);
+	background-repeat: no-repeat;
+	background-position: center center;
+	cursor: pointer;
+}
+.msg_header_navi_sub > dt.selected {
+	width: 16px;
+	margin-left: 6px;
+	background-image: url(/img/icon_msg_btn_etc_close.svg);
+}
+.msg_header_navi_sub > dt:hover {
+	opacity: 0.75;
+}
+.msg_header_navi_sub > dd {
+	background-color: #fff;
+	border-radius: 5px;
+	box-shadow: 0px 1px 6px rgba(0, 0, 0, 0.9);
+	display: none;
+	left: -20px;
+	padding: 10px 5px;
+	position: absolute;
+	top: 38px;
+	z-index: 99;
+}
+.msg_header_navi_sub > dd::before {
+	content: "";
+	display: block;
+	width: 10px;
+	height: 10px;
+	position: absolute;
+	top: -10px;
+	left: 26px;
+	border-bottom: 8px solid #FFF;
+	border-left: 7px solid transparent;
+	border-right: 7px solid transparent;
+}
+.msg_header_navi_sub_list {
+	margin: 0;
+	padding: 0;
+	list-style: none;
+}
+.msg_header_navi_sub_list li {
+	margin: 0 0 0 0;
+}
+.msg_header_navi_sub_list li:first-child {
+	margin-top: 0;
+}
+
+/* メール詳細 ナビエリア */
+.msg_body_header_navi {
+	list-style: none;
+	padding: 0;
+	margin: 0 0 0 5px;
+	display: flex;
+}
+/** メール詳細 次へ前へ */
+.msg_body_header_navi li {
+	margin: 4px;
+}
+.msg_body_header_navi .btn {
+	border-radius: 100px;
+	padding: 4px 9px 1px;
+	margin-top: 2px;
+}
+.msg_body_header_navi .btn > svg {
+	color: var(--loioz-primary);
+	font-size: 2rem;
+	margin-right: 0;
+}
+.msg_body_header_navi .btn:hover {
+	background-color: #e6f3ff;
+}
+.msg_body_header_navi .btn::after {
+	content: "";
+	display: block;
+	width: 8px;
+	height: 8px;
+	position: absolute;
+	top: 0;
+	left: 0;
+}
+.msg_body_header_navi .btn.btn_msg_next::after {
+	transform: rotate(-45deg);
+	border-right: 2px solid var(--loioz-blue);
+	border-top: 2px solid var(--loioz-blue);
+	left: 10px;
+	top: 11px;
+}
+.msg_body_header_navi .btn.btn_msg_prev::after {
+	transform: rotate(-45deg);
+	border-left: 2px solid var(--loioz-blue);
+	border-bottom: 2px solid var(--loioz-blue);
+	left: 10px;
+	top: 9px;
+}
+
+/***** 受信メールBoxエリア *****/
+.msg_fl .msg_folder {
+	background-color: #e7f0f9;
+	flex: 1 1 11vw;
+	overflow-y: auto;
+}
+/* フォルダを追加 */
+.btn_add_msg_folder {
+	background-color: #cae5fe;
+	border-radius: 8px;
+	font-size: 1.2rem;
+	padding: 2px 7px 2px 5px;
+	line-height: 1;
+	margin: 0;
+}
+.btn_add_msg_folder svg {
+	color: var(--loioz-primary);
+	font-size: 1.4rem;
+	margin-right: 10px;
+}
+.btn_add_msg_folder:hover {
+	opacity: 0.75;
+}
+
+/* フォルダ選択 */
+li.selected > .msgfld_custom > .msg_folder_edit {
+	display: block;
+}
+li.trashBox.selected > .msg_folder_name:hover {
+	background-color: #fff!important;
+}
+li.trashBox.selected > .msg_folder_edit {
+	display: block;
+}
+/* フォルダ編集 */
+.msg_folder_edit {
+	margin-left: 5px;
+	display: none;
+}
+/* ゴミ箱 */
+.btn_msgfld_trash {
+	padding-right: 5px;
+	justify-content: space-between;
+	display: flex;
+}
+
+
+/***** 受信メール一覧-検索ヘッダエリア *****/
+.msg_fl .msg_list .msg_list_header {
+	height: 37px;
+	background: #3e76af;
+	color: #fff;
+	display: flex;
+	justify-content: space-between;
+	padding: 0 8px;
+	align-items: center;
+}
+/* 受信メール一覧-検索ヘッダ 全選択チェック */
+.btn_msg_listall {
+	border-color: #fff;
+	color: #fff;
+	background-image: url(/img/icon_msg_selectall.svg);
+	background-repeat: no-repeat;
+	background-color: transparent;
+	background-position: 5px 3px;
+	font-size: 1.3rem;
+	line-height: 1;
+	padding: 4px 5px 3px 24px;
+}
+/* 受信メール一覧-検索ヘッダ 検索ボタン */
+.msg_list_header .msg_search .form_msg_search {
+	height: 24px;
+	border-radius: 4px 0 0 4px;
+	background: #fff;
+	border: 1px solid #fff;
+	padding-left: 5px;
+	padding-right: 5px;
+}
+/* 受信メール一覧-検索ヘッダ 検索ボタン */
+.msg_list_header .msg_search .form_msg_search_btn {
+	width: 45px;
+	height: 24px;
+	border-radius: 0px 4px 4px 0px;
+	background-color: transparent;
+	background-size: 1.6rem;
+	border: 1px solid #fff;
+	color: #fff;
+	line-height: 1;
+	padding-top: 4px;
+}
+/* 受信メール一覧-検索ヘッダ クリアボタン */
+.form_msg_clear {
+	width: 53px;
+	height: 24px;
+	border-radius: 4px 4px 4px 4px;
+	background-color: transparent;
+	border-color: #fff;
+	color: #fff!important;
+	border: 1px solid #fff;
+}
+
+/***** 受信メール一覧-一覧エリア *****/
+.msg_listitem {
+	border-bottom: 1px solid #dedede;
+	padding: 8px 10px 5px 0;
+	color: #444;
+	overflow: hidden;
+	font-weight: bold;
+}
+.msg_listitem:first-child {
+	border-top: none;
+}
+.msg_listitem.selected {
+	background-color: var(--bg-color-row-hover-selected);
+	color: var(--text-color-link);
+}
+.msg_listitem:hover {
+	background-color: var(--bg-color-row-hover);
+}
+.msg_listitem.selected:hover {
+	background-color: #eaf4fb;
+}
+
+.msgitem_head {
+	display: flex;
+	justify-content: space-between;
+	margin-bottom: 4px;
+}
+.msgitem_head_check {
+	width: 30px;
+	text-align: center;
+}
+.msgitem_head_title {
+	-webkit-flex: 1;
+	flex: 1;
+	overflow: hidden;
+	white-space: nowrap;
+	text-overflow: ellipsis;
+	cursor: pointer;
+	letter-spacing: 1px;
+}
+.msgitem_head_favo {
+	width: 20px;
+	text-align: center;
+	margin-left: 5px;
+	margin-bottom: -5px;
+}
+/* メール一覧：1行目 */
+.msgitem_data1 {
+	align-items: center;
+	display: flex;
+	justify-content: space-between;
+	margin: 0 0 0 8px;
+}
+.msgitem_sender {
+	white-space: nowrap;
+}
+.msgitem_sender > svg {
+	color: var(--text-color-title);
+}
+.msgitem_receiver {
+	padding-left: 18px;
+}
+.msgitem_receiver > svg {
+	color: var(--text-color-title);
+	font-size: 1.5rem;
+}
+.msgitem_date {
+	font-size: 1.3rem;
+}
+/* メール一覧：2行目 */
+.msgitem_data2 {
+	display: flex;
+	justify-content: flex-start;
+	align-items: center;
+	margin: 8px 0 1px 8px;
+}
+
+.msgitem_data3 {
+	display: flex;
+	justify-content: flex-start;
+	align-items: center;
+	margin: 3px 0 2px 27px;
+	color: gray;
+}
+
+.msgitem_status {
+	color: var(--text-color-link);
+	margin-right: 8px;
+	min-width: 15px;
+}
+.msgitem_status svg {
+	font-size: 1.7rem;
+}
+.is_kidoku,
+.is_send {
+	color: #555;
+	font-weight: normal;
+}
+
+.block_msg {
+	display: flex;
+	flex-wrap: nowrap;
+	justify-content: space-between;
+	height: calc(100vh - 123px);
+	text-align: left;
+}
+
+.msg_fl {
+	height: 100%;
+	background-color: #fff;
+	display: flex;
+	border-radius: 3px;
+	box-shadow: 0px 1px 6px rgba(0, 0, 0, 0.16);
+	overflow: hidden;
+	flex: 0 1 45vw;
+}
+
+.msg_fl .msg_list {
+	-webkit-flex: 1;
+	flex: 1 1 30vw;
+	overflow: auto;
+}
+
+.msg_fl .msg_list .msg_list_body {
+	height: calc(100% - 37px);
+	overflow-y: auto;
+}
+
+.msg_body {
+	flex: 1 0 40vw;
+	border-radius: 7px;
+	background: #fff;
+	box-shadow: 0px 1px 6px rgba(0, 0, 0, 0.16);
+	margin-left: 15px;
+	overflow-y: auto;
+}
+
+.msg_folder_list_main,
+.msg_folder_list_custom,
+.msg_folder_list_main ul,
+.msg_folder_list_custom ul {
+	list-style: none;
+	margin: 0;
+	padding: 0;
+	line-height: 1.2;
+	font-size: 1.3rem;
+}
+/** 親フォルダ */
+.msg_folder_list_main {
+	margin: 37px 0 10px;
+}
+/** 親-子フォルダ選択状態 */
+.msg_folder_list_main li.selected,
+.msg_folder_list_custom li.selected > .msgfld_custom {
+	background-color: #fff;
+}
+.msg_folder_list_main li .msg_folder_name,
+.msg_folder_list_custom .msgfld_custom {
+	padding-top: 7px;
+	padding-bottom: 6px;
+	cursor: pointer;
+}
+.msg_folder_list_main li .msg_folder_name:hover,
+.msg_folder_list_custom .msgfld_custom:hover {
+	background-color: #cfe8ff;
+}
+.msg_folder_list_main li .msg_folder_name {
+	padding-left: 32px;
+	background-repeat: no-repeat;
+}
+/** 受信Box */
+.msg_folder_list_main .msgfld_receive > .msg_folder_name {
+	padding-left: 10px;
+}
+.msg_folder_list_main .msgfld_receive > .msg_folder_name > svg {
+	color: var(--text-color-link);
+	font-size: 1.4rem;
+	margin-right: 9px;
+}
+/** 下書き */
+.msg_folder_list_main .msgfld_draft > .msg_folder_name {
+	padding-left: 10px;
+}
+.msg_folder_list_main .msgfld_draft > .msg_folder_name > svg {
+	color: var(--text-color-link);
+	font-size: 1.4rem;
+	margin-right: 9px;
+}
+/** ゴミ箱 */
+.msg_folder_list_main .msgfld_trash > .msg_folder_name {
+	padding-left: 10px;
+}
+.msg_folder_list_main .msgfld_trash > .msg_folder_name > svg {
+	color: var(--text-color-link);
+	font-size: 1.4rem;
+	margin-right: 9px;
+}
+.msg_folder_list_main li li .msg_folder_name {
+	position: relative;
+	padding-left: 44px;
+}
+.msg_folder_list_main li li .msg_folder_name::before {
+	content: "";
+	height: 5px;
+	width: 5px;
+	border-left: 7px solid #3e76af;
+	border-top: 5px solid transparent;
+	border-bottom: 5px solid transparent;
+	display: block;
+	position: absolute;
+	top: 9px;
+	left: 30px;
+}
+.msg_folder_list_custom ul li.selected > div {
+	background-color: var(--white);
+}
+.msg_folder_list_custom li .msgfld_custom {
+	padding-left: 20px;
+	display: flex;
+	justify-content: space-between;
+	padding-right: 5px;
+}
+.msg_folder_list_custom li .msgfld_custom svg {
+	color: var(--text-color-link);
+	font-size: 1.4rem;
+	margin-right: 9px;
+}
+.msg_folder_list_custom li li .msgfld_custom {
+	padding-left: 33px;
+}
+
+.btn_msg_folder {
+	border-radius: 100px;
+	background: #2060a6;
+	text-align: center;
+	border-color: #2060a6;
+	color: #fff;
+	font-size: 1rem;
+	padding: 2px 3px 1px 14px;
+	line-height: 1;
+	background-image: url(/img/icon_msg_folder_edit.svg);
+	background-repeat: no-repeat;
+	background-position: 2px 1px;
+	margin: 0;
+}
+.btn_msg_folder:hover {
+	color: #fff;
+}
+.msg_add_folder {
+	margin: 10px;
+}
+.msg_list_header .msg_search {
+	display: flex;
+}
+.msg_list_header .msg_search .form_msg_search .form_msg_clear {
+	width: 245px;
+	height: 24px;
+	border-radius: 4px 0 0 4px;
+	background: #fff;
+	border: 1px solid #fff;
+	padding-left: 5px;
+	padding-right: 5px;
+}
+.btn_msg_listall:hover,
+.msg_list_header .msg_search .form_msg_search_btn:hover {
+	color: #fff;
+	opacity: 0.75;
+}
+.is_midoku .msgitem_head_title {
+	font-weight: bold;
+}
+
+/***** メール詳細エリア *****/
+
+/* メール詳細 ヘッダエリア */
+.msg_body_header {
+	display: flex;
+	justify-content: space-between;
+	padding: 8px 10px 5px;
+	flex-wrap: wrap;
+}
+/* メール詳細 件名 */
+.msg_body_header .msg_bh_title {
+	font-size: 1.8rem;
+	padding: 10px 10px 5px 3px;
+	font-weight: bold;
+	color: #666;
+}
+
+/* メール詳細1行目エリア */
+.msg_body_header_data1 {
+	justify-content: space-between;
+	margin: 10px 10px 0 15px;
+}
+/* メール詳細 from  */
+.msg_bh_sender {
+	font-size: 1.3rem;
+	margin-right: 10px;
+	min-width: 100px;
+	display: flex;
+	margin-bottom: 3px;
+}
+/* メール詳細 to  */
+.msg_bh_receiver {
+	font-size: 1.3rem;
+	margin-right: auto;
+	width: 95%;
+	display: flex;
+	min-height: 28px;
+}
+.msg_bh_sender svg, .msg_bh_receiver svg {
+	color: var(--text-color-title);
+}
+.sender_receiver_title {
+	min-width: 57px;
+}
+
+/* メール詳細 受信者 開閉 */
+.msg_bh_open_receive {
+	position: relative;
+	top: -3px;
+	margin-left: auto;
+	margin-right: 10px;
+}
+.btn_down_arrow,
+.btn_up_arrow {
+	width: 25px;
+	height: 25px;
+	border-radius: 100px;
+	text-indent: -9999px;
+	position: relative;
+	background-color: transparent;
+}
+.msg_bh_open_receive .btn::after {
+	content: "";
+	display: block;
+	width: 8px;
+	height: 8px;
+	position: absolute;
+	top: 0;
+	left: 0;
+}
+.msg_bh_open_receive .btn.btn_down_arrow::after {
+	transform: rotate(-45deg);
+	border-left: 2px solid var(--loioz-blue);
+	border-bottom: 2px solid var(--loioz-blue);
+	left: 8px;
+	top: 6px;
+}
+.msg_bh_open_receive .btn.btn_up_arrow::after {
+	transform: rotate(-45deg);
+	border-right: 2px solid var(--loioz-blue);
+	border-top: 2px solid var(--loioz-blue);
+	left: 8px;
+	top: 10px;
+}
+.msg_bh_open_receive .btn:hover {
+	background-color: #e6f3ff;
+}
+/* メール詳細 作成日時 */
+.msg_bh_date {
+	margin-left: auto;
+}
+
+/* メール詳細2行目エリア */
+.msg_body_header_data2 {
+	align-items: center;
+	padding-left: 20px;
+	padding-right: 10px;
+}
+/* メール詳細3行目エリア */
+.msg_body_header_data3 {
+	align-items: center;
+	padding-left: 15px;
+	padding-right: 10px;
+}
+.msg_bh_task {
+	margin-right: 10px;
+	padding-top: 3px;
+	padding-left: 3px;
+}
+
+.msg_bh_relation_text {
+	position: relative;
+	top: 1.5px;
+	margin-left: 10px;
+}
+
+.msg_bh_relation {
+	align-items: center;
+	padding-bottom: 5px;
+}
+
+.msg_bh_relation .relation_id {
+	margin-right: 10px;
+	border-radius: 100px;
+	background: transparent;
+	border: 1px solid #69bfc6;
+	padding: 4px 10px 3px 20px;
+	position: relative;
+	line-height: 1;
+	color: #338086;
+	min-width: 110px;
+	text-align: center;
+}
+
+.msg_bh_relation .relation_id::before {
+	content: "";
+	display: block;
+	position: absolute;
+	left: 9px;
+	top: 50%;
+	border-left: 6px solid #69bfc6;
+	border-top: 4px solid transparent;
+	border-bottom: 4px solid transparent;
+	margin-top: -4px;
+}
+
+.msg_bh_relation .relation_name {
+	padding-top: 3px;
+	line-height: 1.3;
+}
+
+.checkbox_btn_star {
+  position: relative;
+  cursor: pointer;
+  padding: 0;
+  height: 19px;
+  width: 19px;
+  margin: 0;
+}
+.checkbox_btn_star .checkbox_input ~ .checkbox_txt{
+  display: block;
+  position: absolute;
+  top: 0;
+  left: 1px;
+  width: 19px;
+  height: 19px;
+  border-radius: 100px;
+  background-color: #e4e3e3;
+  background-image: url(/img/icon_msg_star.svg);
+  background-repeat: no-repeat;
+  background-position: center 2px;
+  opacity: 0.6;
+}
+.checkbox_btn_star .checkbox_input:checked ~ .checkbox_txt{
+  background-color: #FFA100;
+  opacity: 1;
+}
+.msg_body_header_data2 .checkbox_btn_star .checkbox_input ~
+	.checkbox_txt {
+	opacity: 1;
+}
+
+.msg_body_main a {
+	text-decoration: underline;
+}
+
+/* お気に入り */
+.msg_bh_favo {
+	line-height: 1;
+	padding-top: 2px;
+}
+.msg_bh_fn {
+	list-style: none;
+	margin: 5px 0px 0px 10px;
+	padding: 0;
+	display: flex;
+	margin-left: auto;
+}
+
+.msg_bh_fn li {
+	margin-left: 10px;
+}
+
+.msg_body_main {
+	border-top: 1px solid #C3C0C0;
+	padding: 15px;
+	margin-top: 5px;
+}
+
+
+/** 送信者、受信者名 */
+.msgitem_name {
+}
+
+
+.icon_msg_create {
+	background-image: url(/img/icon_msg_btn_new.svg);
+	background-position: 5px 3px;
+}
+
+.icon_msg_re {
+	background-image: url(/img/icon_msg_btn_re.svg);
+	background-position: 5px 5px;
+}
+
+.icon_msg_del {
+	background-image: url(/img/icon_msg_del.svg);
+	background-position: 8px 5px;
+}
+
+.icon_msg_addf {
+	background-image: url(/img/icon_msg_btn_fplus.svg);
+	background-position: 8px 4px;
+}
+
+.icon_msg_mov {
+	background-image: url(/img/icon_msg_btn_fmove.svg);
+	background-position: 8px 4px;
+}
+
+.icon_msg_unread {
+	background-image: url(/img/icon_msg_list_mail.svg);
+	background-position: 8px 7px;
+}
+
+.icon_msg_read {
+	background-image: url(/img/icon_msg_list_mail_open.svg);
+	background-position: 8px 4px;
+}
+
+.msgitem_task {
+	width: 60px;
+	min-width: 60px;
+	padding: 3px 2px 1px;
+	line-height: 1;
+	border-radius: 8px;
+	border: 1px solid #ccc;
+	text-align: center;
+	font-size: 1.2rem;
+	display: inline-block;
+}
+.msg_listitem .msgitem_task {
+	margin-left: 21px;
+}
+.msgitem_task.is_reply {
+	border-color: #de3d64;
+	color: #de3d64;
+}
+
+.msgitem_task.is_untreated {
+	border-color: #38B3F4;
+	color: #38B3F4;
+}
+.icon_edit_new {
+	background-image: url(/img/icon_msg_btn_new.svg);
+	background-repeat: no-repeat;
+	background-position: 5px center;
+	padding-left: 30px;
+	padding-right: 16px;
+}
+
+.msg_folder_list_main .msgfld_send > .msg_folder_name {
+	padding-left: 10px;
+}
+.msg_folder_list_main .msgfld_send > .msg_folder_name svg {
+	color: var(--text-color-link);
+	font-size: 1.4rem;
+	margin-right: 9px;
+}
+
+.message_input_parts_label {
+	color: var(--loioz-primary);
+	font-weight: 600;
+	font-size: 1.6rem;
+}
+

@@ -1,0 +1,2969 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+		xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+		layout:decorator="commonLayout">
+<head>
+<meta charset="utf-8" th:remove="tag" />
+<title layout:fragment="title-contents">
+	[[${T(jp.loioz.common.utility.LoiozUtils).getHtmlTitle("会計管理", T(jp.loioz.common.utility.SessionUtils).getTenantName())}]]
+</title>
+<th:block th:with="version=${@environment.getProperty('app.version')}">
+	<link href="./css/jquery.ptTimeSelect.css" th:href="@{/css/jquery.ptTimeSelect.css?{ver}(ver=${version})}" rel="stylesheet" type="text/css" />
+	<link href="./css/kaikei/kaikei.css" th:href="@{/css/kaikei/kaikei.css?{ver}(ver=${version})}" rel="stylesheet" type="text/css" />
+	<script type="text/javascript" th:src="@{/js/kaikei/kaikei.js?{ver}(ver=${version})}"></script>
+	<script type="text/javascript" th:src="@{/js/jquery.ptTimeSelect.js?{ver}(ver=${version})}"></script>
+</th:block>
+
+<script type="text/javascript" th:inline="javascript">
+	let ajaxRunning = false;
+</script>
+
+<script type="text/javascript" th:inline="javascript">
+$(function(){
+
+	// 共有の要素セットアップ処理
+	commonSetUpElement();
+
+	// 二重送信防止
+	let ajaxRunning = false;
+
+	// 連続登録後にモーダルを閉じた後画面を更新するかどうかのフラグ
+	let isRefRenzoku = false;
+	// 報酬明細が表示されているかどうかのフラグ
+	let isDisphoshuMeisai =false;
+	// 報酬明細が表示時に報酬が更新されたかどうかのフラグ
+	let isUpdatehoshuMeisai =false;
+
+	/*<![CDATA[*/
+	const transitionType = /*[[${kaikeiListSearchForm.getTransition()}]]*/null;
+	let transitionFlg = /*[[${kaikeiListSearchForm.transitionFlg}]]*/null;
+	let transitionAnkenId = /*[[${kaikeiListSearchForm.transitionAnkenId}]]*/null;
+	let transitionCustomerId = /*[[${kaikeiListSearchForm.transitionCustomerId}]]*/null;
+	/*]]>*/
+
+	//ENUM値設定
+	//報酬項目のタイムチャージコード値
+	let timeChargeCd = /*[[${T(jp.loioz.common.constant.CommonConstant$LawyerHoshu).TIME_CHARGE.getCd()}]]*/6;
+	//タイムチャージの開始時間終了時間指定コード値
+	let timeChargeShiteiStartEndTime = /*[[${T(jp.loioz.common.constant.CommonConstant$TimeChargeTimeShitei).START_END_TIME.getCd()}]]*/1;
+	//タイムチャージ指定の分指定コード値
+	let timeShiteiFlg = /*[[${T(jp.loioz.common.constant.CommonConstant$TimeChargeTimeShitei).MINUTES.getCd()}]]*/2;
+	//源泉徴収しないフラグコード値
+	let donotGensen = /*[[${T(jp.loioz.common.constant.CommonConstant$GensenChoshu).DO_NOT.getCd()}]]*/0;
+	//源泉徴収するフラグコード値
+	let doGensen = /*[[${T(jp.loioz.common.constant.CommonConstant$GensenChoshu).DO.getCd()}]]*/1;
+	//消費税「なし」のコード値
+	let taxFreeCd = /*[[${T(jp.loioz.common.constant.CommonConstant$TaxRate).TAX_FREE.getCd()}]]*/3;
+	let updateFlg = false;
+	let pushRecalc = false;
+
+	//現在年月を設定
+	let now = new Date();
+	let nowYear = now.getFullYear();
+	let nowMonth = now.getMonth() + 1;
+	
+	<!--/* 案件明細 精算完了 入力フォームポップアップ表示 */-->
+	$(document).on('click', '.ankenStatusInputOpenLink', function() {
+		const eventTriggerTarget = $(this);
+		
+		const ankenId = $(this).data("ankenId");
+		const customerId = $(this).data("customerId");
+		
+		let dataObj = {
+				"ankenId" : ankenId,
+				"customerId": customerId,
+				"transitionFlg": transitionFlg
+		}
+		
+		<!--/* 2重押下防止 */-->
+		if(ajaxRunning){
+			return false;
+		}
+		ajaxRunning = true;
+		
+		<!--/* 期日結果入力フォームを表示 */-->
+		Promise.resolve(dataObj)
+			.then(renderAnkenStatusInputFragmentFunc)
+			.then((data) => setUpAnkenStatusInputFormPopover(data, eventTriggerTarget))
+			.catch((errorObj) => {
+				<!--/* 異常系の対応は各処理側で行っており、全体共通での異常系の処理は現状ない */-->
+				console.log(errorObj);
+			})
+			.finally(() => {
+				ajaxRunning = false;
+			});
+	});
+	
+	<!--/* 入力フォームポップオーバーの表示関数 */-->
+	function setUpAnkenStatusInputFormPopover(data, eventTriggerObj) {
+		$(eventTriggerObj).popover({
+			html: true,
+			trigger: "manual",
+			template: '<div class="popover" role="tooltip"><div class="popover-body p-0"></div></div>',
+			content: data, <!--/* HTMLの取得結果を格納する。*/-->
+		});
+		$(eventTriggerObj).popover("show");
+	}
+	
+	<!--/* 案件ステータス入力フォームの表示関数 */-->
+	function renderAnkenStatusInputFragmentFunc(dataObj) {
+		return new Promise((resolve, reject) => {
+			
+			<!--/* オブジェクトのプロパティ値を取得 */-->
+			const {ankenId, customerId, transitionFlg} = dataObj;
+			
+			<!--/* リクエストパラメータ */-->
+			const requestData = {
+				"ankenId": ankenId,
+				"customerId": customerId,
+				"transitionFlg": transitionFlg
+			}
+			
+			<!--/* クリックされた要素の入力フォームを表示 */-->
+			<!--/* 2重押下防止対応はPromiseチェーンのルートで処理するため、チェーン内では行わない */-->
+			$.ajax({
+				url : 'getAnkenStatusInputFragment',
+				type : "GET",
+				data : requestData
+			})
+			.done(function(data, status, jqXHR) {
+				if (isAjaxProcSuccess(jqXHR)) {
+					return resolve(data);
+				} else {
+					// 処理失敗
+					const errorMsg = getAjaxProcResutlMessage(jqXHR);
+					showErrorMessageForJs(errorMsg);
+					
+					return reject();
+				}
+			})
+			.fail(function(jqXHR, status, errorThrown) {
+				showErrorMessageForJs(/*[[#{E00091}]]*/ "error");
+				
+				return reject();
+			})
+		});
+	};
+
+	<!--/* 報酬登録モーダル 初期表示 */-->
+	$(document).on('click', '[data-target="#hoshuModal"]', function() {
+		// 報酬明細モーダルを表示後、報酬登録モーダルを表示しているか判定
+		if (isDisphoshuMeisai) {
+			// 報酬明細モーダルを非表示
+			$("#hoshuMeisaiModal").addClass("hidden");
+		}
+		let updateFlg = false;
+		let kaikeiKirokuSeq = $(this).val() == '' ? $(this).attr('data-seq') : null;
+		
+		$.ajax({
+			url : "ankenMeisaiEdit",
+			type : "POST",
+			data : {
+				"kaikeiKirokuSeq" : kaikeiKirokuSeq,
+				"transitionFlg" : transitionFlg,
+				"transitionAnkenId" : transitionAnkenId,
+				"transitionCustomerId" : transitionCustomerId},
+		}).done(function(val){
+			//成功時
+			const newContents = $(val);
+			// モーダルの表示
+			$('.hoshuModalBody').html(newContents);
+			newContents.find(".btn_popcal").each((i, btn) => setUpHoshuStartDatePicker($(btn)));
+			
+			// 「税抜、税込」選択の表示切り替え
+			_changeTaxFlgSelectDisp();
+			
+			// 計算式の表示・非表示
+			_changeCalcFormula();
+
+			let hoshuKomokuId = $('select[name="ankenMeisaiDto.hoshuKomokuId"]').val();
+			if (hoshuKomokuId == timeChargeCd) {
+				$('input[name="timeChargeShitei"]:first').prop("checked", true);
+				_changeTime(true);
+				// タイムチャージの場合
+				$('#kinGaku').hide();
+				$('#timeChargeTanka').show();
+				$('#timeChargeShitei').show();
+				$('#timeChargeInfo').show();
+			} else {
+				// タイムチャージ以外の場合
+				$('#kinGaku').show();
+				$('#timeChargeTanka').hide();
+				$('#timeChargeShitei').hide();
+				$('#timeChargeInfo').hide();
+			}
+			
+			let timeChargeTimeShitei = $('input[name="ankenMeisaiDto.timeChargeTimeShitei"]:checked').val();
+			if (timeChargeTimeShitei == timeShiteiFlg) {
+				$('#timeCharge-startTime-tr').hide();
+				$('#timeCharge-endTime-tr').hide();
+			}
+		}).fail(function(jqXHR, textStatus, errorThrown) {
+			//失敗時
+			window.location.href = "/systemError";
+
+		}).always(function() {
+			//成功時も失敗時も行う
+		});
+	});
+
+	function setUpHoshuStartDatePicker(btn) {
+		setUpDatepickerButton($(btn));
+		const target = $($(btn).data("target"));
+		if(!target.is(".timeChargeDate")) {
+			return;
+		}
+		$(target).datepicker("option", "onSelect", function(){
+			// -----------------------------------------------------
+			// タイムチャージの開始日、終了日変更時に
+			// 開始日時、終了日時の差分を取得します。
+			// -----------------------------------------------------
+			
+			let startDateSelect = $('#start-date-select').val();
+			// 終了日時の設定
+			if (startDateSelect) {
+				let endDateSelect = $('#end-date-select').val();
+				if (!endDateSelect) {
+					// 未入力の場合、開始日時を反映
+					$('#end-date-select').val(startDateSelect);
+				}
+			}
+			
+			const tanka = $("#tankaTxt").val();
+			if (!tanka) {
+				// 単価が入力されていない場合
+				
+				Promise.resolve()
+					// 消費税率を設定
+					.then(_calcTaxForChangeDate)
+					// 「税抜、税込」選択の表示切り替え
+					.then(() => {
+						_changeTaxFlgSelectDisp();
+						return;
+					})
+					.then(_autoCalcTimeChargeTime)
+					<!--/* 異常系の対応は各処理側で行っており、全体共通での異常系の処理は現状ない */-->
+					.catch((errorObj) => {})
+					.finally(() => {})
+				
+			} else {
+
+				// 単価が入力されている場合
+				
+				// 税率計算
+				Promise.resolve()
+					// 消費税率を設定
+					.then(_calcTaxForChangeDate)
+					// 「税抜、税込」選択の表示切り替え
+					.then(() => {
+						_changeTaxFlgSelectDisp();
+						return;
+					})
+					// タイムチャージの時間を再計算
+					.then(_autoCalcTimeChargeTime)
+					// 計算式・報酬計を再計算
+					.then(_autoCalcSelectedHoshuKomokuKingaku)
+					<!--/* 異常系の対応は各処理側で行っており、全体共通での異常系の処理は現状ない */-->
+					.catch((errorObj) => {})
+					.finally(() => {})
+			}
+		});
+	}
+
+	// 報酬登録・編集・削除処理
+	let hoshuAjaxRunning = false;
+	$(document).on("click", "#hoshuModal .save, #hoshuModal .delete, #hoshuModal .multiSave", function() {
+
+		// 2重押下防止
+		if (hoshuAjaxRunning) {
+			return false;
+		}
+
+		const modal = $(this).closest('.modal');
+
+		// URLの設定
+		let url = "";
+		let isRenzoku = false;
+		if ($(this).hasClass("save")){
+			// 登録・保存
+			if ($(this).attr("data-seq")){
+				url = "updateAnkenMeisai";
+			} else {
+				url = "saveAnkenMeisai";
+			}
+		} else if ($(this).hasClass("delete")) {
+			// 削除
+			url = "deleteAnkenMeisai";
+			if (!confirm("削除してもよろしいですか？")){
+				return false;
+			}
+		} else if ($(this).hasClass("multiSave")){
+			// 連続登録
+			isRenzoku = true;
+			url = "saveAnkenMeisai";
+		} else {
+			return false;
+		}
+
+		let formData = $('[name^="ankenMeisaiDto."]').serializeArray();
+
+		// 遷移元の情報をformDataに追加します。
+		formData.push(
+				{name : "transitionFlg", value : transitionFlg},
+				{name : "transitionAnkenId", value : transitionAnkenId},
+				{name : "transitionCustomerId", value : transitionCustomerId});
+
+		hoshuAjaxRunning = true;
+		$.ajax({
+			url : url,
+			type : "POST",
+			data : formData,
+		}).done(function(result) {
+			if (result.succeeded) {
+				// 成功
+
+				if (isRenzoku) {
+					// 連続登録
+					isRefRenzoku = true;
+					$('#hoshuModal .hoshu-modal-body [name="ankenMeisaiDto.gensenchoshuGaku"]').val("");
+					$('#hoshuModal .hoshu-modal-body [name="ankenMeisaiDto.kingaku"]').val("");
+					$('#hoshuModal .hoshu-modal-body [name="ankenMeisaiDto.tekiyo"]').val("");
+					$('#kingakuText').val("");
+					$('#taxText').val("");
+					$("#hoshuGakuText").val("");
+					$('#gensenText').val("");
+					$('#meisaiTekiyo').val("");
+					$('#hoshuText').val("");
+					$('#start-date-select').val("");
+					$('#start-time-select').val("");
+					$('#end-date-select').val("");
+					$('#end-time-select').val("");
+					$('#timeText').val("");
+					clearAllItemMsg();
+					clearAllMessages($("#hoshuModal"));
+
+					// 計算式クリア
+					$("#calcFormulaLabel1").text("");
+					$("#calcFormulaLabel2").text("");
+					_changeCalcFormula();
+
+					showInfoMsgForModal(result.message);
+					return false;
+				} else {
+					// 通常登録
+					alert(result.message);
+					if (isDisphoshuMeisai) {
+						$("#hoshuModal").modal("hide");
+						// 報酬明細が表示時に報酬が更新されたかどうかのフラグ
+						isUpdatehoshuMeisai =true;
+					} else {
+						location.reload();
+						return false;
+					}
+				}
+
+				if (isDisphoshuMeisai) {
+					// 報酬明細モーダルを表示
+					$("#hoshuMeisaiModal").removeClass("hidden");
+
+					// 報酬明細が表示時に報酬が更新されたかどうかのフラグ
+					isUpdatehoshuMeisai =true;
+
+					//報酬明細モーダルの内容を更新
+					let selectedAnkenId = $(".hoshuMeisaiModalBody").find("input[name='selectedAnkenId']").val();
+					let selectedCustomerId = $(".hoshuMeisaiModalBody").find("input[name='selectedCustomerId']").val();
+					let seisanCompDispFlg = $(".seisanCompDispFlg").prop('checked');
+					$.ajax({
+						url : "hoshuMeisai",
+						type : "POST",
+						data : {
+							"transitionType" : transitionType,
+							"transitionAnkenId" : transitionAnkenId,
+							"transitionCustomerId" : transitionCustomerId,
+							"selectedAnkenId" : selectedAnkenId,
+							"selectedCustomerId" : selectedCustomerId,
+							"seisanCompDispFlg" : seisanCompDispFlg},
+					}).then(function(result) {
+						$('.hoshuMeisaiModalBody').html(result);
+					}).fail(function(jqXHR, textStatus, errorThrown) {
+						//想定しないエラーなのでシステムエラー
+						window.location.href = "/systemError";
+					});
+				} else {
+					isUpdatehoshuMeisai =false;
+				}
+			} else {
+				showErrorMessage(result.message, modal, result.errors);
+			}
+		}).fail(function(jqXHR, textStatus, errorThrown) {
+			//想定しないエラーなのでシステムエラー
+			window.location.href = "/systemError";
+		}).always(function(){
+			hoshuAjaxRunning = false;
+		});
+	});
+
+	<!--/* 報酬登録モーダルのクローズ時に入力内容とエラーメッセージを削除 */-->
+	$(document).on('hide.bs.modal', '#hoshuModal', function() {
+		if (isRefRenzoku) {
+			isRefRenzoku = false;
+			if (isDisphoshuMeisai){
+				$("#hoshuModal").modal("hide");
+			} else {
+				location.reload();
+				return false;
+			}
+		} else {
+			// 報酬明細モーダルを表示後、報酬登録モーダルを表示しているか判定
+			if (isDisphoshuMeisai) {
+				// 報酬明細モーダルを表示
+				$("#hoshuMeisaiModal").removeClass("hidden");
+			}
+		}
+		// ボディを削除
+		$(this).find('.hoshuModalBody').html("");
+	});
+
+	<!--/* 【報酬登録モーダル】発生日の切り替え */-->
+	$(document).on('change', ".hoshu-hassei", function() {
+		
+		// 消費税率を再設定
+		Promise.resolve()
+			// 消費税率を再設定
+			.then(_calcTaxForChangeDate)
+			// 「税抜、税込」選択の表示切り替え
+			.then(() => {
+				_changeTaxFlgSelectDisp();
+				return;
+			})
+			// 計算式・報酬計を再計算
+			.then(_autoCalcSelectedHoshuKomokuKingaku)
+			<!--/* 異常系の対応は各処理側で行っており、全体共通での異常系の処理は現状ない */-->
+			.catch((errorObj) => {})
+			.finally(() => {})
+	});
+
+	<!--/* 【報酬登録モーダル】案件プルダウンの切り替え処理 */-->
+	$(document).on('change', 'select[name="ankenMeisaiDto.ankenId"]', function() {
+
+		const ankenId = $(this).val();
+		const customerId = $(this).data('id');
+		if (!customerId) {
+			return false;
+		}
+		
+		Promise.resolve()
+			// 消費税率を再設定
+			.then(_calcTaxForChangeDate)
+			// 前回の報酬登録時に設定した源泉徴収の値を反映
+			.then(() => {
+				return _changeGensenChoshu(customerId, ankenId);
+			})
+			// 計算式・報酬計を再計算
+			.then(_autoCalcSelectedHoshuKomokuKingaku)
+			<!--/* 異常系の対応は各処理側で行っており、全体共通での異常系の処理は現状ない */-->
+			.catch((errorObj) => {})
+			.finally(() => {})
+	});
+
+	<!--/* 【報酬登録モーダル】顧客プルダウンの切り替え処理 */-->
+	$(document).on('change', 'select[name="ankenMeisaiDto.customerId"]', function() {
+
+		let customerId = $(this).val();
+		let ankenId = $(this).data('id');
+		if (!ankenId) {
+			return false;
+		}
+		
+		Promise.resolve()
+			// 消費税率を再設定
+			.then(_calcTaxForChangeDate)
+			// 前回の報酬登録時に設定した源泉徴収の値を反映
+			.then(() => {
+				return _changeGensenChoshu(customerId, ankenId);
+			})
+			// 計算式・報酬計を再計算
+			.then(_autoCalcSelectedHoshuKomokuKingaku)
+			<!--/* 異常系の対応は各処理側で行っており、全体共通での異常系の処理は現状ない */-->
+			.catch((errorObj) => {})
+			.finally(() => {})
+	});
+
+	<!--/* 【報酬登録モーダル】「税抜、税込」プルダウンの切り替え 計算式 */-->
+	$(document).on('change', 'select[name="ankenMeisaiDto.taxFlg"]', function() {
+		// 計算式、源泉徴収額、消費税、報酬計を自動計算します。
+		Promise.resolve()
+			.then(_autoCalcSelectedHoshuKomokuKingaku)
+			<!--/* 異常系の対応は各処理側で行っており、全体共通での異常系の処理は現状ない */-->
+			.catch((errorObj) => {})
+			.finally(() => {})
+	});
+	
+	<!--/* 【報酬登録モーダル】源泉徴収ラジオボタンの切り替え 計算式 */-->
+	$(document).on('change', 'input[name="ankenMeisaiDto.gensenchoshuFlg"]', function() {
+
+		// 項目表示・非表示の切り替え
+		_changeCalcFormula();
+		
+		// 計算式、源泉徴収額、消費税、報酬計を自動計算します。
+		Promise.resolve()
+			.then(_autoCalcSelectedHoshuKomokuKingaku)
+			<!--/* 異常系の対応は各処理側で行っており、全体共通での異常系の処理は現状ない */-->
+			.catch((errorObj) => {})
+			.finally(() => {})
+	});
+
+	<!--/* 【報酬登録モーダル】金額のテキストボックスをフォーカスアウトで、源泉徴収の計算をおこなう*/-->
+	$(document).on('blur', '#kingakuText', function() {
+		Promise.resolve()
+			.then(_autoCalcKingaku)
+			<!--/* 異常系の対応は各処理側で行っており、全体共通での異常系の処理は現状ない */-->
+			.catch((errorObj) => {})
+			.finally(() => {})
+	});
+
+	<!--/* 【報酬登録モーダル】項目の表示切替え */-->
+	let prevHoshuKomokuId = "";
+	$(document).on('change', 'select[name="ankenMeisaiDto.hoshuKomokuId"]', function() {
+
+		let hoshuKomokuId = $(this).val();
+
+		if (transitionFlg ==
+			/*[[${T(jp.loioz.common.constant.CommonConstant$SystemFlg).FLG_OFF.getCd()}]]*/"0"){
+			// 案件管理から遷移する場合
+			customerId = $("#meisaiCustomerSelect option:selected").val();
+			ankenId = transitionAnkenId;
+
+		} else {
+			// 顧客管理から遷移する場合
+			customerId = transitionCustomerId;
+			ankenId = $("#meisaiAnkenSelect option:selected").val();
+		}
+
+		let formData = [];
+		formData.push({name : "ankenId", value : ankenId},
+							{name : "customerId", value : customerId});
+
+		// プルダウンの選択値を判定
+		if (hoshuKomokuId == timeChargeCd) {
+			// タイムチャージの場合
+
+			// 金額を非表示、単価・時間を表示します。
+			$('input[name="timeChargeShitei"]:first').prop("checked", true);
+			_changeTime(false);
+			$('#kinGaku').hide();
+			$('[id="itemMsg_ankenMeisaiDto.kingaku"]').addClass('hidden');
+			$('#timeChargeTanka').show();
+			$('[id="itemMsg_ankenMeisaiDto.timeChargeTanka"]').removeClass('hidden');
+			$('#timeChargeShitei').show();
+			$('#timeChargeInfo').show();
+			$("#calcFormulaLabel1").text("");
+			$("#calcFormulaLabel2").text("");
+			_changeCalcFormula();
+			$("#start-date-select").val("");
+			$("#start-time-select").val("");
+			$("#end-date-select").val("");
+			$("#end-time-select").val("");
+			$("#timeCharge-calcTime").val("");
+			$("#kingakuText").val("");
+			$("#hoshuGakuText").val("");
+			$("#gensenText").val("");
+			$("#taxText").val("");
+			$("#hoshuText").val("");
+			$("#timeText").val("");
+
+			<!--/* タイムチャージの場合、「税抜、税込」選択は非表示とし、「税抜」で固定とする */-->
+			$('#taxFlgSelectArea').hide();
+			$('#taxFlgSelect #foreignTaxOption').prop('selected', true);
+			$('#taxFlgForeignTaxLabelArea').show();
+			
+			// 直近の単価情報を取得します。
+			$.ajax({
+				url : "getRecentTanka",
+				type : "POST",
+				data : formData,
+
+			}).done(function(val){
+				// 直近の単価情報を設定します。
+				if (val.succeeded) {
+					$("#tankaTxt").val(val.recentTanka);
+				} else {
+					alert(val.message);
+				}
+
+			}).fail(function(jqXHR, textStatus, errorThrown) {
+				//予期せぬエラーなので、システムエラー画面に飛ばす
+				window.location.href = "/systemError";
+			});
+		} else {
+			// タイムチャージ以外の場合
+			
+			// 金額を表示、単価・時間を非表示にします。
+			if (prevHoshuKomokuId == timeChargeCd) {
+				$("#calcFormulaLabel1").text("");
+				$("#calcFormulaLabel2").text("");
+				_changeCalcFormula();
+				$("#kingakuText").val("");
+				$("#hoshuGakuText").val("");
+				$("#gensenText").val("");
+				$("#taxText").val("");
+				$("#hoshuText").val("");
+				$("#timeText").val("");
+			}
+			
+			$('#hoshu-hasseiDate-tr').show();
+			$('#kinGaku').show();
+			$('[id="itemMsg_ankenMeisaiDto.kingaku"]').removeClass('hidden');
+			$('#timeChargeTanka').hide();
+			$('[id="itemMsg_ankenMeisaiDto.timeChargeTanka"]').addClass('hidden');
+			$('#timeChargeShitei').hide();
+			$('#timeChargeInfo').hide();
+			
+			<!--/* 消費税の選択値 */-->
+			let taxRate = $('#taxRate').val();
+			
+			if (taxRate != taxFreeCd) {
+				<!--/* 消費税が「なし」以外が選択されている場合のみ、「税抜、税込」選択を表示 */-->
+				<!--/* ※消費税「なし」の場合は、「税抜、税込」選択は固定で「税抜」とするため */-->
+				
+				<!--/* 「税抜、税込」選択を再表示する */-->
+				$('#taxFlgSelectArea').show();
+				$('#taxFlgForeignTaxLabelArea').hide();
+			}
+		}
+		prevHoshuKomokuId = hoshuKomokuId;
+	});
+
+	<!--/* 発生日、開始日変更時に、消費税率を取得 */-->
+	function _calcTaxForChangeDate(){
+		return new Promise((resolve, reject) => {
+			
+			let customerId;
+			let ankenId;
+			
+			// 遷移元の判定
+			if (transitionCustomerId != null) {
+				// 顧客軸から遷移
+
+				customerId = transitionCustomerId;
+				ankenId = $("#meisaiAnkenSelect option:selected").val();
+				if (ankenId == "") {
+					reject();
+					return false;
+				}
+			} else if (transitionAnkenId != null) {
+				// 案件軸から遷移
+
+				customerId = $("#meisaiCustomerSelect option:selected").val();
+				if (customerId == ""){
+					reject();
+					return false;
+				}
+				ankenId = transitionAnkenId;
+			}
+			
+			<!--/* 消費税の選択値 */-->
+			let taxRate = $('#taxRate').val();
+			if (taxRate == taxFreeCd) {
+				<!--/* 消費税に「なし」が選択されている場合は、税率の変更は行わない */-->
+				resolve();
+				return;
+			}
+			
+			// formDataに追加します。
+			let formData =[];
+			let timeChargeTimeShitei = /*[[${T(jp.loioz.common.constant.CommonConstant$TimeChargeTimeShitei).MINUTES.getCd()}]]*/2;
+			
+			let timeChargeTimeShiteiArray = $("[name='ankenMeisaiDto.timeChargeTimeShitei']").serializeArray();
+			if (timeChargeTimeShiteiArray.length > 0) {
+				timeChargeTimeShitei = timeChargeTimeShiteiArray[0].value;
+			}
+			formData.push(
+					{name : "hasseiDate" , value : $("#hoshu-hasseiDate").val()},
+					{name : "customerId", value : customerId},
+					{name : "ankenId", value : ankenId},
+					{name : "hoshuKomokuId", value : $("#meisaKomokuId").val()},
+					{name : "timeChargeTimeShitei", value : timeChargeTimeShitei},
+					{name : "timeChargeStartDate", value : $("#start-date-select").val()});
+			
+			// 税率を取得
+			$.ajax({
+				url : "/user/kaikeiManagement/changeTaxRate",
+				type : "POST",
+				data : formData,
+			}).done(function(result){
+				// 消費税率のデフォルト値を変更します。
+				if (result.succeeded) {
+					$("#taxRate").val(result.taxRateStr);
+				} else {
+					//消費税の変更しない(なにもしない)
+				}
+				
+				resolve();
+			}).fail(function(jqXHR, textStatus, errorThrown) {
+				//予期せぬエラーなので、システムエラー画面に飛ばす
+				window.location.href = "/systemError";
+				reject();
+			});
+		});
+	}
+
+	<!--/* 「税抜、税込」選択の表示切り替え */-->
+	function _changeTaxFlgSelectDisp() {
+		
+		<!--/* 消費税の選択値 */-->
+		let taxRate = $('#taxRate').val();
+		
+		if (taxRate == taxFreeCd) {
+			<!--/* 消費税「なし」が選択されている場合 */-->
+			
+			<!--/* 「税抜、税込」選択は非表示とし、「税抜」で固定とする */-->
+			$('#taxFlgSelectArea').hide();
+			$('#taxFlgSelect #foreignTaxOption').prop('selected', true);
+			$('#taxFlgForeignTaxLabelArea').show();
+		} else {
+			<!--/* 消費税「なし」以外が選択されている場合 */-->
+			
+			<!--/* 選択されている報酬項目 */-->
+			let hoshuKomokuId = $('select[name="ankenMeisaiDto.hoshuKomokuId"]').val();
+			
+			if (hoshuKomokuId != timeChargeCd) {
+				<!--/* 報酬項目にタイムチャージ以外が選択されている場合のみ、「税抜、税込」選択を表示 */-->
+				
+				<!--/* 「税抜、税込」選択を表示する */-->
+				$('#taxFlgSelectArea').show();
+				$('#taxFlgForeignTaxLabelArea').hide();
+			} else {
+				<!--/* タイムチャージの場合は、「税抜、税込」選択は固定で「税抜」とする */-->
+				
+				<!--/* 「税抜、税込」選択は非表示とし、「税抜」で固定とする */-->
+				$('#taxFlgSelectArea').hide();
+				$('#taxFlgSelect #foreignTaxOption').prop('selected', true);
+				$('#taxFlgForeignTaxLabelArea').show();
+			}
+		}
+	}
+	
+	<!--/* 【報酬登録モーダル】前回の報酬登録時に設定した源泉徴収の値を反映 */-->
+	function _changeGensenChoshu(customerId, ankenId) {
+		return new Promise((resolve, reject) => {
+			
+			$.ajax({
+				url : "changeGensenChoshu",
+				type : "POST",
+				data : {"ankenId" : ankenId,
+						"customerId" : customerId}
+			}).done(function(val){
+				// 源泉徴収するかどうかを設定する。
+				const donotGensen = /*[[${T(jp.loioz.common.constant.CommonConstant$GensenChoshu).DO_NOT.getCd()}]]*/0;
+				const doGensen = /*[[${T(jp.loioz.common.constant.CommonConstant$GensenChoshu).DO.getCd()}]]*/1;
+				const gensenRadio = $("input[name='ankenMeisaiDto.gensenchoshuFlg']");
+
+				if (donotGensen == val) {
+					gensenRadio[0].checked = false;
+					gensenRadio[1].checked = true;
+				} else if (doGensen == val) {
+					gensenRadio[0].checked = true;
+					gensenRadio[1].checked = false;
+				}
+
+				// 計算式の表示・非表示
+				_changeCalcFormula();
+				
+				resolve();
+			}).fail(function(jqXHR, textStatus, errorThrown) {
+				//予期せぬエラーなので、システムエラー画面に飛ばす
+				window.location.href = "/systemError";
+				reject();
+			});
+		});
+	}
+
+	<!--/* 【報酬登録モーダル】単価のテキストボックス、時間テキストボックスをフォーカスアウトで、源泉徴収の値を反映 */-->
+	$(document).on('blur', '#tankaTxt, .timeChargeMinutes', function() {
+		Promise.resolve()
+			.then(_autoCalcTanka)
+			<!--/* 異常系の対応は各処理側で行っており、全体共通での異常系の処理は現状ない */-->
+			.catch((errorObj) => {})
+			.finally(() => {})
+	});
+
+	<!--/* 【報酬登録モーダル】時間指定方法の変更 */-->
+	$(document).on('change', 'input[name="ankenMeisaiDto.timeChargeTimeShitei"]', function() {
+		
+		<!--/* 時間指定領域のエラーメッセージを初期化 */-->
+		$('[id="itemMsg_ankenMeisaiDto.timeChargeStartDate"]').addClass('hidden');
+		$('[id="itemMsg_ankenMeisaiDto.timeChargeEndDate"]').addClass('hidden');
+		$('[id="itemMsg_ankenMeisaiDto.timeChargeTime"]').addClass('hidden');
+		
+		_changeTime(false);
+	});
+
+	<!--/* 【報酬登録モーダル】消費税の切替え時の消費税計算 */-->
+	$(document).on('change', 'select[name="ankenMeisaiDto.taxRate"]', function() {
+		
+		// 「税抜、税込」選択の表示切り替え
+		_changeTaxFlgSelectDisp();
+		
+		// 計算式、源泉徴収額、消費税、報酬計を自動計算します。
+		Promise.resolve()
+			.then(_autoCalcSelectedHoshuKomokuKingaku)
+			<!--/* 異常系の対応は各処理側で行っており、全体共通での異常系の処理は現状ない */-->
+			.catch((errorObj) => {})
+			.finally(() => {})
+	});
+
+	<!--/* 【報酬登録モーダル】タイムチャージ時間を算出（開始時間、終了時間を設定した場合） */-->
+	$(document).on('click', '#ptTimeSelectSetButton', function() {
+		
+		let gensenchoshuFlg = $("input[name='ankenMeisaiDto.gensenchoshuFlg']:checked").val();
+		let withholdingTax;
+
+		if (gensenchoshuFlg == donotGensen) {
+			// 源泉徴収しない場合
+			withholdingTax = /*[[${T(jp.loioz.common.constant.CommonConstant$SystemFlg).FLG_OFF.getCd()}]]*/0;
+		} else {
+			// 源泉徴収する場合
+			withholdingTax = /*[[${T(jp.loioz.common.constant.CommonConstant$SystemFlg).FLG_ON.getCd()}]]*/1;
+		}
+
+		let formData = $('[name^="ankenMeisaiDto."]').serializeArray();
+		formData.push({ name : "ankenMeisaiDto.withholdingTax" , value : withholdingTax});
+
+		const tanka = $("#tankaTxt").val();
+		if (!tanka) {
+			// 単価が入力されていない場合
+			
+			Promise.resolve()
+				<!--/* タイムチャージの時間を計算 */-->
+				.then(_autoCalcTimeChargeTime)
+				<!--/* 異常系の対応は各処理側で行っており、全体共通での異常系の処理は現状ない */-->
+				.catch((errorObj) => {})
+				.finally(() => {})
+			
+		} else {
+			
+			// 単価が入力されている場合
+			Promise.resolve()
+				<!--/* タイムチャージの時間を計算 */-->	
+				.then(_autoCalcTimeChargeTime)
+				<!--/* タイムチャージの金額を計算 */-->
+				.then(_autoCalcTanka)
+				<!--/* 異常系の対応は各処理側で行っており、全体共通での異常系の処理は現状ない */-->
+				.catch((errorObj) => {})
+				.finally(() => {})
+		}
+	});
+
+	<!--/* 【報酬登録モーダル】源泉徴収の計算式の表示切替え */-->
+	function _changeCalcFormula(){
+		let gensenchoshuFlg = $("input[name='ankenMeisaiDto.gensenchoshuFlg']:checked").val();
+
+		if (gensenchoshuFlg == donotGensen) {
+			// 源泉徴収しない場合
+			$('#hoshuDetailGensenRow').hide();
+			$('#calcFormula').hide();
+
+		} else {
+			// 源泉徴収する場合
+			// 源泉の行を表示
+			$('#hoshuDetailGensenRow').show();
+			if ($('#calcFormulaLabel1').text()) {
+				// 計算式が設定されている場合（計算式が表示可能な場合）
+				// 計算式を表示
+				$('#calcFormula').show();
+			} else {
+				$('#calcFormula').hide();
+			}
+		}
+	}
+
+	<!--/* 【報酬登録モーダル】時間の指定方法によって、表示を切替え */-->
+	function _changeTime(editFlg){
+		let timeChargeShitei = $("input[name='ankenMeisaiDto.timeChargeTimeShitei']:checked").val();
+		let hoshuKomokuId = $('[name="ankenMeisaiDto.hoshuKomokuId"]').val();
+
+		// タイムチャージを選択しているか判定
+		if (timeChargeCd == hoshuKomokuId) {
+			// タイムチャージの場合
+
+			// タイムチャージを表示
+			$("#timeChargeInfo").show();
+			// 開始・終了時間を指定か判定
+			if (timeChargeShitei == timeChargeShiteiStartEndTime){
+				// 開始・終了時間を指定する場合
+
+				$("#hoshu-hasseiDate-tr").hide();
+				$("#timeCharge-startTime-tr").show();
+				$("#timeCharge-endTime-tr").show();
+				$("#timeCharge-calcTime").show();
+				$("#timeText").attr("readonly", true);
+				$("#timeText").removeClass("form_minutes_edit");
+			} else {
+				// 時間(分)を指定する場合
+
+				$("#hoshu-hasseiDate-tr").show();
+				$("#timeCharge-startTime-tr").hide();
+				$("#timeCharge-endTime-tr").hide();
+				$("#timeCharge-calcTime").show();
+				$("#timeCharge-calcTime").val("");
+				$("#timeText").attr("readonly", false);
+				$("#timeText").addClass("form_minutes_edit");
+			}
+
+			// 計算結果を初期化します
+			if (!editFlg) {
+				cleanClacDataForHoshuMeisai();
+			}
+		}
+	}
+
+	<!--/* 【報酬登録モーダル】自動計算された情報を初期化する */-->
+	const cleanClacDataForHoshuMeisai = () => {
+		// 値を初期化します
+		$("#start-date-select").val("");
+		$("#start-time-select").val("");
+		$("#end-date-select").val("");
+		$("#end-time-select").val("");
+		$("#timeText").val("");
+		$("#hoshuGakuText").val("");
+		$("#gensenText").val("");
+		$("#taxText").val("");
+		$("#hoshuText").val("");
+		$("#calcFormulaLabel1").text("");
+		$("#calcFormulaLabel2").text("");
+		_changeCalcFormula();
+	};
+
+	<!--/* 【報酬登録モーダル】タイムチャージの時間、計算式、源泉徴収額、消費税、報酬計の自動計算（報酬項目がタイムチャージの場合用） */-->
+	function _autoCalcTanka() {
+		return new Promise((resolve, reject) => {
+			
+			let modal = $("#hoshuModal");
+			
+			let taxFlg = $("select[name='ankenMeisaiDto.taxFlg'] option:selected").val();
+			let gensenchoshuFlg = $("input[name='ankenMeisaiDto.gensenchoshuFlg']:checked").val();
+			let withholdingTax;
+
+			if (gensenchoshuFlg == donotGensen) {
+				// 源泉徴収しない場合
+				withholdingTax = /*[[${T(jp.loioz.common.constant.CommonConstant$SystemFlg).FLG_OFF.getCd()}]]*/0;
+			} else {
+				// 源泉徴収する場合
+				withholdingTax = /*[[${T(jp.loioz.common.constant.CommonConstant$SystemFlg).FLG_ON.getCd()}]]*/1;
+			}
+
+			let formData = [];
+			let timeChargeTimeShitei = /*[[${T(jp.loioz.common.constant.CommonConstant$TimeChargeTimeShitei).MINUTES.getCd()}]]*/2;
+			let timeChargeTimeShiteiArray = $("[name='ankenMeisaiDto.timeChargeTimeShitei']").serializeArray();
+			if (timeChargeTimeShiteiArray.length > 0) {
+				timeChargeTimeShitei = timeChargeTimeShiteiArray[0].value;
+			}
+			formData.push(
+					{name:"hoshuKomokuId", value : $("#meisaKomokuId").val()},
+					{name:"gensenFlg", value : withholdingTax},
+					{name:"tanka", value : $("#tankaTxt").val()},
+					{name:"timeChargeTimeShitei", value : timeChargeTimeShitei},
+					{name:"dateFrom", value : $("#start-date-select").val()},
+					{name:"timeFrom", value : $("#start-time-select").val()},
+					{name:"dateTo", value : $("#end-date-select").val()},
+					{name:"timeTo", value : $("#end-time-select").val()},
+					{name:"timeChargeTime", value : $("#timeText").val()},
+					{name:"taxFlg", value : taxFlg},
+					{name:"taxRate", value : $("#taxRate").val()});
+
+			// 単価が入力されていない場合は、そもそも計算できないので通信をせずに返却
+			const tanka = $("#tankaTxt").val();
+			if (!tanka) {
+				reject();
+				return false;
+			}
+			
+			$.ajax({
+				url : "/user/kaikeiManagement/autoCalcTanka",
+				type : "POST",
+				data : formData,
+			}).done(function(result){
+				// 成功の時
+				if (result.succeed) {
+					$("#timeText").val(result.timeText);
+					$("#calcFormulaLabel1").text(result.calcFormulaLabel1);
+					$("#calcFormulaLabel2").text(result.calcFormulaLabel2);
+					_changeCalcFormula();
+					$("#hoshuGakuText").val(result.hoshuGakuText);
+					$("#taxText").val(result.taxText);
+					_setGensenText(result.gensenText)
+					$("#hoshuText").val(result.hoshuText);
+					clearAllItemMsg();
+					clearAllMessages(modal);//エラーメッセージのhidden ※common
+					
+					resolve();
+				} else {
+					if (result.hasValid) {
+						//バリデーションエラー時はなにもしない(メッセージも表示しない)
+						reject();
+						return false;
+					} else {
+						//それ以外のエラーはエラーメッセージを表示
+						showErrorMessage(result.message, modal, result.errors);
+						reject();
+					}
+				}
+			}).fail(function(jqXHR, textStatus, errorThrown){
+				// 失敗の時
+				showErrorMessage(/*[[#{E00013}]]*/ "error", modal);
+				reject();
+			});
+		});
+	}
+
+	<!--/* 【報酬登録モーダル】計算式、源泉徴収額、消費税、報酬計の自動計算（報酬項目がタイムチャージ以外の場合用） */-->
+	function _autoCalcKingaku(){
+		return new Promise((resolve, reject) => {
+
+			let modal = $("#hoshuModal");
+			
+			let withholdingTax;
+			let taxFlg = $("select[name='ankenMeisaiDto.taxFlg'] option:selected").val();
+			let gensenchoshuFlg = $("input[name='ankenMeisaiDto.gensenchoshuFlg']:checked").val();
+
+			// 源泉徴収を選択を判定
+			if (gensenchoshuFlg == donotGensen) {
+				// 源泉徴収しない場合
+				withholdingTax = /*[[${T(jp.loioz.common.constant.CommonConstant$SystemFlg).FLG_OFF.getCd()}]]*/0;
+			} else {
+				// 源泉徴収する場合
+				withholdingTax = /*[[${T(jp.loioz.common.constant.CommonConstant$SystemFlg).FLG_ON.getCd()}]]*/1;
+			}
+
+			let kingaku = $("#kingakuText").val();
+			if (!kingaku) {
+				// 金額が未入力の場合、処理を実行しない
+				reject();
+				return false;
+			}
+
+			let formData = [];
+			formData.push(
+					{name:"gensenchoshuFlg", value : withholdingTax},
+					{name:"kingaku", value : kingaku},
+					{name:"taxFlg", value : taxFlg},
+					{name:"taxRate", value : $("#taxRate").val()});
+
+			// 計算式、源泉徴収額、消費税、報酬計を計算します。
+			$.ajax({
+				url : "/user/kaikeiManagement/autoCalcKingaku",
+				type : "POST",
+				data : formData,
+			}).done(function(result){
+				if(result.succeed){
+					// 成功時
+
+					// 源泉徴収の計算式を表示
+					$("#calcFormulaLabel1").text(result.calcFormulaLabel1);
+					$("#calcFormulaLabel2").text(result.calcFormulaLabel2);
+					_changeCalcFormula();
+					
+					// 報酬計を表示
+					$("#hoshuGakuText").val(result.hoshuGakuText);
+					$("#taxText").val(result.taxText);
+					_setGensenText(result.gensenText)
+					$("#hoshuText").val(result.hoshuText);
+					
+					// エラーメッセージを非表示にする
+					clearAllItemMsg();
+					clearAllMessages(modal);
+					
+					resolve();
+				} else {
+					// 成功以外は何もしない
+					reject();
+					return false;
+				}
+			}).fail(function(jqXHR, textStatus, errorThrown){
+				// ajax通信失敗時
+				showErrorMessage(/*[[#{E00013}]]*/ "error", modal);
+				reject();
+			});
+		});
+	}
+	
+	<!--/* 【報酬登録モーダル】 選択されている報酬項目（タイムチャージかそれ以外）に応じた、金額等の自動計算を行う*/-->
+	function _autoCalcSelectedHoshuKomokuKingaku() {
+		
+		// 計算式・報酬計を再計算
+		let hoshuKomokuId = $('select[name="ankenMeisaiDto.hoshuKomokuId"]').val();
+		if (hoshuKomokuId == timeChargeCd) {
+			// タイムチャージの場合
+			return _autoCalcTanka();
+		} else {
+			// タイムチャージ以外の場合
+			return _autoCalcKingaku();
+		}
+	}
+	
+	<!--/* 【報酬登録モーダル】タイムチャージの時間の自動計算（報酬項目がタイムチャージの場合用） */-->
+	function _autoCalcTimeChargeTime() {
+		return new Promise((resolve, reject) => {
+			
+			let modal = $("#hoshuModal");
+			
+			let formData = [];
+			let timeChargeTimeShitei = /*[[${T(jp.loioz.common.constant.CommonConstant$TimeChargeTimeShitei).MINUTES.getCd()}]]*/2;
+			let timeChargeTimeShiteiArray = $("[name='ankenMeisaiDto.timeChargeTimeShitei']").serializeArray();
+			if (timeChargeTimeShiteiArray.length > 0) {
+				timeChargeTimeShitei = timeChargeTimeShiteiArray[0].value;
+			}
+			formData.push(
+					{name:"hoshuKomokuId", value : $("#meisaKomokuId").val()},
+					{name:"timeChargeTimeShitei", value : timeChargeTimeShitei},
+					{name:"dateFrom", value : $("#start-date-select").val()},
+					{name:"timeFrom", value : $("#start-time-select").val()},
+					{name:"dateTo", value : $("#end-date-select").val()},
+					{name:"timeTo", value : $("#end-time-select").val()},
+			);
+			
+			$.ajax({
+				url : "/user/kaikeiManagement/autoCalcTimeChargeTime",
+				type : "GET",
+				data : formData,
+			}).done(function(result){
+				// 成功の時
+				if (result.succeed) {
+					$("#timeText").val(result.timeText);
+					
+					resolve();
+				} else {
+					if (result.hasValid) {
+						<!--/* バリデーションエラー -> 時間の計算ができない（結果が算出できない）ので空にする */-->
+						$("#timeText").val("");
+						reject();
+						return false;
+					} else {
+						//それ以外のエラーはエラーメッセージを表示
+						showErrorMessage(result.message, modal, result.errors);
+						reject();
+					}
+				}
+			}).fail(function(jqXHR, textStatus, errorThrown){
+				// 失敗の時
+				showErrorMessage(/*[[#{E00091}]]*/ "error", modal);
+				reject();
+			});
+		});
+	}
+	
+	<!--/* 源泉徴収額のテキストを設定する（表示する） */-->
+	function _setGensenText(gensenText) {
+		if (!gensenText) {
+			// 空の場合
+			$("#gensenText").val("");
+			return;
+		}
+		
+		$("#gensenText").val(gensenText);
+		
+		const gensenTextNoComma = unformatComma(gensenText);
+		const gensenNum = Number(gensenTextNoComma);
+		if (gensenNum < 0) {
+			// 源泉の数値がマイナスの場合
+			$("#gensenText").addClass('minus_money_text')
+		} else {
+			// マイナスではない（0の場合）
+			$("#gensenText").removeClass('minus_money_text')
+		}
+	}
+
+	<!--/* 【報酬明細モーダル】初期表示 */-->
+	$(document).on('click', '[data-target="#hoshuMeisaiModal"]', function() {
+
+		let selectedAnkenId;
+		let selectedCustomerId;
+		// 親画面の案件明細を選択しているか判定
+		if ($(this).hasClass("ankenMeisaiRow")) {
+			// 親画面から案件（顧客）を選択
+			selectedAnkenId = $(this).data("anken-id");
+			selectedCustomerId = $(this).data("customer-id");
+		}
+
+		// 報酬明細の表示状態を更新（表示）
+		isDisphoshuMeisai = true;
+
+		//二重送信チェック
+		if(ajaxRunning){
+			return false;
+		}
+		ajaxRunning = true;
+		$.ajax({
+			url : "/user/kaikeiManagement/hoshuMeisai",
+			type : "POST",
+			data : {
+				"transitionType" : transitionType,
+				"transitionAnkenId" : transitionAnkenId,
+				"transitionCustomerId" : transitionCustomerId,
+				"selectedAnkenId" : selectedAnkenId,
+				"selectedCustomerId" : selectedCustomerId,
+				"seisanCompDispFlg" : false
+			},
+		}).done(function(result){
+			// 成功時
+			$('.hoshuMeisaiModalBody').html(result);
+		}).fail(function(jqXHR, textStatus, errorThrown){
+			// 失敗時
+			window.location.href = "/systemError";
+		}).always(function() {
+			// 成功時も失敗時も行う
+			ajaxRunning = false
+		});
+	});
+
+	<!--/* 【報酬明細モーダル】閉じる */-->
+	$(document).on('click' , "#hoshuMeisaiCancelBtn" ,function(){
+		// 報酬明細の表示状態を更新（非表示）
+		isDisphoshuMeisai = false;
+		if (isUpdatehoshuMeisai) {
+			isUpdatehoshuMeisai = false;
+			location.reload();
+			return false;
+		}
+	});
+
+	<!--/* 【入出金登録モーダル】入力内容とエラーメッセージを削除 */-->
+	$(document).on('hide.bs.modal', '#nyushukkinModal', function() {
+		// 連続登録後か判定
+		if (isRefRenzoku) {
+			// 連続登録の場合は、画面リロード
+			isRefRenzoku = false;
+			location.reload();
+		}
+		// 初期化する
+		$('.nyushukkinModalBody').html("");
+	});
+
+
+	<!--/* 【入出金登録モーダル】初期表示 */-->
+	let nyushukkinAjaxRunning = false;
+	$(document).on('click', '[data-target="#nyushukkinModal"]', function(){
+		// 二重押下防止
+		if (nyushukkinAjaxRunning) {
+			return false;
+		}
+		const kaikeiKirokuSeq = $(this).attr('data-seq');
+		nyushukkinAjaxRunning = true;
+		$.ajax({
+			url : "nyushukkinEdit",
+			type : "POST",
+			data : {"kaikeiKirokuSeq" : kaikeiKirokuSeq,
+					"transitionFlg" : transitionFlg,
+					"transitionAnkenId" : transitionAnkenId,
+					"transitionCustomerId" : transitionCustomerId
+					},
+		}).then(function(val) {
+			const newContents = $(val);
+			// モーダルの表示
+			$('.nyushukkinModalBody').html(newContents);
+			const nyushukkinType = $('input[name="kaikeiKirokuDto.nyushukkinType"]:checked').val();
+
+			//datepickerの設定
+			newContents.find(".btn_popcal").each((i, btn) => setUpDatepickerButton($(btn)));
+
+			// 入金・出金の判定
+			if (nyushukkinType == /*[[${T(jp.loioz.common.constant.CommonConstant$NyushukkinType).NYUKIN.getCd()}]]*/"1") {
+				// 入金の場合
+				$('#nyushukkin-shukkinKomoku').hide();
+			} else {
+				// 出金の場合
+				$('#nyushukkin-nyukinKomoku').hide();
+			}
+		}).fail(function(jqXHR, textStatus, errorThrown) {
+			window.location.href = "/systemError";
+		}).always(function() {
+			nyushukkinAjaxRunning = false;
+		});
+	});
+
+	<!--/* 【入出金登録モーダル】登録・編集・削除処理 */-->
+	let nyushukkinEditAjaxRunning = false;
+	$(document).on("click", "#nyushukkinModal .save,#nyushukkinModal .delete,#nyushukkinModal .multiSave",  function() {
+
+		// 2重押下防止
+		if (nyushukkinEditAjaxRunning) {
+			return false;
+		}
+
+		let modal = $(this).closest('.modal');
+		isRenzoku =$(this).hasClass('multiSave');
+		let formData = $('#nyushukkinModal .nyushukkinModalBody [name^="kaikeiKirokuDto."]').serializeArray();
+		let nyushukkinYoteiSeq = $('#nyushukkinModal .nyushukkin-modal-body [name^="kaikeiKirokuDto.nyushukkinYoteiSeq"]').val();
+
+		let deleteBtn = $(this).hasClass('delete');
+		let url;
+		if (deleteBtn) {
+			url = "deleteNyushukkin";
+			if (!confirm("削除してもよろしいですか？")) {
+				return false;
+			}
+		} else {
+			if ($(this).nextAll('[name="kaikeiKirokuDto.kaikeiKirokuSeq"]').val().length > 0) {
+				url = "updateNyushukkin";
+			} else {
+				url = "saveNyushukkin";
+			}
+		}
+
+		// 遷移元の情報をformDataに追加します。
+		formData.push(
+				{name : "transitionFlg", value : transitionFlg},
+				{name : "transitionAnkenId", value : transitionAnkenId},
+				{name : "transitionCustomerId", value : transitionCustomerId},
+				{name : "kaikeiKirokuDto.nyushukkinYoteiSeq", value : nyushukkinYoteiSeq});
+
+		nyushukkinEditAjaxRunning = true;
+		$.ajax({
+			url : url,
+			type : "POST",
+			data : formData,
+		}).done(function(result){
+			if (result.succeeded) {
+				// 連続登録か判定
+				if (isRenzoku) {
+					// 連続登録の場合
+
+					isRefRenzoku = true;
+					$('#nyushukkin-kingaku').val("");
+					$('#nyushukkin-tekiyo').val("");
+					clearAllItemMsg();
+					clearAllMessages(modal);
+
+					showInfoMsgForModal(result.message);
+				} else {
+					// 通常の登録の場合
+					alert(result.message);
+					location.reload();
+				}
+			} else {
+				// 登録失敗
+				showErrorMessage(result.message, modal, result.errors);
+			}
+
+		}).fail(function() {
+			window.location.href = "/systemError";
+		}).always(function() {
+			nyushukkinEditAjaxRunning = false;
+		});
+	});
+
+	<!--/* 【入出金登録モーダル】入力内容とエラーメッセージを削除 */-->
+	$(document).on('hide.bs.modal', '#nyushukkinModal', function() {
+		// 連続登録後か判定
+		if (isRefRenzoku) {
+			// 連続登録の場合は、画面リロード
+			isRefRenzoku = false;
+			location.reload();
+		}
+		// 初期化する
+		$('.nyushukkinModalBody').html("");
+	});
+
+	<!--/* 【入出金登録モーダル】入出金タイプの切替え */-->
+	$(document).on('change', 'input[name="kaikeiKirokuDto.nyushukkinType"]', function() {
+		const nyushukkinType = $('input[name="kaikeiKirokuDto.nyushukkinType"]:checked').val();
+		if (nyushukkinType == /*[[${T(jp.loioz.common.constant.CommonConstant$NyushukkinType).NYUKIN.getCd()}]]*/"1") {
+			// 入金の場合
+			$("#nyushukkin-nyukinKomoku").show();
+			$("#nyushukkin-shukkinKomoku").hide();
+			if ($('#nyushukkin-nyukinSelect').val().length === 1){
+				// 入金項目が単一の場合単一の入金項目を自動的に入力
+				$('#nyushukkin-nyukinSelect').val($('#nyushukkin-nyukinSelect').val()[0]);
+			} else{
+				// 入金項目が複数の場合
+				$('#nyushukkin-nyukinSelect').val("");
+			}
+
+		} else if (nyushukkinType == /*[[${T(jp.loioz.common.constant.CommonConstant$NyushukkinType).SHUKKIN.getCd()}]]*/"2") {
+			// 出金の場合
+			$("#nyushukkin-nyukinKomoku").hide();
+			$("#nyushukkin-shukkinKomoku").show();
+			$('#nyushukkin-shukkinSelect').val("");
+		} else {
+			// 何もしない
+		}
+	});
+
+	<!--/* 【入出金予定モーダル】初期表示 */-->
+	$(document).on('click', '[data-target="#nyuShukkinYoteiModal"]', function(){
+
+		const targetBody = $("#nyuShukkinYoteiModal").find(".nyuShukkinYoteiModalBody");
+		const nyushukkinYoteiSeq = $(this).data("seq");
+		const transitionAnkenId = targetBody.data("ankenId");
+		const transitionCustomerId = targetBody.data("customerId");
+
+		let formData = [];
+		formData.push({"name" : "nyushukkinYoteiEditDto.nyushukkinYoteiSeq" , "value" : nyushukkinYoteiSeq});
+		formData.push({"name" : "transitionAnkenId" , "value" : transitionAnkenId});
+		formData.push({"name" : "transitionCustomerId" , "value" : transitionCustomerId});
+
+		$.ajax({
+			url : "/user/kaikeiManagement/nyuShukkinYoteiEdit",
+			type : "POST",
+			data : formData,
+		}).done(function(result) {
+			const newContents = $(result);
+			// モーダルの表示
+			$(targetBody).html(newContents);
+			newContents.find("[name='nyushukkinYoteiEditDto.nyushukkinType']:checked").trigger("change");
+			newContents.find("[name='nyushukkinYoteiEditDto.shukkinShiharaiSakiType']:checked").trigger("change");
+			newContents.find("[name='nyushukkinYoteiEditDto.nyukinShiharaishaType']:checked").trigger("change");
+			newContents.find("[id='shukkinShiharaiSha']").trigger('change');
+			newContents.find("[id='nyukinShiharaiSakiSelect']").trigger('change');
+			//datepickerの設定
+			newContents.find(".btn_popcal").each((i, btn) => setUpDatepickerButton($(btn)));
+		}).fail(function(jqXHR, textStatus, errorThrown) {
+			window.location.href = "/systemError";
+		}).always(function() {
+		});
+	});
+
+	<!--/* 【入出金予定モーダル】入力内容とエラーメッセージを削除 */-->
+	let multiRegistFlg = false;
+	$(document).on('hide.bs.modal', '#nyuShukkinYoteiModal', function() {
+		if(multiRegistFlg){
+			location.reload();
+		}
+		// 初期化する
+		$(this).find('.nyuShukkinYoteiModalBody').html("");
+	});
+
+	<!--/* 【入出金予定モーダル】案件の選択 */-->
+	$(document).on("change", "[name='nyushukkinYoteiEditDto.ankenId']", function(){
+		const modal = $(this).closest(".modal");
+		const ankenId = $(this).val();
+
+		const getKanyoshaListRequest = $.ajax({
+			url : "/user/kaikeiManagement/getKanyoshaList",
+			type : "POST",
+			data : {"ankenId" : ankenId},
+		});
+		const getTenantAccountListRequest = $.ajax({
+			url : "/user/kaikeiManagement/getTenantAccountKozaList",
+			type : "POST",
+			data : {"ankenId" : ankenId},
+		});
+
+		// 関与者の取得成功時
+		getKanyoshaListRequest.done(function(result) {
+			const newContents = $(result);
+			if(newContents.length != 0){
+				modal.find(".kanyoshaList").each(function(i,select){
+					$(select).empty().append("<option value>-</option>").append(result);
+				});
+				modal.find(".kanyoshaRadioBtn").removeClass("hidden");
+			}else {
+				modal.find(".kanyoshaRadioBtn").addClass("hidden");
+				modal.find("[name='nyushukkinYoteiEditDto.nyukinShiharaishaType']:eq(0)").trigger("click");
+				modal.find("[name='nyushukkinYoteiEditDto.shukkinShiharaiSakiType']:eq(0)").trigger("click");
+			}
+		});
+
+		// テナント・アカウントの取得成功時
+		getTenantAccountListRequest.done(function(result) {
+			const newContents = $(result);
+			if(newContents.length != 0){
+				modal.find(".tenantAccountKozaList").each(function(i,select){
+					$(select).empty().append("<option value>-</option>").append(result);
+				});
+				modal.find("[id='shukkinShiharaiSha']").trigger('change');
+				modal.find("[id='nyukinShiharaiSakiSelect']").trigger('change');
+			}
+		});
+
+		// 通信失敗時はなにもしない
+	});
+
+	<!--/* 【入出金予定モーダル】入出金切り替え */-->
+	$(document).on("change", "[name='nyushukkinYoteiEditDto.nyushukkinType']", function(){
+		const modal = $(this).closest(".modal");
+		const nyushukkinType = $(this).val();
+
+		if(nyushukkinType == /*[[${{T(jp.loioz.common.constant.CommonConstant$NyushukkinType).NYUKIN}}]]*/ 1) {
+			modal.find(".shukkinItem").addClass("hidden");
+			modal.find(".nyukinItem").removeClass("hidden");
+			modal.find("[id='nyukinShiharaiSakiSelect']").trigger('change');
+		} else if (nyushukkinType == /*[[${{T(jp.loioz.common.constant.CommonConstant$NyushukkinType).SHUKKIN}}]]*/ 2) {
+			modal.find(".nyukinItem").addClass("hidden");
+			modal.find(".shukkinItem").removeClass("hidden");
+			modal.find("[id='shukkinShiharaiSha']").trigger('change');
+		} else {
+			// 何もしない
+		}
+	});
+
+	<!--/* 【入出金予定モーダル】顧客関与者切り替え */-->
+	$(document).on("change", ".targetType", function(){
+
+		const modal = $(this).closest(".modal");
+		const targetType = $(this).val();
+
+		if (targetType == /*[[${{T(jp.loioz.common.constant.CommonConstant$TargetType).CUSTOMER}}]]*/ 0) {
+			// 顧客選択
+			$($(this).data("target")).addClass("hidden");
+		} else if (targetType == /*[[${{T(jp.loioz.common.constant.CommonConstant$TargetType).KANYOSHA}}]]*/ 1) {
+			// 関与者選択
+			$($(this).data("target")).removeClass("hidden");
+		} else {
+			// 何もしない
+		}
+	});
+
+	<!-- /** 表示用金額からコンマを外した値をhiddenに設定 */ -->
+	$(document).on("blur", "#nyuShukkinYoteiModal .dispDicimalInput", function(){
+
+		const modal = $(this).closest(".modal");
+		const dispDecimal = $(this).val();
+		const target = $(this).data("target");
+		if(modal.find(target).length == 0){
+			return false;
+		}
+		modal.find(target).val(unformatComma(dispDecimal));
+		modal.find(target).trigger("change");
+	});
+
+	<!--/* 【入出金予定登録モーダル】登録・連続登録・更新・削除 */-->
+	let nyushukkinSaveAjaxRunning = false;
+	$(document).on("click", "#nyuShukkinYoteiModal [name='delete'],[name='update'],[name='regist'],[name='multiRegist']", function(){
+
+		const modal = $(this).closest(".modal");
+		const url = $(this).data("action");
+		const name = $(this).prop("name");
+		const formData = modal.find("form").serializeArray();
+
+		if(name == "delete"){
+			if(!confirm("削除してもよろしいですか？")){
+				return false;
+			}
+		}
+
+		if(nyushukkinSaveAjaxRunning){
+			return false;
+		}
+		nyushukkinSaveAjaxRunning = true;
+		const saveRequest = $.ajax({
+			url : url,
+			type : "POST",
+			data : formData,
+		});
+
+		// 通信成功処理
+		saveRequest.done(function(result){
+			if(result.succeeded){
+				if (name == "multiRegist"){
+					multiRegistFlg = true;
+					showInfoMessage(result.message, modal);
+					modal.find(".dispDicimalInput").val("");
+					modal.find("[name='nyushukkinYoteiEditDto.nyushukkinYoteiDate']").val("");
+					modal.find("[name='nyushukkinYoteiEditDto.nyushukkinYoteiGaku']").val("");
+					modal.find("[name='nyushukkinYoteiEditDto.nyushukkinDate']").val("");
+					modal.find("[name='nyushukkinYoteiEditDto.nyushukkinGaku']").val("");
+					modal.find("[name='nyushukkinYoteiEditDto.tekiyo']").val("");
+				} else {
+					alert(result.message);
+					location.reload();
+				}
+			} else {
+				showErrorMessage(result.message, modal, result.errors);
+			}
+		});
+
+		// 通信失敗処理
+		saveRequest.fail(function(jqXHR, textStatus, errorThrown) {
+			window.location.href = "/systemError";
+		});
+
+		// 通信共通処理
+		saveRequest.always(function() {
+			nyushukkinSaveAjaxRunning = false;
+		});
+
+	});
+
+	<!--/* 【入金予定モーダル】 顧客選択の切り替え */-->
+	$(document).on('change', '#nyukinYoteiCustomerSelect', function(){
+
+		let customerId = $(this).val();
+		let shiharaishaType = $('input[name="nyukinYoteiDto.nyukinShiharaishaType"]:checked').val();
+
+		if (shiharaishaType == /*[[${T(jp.loioz.common.constant.CommonConstant$TargetType).CUSTOMER.getCd()}]]*/"0") {
+			// 顧客に紐づく精算口座情報を取得
+			getCustomerKozaDetail(shiharaishaType, customerId, "", $("#shiharaisha1"), $("#shiharaisha2"));
+		}
+	});
+
+	<!--/* 【入金予定モーダル】 支払者の関与者切替え */-->
+	$(document).on('change', '#nyukinShiharaiKanyoshaSelect', function(){
+		
+		let kanyoshaSeq = $(this).val();
+		let shihraiSakiType = $('input[name="nyukinYoteiDto.nyukinShiharaishaType"]:checked').val();
+		
+		// 関与者に紐づく口座情報を取得
+		getCustomerKozaDetail(shihraiSakiType, "", kanyoshaSeq, $("#shiharaisha1"), $("#shiharaisha2"));
+	});
+
+	<!--/* 【入金予定モーダル】 支払先の口座情報変更 */-->
+	$(document).on('change', "#nyukinShiharaiSakiSelect", function(){
+		let ginkoAccountSeq = $("#nyukinShiharaiSakiSelect").val();
+		kozaTarget1 = $("#kozaInfo1");
+		kozaTarget2 = $("#kozaInfo2");
+		// 支払先の口座情報を取得
+		getKozaDetail(ginkoAccountSeq, kozaTarget1, kozaTarget2);
+	});
+
+	// 支払者：口座情報変更時
+	$(document).on('change' , "#shukkinShiharaiSha" ,function(){
+		let ginkoAccountSeq = $("#shukkinShiharaiShaSelect").val();
+		kozaTarget1 = $("#kozaShiharaisha1");
+		kozaTarget2 = $("#kozaShiharaisha2");
+		getKozaDetail(ginkoAccountSeq,kozaTarget1,kozaTarget2);
+	});
+
+	// ****************************************************************
+	// 精算済 / 処理済 データ非表示
+	// ****************************************************************
+	let seisanCompDispAjaxRunning = false;
+	$(document).on('change' , "#hoshuMeisaiModal" , "[name='seisanCompDispFlg']" ,function(){
+
+		let modal = $(this).closest(".modal");
+
+		let selectedAnkenId = $(modal).find("input[name='selectedAnkenId']").val();
+		let selectedCustomerId = $(modal).find("input[name='selectedCustomerId']").val();
+		let seisanCompDispFlg = $(modal).find("input[name='seisanCompDispFlg']").prop('checked');
+		$(modal).find("input[name='seisanCompDispFlg']").attr("value", seisanCompDispFlg);
+
+		if(seisanCompDispAjaxRunning){
+			return false;
+		}
+		seisanCompDispAjaxRunning = true;
+		$.ajax({
+			url : "hoshuMeisai",
+			type : "POST",
+			data : {
+				"transitionType" : transitionType,
+				"transitionAnkenId" : transitionAnkenId,
+				"transitionCustomerId" : transitionCustomerId,
+				"selectedAnkenId" : selectedAnkenId,
+				"selectedCustomerId" : selectedCustomerId,
+				"seisanCompDispFlg" : seisanCompDispFlg},
+		}).then(function(result) {
+			$('.hoshuMeisaiModalBody').html(result);
+		}).fail(function(jqXHR, textStatus, errorThrown) {
+			window.location.href = "/systemError";
+		}).always(function() {
+			seisanCompDispAjaxRunning = false;
+		});
+	});
+
+	<!--/** 精算書作成ボタン押下 */-->
+	let seisanshoAjaxRunning = false;
+	$(document).on("click", "#seisanshoCreate", function(){
+		let ankenCount = $('[id="notCompletedAnkenCount"]').val();
+		let transitionType = /*[[${kaikeiListSearchForm.getTransition()}]]*/null;
+		let transitionAnkenId = /*[[${kaikeiListSearchForm.transitionAnkenId}]]*/null;
+		let transitionCustomerId = /*[[${kaikeiListSearchForm.transitionCustomerId}]]*/null;
+
+		if (ankenCount === '1') {
+			// 案件が1件の場合
+			let firstCustomerId;
+			let firstAnkenId;
+
+			if (transitionType ===  /*[[${T(jp.loioz.common.constant.CommonConstant$TransitionType).CUSTOMER}]]*/) {
+				// 精算書作成画面へ遷移
+				firstCustomerId = transitionCustomerId;
+				firstAnkenId = $('[id="notCompletedFirstAnkenId"]').val();
+			} else {
+				// 精算書作成画面へ遷移
+				firstCustomerId =$('[id="notCompletedFirstCustomerId"]').val();
+				firstAnkenId = transitionAnkenId;
+			}
+
+			window.location.href = "/user/seisansho/create?transitionType=" + transitionType + "&seisanAnkenId=" + firstAnkenId + "&seisanCustomerId=" +firstCustomerId;
+		} else {
+			// 案件が複数件の場合
+
+			// ２重押下防止
+			if (seisanshoAjaxRunning) {
+				return false;
+			}
+			seisanshoAjaxRunning = true;
+			$.ajax({
+				url : "seisanshoModal",
+				type : "POST",
+				data : {"transitionType" : transitionType,
+							"transitionAnkenId" : transitionAnkenId,
+							"transitionCustomerId" : transitionCustomerId}
+			}).done(function(val) {
+				// モーダルの表示
+				$('.ankenModalBody').html(val);
+				$("#ankenModal").modal('show');
+			}).fail(function(jqXHR, textStatus, errorThrown) {
+				window.location.href = "/systemError";
+			}).always(function() {
+				seisanshoAjaxRunning = false;
+			});
+		}
+	});
+
+	// 案件明細(完了済データの表示・非表示)
+	$(document).on('change', "[name='ankenMeisaiHiddenFlg']",function(){
+
+		const ankenMeisaiHiddenFlg = Number($(this).prop('checked')).toString();
+		let formData = [
+			{ name : "ankenMeisaiHiddenFlg", value : ankenMeisaiHiddenFlg}
+		];
+		
+		$.ajax({
+			url : "searchAnkenMeisai",
+			type : "POST",
+			data : formData,
+		})
+		.done(function(data, status, jqXHR) {
+			if (isAjaxProcSuccess(jqXHR)) {
+				// HTML表示
+				$('#ankenMeisaiList').replaceWith(data);
+			} else {
+				// 処理失敗
+				const errorMsg = getAjaxProcResutlMessage(jqXHR);
+				showErrorMessageForJs(errorMsg);
+			}
+		})
+		.fail(function(jqXHR, status, errorThrown) {
+			showErrorMessageForJs(/*[[#{E00091}]]*/ "error");
+		})
+		.always(function() {
+		});
+
+	});
+
+	<!--/* 会計記録(精算済データの表示・非表示) */-->
+	$(document).on('change', "[name='kaikeiKirokuHiddenFlg']",function(){
+
+		const flg = Number($(this).prop('checked')).toString();
+		let formData = [
+			{ name : "kaikeiKirokuHiddenFlg", value : flg}
+		];
+		
+		$.ajax({
+			url : "searchKaikeiKiroku",
+			type : "POST",
+			data : formData,
+		})
+		.done(function(data, status, jqXHR) {
+			if (isAjaxProcSuccess(jqXHR)) {
+				<!--/* HTML表示 */-->
+				$('#kaikeiKirokuList').replaceWith(data);
+			} else {
+				<!--/* 処理失敗 */-->
+				const errorMsg = getAjaxProcResutlMessage(jqXHR);
+				showErrorMessageForJs(errorMsg);
+			}
+		})
+		.fail(function(jqXHR, status, errorThrown) {
+			showErrorMessageForJs(/*[[#{E00091}]]*/ "error");
+		})
+		.always(function() {
+		});
+
+	});
+
+	// 入金予定(処理済データの表示・非表示)
+	$(document).on('change',"[name='nyukinYoteiHiddenFlg']",function(){
+
+		const yoteiHiddenFlg = Number($(this).prop('checked')).toString();
+		let formData = [
+			{ name : "yoteiHiddenFlg" , value : yoteiHiddenFlg}
+		];
+		
+		$.ajax({
+			url : "searchNyushukkinYotei",
+			type : "POST",
+			data : formData,
+		})
+		.done(function(data, status, jqXHR) {
+			if (isAjaxProcSuccess(jqXHR)) {
+				<!--/* HTML表示 */-->
+				$('#nyukinYoteiList').replaceWith(data);
+			} else {
+				<!--/* 処理失敗 */-->
+				const errorMsg = getAjaxProcResutlMessage(jqXHR);
+				showErrorMessageForJs(errorMsg);
+			}
+		})
+		.fail(function(jqXHR, status, errorThrown) {
+			showErrorMessageForJs(/*[[#{E00091}]]*/ "error");
+		})
+		.always(function() {
+		});
+
+	});
+
+	<!--/* 精算記録一覧の「摘要」をフォーカスアウト */-->
+	let focusText;
+	let blurText;
+	$(document).on("focus", ".seisan-tekiyo", function(){
+		//フォーカス時の入力情報を保持
+		focusText = $(this).val();
+		blurText = focusText;
+	});
+
+	<!--/* 精算記録一覧の「摘要」の保存処理 */-->
+	$(document).on("blur", ".seisan-tekiyo", function(){
+		blurText =  $(this).val();
+		if (focusText != blurText) {
+			let seisanSeq =  $(this).attr('data-seq') != null ? $(this).attr('data-seq') : null;
+			$.ajax({
+				url : "updateSeisanTekiyo",
+				type : "POST",
+				data : {
+					"seisanSeq" : seisanSeq,
+					"tekiyo" : blurText}
+			}).done(function(val) {
+
+				if (val.succeeded) {
+					// 更新成功
+					showInfoMessageForJs(val.message);
+				} else {
+					// 更新失敗
+					showErrorMessageForJs(val.message);
+				}
+
+			}).fail(function(jqXHR, textStatus, errorThrown) {
+			}).always(function() {
+			});
+		}
+	});
+});
+</script>
+
+<!-- /** 支払計画処理 */ -->
+<script type="text/javascript" th:inline="javascript">
+$(function(){
+
+	let ajaxRunning = false;// ajaxRunning
+	let needReCalc = false;// 再計算が必須かどうか
+	let needChangeConditionCheck = false;// 再計算が必須かどうか
+
+	<!-- /* モーダル表示 */ -->
+	$(document).on('click', '[data-target="#shiharaiPlanModal"]', function() {
+
+		const modal = $("#shiharaiPlanModal");
+		const seisanSeq = $(this).data("seisanseq");
+
+		if(ajaxRunning){
+			return false;
+		}
+		ajaxRunning = true;
+		needChangeConditionCheck = false;
+		$.ajax({
+			url : "/user/kaikeiManagement/shiharaiPlanEdit",
+			type : "POST",
+			data : {"seisanSeq" : seisanSeq},
+		}).done(function(val) {
+			// モーダルの表示
+			const newContents = $(val);
+			modal.find('.shiharaiPlanModalBody').html(newContents);
+			modal.find("[name='shiharaiPlanDto.seikyuType']").trigger("change");
+			//datepickerの設定
+			newContents.find(".btn_popcal").each((i, btn) => setUpDatepickerButton($(btn)));
+		}).fail(function(jqXHR, textStatus, errorThrown) {
+			window.location.href = "/systemError";
+		}).always(function(jqXHR, textStatus, errorThrown){
+			ajaxRunning = false;
+			needChangeConditionCheck = true;
+		});
+	});
+
+	// モーダルクローズ時にモーダルhtmlを削除します。
+	$("#shiharaiPlanModal").on('hide.bs.modal', function() {
+		// 各種フラグを初期化
+		needReCalc = false;
+		needChangeConditionCheck = false;
+		$(this).find(".shiharaiPlanModalBody").html("");
+	});
+
+	<!-- /* 請求方法によって、モダールの中身を変えます */ -->
+	$(document).on("change", "#shiharaiPlanModal [name='shiharaiPlanDto.seikyuType']", function(){
+		const modal = $(this).closest(".modal");
+		const type=$(this).val();
+		if(type == /*[[${T(jp.loioz.common.constant.CommonConstant$SeikyuType).IKKATSU.getCd()}]]*/1) {
+			modal.find(".ikkatsuItem").removeClass("hidden");
+			modal.find(".bunkatsuItem").addClass("hidden");
+		} else if (type == /*[[${T(jp.loioz.common.constant.CommonConstant$SeikyuType).BUNKATSU.getCd()}]]*/2) {
+			modal.find(".ikkatsuItem").addClass("hidden");
+			modal.find(".bunkatsuItem").removeClass("hidden");
+		} else {
+			// 何もしない
+		}
+	});
+
+	<!-- /* 支払計画の作成条件を変更したの処理 */ -->
+	$(document).on("change", "#shiharaiPlanEditArea input,select", function(){
+		const modal = $(this).closest(".modal");
+		// 初回は分割・一括の表示非表示切り替えのため処理を行わない
+		if(needChangeConditionCheck){
+			needReCalc = true;
+			modal.find(".reCalc").removeClass("visibility");
+		}
+	});
+
+	<!-- /** 再計算 */ -->
+	$(document).on('click', "#shiharaiPlanModal .reCalc", function() {
+
+		const modal = $(this).closest(".modal");
+		const formData = modal.find("#shiharaiPlanSettingForm,#shiharaiPlanYoteiForm").serializeArray();
+
+		if(ajaxRunning){
+			return false;
+		}
+		ajaxRunning = true;
+		$.ajax({
+			url : "/user/kaikeiManagement/reCalcShiharaiPlanCheck",
+			type : "POST",
+			data : formData,
+		}).done(function(result) {
+			// モーダルの表示
+			if(!result.succeeded){
+				showErrorMessage(result.message, modal, result.errors);
+			} else {
+				needChangeConditionCheck = false;
+				$.ajax({
+					url : "/user/kaikeiManagement/reCalcShiharaiPlan",
+					type : "POST",
+					data : formData,
+				}).done(function(result) {
+					// モーダルの表示
+					const newContents = $(result);
+					modal.find('.shiharaiPlanModalBody').html(newContents);
+					modal.find("[name='shiharaiPlanDto.seikyuType']").trigger("change");
+
+					// 成功時のみ、再計算確認フラグをoffにする
+					needReCalc = false;
+					modal.find(".reCalc").addClass("visibility");
+
+				}).fail(function(jqXHR, textStatus, errorThrown) {
+					window.location.href = "/systemError";
+				}).always(function(jqXHR, textStatus, errorThrown){
+					needChangeConditionCheck = true;
+				});
+			}
+		}).fail(function(jqXHR, textStatus, errorThrown) {
+			window.location.href = "/systemError";
+		}).always(function(jqXHR, textStatus, errorThrown){
+			ajaxRunning = false;
+		});
+	});
+
+	<!-- /** 支払計画の追加 */ -->
+	$(document).on('click', "#shiharaiPlanModal .planAdd", function() {
+
+		const modal = $(this).closest(".modal");
+		const addBtn = $(this);
+
+		const lastAddObj = modal.find("#shiharaiPlanYotei tr.newAddData");
+		let newAddIndex = 0;
+		if(lastAddObj.length){
+			newAddIndex = lastAddObj.last().data("addNo") + 1;
+		}
+		if(ajaxRunning){
+			return false;
+		}
+		ajaxRunning = true;
+		$.ajax({
+			url : "/user/kaikeiManagement/addPlanContents",
+			type : "POST",
+			data : {"index" : newAddIndex},
+		}).done(function(result) {
+			// モーダルの表示
+			const newContents = $(result);
+			modal.find("#shiharaiPlanYotei tbody").append(newContents);
+			reSetPlanCount();
+
+			// 追加した箇所にスクロール
+			const scrollArea = modal.find(".shiharaiPlanScrollArea");
+			scrollAction(scrollArea, scrollArea[0].scrollHeight, 400);
+
+			// 100件超えたらdisable
+			const count =modal.find("#shiharaiPlanYotei tbody tr").length;
+			if(count >= /*[[${T(jp.loioz.common.constant.CommonConstant).BUNKATU_LIMIT_COUNT}]]*/100){
+				$(addBtn).prop("disabled", true);
+			}
+
+		}).fail(function(jqXHR, textStatus, errorThrown) {
+			window.location.href = "/systemError";
+		}).always(function(jqXHR, textStatus, errorThrown){
+			ajaxRunning = false;
+		});
+	});
+
+	<!-- /* 支払い計画の「削除」 */ -->
+	$(document).on('click', '#shiharaiPlanModal .removeInput', function(){
+
+		const modal = $(this).closest(".modal");
+		const target = $(this).closest('tr');
+		target.remove();
+
+		// 回数を再設定
+		reSetPlanCount();
+
+		// 差額の計算
+		clacSagakuRequest();
+
+		// [追加]ボタンをdisabledを外す
+		modal.find(".planAdd").prop("disabled", false);
+	});
+
+	<!-- /** 表示用金額からコンマを外した値をhiddenに設定 */ -->
+	$(document).on("blur", "#shiharaiPlanModal .dispDicimalInput", function(){
+
+		const modal = $(this).closest(".modal");
+		const dispDecimal = $(this).val();
+		const target = $(this).data("target");
+		if(modal.find(target).length == 0){
+			return false;
+		}
+		modal.find(target).val(unformatComma(dispDecimal));
+		modal.find(target).trigger("change");// hidden値
+	});
+
+	<!-- /** 支払計画の予定額・実績の入力が行われた時、差額を計算する */ -->
+	$(document).on("change", "#shiharaiPlanModal .planMoneyInput", function(){
+		clacSagakuRequest();
+	});
+
+	<!-- /* 保存処理 */ -->
+	$(document).on('click', '#shiharaiPlanModal .save', function() {
+		const modal = $("#shiharaiPlanModal");
+		const formData = modal.find("#shiharaiPlanSettingForm,#shiharaiPlanYoteiForm").serializeArray();
+
+		if(needReCalc){
+			showWarnMessage(/*[[#{W00010}]]*/"error", modal);
+			return false;
+		}
+
+		if(ajaxRunning){
+			return false;
+		}
+		ajaxRunning = true;
+		$.ajax({
+			url : "/user/kaikeiManagement/shiharaiPlanSave",
+			type : "POST",
+			data : formData,
+		}).done(function(result) {
+			if(result.succeeded){
+				alert(result.message);
+				location.reload();
+			} else {
+				showErrorMessage(result.message, modal, result.errors);
+			}
+		}).fail(function(jqXHR, textStatus, errorThrown) {
+			window.location.href = "/systemError";
+		}).always(function(jqXHR, textStatus, errorThrown){
+			ajaxRunning = false;
+		});
+	});
+
+	<!-- /* 現在の入力値から差額を計算する */ -->
+	function clacSagakuRequest() {
+		const modal = $("#shiharaiPlanModal");
+		const formData = modal.find("#shiharaiPlanYoteiForm,[name='shiharaiPlanDto.seisanSeq']").serializeArray();
+
+		if(ajaxRunning){
+			return false;
+		}
+		ajaxRunning = true;
+		$.ajax({
+			url : "/user/kaikeiManagement/clacSagaku",
+			type : "POST",
+			data : formData,
+		}).done(function(result) {
+			if(result.succeeded){
+				modal.find(".sagakuInput").val(result.sagaku);
+				modal.find(".sagakuInput").attr("data-expected", result.isExpected);
+				if (result.isMinus) {
+					modal.find(".sagakuInput").addClass("minus_money_text");
+					modal.find(".sagakuInput").siblings().addClass("minus_money_text");
+				} else {
+					modal.find(".sagakuInput").removeClass("minus_money_text");
+					modal.find(".sagakuInput").siblings().removeClass("minus_money_text");
+				}
+			} else {
+				showErrorMessage(result.message, modal, result.errors);
+			}
+		}).fail(function(jqXHR, textStatus, errorThrown) {
+			window.location.href = "/systemError";
+		}).always(function(jqXHR, textStatus, errorThrown){
+			ajaxRunning = false;
+		});
+	};
+
+	<!-- /* 指定箇所へのスクロール処理 */ -->
+	function scrollAction(scrollArea, position, duration) {
+		$(scrollArea).animate({scrollTop:position}, duration);
+	}
+
+	<!-- /* 計画の追加・削除時に回数を再設定する */ -->
+	function reSetPlanCount() {
+		const modal = $("#shiharaiPlanModal");
+		const countTxt = modal.find(".planCount");
+		$(countTxt).each(function(i, txt) {
+			$(txt).text(i+1)
+		});
+	};
+
+});
+</script>
+<!-- /** 支払計画処理 end */ -->
+
+<!-- 精算書出力 -->
+<script type="text/javascript" th:inline="javascript">
+	$(function(){
+		$(".seisanshoDownload").on("click", function(){
+
+			let seisanSeq = $(this).data("seq");
+			if (!seisanSeq) {
+				return false;
+			}
+			let formData = [];
+			formData.push(
+					{name: "seisanSeq", value: seisanSeq}
+			);
+			const url = "/user/seisansho/outputSeisansho";
+			const button = $(this);
+			downloadFileAjax(url, button, formData);
+
+			return false;
+		});
+	});
+</script>
+
+<!-- 報酬明細出力 -->
+<script type="text/javascript" th:inline="javascript">
+
+$(function(){
+	let ajaxRunning = false;
+	// 送付書出力ボタン押下時
+	$(document).on('click', '#hoshuMeisaiDownloadBtn', function() {
+
+		const btn = $(this);
+		const modal = $(this).closest(".modal");
+		const url = "/user/kaikeiManagement/excel/hoshuMeisai";
+
+		let transitionType = /*[[${kaikeiListSearchForm.getTransition()}]]*/null;
+		let transitionAnkenId = /*[[${kaikeiListSearchForm.transitionAnkenId}]]*/null;
+		let transitionCustomerId = /*[[${kaikeiListSearchForm.transitionCustomerId}]]*/null;
+		let selectedAnkenId = modal.find("input[name='selectedAnkenId']").val();
+		let selectedCustomerId = modal.find("input[name='selectedCustomerId']").val();
+		let seisanCompDispFlg = modal.find("input[name='seisanCompDispFlg']").prop("checked");
+
+		let formData = [];
+		formData.push(
+				{name: 'transitionType', value: transitionType},
+				{name: 'transitionAnkenId', value: transitionAnkenId},
+				{name: 'transitionCustomerId', value: transitionCustomerId},
+				{name: 'selectedAnkenId', value: selectedAnkenId},
+				{name: 'selectedCustomerId', value: selectedCustomerId},
+				{name: 'seisanCompDispFlg', value: seisanCompDispFlg});
+
+		//二重処理チェック
+		if(ajaxRunning){
+			return false;
+		}
+		downloadFileAjax(url, btn, formData);
+	});
+});
+</script>
+
+		<!-- 入出金明細出力 -->
+		<script type="text/javascript" th:inline="javascript">
+		$(function(){
+			$(document).on('click', '.outputNyushukkinMeisai', function() {
+				let url = "/user/kaikeiManagement/excel/nyushukkinMeisai";
+				const btn = $(this);
+				let transitionType;
+				let transitionAnkenId = /*[[${kaikeiListSearchForm.transitionAnkenId}]]*/null;
+				let transitionCustomerId = /*[[${kaikeiListSearchForm.transitionCustomerId}]]*/null;
+
+				//遷移元の判定
+				if (Number(transitionAnkenId)){
+					transitionType =  /*[[${T(jp.loioz.common.constant.CommonConstant$TransitionType).ANKEN}]]*/null;
+				} else if (Number(transitionCustomerId)){
+					transitionType =  /*[[${T(jp.loioz.common.constant.CommonConstant$TransitionType).CUSTOMER}]]*/null;
+				} else {
+					//想定外のケース
+				}
+
+				let formData = [];
+				formData.push({name: 'transitionType', value: transitionType});
+				formData.push({name: 'transitionAnkenId', value: transitionAnkenId});
+				formData.push({name: 'transitionCustomerId', value: transitionCustomerId});
+
+				let kaikeiKirokuHiddenFlg = Number($(".kaikeiHiddenCheckbox").prop("checked")).toString();
+				formData.push({ name : "kaikeiKirokuHiddenFlg" , value : kaikeiKirokuHiddenFlg});
+				downloadFileAjax(url, btn, formData);
+			});
+		});
+		</script>
+		<!-- タイムチャージ出力 -->
+		<script type="text/javascript" th:inline="javascript">
+		/*<![CDATA[*/
+		let transitionCustomerId = /*[[${kaikeiListSearchForm.transitionCustomerId}]]*/null;
+		/*]]>*/
+		$(function(){
+			$(document).on('click', "#openTimeChageSelectModal", function() {
+				$("#timeChargeSelectModal").modal('show');
+			});
+			
+			$(document).on('click', '#timeChargeSelectModal #modalTimeChargeDownload', function() {
+				const ankenId = $('#timeChargeSelectModal [name="selectedAnken"]:checked').val();
+				if (!ankenId) {
+					alert("出力対象を選択してください。");
+					return false;
+				}
+				const button = $(this);
+				timeChargeDownload(button, ankenId);
+			})
+			
+			$(document).on('click', '#timeChargeDownload', function() {
+				const ankenId = $(this).data("ankenId");
+				const button = $(this);
+				timeChargeDownload(button, ankenId);
+			});
+			
+			function timeChargeDownload(button, ankenId) {
+				const url = "/user/kaikeiManagement/excel/timeCharge";
+				const formData = [
+					{name: 'customerId', value: transitionCustomerId},
+					{name: 'ankenId', value: ankenId},
+				];
+				downloadFileAjax(url, button,formData);
+			};
+			
+		});
+		</script>
+		<!-- 支払計画出力 -->
+		<script type="text/javascript" th:inline = "javascript">
+		$(function () {
+
+			let ajaxRunning = false;
+			$(document).on("click","#shiharaiPlanOutPut",function(){
+
+				const btn = $(this);
+				const url = "/user/kaikeiManagement/excel/shiharaiKeikaku";
+				const modal = $(this).closest(".modal");
+
+				let seisanSeq = modal.find("input[name='shiharaiPlanDto.seisanSeq']").val();
+				let formData = [];
+				formData.push({"name":"seisanSeq","value":seisanSeq});
+
+				//二重処理チェック
+				if(ajaxRunning){
+					return false;
+				}
+				downloadFileAjax(url, btn, formData);
+			});
+		});
+		</script>
+		<!--タブ切り替え -->
+		<script type="text/javascript" th:inline = "javascript">
+		$(function () {
+			$("#tab_kaikei_management").click(function () {
+				if(!$(this).hasClass("selected")){
+					$(this).addClass("selected");
+					$("#tab_seisan_management").removeClass("selected");
+					$("#kaikeiMgt").fadeIn();
+					$("#seisanMgt").hide();
+					const url = new URL(window.location);
+					url.searchParams.set('isSeisanshoTab', 'false');
+					history.pushState({}, '', url);
+				}else{
+					return false;
+				}
+			});
+			$("#tab_seisan_management").click(function() {
+				if(!$(this).hasClass("selected")){
+					$(this).addClass("selected");
+					$("#tab_kaikei_management").removeClass("selected");
+					$("#kaikeiMgt").hide();
+					$("#seisanMgt").fadeIn();
+					const url = new URL(window.location);
+					url.searchParams.set('isSeisanshoTab', 'true');
+					history.pushState({}, '', url);
+				}else{
+					return false;
+				}
+			});
+		});
+		</script>
+</head>
+<body>
+	<div layout:fragment="main-contents" th:remove="tag">
+
+		<div class="contents_sidebar_wrapper contentsSlidebarWrapper" th:data-click-open=${customerAnkenMenuOpenClickForSessionValue} th:data-resize-open=${customerAnkenMenuOpenResizeForSessionValue}>
+
+			<!--/* 顧客・案件メニュー */-->
+			<div th:replace="common/customerAnkenMenu::menuList(
+				sideMenuAnkenId=${kaikeiListSearchForm.transitionAnkenId},
+				sideMenuCustomerId=${kaikeiListSearchForm.transitionCustomerId},
+				selectedTabClass='is_kaikei')">
+			</div>
+
+			<!--/* メインコンテンツ */-->
+			<div class="contents_wrapper">
+
+				<div class="container-fluid">
+
+					<!--/* ④顧客・案件一覧に戻る */-->
+					<th:block th:if="${T(jp.loioz.common.constant.CommonConstant$SystemFlg).FLG_OFF.equalsByCode({kaikeiListSearchForm.transitionFlg})}">
+						<div th:replace="common/wrapHeader::wrapHeader(
+							returnListScreen=${T(jp.loioz.common.utility.SessionUtils).getSessionVaule(T(jp.loioz.common.constant.SessionAttrKeyEnum).RETURN_LIST_SCREEN.codeKey)},
+							sideMenuAnkenId=${kaikeiListSearchForm.transitionAnkenId},
+							selectedTabClass='is_kaikei')"></div>
+					</th:block>
+					<th:block th:unless="${T(jp.loioz.common.constant.CommonConstant$SystemFlg).FLG_OFF.equalsByCode({kaikeiListSearchForm.transitionFlg})}">
+						<div th:replace="common/wrapHeader::wrapHeader(
+							returnListScreen=${T(jp.loioz.common.utility.SessionUtils).getSessionVaule(T(jp.loioz.common.constant.SessionAttrKeyEnum).RETURN_LIST_SCREEN.codeKey)},
+							sideMenuPersonId=${kaikeiListSearchForm.transitionCustomerId},
+							selectedTabClass='is_kaikei',
+							returnPrevScreenName=${T(jp.loioz.common.utility.SessionUtils).getSessionVaule(T(jp.loioz.common.constant.SessionAttrKeyEnum).RETURN_PREV_SCREEN_NAME)},
+							returnPrevScreenUrl=${T(jp.loioz.common.utility.SessionUtils).getSessionVaule(T(jp.loioz.common.constant.SessionAttrKeyEnum).RETURN_PREV_SCREEN_URL)})"></div>
+					</th:block>
+
+					<!--/* ⑤画面メイン */-->
+					<main class="content pt-0">
+
+						<!--/* ⑥メッセージエリア */-->
+						<div th:replace="common/messageArea::messageArea"></div>
+
+						<!--/* 顧客情報・案件情報 */-->
+						<div th:replace="common/customerAnkenSelected::detailInfo(
+							wrapHeaderAnkenId=${kaikeiListSearchForm.transitionAnkenId},
+							wrapHeaderCustomerId=${kaikeiListSearchForm.transitionCustomerId})">
+						</div>
+						
+						<!-- 会計管理画面 -->
+						<form id="kaikeiForm" th:object="${kaikeiListSearchForm}" method="post" th:autocomplete="off">
+							
+							<div class="row">
+								<div class="col-lg-12 pr-5">
+									<!-- 案件明細 -->
+									<section class="section_anken_detail">
+										<div class="section_block_header">
+											<div class="section_block_title pl-2">
+												<span class="mr-3">案件明細</span>
+												<label class="ml-5 check_area checkbox_btn" th:unless="${viewForm.transitionFromAnken}">
+													<input type="checkbox" class="checkbox_input" name="ankenMeisaiHiddenFlg">
+													<span class="checkbox_txt">完了済みも表示</span>
+												</label>
+											</div>
+											<div class="section_block_action">
+												<a href="javascript:void(0);" class="fs15 mr-4" data-toggle="modal" data-target="#hoshuMeisaiModal">
+													<i class="fas fa-list mr-2"></i>全ての報酬明細を確認
+												</a>
+												<th:block th:if="${viewForm.notCompletedAnkenCount > 0}">
+													<a href="javascript:void(0);" class="fs15" data-toggle="modal" data-target="#hoshuModal" th:data-seq="${viewForm.kaikeiKirokuSeq}">
+														<i class="fas fa-plus-square mr-2"></i>報酬を追加
+													</a>
+												</th:block>
+												<th:block th:if="${viewForm.notCompletedAnkenCount == 0}">
+													<th:block th:if="${kaikeiListSearchForm.transitionCustomerId}">
+														<span class="fc_sub cursor_default fs15" data-container="body" data-toggle="tooltip" data-trigger="hover" th:title="進行中の案件がありません。">
+															<i class="fas fa-plus-square mr-2"></i>報酬を追加
+														</span>
+													</th:block>
+													<th:block th:if="${kaikeiListSearchForm.transitionAnkenId}">
+														<span class="fc_sub cursor_default fs15" data-container="body" data-toggle="tooltip" data-trigger="hover" th:title="進行中の顧客がいません。">
+															<i class="fas fa-plus-square mr-2"></i>報酬を追加
+														</span>
+													</th:block>
+												</th:block>
+											</div>
+										</div>
+										<div class="section_block_body">
+											<div class="section_table_wrapper" th:classappend="${viewForm.transitionFromAnken} ? 'table_customer' : 'table_anken' ">
+												<div id="ankenMeisaiList" th:fragment="ankenMeisaiList" class="header_fixed_table_wrapper table_anken_meisai_wrapper">
+													<input type="hidden" th:field="${viewForm.notCompletedAnkenCount}">
+													<input type="hidden" th:field="${viewForm.notCompletedFirstAnkenId}">
+													<input type="hidden" th:field="${viewForm.notCompletedFirstCustomerId}">
+													<table class="table_anken_meisai tdCursorPointer">
+														<thead>
+															<tr>
+																<th class="col_anken_customer_name">
+																	<th:block th:if="${kaikeiListSearchForm.transitionCustomerId}"><i class="far fa-file-alt mr-2"></i>案件名</th:block>
+																	<th:block th:if="${kaikeiListSearchForm.transitionAnkenId}"><i class="far fa-user mr-2"></i>顧客名</th:block>
+																</th>
+																<th class="col_kingaku_total text-center">入金計</th>
+																<th class="col_kingaku_total text-center">報酬計</th>
+																<th class="col_kingaku_total text-center">出金計</th>
+																<th class="col_kingaku_total text-center">合計</th>
+																<th class="col_status">顧客ステータス</th>
+																<th class="col_status">精算完了日</th>
+																<th class="col_comp">操作</th>
+															</tr>
+														</thead>
+														<tbody>
+	<!--/*/ 											<th:block th:if="${viewForm.ExistAnkenMeisai == false}"> /*/-->
+															<tr>
+																<td colspan="9" class="no_data_table_list">
+																	<span th:text="#{I00040}">MSG_I00040</span>
+																</td>
+															</tr >
+	<!--/*/ 											</th:block> /*/-->
+															<tr th:id="ankenMeisaiRow__${stat.index}__" th:each="item, stat : ${viewForm.ankenMeisaiListDtos}" class="ankenMeisaiRow m-3"
+																th:classappend="${item.isComp()} ? 'meisai_completed' : '' " data-toggle="modal" data-target="#hoshuMeisaiModal"
+																th:data-customer-id="${item.customerId}" th:data-anken-id="${item.ankenId}">
+																<td class="col_anken_customer_name">
+																	<!-- /* 顧客名 or 案件名 */ -->
+																	<div class="item_title char_ellipsis" th:classappend="${item.isComp()} ? 'meisai_completed' : '' ">
+																		<!-- /* 案件名 */ -->
+																		<span th:if="${kaikeiListSearchForm.transitionCustomerId}" th:text="${#strings.isEmpty(item.ankenName)} ? '(案件名未入力)' : ${item.ankenName}">案件名</span>
+																		<!-- /* 顧客名 */ -->
+																		<span th:if="${kaikeiListSearchForm.transitionAnkenId}" th:text="${item.customerName}">顧客名</span>
+																	</div>
+																	<!-- /* 案件ID */ -->
+																	<div th:if="${kaikeiListSearchForm.transitionCustomerId}" class="stop-events lh1 inline-block">
+																		<a class="" data-boundary="window" data-container="body" data-toggle="tooltip" data-trigger="hover" title="案件の会計管理へ"
+																			th:href="@{/user/kaikeiManagement/list(transitionAnkenId=${item.ankenId}, transitionCustomerId=null)}" th:text="${item.getAnkenIdLabel()}"></a>
+																	</div>
+																	<!-- /* 名簿ID */ -->
+																	<div th:if="${kaikeiListSearchForm.transitionAnkenId}" class="stop-events lh1 inline-block">
+																		<a class="" data-boundary="window" data-container="body" data-toggle="tooltip" data-trigger="hover" title="名簿の会計管理へ"
+																			th:href="@{/user/kaikeiManagement/list(transitionCustomerId=${item.customerId}, transitionAnkenId=null)}" th:text="${item.getCustomerIdLabel()}"></a>
+																	</div>
+																</td>
+																<td class="col_kingaku_total h4">
+																	<span th:classappend="${T( jp.loioz.common.utility.StringUtils).isMinusDicimalStr(item.dispNyukinTotal)}? 'minus_money_text':_" th:text="${item.dispNyukinTotal}">入金計</span>
+																</td>
+																<td class="col_kingaku_total h4">
+																	<span th:classappend="${T( jp.loioz.common.utility.StringUtils).isMinusDicimalStr(item.dispHoshuTotal)}? 'minus_money_text':_" th:text="${item.dispHoshuTotal}">報酬計</span>
+																</td>
+																<td class="col_kingaku_total h4">
+																	<span th:classappend="${T( jp.loioz.common.utility.StringUtils).isMinusDicimalStr(item.dispShukkinTotal)}? 'minus_money_text':_" th:text="${item.dispShukkinTotal}">出金</span>
+																</td>
+																<td class="col_kingaku_total h4">
+																	<span class="font-weight-bold" th:classappend="${T( jp.loioz.common.utility.StringUtils).isMinusDicimalStr(item.dispTotal)}? 'minus_money_text':_" th:text="${item.dispTotal}">合計</span>
+																</td>
+																<td class="col_status">
+																	<i th:class="|fas fa-circle fa-xs anken_status_${item.ankenStatus.getCd()}|"></i>
+																	<span th:text="${item.ankenStatus.getVal()}">準備中</span>
+																</td>
+																<td class="col_status">
+																	<span th:text="${item.seisanKanryoDate}"></span>
+																</td>
+																<td class="col_comp col_comp_check stop-events">
+																	<div class="popover_box_wrap">
+																		<button type="button" class="ankenStatusInputOpenLink btn btn-sm btn-light" th:if="${item.isComp()}" th:data-anken-id="${item.ankenId}" th:data-customer-id="${item.customerId}">
+																			編集する<i class="fas fa-chevron-down ml-2 mr-0"></i>
+																		</button>
+																		<button type="button" class="ankenStatusInputOpenLink btn btn-sm btn-outline-primary" th:unless="${item.isComp()}" th:data-anken-id="${item.ankenId}" th:data-customer-id="${item.customerId}">
+																			完了にする<i class="fas fa-chevron-down ml-2 mr-0"></i>
+																		</button>
+																	</div>
+																</td>
+															</tr>
+														</tbody>
+													</table>
+												</div>
+											</div>
+										</div>
+									</section>
+								</div>
+							</div>
+
+							<div class="row">
+								<div class="col-lg-12 pr-5">
+									
+									<!-- 会計管理・精算管理タブ -->
+									<ul class="nav nav-tabs mt-5" id="myTab" role="tablist" th:classappend="${kaikeiListSearchForm.transitionCustomerId} ? 'select_customer' : 'select_anken' ">
+										<li class="nav-item nav-link tab-title " id="tab_kaikei_management" th:classappend="${viewForm.isSeisanshoTab} ? '' : 'selected'">入出金管理</li>
+										<li class="nav-item nav-link tab-title" id="tab_seisan_management" th:classappend="${viewForm.isSeisanshoTab} ? 'selected' : ''">請求書／精算書</li>
+									</ul>
+									
+									<!-- 会計管理タブ end -->
+									<div id="kaikeiMgt" class="kaikei_detail_block" th:style="${viewForm.isSeisanshoTab} ? 'display:none;' : ''">
+										<!-- 入出金明細 start -->
+										<section class="section_kaikei_detail">
+											<div class="section_block_header">
+												<div class="section_block_title pl-2">
+													<i class="far fa-credit-card mr-3"></i><span class="mr-3">入出金明細</span>
+													<label class="ml-5 check_area checkbox_btn">
+														<input type="checkbox" class="checkbox_input kaikeiHiddenCheckbox" name="kaikeiKirokuHiddenFlg">
+														<span class="checkbox_txt" th:text="${kaikeiListSearchForm.transitionCustomerId} ? '完了した案件のデータを表示': '完了した顧客のデータを表示'"></span>
+													</label>
+												</div>
+												<div class="section_block_action">
+													<a href="javascript:void(0);" role="button" class="outputNyushukkinMeisai fs15">
+														<i class="fas fa-download mr-2"></i>
+														<i class="fas fa-spinner mr-3 faa-spin animated hidden"></i>入出金明細を出力
+													</a>
+													<th:block th:if="${viewForm.notCompletedAnkenCount > 0}">
+														<a href="javascript:void(0);" class="fs15 ml-4" data-toggle="modal" data-target="#nyushukkinModal" th:data-seq="${viewForm.kaikeiKirokuSeq}">
+															<i class="fas fa-plus-square mr-2"></i>入金／出金を追加
+														</a>
+													</th:block>
+													<th:block th:if="${viewForm.notCompletedAnkenCount == 0}">
+														<th:block th:if="${kaikeiListSearchForm.transitionCustomerId}">
+															<span class="fc_sub nyushukin_add_txt ml-4 fs15" data-container="body" data-toggle="tooltip" data-trigger="hover" th:title="進行中の案件がありません。">
+																<i class="fas fa-plus-square mr-2"></i><span>入金／出金を追加</span>
+															</span>
+														</th:block>
+														<th:block th:if="${kaikeiListSearchForm.transitionAnkenId}">
+															<span class="fc_sub nyushukin_add_txt ml-4 fs15" data-container="body" data-toggle="tooltip" data-trigger="hover" th:title="進行中の顧客がいません。">
+																<i class="fas fa-plus-square mr-2"></i><span>入金／出金を追加</span>
+															</span>
+														</th:block>
+													</th:block>
+												</div>
+											</div>
+											<div class="section_block_body">
+												<div class="section_table_wrapper">
+													<!--/* 入出金明細 */-->
+													<div id="kaikeiKirokuList" th:fragment="kaikeiKirokuList" class="header_fixed_table_wrapper table_kaikei">
+														<table class="table-hover tdCursorPointer">
+															<thead>
+																<tr>
+																	<th class="col_date">発生日</th>
+																	<th class="col_kingaku">入金</th>
+																	<th class="col_kingaku">出金</th>
+																	<th class="col_komoku">項目</th>
+<!--/*/															<th:block th:if="${kaikeiListSearchForm.transitionCustomerId}"> /*/-->
+																	<th class="col_id">案件ID</th>
+																	<th class="col_anken_name">案件名</th>
+<!--/*/ 														</th:block> /*/-->
+<!--/*/															<th:block th:if="${kaikeiListSearchForm.transitionAnkenId}"> /*/-->
+																	<th class="col_id">名簿ID</th>
+																	<th class="col_customer_name">顧客名</th>
+<!--/*/ 														</th:block> /*/-->
+																	<th class="col_tekiyo">摘要</th>
+																	<th class="col_date">精算処理日</th>
+																	<th class="col_seisan_id">精算ID</th>
+																</tr>
+															</thead>
+															<tbody>
+<!--/*/	 													<th:block th:if="${viewForm.ExistKaikeiKiroku == false}"> /*/-->
+																<tr>
+																	<td colspan="10" class="no_data_list">
+																		<span th:text="#{I00021}">MSG_I00021</span>
+																		<i class="fas fa-exclamation-circle"></i>
+																	</td>
+																</tr >
+<!--/*/ 													</th:block> /*/-->
+																<tr id="kaikeiKirokuRow" th:each="item : ${viewForm.kaikeiKirokuList}" data-toggle="modal" data-target="#nyushukkinModal" th:data-seq="${item.kaikeiKirokuSeq}" th:data-id="${item.nyushukkinKomokuId}" th:classappend="${item.Completed ? 'row_completed' : ''}" >
+																	<td class="col_date" th:text="${item.hasseiDate}">発生日</td>
+																	<td class="col_kingaku" th:classappend="${T( jp.loioz.common.utility.StringUtils).isMinusDicimalStr(item.displayNyukinGaku)}? 'minus_money_text':_" th:text="${item.displayNyukinGaku}">入金</td>
+																	<td class="col_kingaku" th:classappend="${T( jp.loioz.common.utility.StringUtils).isMinusDicimalStr(item.displayShukkinGaku)}? 'minus_money_text':_" th:text="${item.displayShukkinGaku}">出金</td>
+																	<td class="col_komoku char_ellipsis" th:text="${item.item}">項目</td>
+																	
+																	<!--/* 顧客軸 */-->
+<!--/*/															<th:block th:if="${kaikeiListSearchForm.transitionCustomerId}"> /*/-->
+																	<td class="col_id" th:classappend="${item.Completed ? 'row_completed' : ''}">
+																		<span th:if="${item.displayAnkenId}" th:text="${item.displayAnkenId.asLong()}"></span>
+																	</td>
+																	<td class="col_anken_name char_ellipsis" th:classappend="${item.Completed ? 'row_completed' : ''}">
+																		<span th:text="${#strings.isEmpty(item.ankenName)} ? '(案件名未入力)' : ${item.ankenName}">案件名</span>
+																	</td>
+<!--/*/ 														</th:block> /*/-->
+																	
+																	<!--/* 案件軸 */-->
+<!--/*/															<th:block th:if="${kaikeiListSearchForm.transitionAnkenId}"> /*/-->
+																	<td class="col_id" th:classappend="${item.Completed ? 'row_completed' : ''}" th:text="${item.displayCustomerId.asLong()}"></td>
+																	<td class="col_customer_name char_ellipsis" th:classappend="${item.Completed ? 'row_completed' : ''}">
+																		<span th:text="${item.customerName}">顧客名</span>
+																	</td>
+<!--/*/ 														</th:block> /*/-->
+																	<td class="col_tekiyo text-break char_ellipsis" th:text="${item.tekiyo}">摘要</td>
+																	<td class="col_date" th:text="${item.seisanDate}">精算処理日</td>
+																	<td class="col_seisan_id" th:text="${item.displaySeisanId}">精算ID</td>
+																</tr>
+															</tbody>
+															<tfoot th:classappend="${viewForm.ExistKaikeiKiroku} ? '' : 'hidden'">
+																<tr>
+																	<th>合計</th>
+																	<td class="text-right border-left-0" th:classappend="${T( jp.loioz.common.utility.StringUtils).isMinusDicimalStr(viewForm.kaikeiKirokuNyukinTotal)}? 'minus_money_text':_" th:text="${viewForm.kaikeiKirokuNyukinTotal}">入金計</td>
+																	<td class="text-right" th:classappend="${T( jp.loioz.common.utility.StringUtils).isMinusDicimalStr(viewForm.kaikeiKirokuShukkinTotal)}? 'minus_money_text':_" th:text="${viewForm.kaikeiKirokuShukkinTotal}">出金計</td>
+																	<td colspan="6" class="cell_total_other"></td>
+																</tr>
+															</tfoot>
+														</table>
+													</div>
+												</div>
+											</div>
+										</section>
+										<!-- 入出金明細 end -->
+										
+										<!-- 入出金予定 start -->
+										<section class="section_kaikei_detail">
+											<div class="section_block_header">
+												<div class="section_block_title">
+													<i class="far fa-clock ml-2 mr-3"></i><span class="mr-3">入出金予定</span>
+													<label class="check_area checkbox_btn ml-5">
+														<input type="checkbox" class="checkbox_input" name="nyukinYoteiHiddenFlg">
+														<span class="checkbox_txt" th:text="${kaikeiListSearchForm.transitionCustomerId} ? '完了した案件のデータを表示': '完了した顧客のデータを表示'"></span>
+													</label>
+												</div>
+												<div class="section_block_action">
+													<th:block th:if="${viewForm.notCompletedAnkenCount > 0}">
+														<a href="javascript:void(0);" class="fs15" data-toggle="modal" data-target="#nyuShukkinYoteiModal">
+															<i class="fas fa-plus-square mr-2"></i>入金／出金の予定を追加
+														</a>
+													</th:block>
+													<th:block th:if="${viewForm.notCompletedAnkenCount == 0}">
+														<th:block th:if="${kaikeiListSearchForm.transitionCustomerId}">
+															<span class="fc_sub nyushukin_add_txt fs15" data-container="body" data-toggle="tooltip" data-trigger="hover" th:title="進行中の案件がありません。">
+																<i class="fas fa-plus-square mr-2"></i>入金／出金の予定を追加
+															</span>
+														</th:block>
+														<th:block th:if="${kaikeiListSearchForm.transitionAnkenId}">
+															<span class="fc_sub nyushukin_add_txt fs15" data-container="body" data-toggle="tooltip" data-trigger="hover" th:title="進行中の顧客がいません。">
+																<i class="fas fa-plus-square mr-2"></i>入金／出金の予定を追加
+															</span>
+														</th:block>
+													</th:block>
+												</div>
+											</div>
+											<div class="section_block_body">
+												<div class="section_table_wrapper">
+													<!-- 入出金予定一覧 start -->
+													<div id="nyukinYoteiList" th:fragment="nyukinYoteiList" class="header_fixed_table_wrapper table_kaikei">
+														<table class="table-hover tdCursorPointer">
+															<thead>
+																<tr>
+																	<th class="col_date">予定日</th>
+																	<th class="col_kingaku">入金予定額</th>
+																	<th class="col_kingaku">出金予定額</th>
+																	<th class="col_komoku">項目</th>
+<!--/*/															<th:block th:if="${kaikeiListSearchForm.transitionCustomerId}"> /*/-->
+																	<th class="col_id">案件ID</th>
+																	<th class="col_anken_name">案件名</th>
+<!--/*/ 														</th:block> /*/-->
+<!--/*/															<th:block th:if="${kaikeiListSearchForm.transitionAnkenId}"> /*/-->
+																	<th class="col_id">名簿ID</th>
+																	<th class="col_customer_name">顧客名</th>
+<!--/*/ 														</th:block> /*/-->
+																	<th class="col_tekiyo">摘要</th>
+																	<th class="col_seisan_id">精算ID</th>
+																</tr>
+															</thead>
+															<tbody>
+<!--/*/ 													<th:block th:if="${viewForm.ExistNyushukkinYotei == false}"> /*/-->
+																<tr>
+																	<td colspan="9" class="no_data_list">
+																		<span th:text="#{I00021}">MSG_I00021</span>
+																		<i class="fas fa-exclamation-circle"></i>
+																	</td>
+																</tr >
+<!--/*/ 													</th:block> /*/-->
+																<tr th:each="item : ${viewForm.nyushukkinYoteiList}" th:classappend="${item.Completed ? 'row_completed' : ''}" data-toggle="modal" th:data-target="${item.dataTarget}" th:data-seq="${item.nyushukkinYoteiSeq}" th:data-seisanSeq="${item.seisanSeq}">
+																	<td class="col_date" th:text="${item.nyushukkinYoteiDate}">予定日</td>
+																	<!-- 入金予定金額 -->
+																	<td class="col_kingaku" th:classappend="${T( jp.loioz.common.utility.StringUtils).isMinusDicimalStr(item.displayNyukinYoteiGaku)}? 'minus_money_text':_" th:text="${item.displayNyukinYoteiGaku}">入金予定額</td>
+																	<!-- 入金予定金額 -->
+																	<td class="col_kingaku" th:classappend="${T( jp.loioz.common.utility.StringUtils).isMinusDicimalStr(item.displayShukkinYoteiGaku)}? 'minus_money_text':_" th:text="${item.displayShukkinYoteiGaku}">出金予定額</td>
+																	<!-- 項目名 -->
+																	<td class="col_komoku char_ellipsis" th:text="${item.nyushukkinKomokuName}">入出金項目</td>
+																	<!--/* 顧客軸 */-->
+<!--/*/															<th:block th:if="${kaikeiListSearchForm.transitionCustomerId}"> /*/-->
+																	<td class="col_id" th:text="${item.displayAnkenId.asLong()}" th:classappend="${item.Completed ? 'row_completed' : ''}"/>
+																	<td class="col_anken_name char_ellipsis" th:classappend="${item.Completed ? 'row_completed' : ''}">
+																		<span th:text="${#strings.isEmpty(item.ankenName)} ? '(案件名未入力)' : ${item.ankenName}">案件名</span>
+																	</td>
+<!--/*/ 														</th:block> /*/-->
+																	
+																	<!--/* 案件軸 */-->
+<!--/*/															<th:block th:if="${kaikeiListSearchForm.transitionAnkenId}"> /*/-->
+																	<td class="col_id" th:classappend="${item.Completed ? 'row_completed' : ''}" th:text="${item.displayCustomerId.asLong()}" />
+																	<td class="col_customer_name char_ellipsis" th:classappend="${item.Completed ? 'row_completed' : ''}">
+																		<span th:text="${item.customerName}">顧客名</span>
+																	</td>
+<!--/*/ 														</th:block> /*/-->
+																	
+																	<!-- 摘要 -->
+																	<td class="col_tekiyo text-break char_ellipsis" th:text="${item.tekiyo}">摘要</td>
+																	<!-- 精算ID -->
+																	<td class="col_seisan_id" th:text="${item.displaySeisanId}">精算ID</td>
+																</tr>
+															</tbody>
+														</table>
+													</div>
+												</div>
+											</div>
+										</section>
+										<!-- 入出金予定 end -->
+									</div>
+									<!-- 会計管理タブ end -->
+									
+									<!-- 精算記録タブ start -->
+									<div id="seisanMgt" class="kaikei_detail_block" th:style="${viewForm.isSeisanshoTab} ? '' : 'display:none;'">
+										<section class="section_kaikei_detail mt-1">
+											<div class="section_block_header">
+												<div class="section_block_title pl-2">
+													<i class="fas fa-file-invoice mr-3"></i><span class="mr-3">精算記録</span>
+												</div>
+												<div class="section_block_action">
+													<th:block th:if="${viewForm.displayTimeChargeBtn}">
+														<!--/* タイムチャージ出力可能なデータが1件の場合 */-->
+														<a href="javascript:void(0);" role="button" class="add_line_link mr-4" id="timeChargeDownload"
+															th:if="${viewForm.timeChargeDownloadSelectDto.size() == 1}" th:data-anken-id="${viewForm.timeChargeDownloadSelectDto.get(0).ankenId.asLong()}">
+															<i class="fas fa-download mr-2"></i>
+															<i class="fas fa-spinner mr-3 faa-spin animated hidden"></i>タイムチャージを出力
+														</a>
+														<!--/* タイムチャージ出力可能なデータが複数件の場合 */-->
+														<a href="javascript:void(0);" class="mr-4" id="openTimeChageSelectModal" th:if="${viewForm.timeChargeDownloadSelectDto.size() > 1}">
+															<i class="fas fa-download mr-2"></i>
+															タイムチャージを出力
+														</a>
+													</th:block>
+													<th:block th:if="${viewForm.notCompletedAnkenCount > 0}">
+														<a href="javascript:void(0);" id="seisanshoCreate" class="btn btn-outline-danger btn-sm">
+															<i class="fas fa-plus mr-2"></i>請求書／精算書を作成
+														</a>
+													</th:block>
+													<th:block th:if="${viewForm.notCompletedAnkenCount == 0}">
+														<th:block th:if="${kaikeiListSearchForm.transitionCustomerId}">
+															<a href="javascript:void(0);" class="btn btn-secondary btn-sm" data-container="body" data-toggle="tooltip" data-trigger="hover" th:title="精算可能な案件がありません。">
+																<i class="fas fa-plus mr-2"></i>請求書／精算書を作成
+															</a>
+														</th:block>
+														<th:block th:if="${kaikeiListSearchForm.transitionAnkenId}">
+															<a href="javascript:void(0);" class="btn btn-secondary btn-sm" data-container="body" data-toggle="tooltip" data-trigger="hover" th:title="精算可能な顧客がいません。">
+																<i class="fas fa-plus mr-2"></i>請求書／精算書を作成
+															</a>
+														</th:block>
+													</th:block>
+												</div>
+											</div>
+											<div class="section_block_body">
+												<div class="section_table_wrapper table_kaikei table_seisan_kiroku">
+													<table id="seisanKirokuList">
+														<thead>
+															<tr>
+																<th class="col_seisan_id">精算ID</th>
+																<th class="col_date">作成日</th>
+																<!--/* 案件軸 */-->
+<!--/*/ 													<th:block th:if="${kaikeiListSearchForm.transitionCustomerId}"> /*/-->
+																<th class="col_id">案件ID</th>
+																<th class="col_anken_name">案件名</th>
+<!--/*/														</th:block> /*/-->
+																<!--/* 顧客軸 */-->
+<!--/*/ 													<th:block th:if="${kaikeiListSearchForm.transitionAnkenId}"> /*/-->
+																<th class="col_id">名簿ID</th>
+																<th class="col_customer_name">顧客名</th>
+<!--/*/														</th:block> /*/-->
+																<th class="col_kubun">区分</th>
+																<th class="col_kingaku">精算額／請求額</th>
+																<th class="col_kingaku">回収額</th>
+																<th class="col_tekiyo">摘要</th>
+																<th class="col_edit">状況</th>
+																<th class="col_seisansho">出力</th>
+																<th class="col_edit">編集</th>
+															</tr>
+														</thead>
+														<tbody>
+<!--/*/ 												<th:block th:if="${viewForm.ExistSeisanKiroku == false}"> /*/-->
+															<tr>
+																<td colspan="10" class="no_data_list">
+																	<span th:text="#{I00021}">MSG_I00021</span>
+																	<i class="fas fa-exclamation-circle"></i>
+																</td>
+															</tr >
+<!--/*/													</th:block> /*/-->
+															<tr th:each="item, stat : ${viewForm.seisanKirokuList}" th:classappend="${viewForm.ExistSeisanKiroku} ? '' : 'hidden'">
+																<td class="col_seisan_id" th:text="${item.displaySeisanId}">精算ID</td>
+																<td class="col_date" th:text="${item.createdAt}">作成日</td>
+																<!--/* 案件軸 */-->
+<!--/*/ 													<th:block th:if="${kaikeiListSearchForm.transitionCustomerId}"> /*/-->
+																<td class="col_id" th:text="${item.ankenId.asLong()}">
+																<td class="col_anken_name char_ellipsis" th:text="${#strings.isEmpty(item.ankenName)} ? '(案件名未入力)' : ${item.ankenName}"/>
+<!--/*/														</th:block> /*/-->
+																<!--/* 顧客軸 */-->
+<!--/*/ 													<th:block th:if="${kaikeiListSearchForm.transitionAnkenId}"> /*/-->
+																<td class="col_id" th:text="${item.customerId.asLong()}"/>
+																<td class="col_customer_name char_ellipsis" th:text="${item.customerName}"/>
+<!--/*/														</th:block> /*/-->
+																<td class="col_kubun" th:text="${item.kubun}">区分</td>
+																<td class="col_kingaku" th:classappend="${T( jp.loioz.common.utility.StringUtils).isMinusDicimalStr(item.displaySeisanGaku)}? 'minus_money_text':_" th:text="${item.displaySeisanGaku}">精算額</td>
+																<td class="col_kingaku" th:classappend="${T( jp.loioz.common.utility.StringUtils).isMinusDicimalStr(item.displayKaishuGaku)}? 'minus_money_text':_" th:text="${item.displayKaishuGaku}">回収額</td>
+																<td class="col_tekiyo text-break">
+																	<input type="text" maxlength="1000" th:id="|tekiyo${item.seisanSeq}|" class="form-control text-break seisan-tekiyo" th:field="${viewForm.seisanKirokuList[__${stat.index}__].tekiyo}" th:data-seq="${item.seisanSeq}">
+																</td>
+																<td class="col_edit" th:text="${viewForm.seisanKirokuList[__${stat.index}__].dispSeisanStatus}"/>
+																<td class="col_seisansho text-center">
+																	<button type="button" class="btn btn-light btn-sm seisanshoDownload" th:data-seq="${item.seisanSeq}" data-container="body" data-toggle="tooltip" data-trigger="hover" th:title="|${item.dispSeisanSeikyu}を出力|">
+																		<i class="fas fa-download text-primary mx-1"></i>
+																		<i class="fas fa-spinner mr-0 text-primar1y mx-1 faa-spin animated hidden"></i>
+																	</button>
+																</td>
+																<td class="col_edit">
+																	<th:block th:if="${kaikeiListSearchForm.transitionCustomerId}">
+																		<a th:href="@{/user/seisansho/create?(seisanCustomerId=${kaikeiListSearchForm.transitionCustomerId}, transitionType=${kaikeiListSearchForm.transition.getCd()}, seisanSeq=${item.seisanSeq})}"
+																			class="btn btn-outline-primary btn-sm btn_icon_edit btn_main_edit" data-container="body" data-toggle="tooltip" data-trigger="hover" title="編集する"><i class="fas fa-edit mr-2"></i>編集
+																		</a>
+																	</th:block>
+																	<th:block th:if="${kaikeiListSearchForm.transitionAnkenId}">
+																		<a class="btn btn-outline-primary btn-sm btn_icon_edit btn_main_edit" 
+																			th:href="@{/user/seisansho/create?(seisanAnkenId=${kaikeiListSearchForm.transitionAnkenId}, transitionType=${kaikeiListSearchForm.transition.getCd()}, seisanSeq=${item.seisanSeq})}"
+																			data-container="body" data-toggle="tooltip" data-trigger="hover" title="編集する"><i class="fas fa-edit mr-2"></i>編集</a>
+																	</th:block>
+																</td>
+															</tr>
+														</tbody>
+													</table>
+												</div>
+											</div>
+										</section>
+									</div>
+									<!-- 精算記録 end -->
+								</div>
+								<!-- 会計管理・精算記録タブ内 end -->
+							</div>
+						</form>
+					</main>
+					<!--/* コンテンツメイン end */-->
+
+					<!--/* モーダルエリア start */-->
+					<div id="selectEditModal">
+
+						<!--/* 入出金モーダル */-->
+						<div th:replace="::modalTemplate(id='nyushukkinModal', target='nyushukkinModalBody')"></div>
+						<!--/* 報酬登録モーダル */-->
+						<div th:replace="::hoshuModalTemplate(id='hoshuModal', target='hoshuModalBody')"></div>
+						<!--/* 報酬明細モーダル */-->
+						<div th:replace="::hoshuMeisaiModalTemplate(id='hoshuMeisaiModal', target='hoshuMeisaiModalBody')"></div>
+						<!--  /* 入金・出金予定モーダル  */ -->
+						<div th:replace="::shiharaiModalTemplate(id='shiharaiPlanModal', target='shiharaiPlanModalBody')"></div>
+						<!--  /* 顧客選択モーダル  */ -->
+						<div th:replace="::ankenCustomerTemplate(id='ankenModal',target='ankenModalBody')"></div>
+						<!--/* タイムチャージ選択モーダル */-->
+						<div th:replace="::timeChargeSelect(id='timeChargeSelectModal',target='timeChargeSelectModalBody', timeChargeAnkenList=${viewForm.timeChargeDownloadSelectDto})"></div>
+
+						<!--/* 入出金予定モーダル */-->
+						<div th:replace="::nyuShukkinYoteiTemplate(
+							id='nyuShukkinYoteiModal',
+							target='nyuShukkinYoteiModalBody',
+							transitionAnkenId=${kaikeiListSearchForm.transitionAnkenId},
+							transitionCustomerId=${kaikeiListSearchForm.transitionCustomerId})"></div>
+					</div>
+					<!--/* モーダルエリア end */-->
+
+				</div>
+				<!-- コンテンツ end -->
+			</div>
+		</div>
+	</div>
+
+<!--  /** モーダルテンプレート */ -->
+	<!--  /** 入出金モーダルテンプレート */ -->
+	<div th:fragment="modalTemplate(target)" th:id="${id}" class="modal fade" tabindex="-1" role="dialog" aria-hidden="true" data-backdrop="static">
+		<div class="modal-dialog modal-dialog-centered" role="document">
+			<div class="modal-content">
+				<div th:class="${target}"></div>
+			</div>
+		</div>
+	</div>
+	<!--  /** 入出金モーダルテンプレート */ -->
+
+	<!--  /** 報酬登録／編集モーダルテンプレート */ -->
+	<div th:fragment="hoshuModalTemplate(target)" th:id="${id}" class="modal fade" tabindex="-1" role="dialog" aria-hidden="true" data-backdrop="static">
+		<div class="modal-dialog modal-dialog-centered modal_hoshu" role="document">
+			<div class="modal-content">
+				<div th:class="${target}"></div>
+			</div>
+		</div>
+	</div>
+	<!--  /** 入出金モーダルテンプレート */ -->
+
+	<!--  /** 報酬明細モーダルテンプレート */ -->
+	<div th:fragment="hoshuMeisaiModalTemplate(target)" th:id="${id}" class="modal fade " tabindex="-1" role="dialog" aria-hidden="true" data-backdrop="static">
+		<div class="modal-dialog modal-dialog-centered modal_hoshu_meisai" role="document">
+			<div class="modal-content">
+				<div th:class="${target}"></div>
+			</div>
+		</div>
+	</div>
+	<!--  /** 報酬明細モーダルテンプレート */ -->
+
+	<!--  /** 支払計画モーダルテンプレート */ -->
+	<div th:fragment="shiharaiModalTemplate(target)" th:id="${id}" class="modal fade" tabindex="-1" role="dialog" aria-hidden="true" data-backdrop="static">
+		<div class="modal-dialog modal-dialog-centered modal_shiharai_plan" role="document">
+			<div class="modal-content">
+				<div th:class="${target}"></div>
+			</div>
+		</div>
+	</div>
+	<!--  /** 支払計画モーダルテンプレート */ -->
+
+	<!--  /** 顧客選択モーダルテンプレート */ -->
+	<div th:fragment="ankenCustomerTemplate(target)" th:id="${id}" class="modal fade" tabindex="-1" role="dialog" aria-hidden="true" data-backdrop="static">
+		<div class="modal-dialog modal-dialog-centered modal_s_wide" role="document">
+			<div class="modal-content">
+				<div th:class="${target}"></div>
+			</div>
+		</div>
+	</div>
+	<!--  /** 顧客選択モーダルテンプレート */ -->
+
+	<!--  /** 入出金予定モーダルテンプレート */ -->
+	<div th:fragment="nyuShukkinYoteiTemplate(id, target, transitionAnkenId, transitionCustomerId)" th:id="${id}" class="modal fade" tabindex="-1" role="dialog" aria-hidden="true" data-backdrop="static">
+		<div class="modal-dialog modal-dialog-centered modal_nyukin_shukkin_yotei" role="document">
+			<div class="modal-content">
+				<div th:class="${target}" th:data-anken-id="${transitionAnkenId}" th:data-customer-id="${transitionCustomerId}"></div>
+			</div>
+		</div>
+	</div>
+	<!--  /** 入出金予定モーダル end */ -->
+	
+	<!--  /** タイムチャージの選択モーダルテンプレート */ -->
+	<div th:fragment="timeChargeSelect(target,id,timeChargeAnkenList)" th:id="${id}" class="modal fade" tabindex="-1" role="dialog" aria-hidden="true" data-backdrop="static">
+		<div class="modal-dialog modal-dialog-centered modal_s_wide" role="document">
+			<div class="modal-content">
+				<div th:class="${target}">
+					<div class="modal-header">
+						<h2 class="modalheader_title">案件選択</h2>
+					</div>
+					<div class="modal-body">
+						<div class="table_anken">
+							<table class="table_select">
+								<thead>
+									<tr>
+										<th class="col_search_select">選択</th>
+										<th class="col_id">案件ID</th>
+										<th class="col_select_anken">案件名</th>
+									</tr>
+								</thead>
+								<tbody>
+									<tr th:each="item :${timeChargeAnkenList}" data-click-sync-for-descendants=".timeChargeAnkenSelect">
+										<td class="col_search_select">
+											<label class="radio_btn no_text">
+												<input type="radio" class="radio_input c_orng timeChargeAnkenSelect" name="selectedAnken" th:value="${item.ankenId.asLong()}">
+												<span class="radio_txt"></span>
+											</label>
+										</td>
+										<td class="" th:text="${item.ankenId}">案件ID</td>
+										<td class="col_select_anken char_ellipsis" th:text="${#strings.isEmpty(item.ankenName)}? '(案件名未入力)' : ${item.ankenName}">案件名</td>
+									</tr>
+								</tbody>
+							</table>
+						</div>
+					</div>
+					<div class="modal-footer mx-2">
+						<button type="button" class="btn btn-light" id="modalTimeChargeDownload">
+							<i class="fas fa-download text-primary mr-2"></i>
+							<i class="fas fa-spinner text-primary faa-spin animated hidden"></i>出力する</button>
+						<button type="button" class="btn btn-light" data-dismiss="modal"><i class="fas fa-times"></i>閉じる</button>
+					</div>
+				</div>
+			</div>
+		</div>
+	</div>
+	<!--  /** タイムチャージの選択モーダルテンプレート */ -->
+	
+<!--  /** モーダルテンプレート end*/ -->
+
+</body>
+</html>

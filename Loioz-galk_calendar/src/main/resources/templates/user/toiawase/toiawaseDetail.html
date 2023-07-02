@@ -1,0 +1,303 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+	xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+	layout:decorator="commonLayout">
+<head>
+<meta charset="UTF-8">
+<title>
+	[[${T(jp.loioz.common.utility.LoiozUtils).getHtmlTitle("お問い合わせ", T(jp.loioz.common.utility.SessionUtils).getTenantName())}]]
+</title>
+<style type="text/css">
+.detail_title .type {
+	font-size: 1.2rem;
+}
+.detail_title .subject {
+	font-size: 2.2rem;
+	font-weight: 600;
+	padding: 0 5px;
+}
+.toiawase_detail {
+	display: flex;
+	flex-direction: column;
+	width: 100%;
+	margin-top: 8px;
+	border-top: solid 1px #b9b9b9;
+}
+.toiawase_detail_contents {
+	display: flex;
+	width: 100%;
+	padding: 20px 0 30px;
+	border-bottom: solid 1px #ccc;
+}
+.toiawase_detail_side {
+	width: 80px;
+	text-align: center;
+}
+.toiawase_detail_side img {
+	width: 60px;
+}
+.toiawase_detail_main {
+	flex: 1;
+	padding-left: 10px;
+}
+.toiawase_detail_header {
+	display: flex;
+	justify-content: space-between;
+	margin-bottom: .5rem;
+}
+.toiawase_detail_header .creater_name {
+	font-weight: 600;
+}
+.toiawase_detail_header .create_date {
+	font-size: 1.3rem;
+	color: var(--text-color-gray);
+}
+.toiawase_detail_body {
+	display: inline-block;
+	font-size: 1.3rem;
+	width: 595px;
+}
+.toiawase_detail_attachment {
+	display: flex;
+	flex-direction: column;
+	margin-top: 10px;
+}
+.attachment_head {
+	font-size: 1.3rem;
+	color: var(--text-color-gray);
+}
+.detail_input_area {
+	margin-left: 90px;
+	margin-top: 5px;
+}
+</style>
+<script type="text/javascript" th:inline="javascript">
+$(function() {
+	const action = /*[[@{/user/toiawase/{toiawaseSeq}/detailOpen(toiawaseSeq=${viewForm.toiawaseSeq})}]]*/null;
+	$.ajax({
+		url : action,
+		type : "POST",
+	}).done(function(result){
+		// 成功時 -> なにもしない
+	}).fail(function(jqXHR, textStatus, errorThrown) {
+		// 失敗時-> 動作上は影響はないため、なにもしない
+	});
+});
+</script>
+<script type="text/javascript" th:inline="javascript">
+$(function() {
+
+	<!--/* 個人情報の選択チェック */-->
+	$('#privacySafeCheck').on('change', function() {
+		if($(this).prop('checked')) {
+			$('#newAddBtn').prop('disabled', false);
+			$('#newAddBtn').removeClass("btn-secondary");
+			$('#newAddBtn').addClass("btn-info");
+		} else {
+			$('#newAddBtn').prop('disabled', true);
+			$('#newAddBtn').addClass("btn-secondary");
+			$('#newAddBtn').removeClass("btn-info");
+		}
+	});
+
+	$('#toiawaseCompleteBtn').on('click', function() {
+		if (!confirm('解決済みにします。よろしいですか？\n※ 解決済にすると、コメント追加ができなくなります。')) {
+			return false;
+		}
+		$('#toiawaseCompleteForm').submit();
+	})
+
+	$("#newAddBtn").on('click', function() {
+		if (!confirm('コメントを送信します。よろしいですか？\n※送信後のコメントは「変更・削除」できません。')) {
+			return false;
+		}
+		$('#newAddForm').submit();
+	});
+
+	<!--/* アップしたファイルのダウンロード処理 */-->
+	$(document).on('click', '.attachmentDownLoad', function() {
+		const action = $(this).data('action');
+		const attachmentSeq = $(this).data('seq');
+		downloadFileAjaxForS3(action, null, {"toiawaseAttachmentSeq": attachmentSeq});
+	});
+
+});
+</script>
+
+<!--/* 新規お問い合わせ、お問い合わせ詳細 */-->
+<style type="text/css" th:fragment="css">
+.btn.disabled:hover, .btn:disabled:hover {
+	opacity: .65;
+	cursor: default;
+}
+label.custom-file-label {
+	color: #999;
+	font-weight: normal;
+	padding: 10px 10px 20px;
+}
+</style>
+<!--/* 新規お問い合わせ、お問い合わせ詳細 */-->
+<script type="text/javascript" th:inline="javascript" th:fragment="scripts">
+$(function() {
+	<!--/* ファイル選択処理 */-->
+	$(document).on('change', '#uploadFile', function() {
+		let selectFile = $(this)[0].files[0];
+		if (selectFile !== undefined) {
+			$("#fileName").html(selectFile.name);
+		} else {
+			$("#fileName").html("ファイルが選択されていません。");
+			$("#uploadFile").val("");
+		}
+	});
+
+});
+</script>
+</head>
+<body>
+	<div class="contents_sidebar_wrapper_setting" layout:fragment="main-contents">
+
+		<!--/* サイドメニュー */-->
+		<div th:replace="common/accountSettingMenu::selectMenu(${T(jp.loioz.common.constant.CommonConstant$AccountSettingMenu).TOIAWASE.getCd()})"></div>
+
+		<!--/* コンテンツ */-->
+		<div class="contents_wrapper">
+
+			<!--/* メッセージ表示領域 */-->
+			<div th:replace="common/messageArea::messageArea"></div>
+
+			<!--/* contents_limited_width_setting サイズ幅(maxサイズ） */-->
+			<div class="container-fluid contents_limited_width_setting">
+
+				<!--/* パンくず */-->
+				<div class="breadcrumb_area">
+					<ul>
+						<li><span>サポート</span></li>
+						<li><i class="fas fa-angle-right"></i></li>
+						<li>
+							<span>
+								<a href="/user/toiawase/" th:text="${T(jp.loioz.common.constant.CommonConstant$AccountSettingMenu).TOIAWASE.getVal()}">お問い合わせ</a>
+							</span>
+						</li>
+						<li><i class="fas fa-angle-right"></i></li>
+						<li class="char_ellipsis" th:text="${viewForm.subject}"></li>
+					</ul>
+				</div>
+
+				<!--/* ブロック */-->
+				<div class="contents_block">
+					<div class="d-flex flex-column align-items-end">
+						<table>
+							<tbody>
+								<tr>
+									<td>最終更新日時</td>
+									<td>：<span th:text="${viewForm.lastUpdatedAt}"></span></td>
+								</tr>
+								<tr>
+									<td>ステータス</td>
+									<td>：
+										<!--/* 未返信 */-->
+										<th:block th:if="${T(jp.loioz.common.constant.CommonConstant$ToiawaseStatus).HAS_REPLY == viewForm.toiawaseStatus}">
+											<i class="fas fa-exclamation-circle text-danger"></i>
+										</th:block>
+										<!--/* 解決済み */-->
+										<th:block th:if="${T(jp.loioz.common.constant.CommonConstant$ToiawaseStatus).COMPLETED == viewForm.toiawaseStatus}">
+											<i class="fas fa-check-circle text-success"></i>
+										</th:block>
+										<!--/* 問い合わせ中 */-->
+										<th:block th:if="${T(jp.loioz.common.constant.CommonConstant$ToiawaseStatus).INQUIRING == viewForm.toiawaseStatus}">
+											<i class="fas fa-circle-notch text-primary"></i>
+										</th:block>
+										<span th:text="${viewForm.toiawaseStatus?.val}"></span>
+									</td>
+								</tr>
+							</tbody>
+						</table>
+					</div>
+
+					<!--/* 問い合わせ情報 */-->
+					<div class="d-flex justify-content-between align-items-center">
+						<div class="detail_title">
+							<div class="type" th:text="|【${viewForm.toiawaseType?.val}】|"></div>
+							<div class="subject" th:text="${viewForm.subject}">タイトル</div>
+						</div>
+						<div th:unless="${viewForm.isCompleted()}">
+							<form id="toiawaseCompleteForm" th:action="@{/user/toiawase/{toiawaseSeq}/completed(toiawaseSeq=${viewForm.toiawaseSeq})}" th:object="${inputForm}" method="post" autocomplete="off">
+								<button id="toiawaseCompleteBtn" type="button" class="btn btn-success"><i class="fas fa-check"></i>解決済みにする</button>
+							</form>
+						</div>
+					</div>
+
+					<!--/* 詳細情報 */-->
+					<div class="toiawase_detail">
+						<div class="toiawase_detail_contents detailContent" th:each="detail : ${viewForm.toiawaseDetails}"
+							th:classappend="${detail.isAdminCreate()}? 'system_mgt' : 'tenant_user'"
+							th:data-seq="${detail.toiawaseDetailSeq}">
+							<div class="toiawase_detail_side">
+								<img th:if="${detail.isAdminCreate()}" class="img-thumbnail" th:src="@{/img/logo_2.png}">
+								<img  th:if="${detail.isUserCreate()}" class="img-thumbnail" th:src="@{/img/person_1.png}">
+							</div>
+							<div class="toiawase_detail_main">
+								<div class="toiawase_detail_header">
+									<span class="creater_name" th:text="${detail.isUserCreate()}? ${viewForm.tenantName} : 'loiozサポートセンター' "></span>
+									<span class="create_date" th:text="${detail.getDispCreatedAt()}"></span>
+								</div>
+								<div class="toiawase_detail_body" th:if="!${#strings.isEmpty(detail.body)}">
+									<div class="with_line_breaks" myth:nl2br="${detail.body}"></div>
+								</div>
+								<div class="toiawase_detail_attachment">
+									<span class="attachment_head" th:if="${detail.attachmentList}"><i class="fas fa-paperclip mr-2"></i>添付ファイル</span>
+									<span th:each="attachment : ${detail.attachmentList}">
+										<a href="javascript:void(0);" class="attachmentDownLoad" th:text="${attachment.fileName}"
+											th:data-seq="${attachment.toiawaseAttachmentSeq}" th:data-action="@{/user/toiawase/attachmentDownLoad}"></a>
+									</span>
+								</div>
+							</div>
+						</div>
+					</div>
+
+					<!--/* 新規追加エリア */-->
+					<div class="detail_input_area" th:unless="${viewForm.isCompleted()}">
+						<form id="newAddForm" th:action="@{/user/toiawase/{toiawaseSeq}/add(toiawaseSeq=${viewForm.toiawaseSeq})}" th:object="${inputForm}" method="post" autocomplete="off" enctype="multipart/form-data">
+							<input type="hidden" th:name="toiawaseSeq" th:value="${viewForm.toiawaseSeq}"/>
+
+							<div class="form-row">
+								<div class="input_parts form-group col-9">
+									<label>コメント</label>
+									<span class="mark_equired">必須</span>
+									<textarea rows="13" class="form-control" maxlength="10000" th:field="*{body}"></textarea>
+									<div th:if="${#fields.hasErrors('body')}" th:errors="*{body}" class="error_mag_point">error</div>
+								</div>
+							</div>
+
+							<div class="form-row">
+								<div class="input_parts form-group col-9">
+									<label>添付ファイル（最大10MB）</label>
+									<div class="custom-file">
+										<input type="file" class="custom-file-input" th:field="*{uploadFile}">
+										<label class="custom-file-label" for="uploadFile"><span id="fileName">ファイルが選択されていません。</span></label>
+									</div>
+									<div th:if="${#fields.hasErrors('uploadFile')}" th:errors="*{uploadFile}" class="error_mag_point mt-4">error</div>
+								</div>
+							</div>
+
+							<div class="form-row my-4">
+								<div class="form-group">
+									<label class="checkbox_btn">
+										<input id="privacySafeCheck" class="checkbox_input" type="checkbox" />
+										<span class="checkbox_txt">お問い合わせ内容に個人情報が含まれる場合、その内容に問題がないことを確認しました。</span>
+									</label>
+								</div>
+							</div>
+							<div class="form-row">
+								<div class="form-group col-9 text-center">
+									<button id="newAddBtn" type="button" class="btn btn-secondary" disabled>上記の内容で送信する</button>
+								</div>
+							</div>
+						</form>
+					</div>
+				</div>
+			</div>
+		</div>
+	</div>
+</body>
+</html>

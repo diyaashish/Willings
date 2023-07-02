@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+	xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+	xmlns:xtra="https://github.com/connect-group/thymeleaf-extras"
+	layout:decorator="commonLayout">
+<head>
+<meta charset="utf-8" th:remove="tag" />
+<title layout:fragment="title-contents">
+	[[${T(jp.loioz.common.utility.LoiozUtils).getHtmlTitle("案件ダッシュボード", T(jp.loioz.common.utility.SessionUtils).getTenantName())}]]
+</title>
+<th:block th:with="version=${@environment.getProperty('app.version')}">
+	<link th:href="@{/css/anken/ankenDashboard.css?{ver}(ver=${version})}" rel="stylesheet" type="text/css"/>
+	<link th:href="@{/css/gyomuHistory/gyomuHistory.css?{ver}(ver=${version})}" rel="stylesheet" type="text/css"/>
+	<link th:href="@{/css/mail/mail.css?{ver}(ver=${version})}" rel="stylesheet" type="text/css"/>
+	<link th:href="@{/css/task/task.css?{ver}(ver=${version})}" rel="stylesheet" type="text/css"/>
+</th:block>
+<script type="text/javascript" th:replace="user/taskManagement/taskEditModal::taskModalJs"></script>
+<style type="text/css" th:replace="user/schedule/scheduleModal::css"></style>
+<script type="text/javascript" th:replace="user/schedule/scheduleModal::scripts"></script>
+<style type="text/css" th:replace="user/gyomuHistory/anken/gyomuHistoryEditByAnken::gyomuHisoryEditByAnkenStyle"></style>
+<script type="text/javascript" th:replace="user/gyomuHistory/anken/gyomuHistoryEditByAnken::gyomuHisoryEditByAnkenJs"></script>
+<!--/* スケジュールに関する処理 */-->
+<style th:inline="css">
+<!--/* 予定登録モーダル */-->
+<!--/* 裁判期日は案件ダッシュボードからは削除不可 */-->
+#scheduleModal.isSaibanLimit [data-contains="deleteButton"] {
+	display: none;
+}
+</style>
+<style th:replace="user/dengon/dengonList::dengonStyle"></style>
+<script type="text/javascript" th:inline="javascript">
+$(function() {
+	let modal = benzo.global.scheduleModal.modal;
+	let scheduleCache = {};
+	
+	benzo.global.scheduleModal.ajaxRunning = false;
+	benzo.global.scheduleModal.saveAction = function() {}
+	
+	<!--/* 
+		スケジュールモーダル内の共通化しない処理はトリガーのみ親HTMLに記載する
+		保存処理自体は、フラグメント内で記載し、モーダル表示時などに上書きする
+	*/-->
+	modal.find(".saveSchedule").on("click", function(){
+		benzo.global.scheduleModal.saveAction(this);
+	});
+	
+	<!--/* 【タスクモーダル】モーダルを開いたとき */-->
+	$('#selectTaskModal').on('shown.bs.modal', function(e){
+		<!--/* タイトルの入力項目にフォーカスを当てる */-->
+		const $titleInput = $('#selectTaskModal #title');
+		$titleInput.focus();
+	});
+});
+</script>
+</head>
+<body>
+	<div layout:fragment="main-contents" th:remove="tag">
+
+		<!--/* ①サイドメニューあり */-->
+		<div class="contents_sidebar_wrapper contentsSlidebarWrapper"
+			th:data-click-open=${customerAnkenMenuOpenClickForSessionValue}
+			th:data-resize-open=${customerAnkenMenuOpenResizeForSessionValue}>
+
+			<!--/* ②顧客・案件 サイドメニュー */-->
+			<div th:replace="common/customerAnkenMenu::menuList(
+				sideMenuAnkenId=${ankenId},
+				sideMenuCustomerId=null,
+				selectedTabClass = 'is_anken_dashboard')">
+			</div>
+
+			<!--/* ③メインコンテンツの外側 */-->
+			<div class="contents_wrapper">
+				<div class="container-fluid">
+					
+					<main class="content">
+						
+						<!--/* ぱんくず */-->
+						<div th:replace="common/wrapHeader::wrapHeader(
+							returnListScreen=${T(jp.loioz.common.utility.SessionUtils).getSessionVaule(T(jp.loioz.common.constant.SessionAttrKeyEnum).RETURN_LIST_SCREEN.codeKey)},
+							sideMenuAnkenId=${ankenId},
+							selectedTabClass = 'is_anken_dashboard')"></div>
+						
+						<!--/* メッセージエリア */-->
+						<div th:replace="common/messageArea::messageArea"></div>
+						
+						<!--/* 案件軸 */-->
+						<!--/* 共通（名簿・案件） */-->
+						<div th:replace="common/customerAnkenSelected::detailInfo(
+							wrapHeaderAnkenId=${ankenId},
+							wrapHeaderCustomerId=null,
+							pageName='案件ダッシュボード')">
+						</div>
+						
+						<div class="">
+							<!--/* row */-->
+							<div class="row">
+								
+								<!--/* 左エリア */-->
+								<div class="col-lg-6">
+									<div id="ankenDashboardGyomuHistoryViewFragmentWrap" th:insert="user/ankenDashboard/ankenDashboardFragment::ankenDashboardGyomuHistoryViewFragment(${ankenDashboardSearchForm}, ${viewForm.ankenDashboardGyomuHistoryViewForm})">
+										<!--/* 業務履歴・タイムライン */-->
+									</div>
+								</div>
+								
+								<!--/* 右エリア */-->
+								<div class="col-lg-3">
+									<div id="ankenDashboardTaskViewFragmentWrap" th:insert="user/ankenDashboard/ankenDashboardFragment::ankenDashboardTaskViewFragment(${ankenDashboardSearchForm}, ${viewForm.ankenDashboardTaskViewForm})">
+										<!--/* タスク情報 */-->
+									</div>
+								</div>
+								<div class="col-lg-3">
+									<div id="ankenDashboardScheduleViewFragmentWrap" th:insert="user/ankenDashboard/ankenDashboardFragment::ankenDashboardScheduleViewFragment(${ankenDashboardSearchForm}, ${viewForm.ankenDashboardScheduleViewForm})">
+										<!--/* 予定情報 */-->
+									</div>
+								</div>
+							</div>
+						</div>
+					</main>
+				</div>
+			</div>
+		</div>
+		
+		<!--/* モーダル */-->
+		<div id="selectEditModal">
+			<div th:replace="user/schedule/scheduleModal::modal(
+					createUrl=@{/user/schedule/create},
+					updateUrl=@{/user/schedule/update},
+					deleteUrl=@{/user/schedule/delete})"></div>
+			<!-- タスク関連モーダル -->
+			<div th:fragment="modalTemplate" id="selectTaskModal" class="modal fade" tabindex="-1" role="dialog" aria-hidden="true">
+				<div class="modal-dialog modal_task modal-dialog-centered" role="document">
+					<div class="modal-content">
+						<div th:class="targetTaskModalBody"></div>
+					</div>
+				</div>
+			</div>
+			<!--/* 業務履歴関連モーダル */-->
+			<div th:replace="user/gyomuHistory/anken/gyomuHistoryListByAnken::modalTemplate(id='selectGyomuHistoryModal',target='targetGyomuHistoryModalBody',modalSize='modal_gyoreki')"></div>
+		</div>
+		<!--/* モーダル end */-->
+		
+	</div>
+</body>
+</html>

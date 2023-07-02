@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+	xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+	layout:decorator="commonLayout">
+<head>
+<meta charset="UTF-8">
+</head>
+<body>
+	<div th:fragment="select-modal" class="select-modal">
+		<script th:inline="javascript">
+			$(function() {
+				// 共有の要素セットアップ処理
+				commonSetUpElement();
+			});
+		</script>
+		<div th:object="${sosakikanEditForm}">
+			<div class="modal-header">
+				<h2 class="modalheader_title" th:text="*{isNew()} ? '捜査機関登録' : '捜査機関更新'"></h2>
+			</div>
+			<div class="modal-body">
+				<div th:replace="common/messageArea::jsMessageArea"></div>
+				<form id="editForm" th:action="@{/user/sosakikanManagement/}" method="post" autocomplete="off">
+					<input type="hidden" th:field="*{sosakikanEditData.sosakikanId}">
+					<input type="hidden" th:field="*{sosakikanEditData.versionNo}">
+
+					<div class="modal_input_area">
+						<!--/* 都道府県・施設区分 */-->
+						<div class="form-row">
+							<div class="form-group col-md-4">
+								<label class="input_parts_label" for="todofukenSelect">都道府県</label>
+								<span class="mark_equired">必須</span>
+								<select id="todofukenSelect" class="form-control col-9" th:field="*{sosakikanEditData.todofukenId}">
+									<option value="">-</option>
+									<option th:each="enum : ${T(jp.loioz.common.constant.CommonConstant$CompanyTodofuken).values()}"
+										th:value="${enum.cd}" th:text="${enum.val}">
+									</option>
+								</select>
+								<div class="error_mag_point hidden" id="itemMsg_sosakikanEditData.todofukenId"></div>
+							</div>
+							<div class="form-group col-md-4">
+								<label class="input_parts_label" for="input-sosakikanType">施設区分</label>
+								<span class="mark_equired">必須</span>
+								<select class="form-control col-9" id="input-sosakikanType" th:field="*{sosakikanEditData.sosakikanType}" th:disabled="*{!isNew()}">
+									<option value="">-</option>
+									<option th:each="enum : ${T(jp.loioz.common.constant.CommonConstant$SosakikanType).values()}"
+										th:value="${enum.cd}" th:text="${enum.val}">
+									</option>
+								</select>
+								<input th:unless=*{isNew()} type="hidden" th:field="*{sosakikanEditData.sosakikanType}">
+								<div class="error_mag_point hidden" id="itemMsg_sosakikanEditData.sosakikanType"></div>
+							</div>
+						</div>
+						<!--/* 名称 */-->
+						<div class="form-row">
+							<div class="form-group col-md-12">
+								<label class="input_parts_label" for="input-sosakikanName">名称</label>
+								<span class="mark_equired">必須</span>
+								<input type="text"  class="form-control" id="input-sosakikanName" th:field="*{sosakikanEditData.sosakikanName}" maxlength="100">
+								<div class="error_mag_point hidden" id="itemMsg_sosakikanEditData.sosakikanName"></div>
+							</div>
+						</div>
+						<!--/* 住所 */-->
+						<div class="form-row addressContainer">
+							<div class="form-group col-md-12 mb-0">
+								<label class="input_parts_label">住所</label>
+							</div>
+							<div class="form-group col-md-8 mb-2">
+								<div class="d-flex align-items-center">
+									<input type="search" class="form-control zipCode zipCodeFormat digit6 input_num_hyphen" maxlength="8" placeholder="郵便番号"  th:field="*{sosakikanEditData.sosakikanZip}" >
+									<button type="button" id="zipSearch" name="zipSearch" class="btn btn-outline-primary btn-sm searchAddress ml-2">住所検索</button>
+								</div>
+								<div class="error_mag_point hidden" id="itemMsg_saibanshoEditData.saibanshoZip"></div>
+							</div>
+							<div class="form-group col-md-12 mb-2">
+								<input type="text" class="form-control address1" placeholder="地域" maxlength="128" th:field="*{sosakikanEditData.sosakikanAddress1}">
+								<div class="error_mag_point hidden" id="itemMsg_saibanshoEditData.saibanshoAddress1"></div>
+							</div>
+							<div class="form-group col-md-12">
+								<input type="text" class="form-control" placeholder="番地・建物名" maxlength="128" th:field="*{sosakikanEditData.sosakikanAddress2}">
+								<div class="error_mag_point hidden" id="itemMsg_saibanshoEditData.saibanshoAddress2"></div>
+							</div>
+						</div>
+						<!--/* 連絡先 */-->
+						<div class="form-row">
+							<div class="form-group col-md-4">
+								<label class="input_parts_label">電話番号</label>
+								<input type="text"  class="form-control input_num_hyphen" th:field="*{sosakikanEditData.sosakikanTelNo}" maxlength="13" placeholder="00-1234-5678">
+								<div class="error_mag_point hidden" id="itemMsg_sosakikanEditData.sosakikanTelNo"></div>
+							</div>
+							<div class="form-group col-md-4">
+								<label class="input_parts_label">FAX番号</label>
+								<input type="text"  class="form-control input_num_hyphen" th:field="*{sosakikanEditData.sosakikanFaxNo}" maxlength="13" placeholder="00-1234-5678">
+								<div class="error_mag_point hidden" id="itemMsg_sosakikanEditData.sosakikanFaxNo"></div>
+							</div>
+						</div>
+					</div>
+				</form>
+			</div>
+			<div class="modal-footer">
+				<button th:if="*{!isNew()}" type="button" class="btn btn-light mr-auto" id="delete"><i class="far fa-trash-alt"></i>削除</button>
+				<button th:if="*{isNew()}" type="button" class="btn btn-info" id="regist"><i class="fas fa-check"></i>登録</button>
+				<button  th:if="*{!isNew()}" type="button" class="btn btn-info" id="update"><i class="fas fa-check"></i>保存</button>
+				<button type="button" class="btn btn-light" data-dismiss="modal"><i class="fas fa-times"></i>閉じる</button>
+			</div>
+		</div>
+	</div>
+</body>
+</html>

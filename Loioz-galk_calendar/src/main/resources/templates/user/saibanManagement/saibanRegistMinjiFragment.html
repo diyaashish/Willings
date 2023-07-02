@@ -1,0 +1,596 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+	<meta charset="utf-8" />
+</head>
+<body>
+
+
+
+<!--/* 裁判登録（民事）基本情報編集ブロック */-->
+<div th:fragment="saibanRegistMinjiBasicInputFragment(saibanRegistMinjiBasicInputForm)" id="saibanRegistMinjiBasicInputFragment">
+
+	<!--/* スクリプト */-->
+	<script th:inline="javascript">
+	$(function() {
+		
+		// 共有の要素セットアップ処理
+		commonSetUpElement();
+		
+		<!--/* 係属部選択肢キャッシュ */-->
+		let keizokuBuCache = {};
+
+		<!--/* 係属部選択肢を変更 */-->
+		function changeKeizokuBuList(saibanshoId){
+			let orgKeizokuBuName = $("#saibanRegistMinjiBasicInputFragment #keizokuBuSelect").find("[name='keizokuBuName']").val();
+			const inputKeizokuBu = '<div id="keizokuBuNameInputText">'
+										+ '<input type="text" class="form-control" name="keizokuBuName" maxlength="20" tabindex="2">'
+									+ '</div>';
+			if (!saibanshoId) {
+				<!--/* 裁判所IDなし：係属部をテキスト入力に変更 */-->
+				$("#saibanRegistMinjiBasicInputFragment #keizokuBuSelect").html(inputKeizokuBu);
+				setKeizokuBuName(orgKeizokuBuName);
+
+			} else if (keizokuBuCache[saibanshoId]) {
+				<!--/* 裁判所の係属部選択肢を取得済み：キャッシュから係属部選択肢を設定 */-->
+				$("#saibanRegistMinjiBasicInputFragment #keizokuBuSelect").html(keizokuBuCache[saibanshoId]);
+				setKeizokuBuName(orgKeizokuBuName);
+
+			} else {
+				<!--/* 裁判所の係属部選択肢が未取得：Ajaxで係属部選択肢を取得 */-->
+				$.ajax({
+					type : "POST",
+					url : /*[[(@{/user/saibanManagement/getKeizokuBu})]]*/ "/",
+					data : {"saibanshoId": saibanshoId},
+					dataType : "html"
+				})
+				.done(function(result) {
+					keizokuBuCache[saibanshoId] = result;
+					$("#saibanRegistMinjiBasicInputFragment #keizokuBuSelect").html(result);
+					setKeizokuBuName(orgKeizokuBuName);
+				})
+				.fail(function() {
+					$("#saibanRegistMinjiBasicInputFragment #keizokuBuSelect").html(inputKeizokuBu);
+					setKeizokuBuName(orgKeizokuBuName);
+				});
+			}
+		}
+
+		<!--/* 係属部を設定 */-->
+		function setKeizokuBuName(keizokuBuName){
+			let keizokuBuNameInput = $("#saibanRegistMinjiBasicInputFragment #keizokuBuSelect").find("[name='keizokuBuName']");
+			keizokuBuNameInput.val(keizokuBuName);
+		}
+
+		<!--/* 裁判所初期表示 */-->
+		if($("#saibanRegistMinjiBasicInputFragment #saibanshoId").val()){
+			let saibanshoName = $("#saibanRegistMinjiBasicInputFragment #saibanshoList").find("[data-id='"+$("#saibanshoId").val()+"']").val();
+			$("#saibanRegistMinjiBasicInputFragment #saibanshoName").val(saibanshoName);
+		}
+		<!--/* 係属部初期表示 */-->
+		changeKeizokuBuList($("#saibanRegistMinjiBasicInputFragment #saibanshoId").val());
+		
+		
+		<!--/* 裁判所変更時に係属部選択肢を変更 */-->
+		$("#saibanRegistMinjiBasicInputFragment #saibanshoName").on("change", function(){
+			let selectedSaibansho = $("#saibanRegistMinjiBasicInputFragment #saibanshoList").find("[value='"+$(this).val()+"']");
+			if (selectedSaibansho.length) {
+				<!--/* 裁判所が存在する */-->
+				let saibanshoId = selectedSaibansho.data("id");
+				$("#saibanRegistMinjiBasicInputFragment #saibanshoId").val(saibanshoId);
+				changeKeizokuBuList(saibanshoId);
+
+			} else {
+				<!--/* 裁判所が存在しない */-->
+				$("#saibanRegistMinjiBasicInputFragment #saibanshoId").val("");
+				changeKeizokuBuList("");
+			}
+		});
+
+		<!--/* 係属部選択時に電話番号・FAX番号を反映 */-->
+		$("#saibanRegistMinjiBasicInputFragment #keizokuBuSelect").on("change", "#keizokubuSearch", function(){
+			let selectedOption = $("#saibanRegistMinjiBasicInputFragment #keizokuBuList").find("[value='"+$(this).val()+"']");
+			<!--/* ハイフン以外を選択した場合のみ反映 */-->
+			if(selectedOption.val()){
+				$("#saibanRegistMinjiBasicInputFragment #keizokuBuTelNo").val(selectedOption.data("telNo"));
+				$("#saibanRegistMinjiBasicInputFragment #keizokuBuFaxNo").val(selectedOption.data("faxNo"));
+			}
+		});
+		
+		<!--/* 裁判（民事）情報の登録 */-->
+		$('#saibanRegistMinjiBasicInputFragment #saibanBasicSave').on('click', function() {
+			
+			<!--/* リクエストパラメータ */-->
+			let formData = $('#saibanRegistMinjiBasicInputForm').serializeArray();
+			
+			<!--/* 2重押下防止 */-->
+			if(ajaxRunning){
+				return false;
+			}
+			
+			ajaxRunning = true;
+			
+			$.ajax({
+				url : 'registSaibanMinjiBasic',
+				type : "POST",
+				data : formData
+			})
+			.done(function(data, status, jqXHR) {
+				if (isAjaxProcSuccess(jqXHR)) {
+					// 処理成功
+					
+					const msg = getAjaxProcResutlMessage(jqXHR);
+					
+					<!--/* 登録処理のレスポンスとして返ってきたHTMLから登録処理で発番された裁判SEQを取得 */-->
+					const saibanSeqDom = $(data).find('#saibanSeq');
+					const saibanSeq = $(saibanSeqDom).val()
+					
+					<!--/* 案件IDも必要なため取得 */-->
+					const ankenIdDom = $(data).find('#ankenId');
+					const ankenId = $(ankenIdDom).val()
+					
+					<!--/* 裁判（民事）編集画面へのURL */-->
+					let saibanEditMinjiUrl = /*[[${T(jp.loioz.common.constant.UrlConstant).SAIBAN_MANAGE_MINJI_URL}]]*/'';
+					saibanEditMinjiUrl = saibanEditMinjiUrl + saibanSeq + "/" + ankenId + "/";
+					
+					<!--/* URLにメッセージを付与 */-->
+					const messageLevel = /*[[${T(jp.loioz.common.constant.CommonConstant$MessageLevel).INFO.getCd()}]]*/null
+					const param = "level="+ messageLevel +"&message=" + encodeURIComponent(msg)
+					const saibanEditMinjiUrlWithMessage = saibanEditMinjiUrl + "redirectIndexWithMessage?"+param
+					
+					<!--/* 画面遷移中（画面ロード中）に再度ボタンが押されないよう、クリックイベントを削除 */-->
+					<!--/* ※画面遷移の完了より前にalwaysの関数が実行され、通常の2重押下防止対応だけでは対応しきれないことによる特別な対応 */-->
+					$('#saibanRegistMinjiBasicInputFragment #saibanBasicSave').off('click');
+
+					<!--/* 画面遷移 */-->
+					window.location.href = saibanEditMinjiUrlWithMessage;
+					
+				} else {
+					// 処理失敗
+					
+					if (data) {
+						// HTMLのコンテンツが返却されている場合
+						// 親HTMLのID
+						$('#saibanRegistMinjiBasicFragmentWrap').html(data);
+					}
+					
+					const errorMsg = getAjaxProcResutlMessage(jqXHR);
+					showErrorMessageForJs(errorMsg);
+				}
+			})
+			.fail(function(jqXHR, status, errorThrown) {
+				showErrorMessageForJs(/*[[#{E00007}]]*/ "登録に失敗しました。");
+			})
+			.always(function(){
+				ajaxRunning = false;
+			});
+		});
+
+		<!--/* 裁判所名入力時、datalistを設定する */-->
+		<!--/* Chromeでは未入力の状態でdatalistをクリックすると、全件リストを表示しようとするため文字入力時にのみdatalistをセットするようにする */-->
+		$('#saibanRegistMinjiBasicInputFragment .saibanshoList').on('input', function(){
+			if ($(this).val()) {
+				$(this).attr('list', 'saibanshoList');
+			} else {
+				// Safariの場合は、文字入力前にdatalistを設定する必要があるため
+				if (isMacSafari()){
+					$(this).attr('list', 'saibanshoList');
+				} else {
+					$(this).removeAttr('list');
+				}
+			}
+		});
+
+		<!--/* 裁判所名クリック時、裁判所名が既に入力済の場合はdatalistを設定する */-->
+		<!--/* Chromeでは未入力の状態でdatalistをクリックすると、全件リストを表示しようとするため文字入力時にのみdatalistをセットするようにする */-->
+		$('#saibanRegistMinjiBasicInputFragment .saibanshoList').on('click', function(){
+			if ($(this).val()) {
+				$(this).attr('list', 'saibanshoList');
+			} else {
+				// Safariの場合は、文字入力前にdatalistを設定する必要があるためクリック時でもdatalistをセットする
+				if (isMacSafari()){
+					$(this).attr('list', 'saibanshoList');
+				}
+			}
+		});
+
+	});
+	</script>
+	
+	<!--/* HTML */-->
+	<form id="saibanRegistMinjiBasicInputForm" th:object="${saibanRegistMinjiBasicInputForm}" autocomplete="off">
+	
+		<!--/* 入力 */-->
+		<div class="row">
+		
+			<!--/* 左側 */-->
+			<div class="col-md-6">
+				<div class="detail_input_area">
+				
+					<!--/* 事件名 */-->
+					<div class="form-row">
+						<div class="input_parts form-group col-md-12">
+							<label>事件名</label>
+							<input type="text" class="form-control" th:field="*{jikenName}" maxlength="100" placeholder="事件名を入力してください">
+							<div th:if="${#fields.hasErrors('jikenName')}" th:errors="*{jikenName}" class="error_mag_point">error</div>
+						</div>
+					</div>
+				
+					<!--/* 事件番号 */-->
+					<div class="form-row">
+						<!--/* 事件番号 */-->
+						<div class="input_parts form-group col-md-12">
+							<label>事件番号</label>
+							<div class="d-flex align-items-center justify-content-xl-start">
+								<select class="form-control digit4" th:field="*{jikenGengo}">
+									<option th:each="option : *{jikenGengoOptionList}"
+										th:value="${option.value}" th:text="${option.label}"></option>
+								</select>
+								<input type="text" class="form-control digit2 input_number_only mx-1" th:field="*{jikenYear}" maxlength="2">
+								<span class="fs15">年</span>
+								<span class="fs15">（</span>
+								<input type="text" class="form-control digit3 ml-2" th:field="*{jikenMark}" placeholder="符号" maxlength="2">
+								<span class="fs15 ml-2">）</span>
+								<span class="fs15">第</span>
+								<input type="text" class="form-control digit5 input_number_only ml-1" th:field="*{jikenNo}" placeholder="番号" maxlength="7" >
+								<span class="fs15 ml-1">号</span>
+							</div>
+							<div th:if="${#fields.hasErrors('jikenGengo')}" th:errors="*{jikenGengo}" class="error_mag_point">error</div>
+							<div th:if="${#fields.hasErrors('jikenYear')}" th:errors="*{jikenYear}" class="error_mag_point">error</div>
+							<div th:if="${#fields.hasErrors('jikenMark')}" th:errors="*{jikenMark}" class="error_mag_point">error</div>
+							<div th:if="${#fields.hasErrors('jikenNo')}" th:errors="*{jikenNo}" class="error_mag_point">error</div>
+						</div>
+					</div>
+					
+					<!--/* 裁判所名 */-->
+					<div class="form-row">
+						<!--/* 裁判所 */-->
+						<div class="input_parts form-group col-sm-12">
+							<label>裁判所</label>
+							<input type="search" class="form-control saibanshoList" autocomplete="off" th:field="*{saibanshoName}" maxlength="100" tabindex="1">
+							<datalist id="saibanshoList">
+								<option th:each="option : *{saibanshoOptionList}"
+									th:value="${option.label}" th:data-id="${option.value}"></option>
+							</datalist>
+							<input type="hidden" th:field="*{saibanshoId}">
+							<div th:if="${#fields.hasErrors('saibanshoName')}" th:errors="*{saibanshoName}" class="error_mag_point">error</div>
+							<div th:if="${#fields.hasErrors('saibanshoId')}" th:errors="*{saibanshoId}" class="error_mag_point">error</div>
+						</div>
+					</div>
+					
+					<!--/* 係属部・係属係 */-->
+					<div class="form-row">
+						<!--/* 係属部 */-->
+						<div class="form-group col-sm-6">
+							<label class="input_parts_label">係属部</label>
+							<span id="keizokuBuSelect">
+								<input type="text" class="form-control" th:field="*{keizokuBuName}">
+							</span>
+							<div th:if="${#fields.hasErrors('keizokuBuName')}" th:errors="*{keizokuBuName}" class="error_mag_point">error</div>
+						</div>
+						<!--/* 係属係 */-->
+						<div class="form-group col-sm-6">
+							<label class="input_parts_label">係属係</label>
+							<input type="text" class="form-control" th:field="*{keizokuKakariName}" maxlength="20" tabindex="3">
+							<div th:if="${#fields.hasErrors('keizokuKakariName')}" th:errors="*{keizokuKakariName}" class="error_mag_point">error</div>
+						</div>
+					</div>
+					
+					<!--/* その他 */-->
+					<div class="form-row">
+						<!--/* 電話番号 */-->
+						<div class="form-group col-sm-6">
+							<div class="jiken_edit_row">
+								<!--/* 電話番号 */-->
+								<div>
+									<label class="input_parts_label">電話番号</label>
+									<input type="tel" class="form-control input_num_hyphen" th:field="*{keizokuBuTelNo}" maxlength="13" tabindex="4">
+									<div th:if="${#fields.hasErrors('keizokuBuTelNo')}" th:errors="*{keizokuBuTelNo}" class="error_mag_point">error</div>
+								</div>
+								<!--/* FAX番号 */-->
+								<div>
+									<label class="input_parts_label">FAX番号</label>
+									<input type="tel" class="form-control input_num_hyphen" th:field="*{keizokuBuFaxNo}" maxlength="13" tabindex="5">
+									<div th:if="${#fields.hasErrors('keizokuBuFaxNo')}" th:errors="*{keizokuBuFaxNo}" class="error_mag_point">error</div>
+								</div>
+							</div>
+						</div>
+						<div class="form-group col-sm-6">
+							<div class="jiken_edit_row">
+								<!--/* 裁判官 */-->
+								<div id="saibanBasicInputSaibankanFragmentWrap" th:insert="user/saibanManagement/saibanCommonFragment::saibanBasicInputSaibankanFragment(*{saibankanInputFormList})">
+									<!-- 裁判官情報（入力）の表示 -->
+								</div>
+								<!--/* 担当書記官 */-->
+								<div>
+									<label class="input_parts_label">担当書記官</label>
+									<input type="text" class="form-control" th:field="*{tantoShoki}" maxlength="128" tabindex="6">
+									<div th:if="${#fields.hasErrors('tantoShoki')}" th:errors="*{tantoShoki}" class="error_mag_point">error</div>
+								</div>
+							</div>
+						</div>
+					</div>
+				</div>
+			</div>
+			<!--/* 左側入力エリア end */-->
+				
+			<!--/* 裁判情報（入力）右側 */-->
+			<div class="col-md-6">
+				
+				<!--/* 右側入力エリア */-->
+				<div class="detail_input_area">
+				
+					<!--/* 担当情報 */-->
+					<div class="form-row">
+						<div class="input_parts form-group col-sm-6">
+							<div
+								th:replace="::tantoTemplate(
+								itemName='tantoLawyer',
+								itemLabel='担当弁護士',
+								optionList=*{ankenTantoBengoshiOptionList},
+								dispMainTanto=true)">
+							</div>
+						</div>
+						<div class="input_parts form-group col-sm-6">
+							<div
+								th:replace="::tantoTemplate(
+								itemName='tantoJimu',
+								itemLabel='担当事務',
+								optionList=*{ankenTantoJimuOptionList},
+								dispMainTanto=true)">
+							</div>
+						</div>
+					</div>
+					<!--/* 担当情報 end */-->
+					
+					<div class="form-row">
+						<!--/* 申立日 */-->
+						<div class="form-group col-sm-auto">
+							<label class="input_parts_label">申立日</label>
+							<input type="text" class="form-control modal_date digit7 inputDateSlash" th:field="*{saibanStartDate}" data-click-sync="[data-target-name='saibanStartDate']">
+							<button type="button" class="btn btn_popcal hidden" data-toggle="datepicker" data-target-name="saibanStartDate">カレンダー</button>
+							<div th:if="${#fields.hasErrors('saibanStartDate')}" th:errors="*{saibanStartDate}" class="error_mag_point">error</div>
+						</div>
+						<!--/* 終了日 */-->
+						<div class="form-group col-sm-auto">
+							<label class="input_parts_label">終了日</label>
+							<input type="text" class="form-control modal_date digit7 inputDateSlash" th:field="*{saibanEndDate}" data-click-sync="[data-target-name='saibanEndDate']">
+							<button type="button" class="btn btn_popcal hidden" data-toggle="datepicker" data-target-name="saibanEndDate">カレンダー</button>
+							<div th:if="${#fields.hasErrors('saibanEndDate')}" th:errors="*{saibanEndDate}" class="error_mag_point">error</div>
+						</div>
+					</div>
+					
+					<!--/* 裁判結果 */-->
+					<div class="form-row">
+						<div class="form-group col-sm-12">
+							<label class="input_parts_label">裁判結果</label>
+							<textarea rows="5" class="form-control" th:field="*{saibanResult}" maxlength="10000"></textarea>
+							<div th:if="${#fields.hasErrors('saibanResult')}" th:errors="*{saibanResult}" class="error_mag_point">error</div>
+						</div>
+					</div>
+				</div>
+				<!--/* 右側入力エリア end */-->
+			</div>
+			<!--/* 裁判情報（入力）右側 end */-->
+		</div>
+		
+		<!--/* ボタン */-->
+		<hr class="my-4">
+		<div class="text-right my-4">
+			<!--/* 保存ボタン */-->
+			<button type="button" id="saibanBasicSave" class="btn btn-info">
+				<i class="fas fa-check"></i>登録
+			</button>
+		</div>
+	
+		<input type="hidden" id="saibanSeq" th:field="*{saibanSeq}">
+		<input type="hidden" id="ankenId" th:field="*{ankenId}">
+	</form>
+</div>
+
+<!--/* 担当弁護士・担当事務 入力項目 */-->
+<div th:id="|${itemName}Container|" th:fragment="tantoTemplate(itemName, itemLabel, optionList)" th:with="dispMainTanto=${dispMainTanto}?: false">
+
+	<!--/* Script */-->
+	<script th:inline="javascript">
+	$(function() {
+		const $container = $(/*[[|#${itemName}Container|]]*/"");
+		
+		// レンダリング時に選択アカウントの表示非表示切り替えを発火
+		hiddenIfSelect();
+		
+		<!--/* 選択アカウントの表示非表示設定を最新化 */-->
+		function hiddenIfSelect() {
+			const seletedAccount = getSelectedAccountSeq();
+			$container.find(".selectArea button").removeClass("hidden");
+			$container.find(".selectArea button").filter((idx, elem) => {
+				return seletedAccount.includes($(elem).data("seq"));
+			}).addClass("hidden");
+			if (canAddUser()) {
+				$container.find(".showSelectArea").removeClass("hidden");
+			}
+		};
+		
+		<!--/* 選択中のアカウントSEQをArray型で取得 */-->
+		function getSelectedAccountSeq() {
+			return $.map($container.find("input[name*='accountSeq']"), (elem, idx) => {
+				if (elem.value) {
+					return Number(elem.value);
+				}
+			});
+		};
+		
+		<!--/* アカウントが追加可能かどうか */-->
+		function canAddUser() {
+			return  $container.find("."+ [[${itemName}]] + ".hidden").length > 0;
+		}
+		
+		<!--/* removeした際にパラメータの中抜けが発生するため、パラメータを詰める */-->
+		function sortParam() {
+			const paramContents = $container.find("."+ [[${itemName}]]);
+			const paramJson = $.map(paramContents, (elem, ids) => {
+				if($(elem).find("input[name*='accountSeq']").val()) {
+					return {
+						"seq": $(elem).find("input[name*='accountSeq']").val(),
+						"mainTanto": $(elem).find("input[name*='mainTanto']").val() === "true",
+						"name":$(elem).find(".accountName").text(),
+					};
+				} 
+			});
+			
+			paramContents.addClass("hidden")
+			paramContents.each((idx, elem) => {
+				const params = paramJson[idx];
+				if (params) {
+					$(elem).find("input[name*='accountSeq']").val(params.seq);
+					$(elem).find(".accountName").text(params.name);
+					$(elem).removeClass("hidden");
+
+					if (params.mainTanto) {
+						$(elem).find(".star_btn_main").addClass("btn_checked");
+						$(elem).find("input[name*='mainTanto']").val(true);
+					} else {
+						$(elem).find(".star_btn_main").removeClass("btn_checked");
+						$(elem).find("input[name*='mainTanto']").val(false);
+					}
+				} else {
+					$(elem).find("input[name*='accountSeq']").val("");
+					$(elem).find(".star_btn_main").removeClass("btn_checked");
+					$(elem).find("input[name*='mainTanto']").val(false);
+					$(elem).find(".accountName").text("");
+				}
+			});
+		}
+		
+		<!--/* 独自popperの表示処理 */-->
+		$container.on("click", ".showSelectArea", function() {
+			$(".selectArea").addClass("hidden");
+			$container.find(".selectArea").removeClass("hidden");
+		});
+		
+		<!--/* ここだけdocumentにアクションを追加する*/-->
+		$(document).on("click", function(e) {
+			if ($(e.target).is(".showSelectArea")) {
+				return false;
+			}
+			if (!$(e.target).closest('.tanto_select').length && !$container.find(".selectArea").hasClass("hidden")) {
+				$container.find(".selectArea").toggleClass("hidden");
+			}
+		});
+		
+		<!--/* ユーザーの選択処理 */-->
+		$container.on("click",".addInputUser", function() {
+			const accountSeq = $(this).data("seq");
+			const accountName = $(this).text();
+			
+			const nextContent = $container.find("."+ [[${itemName}]] + ".hidden:first");
+			if (!nextContent.length) {
+				alert("追加できる上限追加できません")
+			}
+			
+			nextContent.removeClass("hidden");
+			nextContent.find("input[name*='accountSeq']").val(accountSeq);
+			nextContent.find(".accountName").text(accountName);
+			
+			// 選択肢の表示非表示切り替え
+			hiddenIfSelect();
+			
+			if(!canAddUser()) {
+				$container.find(".selectArea").addClass("hidden");
+				$container.find(".showSelectArea").addClass("hidden");
+			}
+		});
+		
+		<!--/* ユーザーの選択解除処理 */-->
+		$container.on("click",".removeInputUser", function() {
+			const refleshContent = $(this).closest("."+ [[${itemName}]]);
+			refleshContent.addClass("hidden");
+			refleshContent.find(".star_btn_main").removeClass("btn_checked");
+			refleshContent.find("input[name*='mainTanto']").val(false);
+			refleshContent.find("input[name*='accountSeq']").val("");
+			refleshContent.find(".accountName").text("");
+			
+			hiddenIfSelect();
+			sortParam();
+			
+			// 追加可能の場合
+			if(canAddUser()) {
+				$container.find(".showSelectArea").removeClass("hidden");
+			}
+		});
+		
+	});
+	</script>
+
+	<div class="hoverTooltip tanto_block">
+		<div class="d-flex align-items-center">
+			<div>
+				<label th:text="${itemLabel}">担当弁護士</label>
+			</div>
+			<div class="ml-auto pt-1 mr-3">
+				<a href="javascript:void(0);" class="showSelectArea hidden"><i class="fas fa-user-plus mr-2"></i>選択</a>
+				
+				<!--/* 選択候補のアカウントエリア */-->
+				<div class="position-relative">
+					<div class="position-absolute tanto_select selectArea hidden">
+					
+					<!--/* 選択候補が存在する */-->
+<!--/*/			<th:block th:if="${!optionList.isEmpty()}"> /*/-->
+						<div class="tanto_select_title">担当を選択してください。</div>
+						<ul>
+							<!--/* 選択候補のアカウント */-->
+							<li th:each="option : ${optionList}">
+								<button type="button" class="btn btn-light addInputUser" th:data-seq="${option.value}">
+									<i class="fas fa-user-check mr-3"></i><span class="tanto_select__account_label" th:text="${option.label}"></span>
+								</button>
+							</li>
+						</ul>
+<!--/*/			</th:block> /*/-->
+					<!--/* 選択候補が存在する end */-->
+					
+					</div>
+				</div>
+				<!--/* 選択候補のアカウントエリア end */-->
+				
+			</div>
+		</div>
+		
+		<!--/* 選択済みのアカウントエリア */-->
+		<div class="row row_list">
+			<!--/* 選択候補が存在しない場合 */-->
+			<div class="tanto_select_no_data" th:if="${optionList.isEmpty()}">
+				<div class="d-flex">
+					<div><i class="fas fa-exclamation-triangle mr-2"></i></div>
+					<div>
+						<p>案件情報で<span th:text="${itemLabel}"></span>（有効なアカウント）を設定してください。</p>
+					</div>
+				</div>
+			</div>
+			<!--/* 選択候補が存在しない場合 end */-->
+			
+<!--/*/		<th:block th:if="${!optionList.isEmpty()}" th:each="i : ${#numbers.sequence(0, T(java.lang.Math).min(optionList.size(), T(jp.loioz.common.constant.CommonConstant).ANKEN_TANTO_ADD_LIMIT) - 1)}"> /*/-->
+			<div th:class="|col-auto mw-100 ${itemName} pl-0|" th:object="${saibanRegistMinjiBasicInputForm.__${itemName}__[__${i}__]}"
+				th:classappend="*{isEmpty()} ? 'hidden'">
+				<div class="d-flex align-items-center" th:id="|${itemName}${i}|">
+					<input type="button" th:if="${dispMainTanto}" class="star_btn_main" th:classappend="*{mainTanto} ? 'btn_checked': ''"
+						data-boundary="window" th:data-container="|#${itemName}${i}|" data-toggle="tooltip" data-trigger="hover" title="主担当">
+					<input type="hidden" th:if="${dispMainTanto}" th:field="*{mainTanto}" th:value="*{mainTanto}">
+					<input type="hidden" th:field="*{accountSeq}" th:value="*{accountSeq}">
+					<th:block th:with="accountSeq=*{accountSeq}">
+						<button type="button" class="btn tanto_selected_btn accountName removeInputUser"
+							th:text="${saibanRegistMinjiBasicInputForm.getAccountName(accountSeq)}"></button>
+					</th:block>
+				</div>
+				<div th:if="${#fields.hasErrors('${saibanRegistMinjiBasicInputForm.__${itemName}__[__${i}__]}')}" class="error_mag_point m-2"
+					th:errors="${saibanRegistMinjiBasicInputForm.__${itemName}__[__${i}__]}">
+				</div>
+			</div>
+<!--/*/		</th:block> /*/-->
+		</div>
+		<!--/* 選択済みのアカウントエリア end */-->
+		
+	</div>
+</div>
+
+</body>
+</html>

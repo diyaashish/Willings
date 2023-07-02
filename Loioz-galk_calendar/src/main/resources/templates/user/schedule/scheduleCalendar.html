@@ -1,0 +1,2620 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+<meta charset="utf-8" />
+<th:block th:fragment="css" th:with="version=${@environment.getProperty('app.version')}">
+<link th:href="@{/css/schedule/calendar-horizontal.css?{ver}(ver=${version})}" rel="stylesheet" type="text/css" />
+<style th:inline="css">
+.cal_detail_popup .sub_text {
+	color: var(--text-color-sub);
+}
+<!--/* ウィンドウサイズに合わせて縦方向スクロール */-->
+.calendarContainer {
+	display: flex;
+	flex-direction: column;
+}
+.calendar_view {
+	border-radius: 5px;
+	padding: 10px;
+	background-color: var(--lz-gray-200);
+}
+.calendarContainer .block_schedule {
+	overflow-y: hidden;
+}
+.block_schedule_left,
+.block_schedule_main,
+.block_schedule_right {
+	display: flex;
+	flex-direction: column;
+}
+.block_schedule_right {
+	background-color: #ffffff;
+	border-radius: 7px;
+	box-shadow: 0px 0px 0px 1px rgb(0 0 0 / 10%);
+}
+.block_schedule_main {
+	box-shadow: 0px 0px 0px 1px rgb(0 0 0 / 10%);
+	background-color: #ffffff;
+	border-radius: 7px;
+}
+.cal_prev_arrow {
+	border-radius: 15px;
+	padding: 0px 8px;
+	font-size: 2rem;
+	height: 28px;
+}
+.cal_next_arrow {
+	border-radius: 15px;
+	padding: 0px 8px;
+	font-size: 2rem;
+	height: 28px;
+}
+.miniuserselect_tab {
+	max-height: 100%;
+}
+.miniuserselect_data_user,
+.miniuserselect_data_group {
+	display: flex;
+	flex-direction: column;
+	max-height: 100%;
+}
+.miniuserselect_scroll {
+	overflow-y: auto;
+	max-height: 55vh;
+}
+.calender_view .miniuserselect_scroll {
+	max-height: 51vh;
+}
+.login_user_miniuserselect_scroll{
+	margin:3px 0px;
+}
+/*ログインユーザー選択*/
+.loginuserselect {
+	margin-bottom: 6px;
+}
+.loginuserselect_tab {
+	position: static;
+	margin: 0;
+}
+.login_user_list_accordion {
+	border-bottom: none;
+	margin: 0 0 1px;
+}
+.main_calendar {
+	display: flex;
+	flex-direction: column;
+	max-height: 100%;
+	height: 100%;
+}
+.main_calendar_body {
+	overflow-y: hidden;
+}
+.main_calendar_w.week_body {
+	overflow-x: hidden;
+	margin-right: 0;
+	max-height: 74vh;
+}
+.calendar_view .main_calendar_w.week_body {
+	max-height: 62vh;
+}
+.main_calendar_m {
+	overflow-y: auto;
+	margin-bottom: 10px;
+	padding-bottom: 0;
+}
+.calendarBody {
+	display: flex;
+	flex-direction: column;
+	max-height: 100%;
+}
+.block_task {
+	display: flex;
+	flex-direction: column;
+	max-height: 100%;
+}
+.calendarDispType {
+	font-size: 1.5rem;
+}
+
+<!--/* 長いユーザ名は省略表記にする */-->
+.user_checkbox_btn {
+	width: 100%;
+}
+.user_checkbox_name {
+	display: block;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+	max-width: 140px;
+}
+.cal_participant_list .participant {
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+
+<!--/* カレンダーの予定 */-->
+.cal_anvisible {
+	visibility: hidden;
+	width: 0px!important;
+}
+.col_week {
+	overflow: hidden;
+}
+.week_body .cal_day_body .entryContainer {
+	position: relative;
+	margin-right: 12px;
+}
+
+<!--/* 予定詳細ポップアップ */-->
+.popover.html-content {
+	border: none;
+	max-width: none;
+	font-size: inherit;
+}
+.popover.html-content .popover-body {
+	padding: 0;
+}
+
+<!--/* カレンダードラッグ時のオーバーレイ */-->
+.cal-overlay {
+	position: absolute;
+	color : var(--text-color-main);
+	background-color: rgba(255, 204, 51, .3);
+	padding: 2px;
+	display: none;
+}
+.cal-overlay .sch_time, .cal-overlay .sch_time_end {
+	display: inline-block;
+	font-size: 1.1rem;
+	position: relative;
+}
+.cal-overlay .sch_time::after {
+	content: "～";
+	padding-left: 3px;
+	padding-right: 3px;
+}
+.show-overlay .cal-overlay {
+	display: block;
+}
+.show-overlay .cal-horizontal .cal-content-hour {
+	position: relative;
+}
+.show-overlay .calendarDay.selected-start::before,
+.show-overlay .calendarDay.selected-start ~ .calendarDay::before {
+	content: "";
+	display: block;
+	width: 100%;
+	height: 100%;
+	top: 0;
+	left: 0;
+	position: absolute;
+	background-color: #FC3;
+	opacity: .3;
+}
+.show-overlay .calendarDay.selected-end ~ .calendarDay::before {
+	content: none;
+}
+
+<!--/* アカウント色が未設定の場合のデフォルト色 */-->
+.user_color {
+	background-color: #5AA9F7;
+}
+.cal_entry {
+	border-color: #5AA9F7;
+}
+.day_body .cal_entry,
+.week_body .cal_entry{
+	background-color: rgba(90,169,247,0.2);
+}
+.cal_participant_list .participant {
+	border-color: #5AA9F7;
+}
+<!--/* アカウント毎の色 */-->
+<!--/* SEQが小さいアカウントの色を優先するために逆順でループ */-->
+/*[# th:each="i : ${#numbers.sequence(scheduleCommonViewForm.accountList.size() - 1, 0, -1)}"
+	th:if="${scheduleCommonViewForm.accountList[i].accountColor}"
+	th:object="${scheduleCommonViewForm.accountList[i]}"]*/
+<!--/* ユーザー選択チェックボックスの色 */-->
+.user_color.user[[*{accountSeq}]] {
+	background-color: /*[(*{accountColorHex})]*/ #000000;
+}
+<!--/* 予定の色 ユーザー*/-->
+.main_calendar_body.user[[*{accountSeq}]] .cal_entry.user[[*{accountSeq}]]{
+	background-color: /*[(*{accountColorHex})]*/ #000000;
+	color: /*[(*{accountColorText})]*/ #fff;
+}
+.main_calendar_body.user[[*{accountSeq}]] .day_body .cal_entry.user[[*{accountSeq}]],
+.main_calendar_body.user[[*{accountSeq}]] .week_body .cal_entry.user[[*{accountSeq}]] {
+	background-color: rgba([[*{accountColor.getRed()}]], [[*{accountColor.getGreen()}]], [[*{accountColor.getBlue()}]]);
+}
+<!--/* 予定の色(施設) */-->
+.main_calendar_body .roomMainCalendar .cal_entry.user[[*{accountSeq}]] {
+	background-color: rgb(232, 252, 255)!important;
+	border-bottom: 1px solid #ccc;
+}
+
+<!--/* 予定詳細ポップアップ：参加者 */-->
+.cal_participant_list .participant.user[[*{accountSeq}]] {
+	border-color: /*[(*{accountColorHex})]*/ #000000;
+}
+/*[/]*/
+
+<!--/* 予定の表示制御 */-->
+.main_calendar_body .calendarBody:not(.roomMainCalendar) .cal_entry {
+	display: none;
+}
+/*[# th:each="account : ${scheduleCommonViewForm.accountList}" th:object="${account}"]*/
+.main_calendar_body.user[[*{accountSeq}]] .calendarBody:not(.roomMainCalendar) .cal_entry.user[[*{accountSeq}]] {
+	display: block;
+	border-radius: 4px;
+}
+/*[/]*/
+
+<!--/* 予定の色 祝日*/-->
+.main_calendar_body.holiday .cal_entry.holiday{
+	border-color: #DE3D64;
+}
+.main_calendar_body.holiday .day_body .cal_entry.holiday,
+.main_calendar_body.holiday .week_body .cal_entry.holiday {
+	background-color: #DE3D64;
+	color: #FFF;
+	border-radius: 4px;
+}
+<!--/* 祝日の表示制御 */-->
+.main_calendar_body.holiday .calendarBody:not(.roomMainCalendar) .cal_entry.holiday {
+	display: block;
+}
+</style>
+</th:block>
+<th:block th:fragment="scripts">
+<!--/* 共通 */-->
+<script type="text/javascript" th:inline="javascript">
+benzo.global.scheduleCalendar = {};
+
+<!--/* 予定表1時間分の枠の高さ(px) */-->
+const scheduleBaseHeight = 60;
+
+<!--/* 横向き表示の予定表1時間分の枠の幅(px) */-->
+const horizontalScheduleBaseWidth = 74;
+
+<!--/* 時間の刻み幅(分) */-->
+const calendarMinStep = 5;
+
+<!--/* デフォルトのスクロール位置：午前8時 */-->
+const defaultScrollPosition = scheduleBaseHeight * 8 + 1;
+
+const dayOfWeekClassDef = {
+	0: "is_sun",
+	1: "is_mon",
+	2: "is_tue",
+	3: "is_wed",
+	4: "is_thu",
+	5: "is_fri",
+	6: "is_sat"
+};
+<!--/* 曜日毎のclassを全て削除する */-->
+function clearDayOfWeekClass(target){
+	$.each(dayOfWeekClassDef, function(dayOfWeek, classDef){
+		target.removeClass(classDef);
+	});
+}
+
+const dayOfWeekTextDef = {
+	0: "日",
+	1: "月",
+	2: "火",
+	3: "水",
+	4: "木",
+	5: "金",
+	6: "土"
+};
+
+const accountSeqToNameMap = {
+	/*[# th:each="account : ${scheduleCommonViewForm.accountList}" th:object="${account}"]*/
+	[[*{accountSeq}]]: [[*{accountName}]],
+	/*[/]*/
+};
+
+<!--/* 現在選択されているカレンダー表示種別を取得する */-->
+function getCurrentCalendarDispType(){
+	return $(".calendarDispType").val();
+}
+<!--/* カレンダー表示種別を設定する */-->
+function setCurrentCalendarDispType(dispType){
+	$(".calendarDispType").val(dispType);
+}
+
+<!--/* 現在時刻の位置を横線で表示 */-->
+const hourPx = 60;
+const markPx = 10;
+window.onload = function() {
+	moveTimeLine();
+	setInterval("moveTimeLine()", 60000);
+}
+function moveTimeLine() {
+	let nowHour = new Date().getHours();
+	let nowMinutes = new Date().getMinutes();
+	let position = (nowHour * hourPx) + nowMinutes;
+	$(".time_line").css("top", position +"px");
+	$(".time_line_mark").css("top", (position - markPx) +"px");
+}
+
+</script>
+<!--/* カレンダー */-->
+<script type="text/javascript" th:inline="javascript">
+<!--/* カレンダーヘッダサイズ調整 */-->
+$(function() {
+	$(window).on('load resize', function(){
+		let dispType = getCurrentCalendarDispType();
+		if(dispType == /*[[${T(jp.loioz.app.user.schedule.enums.CalendarDispType).DAILY.cd}]]*/ 1){
+			let dayw = $('.dailyMainCalendar .day_body .calendarDay').outerWidth();
+			let daywp = dayw + 2;
+			$('.dailyMainCalendar .week_alltime .col_time + div').outerWidth(daywp);
+			$('.dailyMainCalendar .cal_header_week').outerWidth(daywp);
+
+		} else if(dispType == /*[[${T(jp.loioz.app.user.schedule.enums.CalendarDispType).WEEKLY.cd}]]*/ 2){
+			let dayw = $('.weeklyMainCalendar .week_body .calendarDay').outerWidth();
+			$('.weeklyMainCalendar .week_alltime .calendarDay').outerWidth(dayw);
+			$('.weeklyMainCalendar .cal_header_week > div').outerWidth(dayw);
+
+		} else if(dispType == /*[[${T(jp.loioz.app.user.schedule.enums.CalendarDispType).MONTHLY.cd}]]*/ 3){
+			let dayw = $('.monthlyMainCalendar .main_calendar_m .calendarDay').outerWidth();
+			$('.monthlyMainCalendar .cal_header_week > div').outerWidth(dayw);
+		}
+	});
+});
+
+currentMainCalendarDate = new Date();
+currentMainCalendarDate.setHours(0, 0, 0, 0);
+currentMiniCalendarDate = currentMainCalendarDate;
+
+<!--/* スクロール位置 */-->
+scrollPosition = defaultScrollPosition;
+
+$(function() {
+	<!--/* カレンダー表示切替 */-->
+	$(".calendarDispType").change(function(){
+		changeMainCalendar(currentMainCalendarDate);
+		saveCalendarStatus();
+	});
+	<!--/* カレンダー日付変更 */-->
+	let tmpSelectDate;
+	$(".minicalendar").on("click", ".changeMainCalendar:not(.is_disabled)", function(){
+		let date = new Date($(this).data("date"));
+		tmpSelectDate = formatDate(date, 'YYYY/MM/DD');
+		// 選択色を付与
+		$(".minicalendar").find(".day_selected").removeClass("day_selected");
+		$(this).addClass("day_selected");
+		date.setHours(0, 0, 0, 0);
+		changeMainCalendar(date);
+		saveCalendarStatus();
+	});
+	
+	<!--/* メインカレンダーの新規登録ボタン */-->
+	$(".main_calendar_header").on("click", ".calendarScheduleCreate", function() {
+		
+		let modalConfig = {isCreate:true};
+		let scheduleData = $.extend(true, {}, benzo.global.scheduleModal.emptyScheduleData);
+		
+		<!--/* 日時の初期値を設定 */-->
+		const now = new Date()
+		const from = new Date(now);
+		from.setMinutes(0)
+		from.setTime(from.getTime() + 60 * 60 * 1000);
+		
+		const to = new Date(from);
+		to.setTime(from.getTime() + 60 * 60 * 1000);
+		if(from.getDate() !== to.getDate()){
+			to.setHours(23, 55); // 日をまたぐ場合は、23:55を設定
+		}
+		
+		scheduleData.dateFrom = $.datepicker.formatDate("yy/mm/dd", from);
+		scheduleData.dateTo = $.datepicker.formatDate("yy/mm/dd", to);
+		scheduleData.hourFrom = from.getHours();
+		scheduleData.timeFrom = formatHHMMSS(from.getHours(), from.getMinutes(), 0);
+		scheduleData.hourTo = to.getHours();
+		scheduleData.timeTo = formatHHMMSS(to.getHours(), to.getMinutes(), 0);
+		
+		const myAccountSeq = /*[[${T(jp.loioz.common.utility.SessionUtils).getLoginAccountSeq()}]]*/null;
+		scheduleData.member = [myAccountSeq];
+		
+		benzo.global.scheduleModal.openModal(scheduleData, modalConfig);
+	});
+
+	<!--/* メインカレンダー操作 */-->
+	$(".main_calendar_header").on("click", ".changeMainCalendar:not(.is_disabled)", function(){
+		let date = new Date($(this).data("date"));
+		tmpSelectDate = formatDate(date, 'YYYY/MM/DD');
+		date.setHours(0, 0, 0, 0);
+		changeMainCalendar(date);
+		saveCalendarStatus();
+
+		<!--/* メインカレンダーに連動してミニカレンダーを更新 */-->
+		$(".minicalendar").find(".day_selected").removeClass("day_selected");
+		let miniYear = currentMiniCalendarDate.getFullYear();
+		let miniMonth = currentMiniCalendarDate.getMonth();
+		let mainYear = date.getFullYear();
+		let mainMonth = date.getMonth();
+		if(miniYear != mainYear || miniMonth != mainMonth){
+			changeMiniCalendar(date);
+		}
+		let elem = $(".minicalendar").find('[data-date="' + tmpSelectDate + '"]');
+		elem.addClass("day_selected");
+	});
+	<!--/* ミニカレンダー日付変更 */-->
+	$(".changeMiniCalendar").on("click", function(){
+		let date = new Date($(this).data("date"));
+		$(".minicalendar").find(".day_selected").removeClass("day_selected");
+		date.setHours(0, 0, 0, 0);
+		changeMiniCalendar(date);
+		let elem = $(".minicalendar").find('[data-date="' + tmpSelectDate + '"]');
+		elem.addClass("day_selected");
+	});
+});
+
+<!--/* カレンダー描画 */-->
+function changeMainCalendar(date){
+
+	let calendarScrollArea = $(".calendarScrollArea:visible");
+	if(calendarScrollArea.length){
+		if(calendarScrollArea.is(".cal-horizontal")){
+			scrollPosition = calendarScrollArea.scrollLeft() * scheduleBaseHeight / horizontalScheduleBaseWidth;
+		} else {
+			scrollPosition = calendarScrollArea.scrollTop();
+		}
+	}
+
+	let dispType = getCurrentCalendarDispType();
+	if(dispType == /*[[${T(jp.loioz.app.user.schedule.enums.CalendarDispType).DAILY.cd}]]*/ 1){
+		changeDailyMainCalendar(date);
+		$(".dailyMainCalendar .calendarScrollArea").scrollTop(scrollPosition);
+
+	} else if(dispType == /*[[${T(jp.loioz.app.user.schedule.enums.CalendarDispType).WEEKLY.cd}]]*/ 2){
+		changeWeeklyMainCalendar(date);
+		$(".weeklyMainCalendar .calendarScrollArea").scrollTop(scrollPosition);
+
+	} else if(dispType == /*[[${T(jp.loioz.app.user.schedule.enums.CalendarDispType).MONTHLY.cd}]]*/ 3){
+		changeMonthlyMainCalendar(date);
+
+	} else if(dispType == /*[[${T(jp.loioz.app.user.schedule.enums.CalendarDispType).ROOM.cd}]]*/ 4){
+		changeRoomMainCalendar(date);
+		$(".roomMainCalendar .calendarScrollArea").scrollLeft(scrollPosition * horizontalScheduleBaseWidth / scheduleBaseHeight);
+	}
+	currentMainCalendarDate = date;
+}
+
+<!--/* 日表示カレンダー描画 */-->
+function changeDailyMainCalendar(baseDate){
+	<!--/* カレンダーの表示切替 */-->
+	$(".dailyMainCalendar .entryContainer").empty();
+	$(".calendarBody").hide();
+	$(".calendarBody.dailyMainCalendar").show();
+
+	<!--/* カレンダーのヘッダを更新 */-->
+	let year = baseDate.getFullYear();
+	let monthIndex = baseDate.getMonth();
+	let day = baseDate.getDate();
+	$(".main_calendar_header .calDateView").text($.datepicker.formatDate("yy年m月d日", baseDate));
+	$(".main_calendar_header .currentCalendarBtn").text("今日");
+	$(".main_calendar_header .calPrev").data("date", new Date(year, monthIndex, day - 1));
+	$(".main_calendar_header .calNext").data("date", new Date(year, monthIndex, day + 1));
+
+	<!--/* カレンダーデータを画面に反映 */-->
+	<!--/* ヘッダ部分(曜日) */-->
+	let calendarHead = $(".dailyMainCalendar")
+		.find(".calendarHead");
+	clearDayOfWeekClass(calendarHead);
+	calendarHead.addClass(dayOfWeekClassDef[baseDate.getDay()]);
+
+	let d = formatDate(baseDate, 'YYYY/MM/DD');
+	let today = new Date();
+	today.setHours(0, 0, 0, 0);
+	let todayYMD = formatDate(today, 'YYYY/MM/DD');
+	if (d === todayYMD) {
+		// 当日のclassを付与
+		calendarHead.find(".ch_day .day_text").addClass("is_today_head");
+		$(".main_calendar_d.day_body.calendarScrollArea .col_week .cal_day_body").addClass("is_today_day");
+
+	} else {
+		calendarHead.find(".ch_day .day_text").removeClass("is_today_head");
+		$(".main_calendar_d.day_body.calendarScrollArea .col_week .cal_day_body").removeClass("is_today_day");
+
+	}
+	calendarHead.find(".ch_day .day_text").text(baseDate.getDate());
+	calendarHead.find(".ch_week").text(dayOfWeekTextDef[baseDate.getDay()]);
+
+	<!--/* 終日・時間毎 */-->
+	let calendarDay = $(".dailyMainCalendar")
+		.find(".calendarDay");
+	clearDayOfWeekClass(calendarDay);
+	calendarDay.addClass(dayOfWeekClassDef[baseDate.getDay()]);
+	calendarDay.data("date", baseDate);
+	calendarDay.attr("data-date", $.datepicker.formatDate("yy/mm/dd", baseDate));
+
+	<!--/* 現在日付のカレンダーを表示している場合は、現在時刻を強調表示 */-->
+	calendarDay.find(".col_hour").removeClass("is_now");
+	if(baseDate.getTime() == today.getTime()){
+		let currentHour = new Date().getHours();
+		calendarDay.find(`.col_hour[data-hour='${currentHour}']`).addClass("is_now");
+	}
+
+	$(window).trigger("resize");
+
+	<!--/* 予定データを読み込む */-->
+	loadSchedule(baseDate, baseDate);
+}
+
+<!--/* 週表示カレンダー描画 */-->
+function changeWeeklyMainCalendar(baseDate){
+
+	let calendar = getWeeklyCalendar(baseDate);
+
+	<!--/* カレンダーの表示切替 */-->
+	$(".weeklyMainCalendar .entryContainer").empty();
+	$(".calendarBody").hide();
+	$(".calendarBody.weeklyMainCalendar").show();
+
+	<!--/* 週の開始日 */-->
+	let startDate = calendar.dateList[0].dateObj;
+	<!--/* 週の終了日 */-->
+	let endDate = calendar.dateList[6].dateObj;
+
+	<!--/* カレンダーのヘッダを更新 */-->
+	let year = baseDate.getFullYear();
+	let monthIndex = baseDate.getMonth();
+	let day = baseDate.getDate();
+	let startMonthTitle = $.datepicker.formatDate("yy年m月", startDate);
+	let eneMonthTitle = $.datepicker.formatDate("yy年m月", endDate);
+	let viewCalTitle;
+	// 月跨ぎかチェックする
+	if (startMonthTitle === eneMonthTitle) {
+		// 単月表記
+		viewCalTitle = startMonthTitle;
+	} else {
+		// 月跨ぎの表記
+		viewCalTitle = startMonthTitle + "～" + $.datepicker.formatDate("m月", endDate);
+	}
+	$(".main_calendar_header .calDateView").text(viewCalTitle);
+	$(".main_calendar_header .currentCalendarBtn").text("今日");
+	$(".main_calendar_header .calPrev").data("date", new Date(year, monthIndex, day - 7));
+	$(".main_calendar_header .calNext").data("date", new Date(year, monthIndex, day + 7));
+
+	<!--/* カレンダーデータを画面に反映 */-->
+	calendar.dateList.forEach(function(date, i) {
+		<!--/* ヘッダ部分(曜日) */-->
+		let calendarHead = $(".weeklyMainCalendar")
+			.find(`.calendarHead[data-index='${i}']`);
+		clearDayOfWeekClass(calendarHead);
+		calendarHead.addClass(dayOfWeekClassDef[date.dateObj.getDay()]);
+		let d = formatDate(date.dateObj, 'YYYY/MM/DD');
+		let today = new Date();
+		today.setHours(0, 0, 0, 0);
+		let todayYMD = formatDate(today, 'YYYY/MM/DD');
+		if (d === todayYMD) {
+			// 当日のclassを付与
+			calendarHead.find(".ch_day .day_text").addClass("is_today_head");
+		} else {
+			calendarHead.find(".ch_day .day_text").removeClass("is_today_head");
+		}
+		calendarHead.find(".ch_day .day_text").text(date.dateObj.getDate());
+		calendarHead.find(".ch_week").text(dayOfWeekTextDef[date.dateObj.getDay()]);
+
+		<!--/* 終日・時間毎 */-->
+		let calendarDay = $(".weeklyMainCalendar")
+			.find(`.calendarDay[data-index='${i}']`);
+		clearDayOfWeekClass(calendarDay);
+		calendarDay.addClass(dayOfWeekClassDef[date.dateObj.getDay()]);
+		calendarDay.data("date", date.dateObj);
+		calendarDay.attr("data-date", $.datepicker.formatDate("yy/mm/dd", date.dateObj));
+	});
+
+	<!--/* 現在日付を強調表示 */-->
+	let today = new Date();
+	today.setHours(0, 0, 0, 0);
+	$(".weeklyMainCalendar").find(".calendarDay").removeClass("is_today");
+	$(".weeklyMainCalendar").find(`.calendarDay[data-date='${$.datepicker.formatDate("yy/mm/dd", today)}']`).addClass("is_today");
+
+	$(window).trigger("resize");
+
+	<!--/* 予定データを読み込む */-->
+	loadSchedule(startDate, endDate);
+}
+
+<!--/* 月表示カレンダー描画 */-->
+function changeMonthlyMainCalendar(baseDate){
+
+	let calendar = getMonthlyCalendar(baseDate);
+
+	<!--/* カレンダーの表示切替 */-->
+	$(".monthlyMainCalendar .entryContainer").empty();
+	$(".monthlyMainCalendar .main_calendar_m")
+		.removeClass("week5")
+		.removeClass("week6");
+	if(calendar.dateList.length / 7 == 5){
+		$(".monthlyMainCalendar .main_calendar_m").addClass("week5");
+		$(".monthlyMainCalendar .calendarWeek[data-week-index='5']").hide();
+	} else {
+		$(".monthlyMainCalendar .main_calendar_m").addClass("week6");
+		$(".monthlyMainCalendar .calendarWeek[data-week-index='5']").show();
+	}
+	$(".calendarBody").hide();
+	$(".calendarBody.monthlyMainCalendar").show();
+
+	<!--/* カレンダーのヘッダを更新 */-->
+	let year = baseDate.getFullYear();
+	let monthIndex = baseDate.getMonth();
+	$(".main_calendar_header .calDateView").text($.datepicker.formatDate("yy年m月", baseDate));
+	$(".main_calendar_header .currentCalendarBtn").text("今月");
+	$(".main_calendar_header .calPrev").data("date", new Date(year, monthIndex - 1, 1));
+	$(".main_calendar_header .calNext").data("date", new Date(year, monthIndex + 1, 1));
+
+	<!--/* カレンダーデータを画面に反映 */-->
+	let lastIndex = calendar.dateList.length;
+	$(".monthlyMainCalendar")
+		.find(".calendarDay")
+		.each(function(){
+			let calendarDay = $(this);
+			let i = calendarDay.data("index");
+			if(i < lastIndex){
+				let date = calendar.dateList[i];
+				clearDayOfWeekClass(calendarDay);
+				calendarDay.addClass(dayOfWeekClassDef[date.dateObj.getDay()]);
+				if(date.isPrevMonth || date.isNextMonth){
+					calendarDay.addClass("is_disabled");
+				} else {
+					calendarDay.removeClass("is_disabled");
+				}
+				calendarDay.find(".day_text").text(date.dateObj.getDate());
+				calendarDay.data("date", date.dateObj);
+				calendarDay.attr("data-date", $.datepicker.formatDate("yy/mm/dd", date.dateObj));
+
+				calendarDay.removeClass("hidden");
+
+			} else {
+				calendarDay.addClass("hidden");
+			}
+		});
+
+	<!--/* 現在日付を強調表示 */-->
+	let today = new Date();
+	today.setHours(0, 0, 0, 0);
+	$(".monthlyMainCalendar").find(".calendarDay").removeClass("is_today");
+	$(".monthlyMainCalendar").find(`.calendarDay[data-date='${$.datepicker.formatDate("yy/mm/dd", today)}']`).addClass("is_today");
+
+	$(window).trigger("resize");
+
+	<!--/* 予定データを読み込む */-->
+	let dateFrom = calendar.dateList[0].dateObj;
+	let dateTo = calendar.dateList[calendar.dateList.length - 1].dateObj;
+	loadSchedule(dateFrom, dateTo);
+}
+
+<!--/* 施設表示カレンダー描画 */-->
+function changeRoomMainCalendar(baseDate){
+	<!--/* 現在のカレンダーをクリア */-->
+	$(".roomMainCalendar .entryContainer").empty();
+	$(".calendarBody").hide();
+	$(".calendarBody.roomMainCalendar").show();
+
+	<!--/* カレンダーのヘッダを更新 */-->
+	let year = baseDate.getFullYear();
+	let monthIndex = baseDate.getMonth();
+	let day = baseDate.getDate();
+	$(".main_calendar_header .calDateView").text($.datepicker.formatDate("yy年m月d日", baseDate));
+	$(".main_calendar_header .currentCalendarBtn").text("今日");
+	$(".main_calendar_header .calPrev").data("date", new Date(year, monthIndex, day - 1));
+	$(".main_calendar_header .calNext").data("date", new Date(year, monthIndex, day + 1));
+
+	<!--/* カレンダーデータを画面に反映 */-->
+	let calendarDay = $(".roomMainCalendar")
+		.find(".calendarDay");
+	calendarDay.data("date", baseDate);
+	calendarDay.attr("data-date", $.datepicker.formatDate("yy/mm/dd", baseDate));
+
+	<!--/* 予定データを読み込む */-->
+	loadRoomSchedule(baseDate, baseDate);
+}
+
+<!--/* ミニカレンダー描画 */-->
+function changeMiniCalendar(baseDate){
+
+	let calendar = getMonthlyCalendar(baseDate);
+
+	<!--/* カレンダーのヘッダを更新 */-->
+	let year = baseDate.getFullYear();
+	let monthIndex = baseDate.getMonth();
+	$(".minicalendar .minicalendar_title").text($.datepicker.formatDate("yy年m月", baseDate));
+	$(".minicalendar .btn_prev_m").data("date", new Date(year, monthIndex - 1, 1));
+	$(".minicalendar .btn_next_m").data("date", new Date(year, monthIndex + 1, 1));
+
+	<!--/* カレンダーデータを画面に反映 */-->
+	let lastIndex = calendar.dateList.length;
+	$(".minicalendar")
+		.find(".calendarDay")
+		.each(function(){
+			let calendarDay = $(this);
+			let i = calendarDay.data("index");
+			if (i < lastIndex) {
+				let date = calendar.dateList[i];
+				clearDayOfWeekClass(calendarDay);
+				calendarDay.addClass(dayOfWeekClassDef[date.dateObj.getDay()]);
+				if(date.isPrevMonth || date.isNextMonth){
+					calendarDay.addClass("is_disabled");
+				} else {
+					calendarDay.removeClass("is_disabled");
+				}
+				calendarDay.find(".day_text").text(date.dateObj.getDate());
+				calendarDay.data("date", date.dateObj);
+				calendarDay.attr("data-date", $.datepicker.formatDate("yy/mm/dd", date.dateObj));
+
+				calendarDay.removeClass("hidden");
+
+			} else {
+				calendarDay.addClass("hidden");
+			}
+
+		});
+
+	<!--/* 現在日付を強調表示 */-->
+	let today = new Date();
+	today.setHours(0, 0, 0, 0);
+	$(".minicalendar").find(".calendarDay").removeClass("is_today");
+	$(".minicalendar").find(`.calendarDay[data-date='${$.datepicker.formatDate("yy/mm/dd", today)}']`).addClass("is_today");
+
+	// 初期ロードに祝日データの取得を非同期で行うため、自己ループによる遅延をする
+	let i = 1;
+	const setHolidays = () => {
+		// 初回のみ遅延はさせない
+		let interval = 0;
+		const holidays = benzo.global.common.holidays;
+		if (i > 1) {
+			interval = 200;
+		}
+		setTimeout(function () {
+			i++;
+			if (i < 25) {
+				if (holidays.length) {
+					// 取得できた場合
+					$(".minicalendar").find(".calendarDay").removeClass("is_holiday");
+					$(".minicalendar")
+						.find(".calendarDay")
+						.each(function(){
+							let calendarDay = $(this);
+							let i = calendarDay.data("index");
+							if (i < lastIndex) {
+								let date = calendar.dateList[i];
+								let isHoliday = holidays.some((value) => value == $.datepicker.formatDate("yy-mm-dd", date.dateObj));
+								if (isHoliday) {
+									calendarDay.addClass("is_holiday");//ミニカレンダーに祝日を設定
+								}
+							} else {
+								calendarDay.addClass("hidden");
+							}
+					});
+				} else {
+					setHolidays(); // 自己呼び出し関数(ループ)
+				}
+			} else {
+				// 10回でループは必ず抜ける
+			}
+		}, interval)
+	}
+	setHolidays();
+
+	currentMiniCalendarDate = baseDate;
+}
+
+<!--/* 週表示用カレンダーデータを取得 */-->
+function getWeeklyCalendar(baseDate){
+	let year = baseDate.getFullYear();
+	let monthIndex = baseDate.getMonth();
+	let day = baseDate.getDate();
+	let dayOfWeek = baseDate.getDay();
+
+	let calendar = {
+			"dateList": []
+	};
+	<!--/* 基準日を含む一週間分の日付 */-->
+	for (let i = 0; i < 7; i++) {
+		calendar.dateList.push({
+			"dateObj": new Date(year, monthIndex, day - dayOfWeek + i)
+		});
+	}
+	return calendar;
+}
+
+<!--/* 月表示用カレンダーデータを取得 */-->
+function getMonthlyCalendar(baseDate){
+	let year = baseDate.getFullYear();
+	let monthIndex = baseDate.getMonth();
+
+	<!--/* 月初日 */-->
+	let startDate = new Date(year, monthIndex, 1);
+	<!--/* 月初日の曜日 */-->
+	let startDayOfWeek = startDate.getDay();
+	<!--/* 月末日 */-->
+	let endDate = new Date(year, monthIndex + 1, 0);
+	let endDay = endDate.getDate();
+	<!--/* 先月の末日 */-->
+	let lastMonthEndDay = new Date(year, monthIndex, 0).getDate();
+
+	let calendar = {
+			"dateList": []
+	};
+	<!--/* 日曜日から月初日までの、先月分の日付 */-->
+	for (let i = 0; i < startDayOfWeek; i++) {
+		let day = lastMonthEndDay - (startDayOfWeek - 1 - i);
+		calendar.dateList.push({
+			"dateObj": new Date(year, monthIndex - 1, day),
+			"isPrevMonth": true,
+			"isNextMonth": false
+		});
+	}
+
+	<!--/* 今月分の日付 */-->
+	let dayOfWeek = startDayOfWeek;
+	for (let i = 1; i <= endDay; i++) {
+		calendar.dateList.push({
+			"dateObj": new Date(year, monthIndex, i),
+			"isPrevMonth": false,
+			"isNextMonth": false
+		});
+		dayOfWeek++;
+		if(dayOfWeek > 6){
+			dayOfWeek = 0;
+		}
+	}
+
+	<!--/* 月末日から土曜日までの、来月分の日付 */-->
+	let day = 1;
+	for (let i = dayOfWeek; i < 7; i++) {
+		calendar.dateList.push({
+			"dateObj": new Date(year, monthIndex + 1, day),
+			"isPrevMonth": false,
+			"isNextMonth": true
+		});
+		day++;
+	}
+
+	return calendar;
+}
+</script>
+<!--/* ユーザー選択 */-->
+<script type="text/javascript" th:inline="javascript">
+$(function() {
+	<!--/* ユーザー選択タブ変更 */-->
+	$(".miniuserselect").on("click", ".userSelectTab", function(event, extraParams){
+		if(!extraParams || !extraParams.isInit){
+			saveCalendarStatus();
+		}
+	});
+
+	<!--/* ユーザー選択 */-->
+	$(".miniuserselect .holidayCheck").on("change", function(){
+		refreshCalendar();
+		saveCalendarStatus();
+	});
+
+	<!--/* ユーザー選択 */-->
+	$(".miniuserselect .userCheck").on("change", function(){
+		let accountSeq = $(this).data("accountSeq");
+		let checked = $(this).prop("checked");
+		userCheckSync(accountSeq, checked, false);
+		refreshCalendar();
+		saveCalendarStatus();
+
+	});
+
+	<!--/* ユーザー全解除(全部署・全グループ) */-->
+	$(".miniuserselect .userCancelAll").on("click", function(){
+		$(".miniuserselect .userCheck").prop("checked", false);
+		refreshCalendar();
+		saveCalendarStatus();
+	});
+
+	<!--/* 全選択/全解除 */-->
+	$(".miniuserselect .groupBody .userCheckInGroup").on("click", function(){
+		let checked = $(this).data("checked");
+		$(this).closest(".groupBody").find(".userCheck").each(function(){
+			let accountSeq = $(this).data("accountSeq");
+			userCheckSync(accountSeq, checked, false);
+		});
+		refreshCalendar();
+		saveCalendarStatus();
+	});
+
+	<!--/* ユーザー検索 */-->
+	$(".miniusersearch .userSearch").on("change blur", function(){
+		let searchText = $(this).val().replace(/[ 　]/g, "");
+		$(this).val(searchText);
+		let selectedUser = $("#userList option").filter(function(){
+			return ($(this).val() == searchText || $(this).text() == searchText);
+		});
+
+		<!--/* ユーザー検索に入力されたユーザーを選択状態にする */-->
+		if(selectedUser.length){
+			selectedUser.each(function(){
+				let accountSeq = $(this).data("accountSeq");
+				userCheckSync(accountSeq, true, true);
+			});
+			refreshCalendar();
+			saveCalendarStatus();
+		}
+	});
+});
+
+function userCheckSync(accountSeq, checked, openGroup){
+	$(".miniuserselect .userCheck[data-account-seq='" + accountSeq + "']").each(function(){
+		$(this).prop("checked", checked);
+		if(checked && openGroup){
+			let id = $(this).closest(".groupBody").data("id");
+			let groupHeader = $(this).closest(".user_list_accordion").find(".groupHeader[data-id='" + id + "']");
+			if(!groupHeader.is(".selected")){
+				groupHeader.trigger("click");
+			}
+		}
+	});
+}
+
+function refreshCalendar(){
+	<!--/* チェックされているユーザーの予定を表示 */-->
+	let allUsers = Object.keys(accountSeqToNameMap);
+	allUsers.forEach(function(accountSeq){
+		$(".miniuserselect .userCheck[data-account-seq='" + accountSeq + "']:first").each(function(){
+			if($(this).prop("checked")){
+				$(".main_calendar_body").addClass("user" + accountSeq);
+				$(".main_calendar_body  .cal_entry" + ".user" + accountSeq).css("display", "");
+				$(".main_calendar_body  .cal_entry" + ".user" + accountSeq).css("visibility", "");
+
+			} else {
+				$(".main_calendar_body").removeClass("user" + accountSeq);
+
+				$(".main_calendar_body  .cal_entry" + ".user" + accountSeq).css("display", "none");
+				$(".main_calendar_body  .cal_entry" + ".user" + accountSeq).css("visibility", "hidden");
+
+			}
+		});
+	});
+	const holiday = $(".miniuserselect .holidayCheck");
+	if($(holiday).prop("checked")) {
+		$(".main_calendar_body").addClass("holiday");
+		$(".main_calendar_body  .cal_entry" + ".holiday").css("display", "");
+		$(".main_calendar_body  .cal_entry" + ".holiday").css("visibility", "");
+	} else {
+		$(".main_calendar_body").removeClass("holiday");
+		$(".main_calendar_body  .cal_entry" + ".holiday").css("display", "none");
+		$(".main_calendar_body  .cal_entry" + ".holiday").css("visibility", "hidden");
+	}
+
+	<!--/* 予定の横幅を設定 */-->
+	fixCalendarEntryWidth();
+	<!--/* 終日予定の並び順を調整 */-->
+	sortAllDayCalendarEntry();
+	
+	$(window).trigger("resize");
+}
+
+<!--/* ユーザー選択状態の初期化 */-->
+function initUserSelect(selectedUsers){
+	<!--/* 全員のチェックを外す */-->
+	$(".miniuserselect .userCheck").prop("checked", false);
+	<!--/* 選択されたユーザーをチェック */-->
+	selectedUsers.forEach(function(accountSeq){
+		userCheckSync(accountSeq, true, true);
+	});
+	<!--/* 1人もチェックされていない部署/グループを折り畳む */-->
+	$(".user_list_accordion .groupBody:not(:has(.userCheck:checked))").each(function(){
+		let id = $(this).data("id");
+		$(this).closest(".user_list_accordion").find(".groupHeader[data-id='" + id + "'].selected").trigger("click");
+	});
+}
+<!--/* ユーザー選択タブエリアの初期化 */-->
+function initUserSelectTab(userSelectType, selectedUsers){
+	<!--/* タブ選択 */-->
+	$(".miniuserselect .userSelectTab[data-user-select-type='" + userSelectType + "']")
+		.trigger("click", {isInit: true})
+		.addClass("selected");
+	<!--/* カレンダー表示 */-->
+	initUserSelect(selectedUsers);
+	refreshCalendar();
+}
+</script>
+<!--/* 予定データ表示調整 */-->
+<script type="text/javascript" th:inline="javascript">
+<!--/* 【日表示/週表示】予定の表示幅・位置を調整する */-->
+function fixCalendarEntryWidth(){
+
+	let dispType = getCurrentCalendarDispType();
+	if(dispType != /*[[${T(jp.loioz.app.user.schedule.enums.CalendarDispType).DAILY.cd}]]*/ 1
+			&& dispType != /*[[${T(jp.loioz.app.user.schedule.enums.CalendarDispType).WEEKLY.cd}]]*/ 2){
+		return;
+	}
+	$(".main_calendar_body")
+		.find(".calendarDay:visible")
+		.has(".col_hour")
+		.each(function(){
+			_fixCalendarEntryWidth($(this).find(".cal_entry:visible"));
+		});
+	return;
+
+	<!--/* 内部関数 */-->
+	function _fixCalendarEntryWidth(entries){
+		if(entries.length == 0){
+			return;
+		}
+
+		let times = [];
+		<!--/* 全予定の開始/終了時間を取得して、時間帯の区切りとする */-->
+		entries.each(function(){
+			let start = $(this).data("start");
+			let end = $(this).data("end");
+			times.push(start);
+			times.push(end);
+		});
+		times = uniqueArray(times);
+		times.sort(function (a, b){return a - b;});
+		if(times.length == 0){
+			return;
+		}
+
+		<!--/* 各時間帯毎に予定の重複を算出 */-->
+		let conflicts = [];
+		times.reduce(function (start, end){
+			let conflict = [];
+			entries.each(function(){
+				if(end > $(this).data("start") && $(this).data("end") > start){
+					conflict.push($(this));
+				}
+			});
+			conflicts.push(conflict);
+			return end;
+		});
+		<!--/* 予定の重複数が多い順(=表示幅が狭い順)でソート */-->
+		conflicts.sort(function (a, b){return b.length - a.length;});
+
+		<!--/* 重複数が多い時間帯から順に表示幅・位置を決定する */-->
+		let processed = [];
+		conflicts.forEach(function(conflict){
+			<!--/* 今回表示幅・位置を計算する対象の予定 */-->
+			let targetEntries = $(conflict).not(function(){
+				return processed.includes($(this).data("scheduleSeq"));
+			});
+			<!--/* 既に表示幅・位置を計算済みの予定 */-->
+			let processedEntries = $(conflict).filter(function(){
+				return processed.includes($(this).data("scheduleSeq"));
+			});
+			if(targetEntries.length == 0){
+				return;
+			}
+
+			<!--/* 予定を表示可能な空き領域を計算 */-->
+			let ranges = [];
+			let currentLeft = 0;
+			<!--/* 計算済みの予定を左から走査して空き領域を検出 */-->
+			processedEntries
+				.sort(function(a, b){
+					return a.data("left") - b.data("left");
+				})
+				.each(function(){
+					let left = $(this).data("left");
+					let right = $(this).data("right");
+					let width = left - currentLeft;
+					if(width > 0){
+						ranges.push({
+							"left": currentLeft,
+							"width": width
+						});
+					}
+					currentLeft = right;
+				});
+			if(currentLeft < 100){
+				ranges.push({
+					"left": currentLeft,
+					"width": 100 - currentLeft
+				});
+			}
+
+			<!--/* 検出した空き領域をソート */-->
+			ranges.sort(function (a, b){
+				if(b.width != a.width){
+					<!--/* 第1ソートキー：表示幅・降順 */-->
+					return b.width - a.width;
+				} else {
+					<!--/* 第2ソートキー：左からの位置・昇順 */-->
+					return a.left - b.left;
+				}
+			});
+
+			<!--/* 予定の表示数に合わせて空き領域を分割 */-->
+			ranges = divideRange(ranges, targetEntries.length);
+
+			<!--/* 予定の表示幅・位置を決定 */-->
+			$(targetEntries)
+				.sort(function(a, b){
+					if(a.data("start") != b.data("start")){
+						<!--/* 第1ソートキー：開始位置・昇順 */-->
+						return a.data("start") - b.data("start");
+					} else {
+						<!--/* 第2ソートキー：終了位置・昇順 */-->
+						return a.data("end") - b.data("end");
+					}
+				})
+				.each(function(i, entry){
+					let width = ranges[i].width;
+					let left = ranges[i].left;
+					entry.data("left", left);
+					entry.data("right", left + width);
+					entry.css({"width": width + "%", "left": left + "%"});
+					processed.push(entry.data("scheduleSeq"));
+				});
+		});
+	}
+}
+
+<!--/* 【週表示】終日予定の並び順を調整する */-->
+function sortAllDayCalendarEntry() {
+	
+	let dispType = getCurrentCalendarDispType();
+	if(dispType != /*[[${T(jp.loioz.app.user.schedule.enums.CalendarDispType).WEEKLY.cd}]]*/ 2){
+		return;
+	}
+	
+	<!--/* 7日分の終日領域を取得 */-->
+	let calendarDays = $(".main_calendar_body .weeklyMainCalendar")
+		.find(".calendarDay[data-allday=true]:visible");
+	
+	<!--/* 終日予定データDtoをまとめる配列 */-->
+	let allDayDtoAry = [];
+	
+	<!--/* 終日予定データDtoのテンプレート */-->
+	<!--/* このDto１つがカレンダー画面で見える終日データの１つ分となる（複数日にまたがる場合はentryの要素数が複数となる） */-->
+	let allDayDto = {
+		scheduleSeq : null,
+		startDate : null,
+		lastDate : null,
+		entrys : [],
+		weekViewOrder : null
+	}
+	
+	<!--/* 7日分の終日領域をループ（日付ごとのループとなる） */-->
+	$.each(calendarDays, function(index, value) {
+		
+		<!--/* 対象日の内の、終日予定の開始日データを取得（終日予定の開始が複数件ある場合もあり） */-->
+		<!--/* ※この時点で表示（visible）状態の要素のみを取得 */-->
+		let allDayStartEntrys = $(value).find(".cal_anvisible_start.cal_entry:visible");
+		
+		<!--/* 終日データの開始日の要素の情報をallDayDtoに設定しallDayDtoAryを作成する */-->
+		$.each(allDayStartEntrys, function(index2, value2) {
+			
+			let scheduleSeq = $(value2).data('scheduleSeq');
+			let date = $(value2).closest('.calendarDay').data('date');
+			
+			<!--/* テンプレートをクローンして利用 */-->
+			let allDayDtoElem = $.extend(true, {}, allDayDto);
+			
+			<!--/* 
+			終日予定の開始日データから、
+			スケジュールSEQ（スケジュールSEQ - アカウントSEQ）と終日予定の開始日を取得し、
+			終日の開始日データ（自分自身）をentryに追加
+			*/-->
+			allDayDtoElem.scheduleSeq = scheduleSeq;
+			allDayDtoElem.startDate = new Date(date.getTime());
+			allDayDtoElem.entrys.push(value2)
+			
+			<!--/* まとめる用の配列にDtoを追加 */-->
+			allDayDtoAry.push(allDayDtoElem);
+		})
+	})
+	
+	<!--/* 終日データDtoをループさせ、それぞれの終日データ（スケジュールSEQ）の開始日以外の要素を取得し、entryに追加する */-->
+	$.each(allDayDtoAry, function(index, value) {
+		const scheduleSeq = value.scheduleSeq
+		
+		let entrys = $(".main_calendar_body .weeklyMainCalendar")
+			.find(".calendarDay[data-allday=true] .cal_entry[data-schedule-seq=" + scheduleSeq + "]")
+			.not(".cal_anvisible_start");
+		
+		let lastEntryDate = null;
+		for (let i = 0; i < entrys.length; i++) {
+			let entry = entrys[i];
+			
+			value.entrys.push(entry);
+			
+			if (i === entrys.length - 1) {
+				<!--/* 最後の要素の日付情報 */-->
+				lastEntryDate = $(entry).closest('.calendarDay').data('date');
+			}
+		}
+		
+		value.lastDate = lastEntryDate;
+	})
+	
+	<!--/* 開始日,entryの要素数でソートする */-->
+	function _allDayDtoAryCompare(a, b) {
+		
+		const startDateA = a.startDate;
+		const startDateB = b.startDate;
+		
+		let comparison = 0;
+		if (startDateA > startDateB) {
+			comparison = 1;
+		} else if (startDateA < startDateB) {
+			comparison = -1;
+		} else {
+			<!--/* startDateが同じ場合 -> entryの要素数（終日の期間の日数）の降順とする */-->
+			const entryLengthA = a.entrys.length;
+			const entryLengthB = b.entrys.length;
+			
+			if (entryLengthA > entryLengthB) {
+				comparison = -1;
+			} else if (entryLengthA < entryLengthB) {
+				comparison = 1;
+			} else {
+				<!--/* startDateもentryの要素数も同じ場合 -> scheduleSeqの昇順とする */-->
+				
+				let scheduleSeqA = a.scheduleSeq;
+				let scheduleSeqB = b.scheduleSeq;
+				
+				<!--/* scheduleSeqは「予定連番-アカウント連番」となっているので、真ん中のハイフンで分割 */-->
+				const scheduleSeqAAry = scheduleSeqA.split("-");
+				const scheduleSeqBAry = scheduleSeqB.split("-");
+				
+				<!--/* それぞれの予定連番とアカウント連番の値を取得（大小比較可能なよう数値型に変換） */-->
+				const scheduleSeqANumber = Number(scheduleSeqAAry[0]);
+				const scheduleSeqBNumber = Number(scheduleSeqBAry[0]);
+				const accountSeqANumber = Number(scheduleSeqAAry[1]);
+				const accountSeqBNumber = Number(scheduleSeqBAry[1]);
+				
+				<!--/* 予定連番の昇順でソート*/-->
+				if (scheduleSeqANumber > scheduleSeqBNumber) {
+					comparison = 1;
+				} else if (scheduleSeqANumber < scheduleSeqBNumber) {
+					comparison = -1;
+				} else {
+					<!--/* 予定連番が同じ場合 -> アカウント連番の昇順とする */-->
+
+					if (accountSeqANumber > accountSeqBNumber) {
+						comparison = 1;
+					} else if (accountSeqANumber < accountSeqBNumber) {
+						comparison = -1;
+					}
+				}
+			}
+		}
+		return comparison;
+	}
+	<!--/* 上記ルールでソート（findで取得された時点で、allDayDtoAryはstartDateの昇順となっているが、Domの並びに依存しているので、念の為ソートする） */-->
+	allDayDtoAry.sort(_allDayDtoAryCompare);
+	
+	<!--/*
+	上記のソートでは対応しきれないルールを考慮したソートを追加で実施。
+	
+	例：
+	 終日１　7/5～7/6
+	 終日２　7/6～7/9
+	 終日３　7/7～7/8
+	
+	 上記のソートルールのみでは、画面では下記の並び方になる
+	 終日１
+	 　終日２
+	  　終日３
+	
+	 下記の追加のソートを行うことで、画面では下記の並びになるようにする（空いているスペースに詰まるイメージ）
+	 終日１ 終日３
+	 　終日２
+	
+	処理の流れとしては、1週間の開始日から終了日に向けて、１段目の終日データを詰め、
+	１段目が終わったら（週末日までいったら）、また週の開始に戻り、２段目の終日データを詰めていく。
+	これを終日データがなくなるまで繰り返すイメージとなる。
+	*/-->
+	let allDayDtoArySortedByViewOrder = [];
+	let sorceLength = allDayDtoAry.length;
+	let resultLength = 0;
+	let weekViewOrder = 0;
+	
+	while (resultLength < sorceLength) {
+		
+		let nowLastDate = null;
+		for (let i = 0; i < allDayDtoAry.length; i++) {
+			
+			let allDayDto = allDayDtoAry[i]
+			
+			if (i === 0) {
+				<!--/* 最初の要素は必ず追加 */-->
+				weekViewOrder = weekViewOrder + 1;
+				allDayDto.weekViewOrder = weekViewOrder;
+				allDayDtoArySortedByViewOrder.push(allDayDto)
+				nowLastDate = allDayDto.lastDate;
+				continue;
+			}
+			
+			if (allDayDto.startDate > nowLastDate) {
+				<!--/* ループで回るDtoの開始日が、最後に結果リストに追加されたDtoの終了日より大きい場合は追加 */-->
+				weekViewOrder = weekViewOrder + 1;
+				allDayDto.weekViewOrder = weekViewOrder;
+				allDayDtoArySortedByViewOrder.push(allDayDto)
+				nowLastDate = allDayDto.lastDate;
+				continue;
+			}
+		}
+		
+		resultLength = allDayDtoArySortedByViewOrder.length;
+		
+		<!--/* オーダーが設定されていないもののみにする（オーダーを設定したものは削除する） */-->
+		allDayDtoAry = allDayDtoAry.filter(function(dto) {
+			return dto.weekViewOrder === null;
+		});
+	}
+	
+	<!--/* 現在表示されている終日データを画面から削除 */-->
+	let nowVisibleAlldayData = $(".main_calendar_body .weeklyMainCalendar")
+		.find(".calendarDay[data-allday=true]:visible .cal_entry:visible").remove();
+	
+	<!--/* 上記の並べ替えを行った終日データを画面に追加していく */-->
+	for (let i = 0; i < allDayDtoArySortedByViewOrder.length; i++) {
+		
+		let allDayDto = allDayDtoArySortedByViewOrder[i]
+		let entrys = allDayDto.entrys;
+		<!--/* entryが追加される日付（ループの中で1ずつ増加していく） */-->
+		let dateAddEntry = new Date(allDayDto.startDate.getTime());
+		
+		for (let j = 0; j < entrys.length; j++) {
+			
+			let dateAddEntryStr = $.datepicker.formatDate('yy/mm/dd', dateAddEntry);
+			
+			let entryContainer = $(".main_calendar_body .weeklyMainCalendar")
+				.find(".calendarDay[data-allday=true]:visible[data-date='" + dateAddEntryStr + "'] .entryContainer");
+			entryContainer.append(entrys[j])
+			
+			<!--/* 日付を１進める */-->
+			dateAddEntry.setDate(dateAddEntry.getDate() + 1)
+		}
+	}
+}
+
+<!--/*
+	空き領域の分割パターンの候補を全て取得する。
+
+	分割パターン：空き領域の表示幅上位n番目をm分割するmの整数値配列
+
+	e.g.) 3つの空き領域に5つの予定を配置
+	calcRangeDividePatternCandidates(3, 5) => [
+		[2, 2, 1],
+		[3, 1, 1],
+		[3, 2],
+		[4, 1],
+		[5]
+	]
+
+	@param rangeNum 空き領域の数
+	@param entryNum 予定の数
+	@return 分割パターンの全ての組み合わせ
+*/-->
+function calcRangeDividePatternCandidates(rangeNum, entryNum){
+	let result = [];
+	_calcRangeDividePatternCandidates(entryNum, entryNum, 0, rangeNum, [], result);
+	return result;
+
+	function _calcRangeDividePatternCandidates(remainingCount, max, index, rangeNum, parent, result){
+		if(remainingCount == 0){
+			result.push(parent);
+			return;
+		}else if(!(index < rangeNum)){
+			return;
+		}
+
+		for(let i = 1; i <= Math.min(remainingCount, max); i++){
+			let copyParent = parent.slice();
+			copyParent.push(i);
+			_calcRangeDividePatternCandidates(remainingCount - i, i, index + 1, rangeNum, copyParent, result);
+		}
+	}
+}
+
+<!--/*
+	空き領域を分割する。
+	空き領域は、各予定の表示幅が最も均等に近くなるように分割される。
+
+	@param ranges 分割前の空き領域
+	@param entryNum 予定の数
+	@return 分割後の空き領域
+*/-->
+function divideRange(ranges, entryNum){
+
+	<!--/* 分割パターン候補を取得 */-->
+	let patternCandidates = calcRangeDividePatternCandidates(ranges.length, entryNum);
+
+	let currentMinWidth = 0;
+	let rangeDividePattern = null;
+	<!--/* 全ての分割パターンを検証 */-->
+	patternCandidates.forEach(function(pattern){
+		let minWidth = pattern
+			.filter(function(divider, i){
+				return divider != 0;
+			})
+			.map(function(divider, i){
+				<!--/* 各予定の表示幅を計算 */-->
+				return ranges[i].width / divider;
+			})
+			.reduce(function(a, b){
+				<!--/* 表示幅の最小値を計算 */-->
+				return Math.min(a, b);
+			});
+
+		<!--/* 表示幅の最小値が最も大きい分割パターンを採用 */-->
+		if(minWidth > currentMinWidth){
+			currentMinWidth = minWidth;
+			rangeDividePattern = pattern;
+		}
+	});
+
+	<!--/* 採用した分割パターンで空き領域を分割 */-->
+	let result = [];
+	rangeDividePattern.forEach(function(divider, i){
+		let target = ranges[i];
+		let currentLeft = target.left;
+
+		for(let i = 0; i < divider; i++){
+			let width = target.width / divider;
+			let range = {
+					"left": currentLeft,
+					"width": width
+			};
+			result.push(range);
+			currentLeft += width;
+		}
+	});
+
+	return result;
+}
+</script>
+<!--/* 予定読込 */-->
+<script type="text/javascript" th:inline="javascript">
+
+<!--/* 予定キャッシュ */-->
+scheduleCache = {};
+
+<!--/* 予定データを読み込む */-->
+function loadSchedule(dateFrom, dateTo){
+	<!--/* 予定データを取得 */-->
+	$.ajax({
+		type : "POST",
+		url : /*[[(@{/user/schedule/getSchedule})]]*/ "/",
+		data : {
+			"dateFrom": $.datepicker.formatDate("yy/mm/dd", dateFrom),
+			"dateTo": $.datepicker.formatDate("yy/mm/dd", dateTo)
+		},
+		dataType : "json"
+	})
+	.done(function(result) {
+		<!--/* 予定キャッシュに予定データを追加 */-->
+		$.extend(scheduleCache, result.schedule);
+
+		<!--/* cssの再計算回数を抑えるため、予定追加処理中は非表示 */-->
+		let entryContainers = $(".main_calendar_body .entryContainer:visible").css("display", "none");
+
+		<!--/* 予定データをカレンダーに反映 */-->
+		let isMonthly = (getCurrentCalendarDispType() == /*[[${T(jp.loioz.app.user.schedule.enums.CalendarDispType).MONTHLY.cd}]]*/ 3);
+		let entryCache = {};
+
+		<!--/* カレンダーの祝日設定を外す */-->
+		$(".main_calendar_body .calendarDay").removeClass("is_holiday");
+		$(".main_calendar_body .calendarHead").removeClass("is_holiday");
+
+		<!--/* 月カレンダーの祝日名をすべて空にする */-->
+		$(".main_calendar_body .monthlyMainCalendar .day_note").text("");
+
+		$.each(result.scheduleByDate, function(date, scheduleSeqList){
+			let entries = {
+					true: $(),
+					false: $()
+			};
+			scheduleSeqList.forEach(function(scheduleSeq){
+				let scheduleData = result.schedule[scheduleSeq];
+				let entry;
+				if(entryCache[scheduleSeq]){
+					entry = entryCache[scheduleSeq].clone();
+
+				} else {
+					<!--/* 予定データをキャッシュに格納 */-->
+					entry = createCalendarEntry(scheduleSeq, scheduleData);
+					entryCache[scheduleSeq] = entry;
+
+				}
+
+				if(isMonthly){
+					<!--/* 月表示 */-->
+
+					<!--/* 表示順を設定 */-->
+					let order = scheduleData.allday ? -1 : scheduleData.hourFrom * 60 + scheduleData.minFrom;
+					entry.css("order", order);
+
+					entries[true] = entries[true].add(entry);
+
+				} else if(scheduleData.allday) {
+					entry.addClass("cal_anvisible");
+					entry.removeClass("cal_anvisible_start");
+					<!--/* 繰り返しの予定の開始か判定 */-->
+					if (date == scheduleData.weekViewDate) {
+						let count = scheduleData.weekViewCnt;
+						let dayWidth = (count * 100);
+						if (count == 1) {
+							<!--/* 1日のみ表示の場合は表示幅を微調整 */-->
+							entry.css("margin-right", "8px");
+						} else {
+							if (count == 7) {
+								dayWidth = dayWidth - 0.5;
+							} else if (count == 6) {
+								dayWidth = dayWidth - 4.5;
+							} else if (count == 5) {
+								dayWidth = dayWidth - 3.5;
+							} else if (count == 2) {
+								dayWidth = dayWidth - 7;
+							} else {
+								dayWidth = dayWidth - 5.5;
+							}
+							<!--/* 複数日数 */-->
+							entry.css("width", dayWidth + "%");
+						}
+						<!--/* 繰り返しの予定を表示 */-->
+						entry.removeClass("cal_anvisible");
+						entry.addClass("cal_anvisible_start");
+						entry.css("z-index", "99");
+					}
+
+					<!--/* 日表示/週表示の終日 */-->
+					entries[true] = entries[true].add(entry);
+
+				} else {
+					<!--/* 日表示/週表示の時間毎 */-->
+
+					<!--/* 予定の縦幅を設定 */-->
+					let scheduleHeight = scheduleBaseHeight * ((scheduleData.hourTo - scheduleData.hourFrom) + (scheduleData.minTo - scheduleData.minFrom) / 60) - 2 ;
+					let startPos = scheduleBaseHeight * (scheduleData.hourFrom + scheduleData.minFrom / 60);
+					entry.css({"height": scheduleHeight, "top": startPos});
+					entry.data("start", startPos);
+					entry.data("end", startPos + scheduleHeight);
+
+					entries[false] = entries[false].add(entry);
+				}
+			});
+			let calendarDay = $(".main_calendar_body")
+				.find(".calendarDay[data-date='" + date + "']:visible");
+			calendarDay
+				.filter("[data-allday='true']")
+				.find(".entryContainer")
+				.append(entries[true]);
+			calendarDay
+				.filter("[data-allday='false']")
+				.find(".entryContainer")
+				.append(entries[false]);
+
+			<!--/* 予定データに祝日予定が存在した場合、クラスを適用 */-->
+			if (calendarDay.has(".holiday").length) {
+				const weekIndex = calendarDay.data("index");
+				const calendarHead = $(".main_calendar_body")
+					.find(".calendarHead[data-index="+ weekIndex +"]");
+				calendarHead.addClass("is_holiday");
+				calendarDay.addClass("is_holiday");
+
+				<!--/* 月カレンダーに祝日設定 */-->
+				if(isMonthly) {
+					const holidayContents =calendarDay.find(".holiday");
+					const holidayName = holidayContents.find(".title").text()
+					calendarDay.find(".day_note").text(holidayName);
+					holidayContents.remove(); //表示させないので削除
+				}
+			}
+
+		});
+		entryContainers.css("display", "");
+
+		<!--/* 予定の横幅を設定 */-->
+		fixCalendarEntryWidth();
+		<!--/* 終日予定の並び順を調整 */-->
+		sortAllDayCalendarEntry();
+
+		$(window).trigger("resize");
+	})
+	.fail(function() {
+	});
+}
+
+<!--/* 会議室表示の予定データを読み込む */-->
+function loadRoomSchedule(date){
+	<!--/* 予定データを取得 */-->
+	$.ajax({
+		type : "POST",
+		url : /*[[(@{/user/schedule/getRoomSchedule})]]*/ "/",
+		data : {
+			"date": $.datepicker.formatDate("yy/mm/dd", date)
+		},
+		dataType : "json"
+	})
+	.done(function(result) {
+		<!--/* 予定キャッシュに予定データを追加 */-->
+		$.extend(scheduleCache, result.schedule);
+
+		<!--/* 予定データをカレンダーに反映 */-->
+		$.each(result.scheduleByRoom, function(roomId, scheduleSeqList){
+			scheduleSeqList.forEach(function(scheduleSeq){
+				let scheduleData = result.schedule[scheduleSeq];
+
+				let entry = createCalendarEntry(scheduleSeq, scheduleData);
+
+				<!--/* 予定の横幅を設定 */-->
+				const borderSize = 1;
+				if(scheduleData.allday){
+					entry.css({"width": horizontalScheduleBaseWidth * 24 - borderSize, "left": 0, "top": 0});
+
+				} else {
+					let scheduleWidth = horizontalScheduleBaseWidth * ((scheduleData.hourTo - scheduleData.hourFrom) + (scheduleData.minTo - scheduleData.minFrom) / 60) - borderSize;
+					let scheduleLeft = horizontalScheduleBaseWidth * (scheduleData.minFrom / 60);
+					entry.css({"width": scheduleWidth, "left": scheduleLeft, "top": 0});
+				}
+
+				$(".roomMainCalendar")
+					.find(".roomContent[data-room-id='" + roomId + "']")
+					.find(".cal-content-hour[data-hour='" + scheduleData.hourFrom + "'] .entryContainer")
+					.append(entry);
+			});
+		});
+	})
+	.fail(function() {
+	});
+}
+
+<!--/* カレンダー上に表示する予定を作成する */-->
+function createCalendarEntry(scheduleSeq, scheduleData){
+	if(!benzo.global.scheduleCalendar.entryTemplate){
+		benzo.global.scheduleCalendar.entryTemplate = $("#calendarEntryTemplate .cal_entry");
+	}
+	let entry = benzo.global.scheduleCalendar.entryTemplate.clone();
+	entry.find(".title").text(scheduleData.subject);
+	entry.data("scheduleSeq", scheduleSeq);
+	entry.attr("data-schedule-seq", scheduleSeq);
+	if(scheduleData.holiday) {
+		// 祝日データの場合
+		entry.addClass("holiday");
+	} else {
+		// 祝日データ以外
+		entry.addClass("user" + scheduleData.memberOne);
+	}
+	if(scheduleData.allday){
+		entry.find(".sch_time").remove();
+		entry.find(".sch_time_end").remove();
+		entry.find(".cal_place").remove();
+
+	} else {
+		entry.find(".sch_time").text(formatHMM(scheduleData.hourFrom, scheduleData.minFrom));
+		entry.find(".sch_time_end").text(formatHMM(scheduleData.hourTo, scheduleData.minTo));
+		entry.find(".cal_place").text(scheduleData.placeDisp);
+	}
+
+	const customerId = scheduleData.customerId;
+	const ankenId = scheduleData.ankenId;
+	const saibanId = scheduleData.saibanId;
+	// アイコン表示
+	if (saibanId != null) {
+		// 裁判の予定
+		entry.find(".iconType").addClass("icon_saiban");
+	} else if (customerId != null && ankenId != null) {
+		// 顧客と案件は顧客優先の予定
+		entry.find(".iconType").addClass("icon_customer");
+	} else if (customerId != null) {
+		// 顧客の予定
+		entry.find(".iconType").addClass("icon_customer");
+	} else if (ankenId != null) {
+		// 案件の予定
+		entry.find(".iconType").addClass("icon_anken");
+	} else {
+		// 何も付与しない
+		entry.find(".icon_saiban").remove("");
+		entry.find(".icon_customer").remove("");
+		entry.find(".icon_anken").remove("");
+	}
+	return entry;
+}
+</script>
+<!--/* 予定詳細ポップアップ */-->
+<script type="text/javascript" th:inline="javascript">
+	// 顧客情報遷移先のURL
+	let kokyakuUrl;
+	function clickIdKokyaku() {
+		location.href = kokyakuUrl;
+	}
+	// 案件情報遷移先のURL
+	let ankenUrl;
+	function clickIdAnken() {
+		location.href = ankenUrl;
+	}
+	// 裁判情報遷移先のURL
+	let saibanUrl;
+	function clickIdSaiban() {
+		location.href = saibanUrl;
+	}
+	// 予定詳細を閉じる
+	function popOverClose(){
+		$('.popover').popover('dispose');
+	}
+	// 予定詳細ポップアップで使用するスケジュールSEQ
+	let popperScheduleSeq;
+	$(function() {
+		$(".main_calendar_body").popover({
+			container: "body",
+			boundary: "viewport",
+			selector: ".cal_entry",
+			html: true,
+			trigger: "click",
+			placement: "left",
+			offset: "0, 5",
+			template: '<div class="popover html-content" role="tooltip"><div class="popover-body"></div></div>',
+			content: function(){
+				let scheduleSeq = $(this).data("scheduleSeq");
+				popperScheduleSeq = scheduleSeq;
+				let data = scheduleCache[scheduleSeq];
+				let popup = $("#calendarPopupTemplate").clone();
+				populateScheduleDataToPopup(data, popup);
+				// 顧客情報遷移先のURL
+				const customerId = data.customerId;
+				kokyakuUrl = '/user/personManagement/edit/' + customerId + '/';
+
+				// 案件情報遷移先のURLの設定
+				const ankenId = data.ankenId;
+				ankenUrl = '/user/ankenDashboard/' + ankenId + '/';
+
+				// 裁判ID
+				const saibanId = data.saibanId;
+				// 裁判枝番
+				const saibanBranchNumber = data.saibanBranchNumber;
+				// 裁判情報遷移先のURL
+				saibanUrl = '/user/saibanManagement/' + ankenId + '/' + saibanBranchNumber + '/';
+
+				// 予定タイプ別カラーの設定
+				if (customerId != null) {
+					// 顧客の予定(初回面談の場合も含む)
+					popup.find(".cal_subject").addClass("cal_customer");
+				} else if (saibanId != null) {
+					// 裁判の予定
+					popup.find(".cal_subject").addClass("cal_saiban");
+				} else if (ankenId != null) {
+					// 案件の予定
+					popup.find(".cal_subject").addClass("cal_anken");
+				} else {
+					// 何も付与しない
+					popup.find(".icon_saiban").remove("");
+					popup.find(".icon_customer").remove("");
+					popup.find(".icon_anken").remove("");
+				}
+
+				// 日付設定
+				let dateText = "";
+				let weekText = "";
+				let dateFrom = new Date(data.dateFrom);
+				let dateTo = new Date(data.dateTo);
+				let format = "m月d日"
+				if (dateFrom.getFullYear() !== dateTo.getFullYear()) {
+					format = "yy年m月d日";
+				}
+
+				// Fromの設定
+				dateText = $.datepicker.formatDate(format, dateFrom);
+				weekText = dayOfWeekTextDef[dateFrom.getDay()];
+				popup.find(".cal_detail_popup_date").text(dateText);
+				popup.find(".cal_detail_popup_week").text(weekText);
+
+				// Toの設定
+				if(data.allday && dateFrom < dateTo) {
+					dateText = $.datepicker.formatDate(format, dateTo);
+					weekText = dayOfWeekTextDef[dateTo.getDay()];
+					popup.find(".allDaysContents .cal_detail_popup_date").text(dateText);
+					popup.find(".allDaysContents .cal_detail_popup_week").text(weekText);
+					popup.find(".allDaysContents").removeClass("hidden");
+				} else {
+					popup.find(".allDaysContents").addClass("hidden");
+				}
+
+				// メモ
+				let memo = data.memo;
+				if (memo) {
+					// メモ入力あり：表示
+					popup.find(".cal_schedule_memo").removeClass("hidden");
+				} else {
+					// メモ入力なし：非表示
+					popup.find(".cal_schedule_memo").addClass("hidden");
+				}
+				// 公開・非公開
+				if (data.forbidden || data.holiday) {
+					// 非公開：非表示
+					popup.find("#calEditBtn").addClass("hidden");
+				} else {
+					// 公開：表示
+					popup.find("#calEditBtn").removeClass("hidden");
+				}
+				
+				// 空き状況確認の場合
+				if ($(this).closest(".isScheduleReferMode").length) {
+					popup.find("#calEditBtn").addClass("hidden");
+				}
+
+				return popup.html();
+			}
+	});
+	<!--/* 予定表のポップアップは一つの予定のみ表示とする */-->
+	$('.main_calendar_body').on('show.bs.popover', function () {
+		// 他のポップアップを閉じる
+		$('.popover').popover('dispose');
+	})
+
+	<!--/* 予定表データを予定詳細ポップアップに反映 */-->
+	function populateScheduleDataToPopup(data, popup){
+		<!--/* 項目値を反映 */-->
+		populateObjectToHtml(data, popup);
+		<!--/* メモのHTMLタグを有効にする */-->
+		popup.find("#scheduleMemo").html(popup.find("#scheduleMemo").text());
+
+		<!--/* 時間 */-->
+		let timeText;
+		if(data.allday){
+			timeText = "";
+		} else {
+			timeText = formatHMM(data.hourFrom, data.minFrom) + " 〜 " + formatHMM(data.hourTo, data.minTo);
+		}
+		popup.find(".cal_detail_popup_time").text(timeText);
+
+		<!--/* 参加者 */-->
+		let memberContainer = popup.find(".cal_participant_list");
+		data.member.forEach(function(accountSeq){
+			if(accountSeqToNameMap.hasOwnProperty(accountSeq)){
+				$("<li></li>")
+					.text(accountSeqToNameMap[accountSeq])
+					.addClass("participant")
+					.addClass("user" + accountSeq)
+					.appendTo(memberContainer);
+			}
+		});
+
+		<!--/* データが存在しない場合に非表示にする項目 */-->
+		if(!data.customerId){
+			popup.find(".customerItem").remove();
+		}
+		if(!data.ankenId || data.saibanId){
+			popup.find(".ankenItem").remove();
+		}
+		if(!data.saibanId){
+			popup.find(".saibanItem").remove();
+		}
+		if(data.holiday) {
+			popup.find(".hideHolidayContents").addClass("hidden");
+		} else {
+			popup.find(".hideHolidayContents").removeClass("hidden");
+		}
+
+	}
+});
+</script>
+<!--/* カレンダー操作 */-->
+<script type="text/javascript" th:inline="javascript">
+
+<!--/* カレンダー上の予定をクリックした際の処理 */-->
+benzo.global.scheduleCalendar.onEntryClick = function(scheduleSeq, event){
+	<!--/* 呼び出し元側で処理を定義する */-->
+}
+
+<!--/* カレンダー上の空き領域で日時を選択した際の処理 */-->
+benzo.global.scheduleCalendar.onDateTimeSelect = function(dateTimeParams, event){
+	<!--/* 呼び出し元側で処理を定義する */-->
+}
+
+<!--/* カレンダー上の予定をクリック */-->
+function openEditSchedule() {
+	benzo.global.scheduleCalendar.onEntryClick(popperScheduleSeq, event);
+}
+
+<!--/* カレンダー上の空き領域で日時を選択 */-->
+$(function() {
+	let $overlay = $('<div>').addClass("cal-overlay");
+	let $calendar = $(".main_calendar_body");
+
+	<!--/* 【日表示/週表示/会議室表示】時刻部分のドラッグイベント */-->
+	$calendar.on("mousedown", ".openEntryModal[data-allday='false']", function(event){
+		if($(event.target).closest(".cal_entry[data-schedule-seq]").length || $(".popover").length >= 1){
+			return;
+		}
+		event.preventDefault();
+
+		let isHorizontal = ($(this).closest(".cal-horizontal").length > 0);
+		let pixelToMinute = isHorizontal ? (60 / horizontalScheduleBaseWidth) : (60 / scheduleBaseHeight);
+		let minuteToPixel = (1 / pixelToMinute);
+
+		let $container = isHorizontal
+			? $(this).closest(".cal-content").find(".cal-content-hour[data-hour='0']")
+			: $(this).closest(".calendarDay");
+		let startPos = isHorizontal
+			? (event.pageX - $container.offset().left)
+			: (event.pageY - $container.offset().top);
+		startPos = Math.floor(startPos * pixelToMinute / calendarMinStep) * minuteToPixel * calendarMinStep;
+		let lastEndPos = startPos + calendarMinStep * minuteToPixel;
+
+		let thisDate = $.datepicker.formatDate("yy/mm/dd", $(this).closest(".calendarDay").data("date"));
+		let thisRoomId = null;
+		if($(this).closest("[data-room-id]").length){
+			thisRoomId = $(this).closest("[data-room-id]").data("roomId");
+		}
+
+		clearEvents();
+		if(isHorizontal){
+			$overlay.css({
+				"top": 0,
+				"height": "100%",
+				"left": startPos,
+				"width": calendarMinStep * minuteToPixel,
+			});
+		} else {
+			$overlay.css({
+				"top": startPos,
+				"height": calendarMinStep * minuteToPixel,
+				"left": 0,
+				"width": "100%",
+			});
+		}
+		$overlay.appendTo($container);
+		$calendar.addClass("show-overlay");
+
+		let getEndPos = function(event){
+			let endPos = isHorizontal
+				? (event.pageX - $container.offset().left)
+				: (event.pageY - $container.offset().top);
+			let round = (endPos > startPos) ? Math.ceil : Math.floor;
+			endPos = round(endPos * pixelToMinute / calendarMinStep) * minuteToPixel * calendarMinStep;
+			endPos = Math.max(endPos, 0);
+			endPos = Math.min(endPos, 1440 * minuteToPixel);
+			return endPos;
+		}
+
+		<!--/* ドラッグ中のイベント */-->
+		$calendar
+			.on("mousemove.dateTimeSelect", function(event){
+				let endPos = getEndPos(event);
+
+				if(endPos == lastEndPos){
+					return;
+				}
+				lastEndPos = endPos;
+
+				let position = Math.min(startPos, endPos);
+				let size = Math.abs(endPos - startPos);
+
+				let startTime = Math.round(Math.min(startPos, endPos) * pixelToMinute);
+				let endTime = Math.round(Math.max(startPos, endPos) * pixelToMinute);
+				// 24時は設定できないので、設定できる最大時間に合わせる
+				if (endTime === 1440) { // 24h ==  1440min
+					endTime = endTime - calendarMinStep;
+				}
+
+				const timeFrom = $("<span class='sch_time'>"+ formatHMM(Math.floor(startTime / 60), startTime % 60, 0) +"<span>");
+				const timeTo= $("<span class='sch_time_end'>"+ formatHMM(Math.floor(endTime / 60), endTime % 60, 0) +"<span>");
+				$overlay.empty();
+				$overlay.append(timeFrom,timeTo);
+				if(isHorizontal){
+					$overlay.css({
+						"left": position,
+						"width": size,
+					});
+				} else {
+					$overlay.css({
+						"top": position,
+						"height": size,
+					});
+				}
+			})
+			.on("mouseleave.dateTimeSelect", onMouseleave)
+			.on("mouseenter.dateTimeSelect", onMouseenter);
+
+		$(document)
+			.on("mouseup.dateTimeSelect", function(event){
+				<!--/* ドラッグ終了 */-->
+				if($(event.target).closest($calendar).length){
+					<!--/* カレンダー上でドラッグ終了した場合のみ、日時選択時の処理を呼び出す */-->
+					let endPos = getEndPos(event);
+					let startTime = Math.round(Math.min(startPos, endPos) * pixelToMinute);
+					let endTime = Math.round(Math.max(startPos, endPos) * pixelToMinute);
+					// 24時は設定できないので、設定できる最大時間に合わせる
+					if (endTime === 1440) { // 24h ==  1440min
+						endTime = endTime - calendarMinStep;
+					}
+
+					let dateTimeParams = {
+						"dateFrom": thisDate,
+						"dateTo": thisDate,
+						"timeFrom": formatHHMMSS(Math.floor(startTime / 60), startTime % 60, 0),
+						"timeTo": formatHHMMSS(Math.floor(endTime / 60), endTime % 60, 0),
+						"hourFrom": Math.floor(startTime / 60),
+						"minFrom": startTime % 60,
+						"hourTo": Math.floor(endTime / 60),
+						"minTo": endTime % 60,
+						"allday": false,
+					}
+					if(thisRoomId){
+						dateTimeParams.roomId = thisRoomId;
+					}
+
+					benzo.global.scheduleCalendar.onDateTimeSelect(dateTimeParams, event);
+				}
+				clearEvents();
+			});
+
+		function clearEvents(){
+			$calendar.off(".dateTimeSelect");
+			$(document).off(".dateTimeSelect");
+			$calendar.removeClass("show-overlay");
+			$overlay.text("");
+			$overlay.remove();
+		}
+	});
+
+	<!--/* 【日表示/週表示/月表示】終日のドラッグイベント */-->
+	$calendar.on("mousedown", ".openEntryModal[data-allday='true']", function(event){
+		if($(event.target).closest(".cal_entry[data-schedule-seq]").length){
+			return;
+		}
+		event.preventDefault();
+
+		let $calendarDays = $calendar.find(".calendarDay[data-allday='true']:visible");
+		let $baseCalendarDay = $(this).closest(".calendarDay");
+		let $startCalendarDay = $baseCalendarDay;
+		let $endCalendarDay = $baseCalendarDay;
+
+		let baseIndex = $baseCalendarDay.data("index");
+		let lastSelectedIndex = baseIndex;
+
+		clearEvents();
+		$calendar.addClass("show-overlay");
+		$startCalendarDay.addClass("selected-start");
+		$endCalendarDay.addClass("selected-end");
+
+		<!--/* ドラッグ中のイベント */-->
+		$calendarDays
+			.on("mousemove.dateTimeSelect", function(event){
+				let $targetCalendarDay = $(event.target).closest(".calendarDay");
+				let targetIndex = $targetCalendarDay.data("index");
+
+				if(targetIndex == lastSelectedIndex){
+					return;
+				}
+				lastSelectedIndex = targetIndex;
+
+				$startCalendarDay.removeClass("selected-start");
+				$endCalendarDay.removeClass("selected-end");
+				if(targetIndex < baseIndex){
+					$startCalendarDay = $targetCalendarDay;
+					$endCalendarDay = $baseCalendarDay;
+				} else {
+					$startCalendarDay = $baseCalendarDay;
+					$endCalendarDay = $targetCalendarDay;
+				}
+				$startCalendarDay.addClass("selected-start");
+				$endCalendarDay.addClass("selected-end");
+			})
+			.on("mouseleave.dateTimeSelect", onMouseleave)
+			.on("mouseenter.dateTimeSelect", onMouseenter);
+
+		$(document)
+			.on("mouseup.dateTimeSelect", function(event){
+				<!--/* ドラッグ終了 */-->
+				if($(event.target).closest($calendarDays).length){
+					<!--/* カレンダー上でドラッグ終了した場合のみ、日時選択時の処理を呼び出す */-->
+					let dateTimeParams = {
+						"dateFrom": $.datepicker.formatDate("yy/mm/dd", $startCalendarDay.data("date")),
+						"dateTo": $.datepicker.formatDate("yy/mm/dd", $endCalendarDay.data("date")),
+						"timeFrom": formatHHMMSS(9,0,0),
+						"timeTo": formatHHMMSS(10,0,0),
+						"hourFrom": 9,
+						"minFrom": 0,
+						"hourTo": 10,
+						"minTo": 0,
+						"allday": true,
+					}
+					benzo.global.scheduleCalendar.onDateTimeSelect(dateTimeParams, event);
+				}
+				clearEvents();
+			});
+
+		function clearEvents(){
+			$calendarDays.off(".dateTimeSelect");
+			$(document).off(".dateTimeSelect");
+			$calendar.removeClass("show-overlay");
+			$calendarDays.removeClass("selected-start selected-end");
+		}
+	});
+
+	<!--/* ドラッグ中にカレンダー枠外に出た場合 */-->
+	function onMouseleave(event){
+		if($(event.relatedTarget).closest(".cal_detail_popup").length){
+			<!--/* 予定詳細ポップアップはカレンダー枠内として扱う */-->
+			return;
+		}
+		$calendar.removeClass("show-overlay");
+	}
+	<!--/* ドラッグ中にカレンダー枠内に戻った場合 */-->
+	function onMouseenter(event){
+		$calendar.addClass("show-overlay");
+	}
+});
+</script>
+</th:block>
+</head>
+<body>
+	<!--/* ミニカレンダー・ユーザー選択エリア */-->
+	<div class="block_schedule_left" th:fragment="block_schedule_left">
+		<!--ミニカレンダー-->
+		<div class="minicalendar">
+			<div class="minicalendar_header">
+				<div class="minicalendar_pagination">
+					<button type="button" class="changeMiniCalendar btn_prev_m">前の月</button>
+				</div>
+				<div class="minicalendar_title"></div>
+				<div class="minicalendar_pagination">
+					<button type="button" class="changeMiniCalendar btn_next_m">次の月</button>
+				</div>
+			</div>
+			<div class="minicalendar_weekheader">
+				<div class="is_sun">日</div>
+				<div class="is_mon">月</div>
+				<div class="is_tue">火</div>
+				<div class="is_wed">水</div>
+				<div class="is_thu">木</div>
+				<div class="is_fri">金</div>
+				<div class="is_sat">土</div>
+			</div>
+			<div class="minicalendar_main">
+				<div th:each="i : ${#numbers.sequence(0,41)}"
+					class="calendarDay changeMainCalendar" th:data-index="${i}">
+					<span class="day_text"></span>
+				</div>
+			</div>
+		</div>
+		<!--ミニカレンダー　End-->
+
+		<!--/* 祝日の表示切り替え start */-->
+		<div class="miniuserselect loginuserselect hidden">
+			<dl class="miniuserselect_tab loginuserselect_tab">
+				<dd class="miniuserselect_data_user">
+					<div class="miniuserselect_scroll login_user_miniuserselect_scroll">
+						<dl class="login_user_list_accordion">
+							<dt class="groupHeader selected">その他の予定</dt>
+							<dd class="groupBody">
+								<ul class="user_check_list">
+									<li>
+										<label class="user_checkbox_btn">
+											<input type="checkbox" class="checkbox_input holidayCheck">
+											<span class="user_color holiday"></span>
+											<span class="user_checkbox_name">日本の祝日</span>
+										</label>
+									</li>
+								</ul>
+							</dd>
+						</dl>
+					</div>
+				</dd>
+			</dl>
+		</div>
+		<!--/* 祝日の表示切り替え end */-->
+
+		<!--/* ログインユーザ選択 start */-->
+		<div class="miniuserselect loginuserselect">
+			<dl class="miniuserselect_tab loginuserselect_tab">
+				<dd class="miniuserselect_data_user">
+					<div class="miniuserselect_scroll login_user_miniuserselect_scroll">
+						<dl class="login_user_list_accordion">
+							<dt class="groupHeader selected">自分の予定</dt>
+							<dd class="groupBody">
+								<ul class="user_check_list">
+									<li>
+										<label class="user_checkbox_btn">
+											<input type="checkbox" class="checkbox_input userCheck" th:data-account-seq="${T(jp.loioz.common.utility.SessionUtils).getLoginAccountSeq()}">
+											<span class="user_color" th:classappend="|user${T(jp.loioz.common.utility.SessionUtils).getLoginAccountSeq()}|"></span>
+											<span class="user_checkbox_name" th:text="${T(jp.loioz.common.utility.SessionUtils).getLoginAccountName()}">新宿 太郎</span>
+										</label>
+									</li>
+								</ul>
+							</dd>
+						</dl>
+					</div>
+				</dd>
+			</dl>
+		</div>
+		<!--/* ログインユーザ選択 end */-->
+
+		<!--ユーザー選択-->
+		<div class="miniuserselect miniuserselect_area">
+			<dl class="miniuserselect_tab">
+				<dt class="miniuserselect_tab_user userSelectTab"
+					th:with="userSelectType=${T(jp.loioz.app.user.schedule.enums.UserSelectType).BUSHO}"
+					th:data-user-select-type="${userSelectType.cd}">
+					<span class="tab_inner hidden">ユーザー</span>
+				</dt>
+				<dd class="miniuserselect_data_user">
+					<div class="miniuserselect_scroll">
+						<dl class="user_list_accordion">
+							<!--/*/ <th:block th:each="busho : ${scheduleCommonViewForm.bushoList}"> /*/-->
+							<dt class="groupHeader" th:data-id="${busho.bushoId}" th:text="${busho.bushoName}">loiozグループ</dt>
+							<dd class="groupBody" th:data-id="${busho.bushoId}">
+								<ul class="user_list_selectbtn">
+									<li>
+										<button type="button" class="btn is_select userCheckInGroup" data-checked="true">全選択</button>
+									</li>
+									<li>
+										<button type="button" class="btn is_cancel userCheckInGroup" data-checked="false">全解除</button>
+									</li>
+								</ul>
+								<ul class="user_check_list">
+									<li th:each="account : ${busho.accountList}">
+										<label class="user_checkbox_btn">
+											<input type="checkbox" class="checkbox_input userCheck" th:data-account-seq="${account.accountSeq}">
+											<span class="user_color" th:classappend="|user${account.accountSeq}|"></span>
+											<span class="user_checkbox_name" th:text="${account.accountName}">新宿 太郎</span>
+										</label>
+									</li>
+								</ul>
+							</dd>
+							<!--/*/ </th:block> /*/-->
+						</dl>
+					</div>
+				</dd>
+				<dt class="miniuserselect_tab_group userSelectTab"
+					th:with="userSelectType=${T(jp.loioz.app.user.schedule.enums.UserSelectType).GROUP}"
+					th:data-user-select-type="${userSelectType.cd}">
+					<span class="tab_inner hidden">グループ</span>
+				</dt>
+				<dd class="miniuserselect_data_group" style="display: none;">
+					<div class="miniuserselect_scroll">
+						<dl class="user_list_accordion">
+							<!--/*/ <th:block th:each="group : ${scheduleCommonViewForm.groupList}"> /*/-->
+							<dt class="groupHeader" th:data-id="${group.groupId}" th:text="${group.groupName}">loiozグループ</dt>
+							<dd class="groupBody" th:data-id="${group.groupId}">
+								<ul class="user_list_selectbtn">
+									<li>
+										<button type="button" class="btn is_select userCheckInGroup" data-checked="true">全選択</button>
+									</li>
+									<li>
+										<button type="button" class="btn is_cancel userCheckInGroup" data-checked="false">全解除</button>
+									</li>
+								</ul>
+								<ul class="user_check_list">
+									<li th:each="account : ${group.accountList}">
+										<label class="user_checkbox_btn">
+											<input type="checkbox" class="checkbox_input userCheck" th:data-account-seq="${account.accountSeq}">
+											<span class="user_color" th:classappend="|user${account.accountSeq}|"></span>
+											<span class="user_checkbox_name" th:text="${account.accountName}">新宿 太郎</span>
+										</label>
+									</li>
+								</ul>
+							</dd>
+							<!--/*/ </th:block> /*/-->
+						</dl>
+					</div>
+				</dd>
+			</dl>
+		</div>
+		<!--ユーザー選択 End-->
+	</div>
+
+	<!--/* カレンダーエリア */-->
+	<div class="block_schedule_main" th:fragment="block_schedule_main" th:style="${mainAreaWidthStyle}?:'' ">
+		<div class="main_calendar">
+			<div class="main_calendar_header">
+				<h2 class="calendar_title calDateView"></h2>
+				<ul class="cal_fn1">
+					<li>
+						<button type="button" class="changeMainCalendar calPrev btn btn-primary btn-sm cal_prev_arrow"><i class="fas fa-caret-left mr-1"></i></button>
+					</li>
+					<li>
+						<button type="button" class="changeMainCalendar currentCalendarBtn btn btn-light btn_today px-4"
+							th:data-date="${#dates.format(#dates.createToday(), 'yyyy/MM/dd')}">今日</button>
+					</li>
+					<li>
+						<button type="button" class="changeMainCalendar calNext calNext btn btn-primary btn-sm cal_next_arrow"><i class="fas fa-caret-right ml-1 mr-0"></i></button>
+					</li>
+				</ul>
+				<div class="schedule_create_button_area">
+					<button type="button" class="calendarScheduleCreate btn btn-light hideIfScheduleReferMode">
+						<i class="fas fa-plus text-info"></i>予定登録
+					</button>
+				</div>
+				<div class="select_cal_type_area">
+					<select class="form-control calendarDispType">
+						<option th:with="dispType=${T(jp.loioz.app.user.schedule.enums.CalendarDispType).WEEKLY}"
+							th:value="${dispType.cd}">週</option>
+						<option th:with="dispType=${T(jp.loioz.app.user.schedule.enums.CalendarDispType).DAILY}"
+							th:value="${dispType.cd}">日</option>
+						<option th:with="dispType=${T(jp.loioz.app.user.schedule.enums.CalendarDispType).MONTHLY}"
+							th:value="${dispType.cd}">月</option>
+						<option th:with="dispType=${T(jp.loioz.app.user.schedule.enums.CalendarDispType).ROOM}"
+							th:value="${dispType.cd}">施設</option>
+					</select>
+				</div>
+			</div>
+
+			<!--カレンダー ===================================================================-->
+			<div class="main_calendar_body">
+				<!--/* 日表示カレンダー */-->
+				<div class="calendarBody dailyMainCalendar" style="display: none;">
+					<!--/* ヘッダ部分(曜日) */-->
+					<div class="cal_header_week day_head">
+						<div class="calendarHead" data-index="0">
+							<span class="ch_day">
+								<span class="day_text"></span>
+								<span class="day_note"></span>
+							</span>
+							<span class="ch_week"></span>
+						</div>
+					</div>
+					<!--/* 終日 */-->
+					<div class="main_calendar_d week_alltime week_body hover_scroll">
+						<div class="col_time"></div>
+						<div class="col_week">
+							<div class="calendarDay openEntryModal" data-allday="true" data-index="0">
+								<div class="cal_day_body">
+									<div class="entryContainer"></div>
+								</div>
+							</div>
+						</div>
+					</div>
+					<!--/* 時間毎 */-->
+					<div class="main_calendar_d day_body hover_scroll calendarScrollArea">
+						<div class="col_time" th:fragment="col_time_hours">
+							<div th:each="hour : ${#numbers.sequence(0,23)}"
+								th:with="pad0=${#strings.length(hour) == 1} ? '0' : ''"
+								th:text="|${pad0}${hour}:00|"class="col_hour">00:00</div>
+						</div>
+						<div class="col_week">
+							<div class="calendarDay" data-allday="false" data-index="0">
+								<div class="cal_day_body">
+									<div aria-hidden="true" class="time_line"></div>
+									<div aria-hidden="true" class="time_line_mark"></div>
+									<div class="entryContainer"></div>
+								</div>
+								<div class="cal_day_body" th:fragment="cal_day_body_hours">
+									<div aria-hidden="true" class="time_line"></div>
+									<div aria-hidden="true" class="time_line_mark"></div>
+									<div th:each="hour : ${#numbers.sequence(0,23)}"
+										class="col_hour openEntryModal" th:data-hour="${hour}" data-allday="false"></div>
+								</div>
+							</div>
+						</div>
+					</div>
+				</div>
+				<!--/* 週表示カレンダー */-->
+				<div class="calendarBody weeklyMainCalendar" style="display: none;">
+					<div class="cal_header_week week_head">
+						<div th:each="i : ${#numbers.sequence(0,6)}"
+							class="calendarHead" th:data-index="${i}">
+							<span class="ch_day">
+								<span class="day_text"></span>
+								<span class="day_note"></span>
+							</span>
+							<span class="ch_week"></span>
+						</div>
+					</div>
+					<div class="main_calendar_w day_body hover_scroll week_alltime">
+						<div class="col_time"></div>
+						<div class="col_week">
+							<div th:each="i : ${#numbers.sequence(0,6)}"
+								class="calendarDay openEntryModal" data-allday="true" th:data-index="${i}">
+								<div class="cal_day_body">
+									<div class="entryContainer"></div>
+								</div>
+							</div>
+						</div>
+					</div>
+					<div class="main_calendar_w week_body hover_scroll calendarScrollArea">
+						<div class="col_time" th:replace="::col_time_hours"></div>
+						<div class="col_week">
+							<div th:each="i : ${#numbers.sequence(0,6)}"
+								class="calendarDay" data-allday="false" th:data-index="${i}">
+								<div class="cal_day_body">
+									<div class="entryContainer"></div>
+								</div>
+								<div class="cal_day_body" th:replace="::cal_day_body_hours"></div>
+							</div>
+						</div>
+					</div>
+				</div>
+				<!--/* 月表示カレンダー */-->
+				<div class="calendarBody monthlyMainCalendar" style="display: none;">
+					<div class="cal_header_week month_head">
+						<div class="is_sun">
+							<span class="ch_week">日</span>
+						</div>
+						<div class="is_mon">
+							<span class="ch_week">月</span>
+						</div>
+						<div class="is_tue">
+							<span class="ch_week">火</span>
+						</div>
+						<div class="is_wed">
+							<span class="ch_week">水</span>
+						</div>
+						<div class="is_thu">
+							<span class="ch_week">木</span>
+						</div>
+						<div class="is_fri">
+							<span class="ch_week">金</span>
+						</div>
+						<div class="is_sat">
+							<span class="ch_week">土</span>
+						</div>
+					</div>
+					<div class="main_calendar_m">
+						<div th:each="i : ${#numbers.sequence(0,41)}"
+							class="calendarDay openEntryModal" data-allday="true" th:data-index="${i}">
+							<div class="cal_day_header">
+								<span class="day_text is_day"></span>
+								<span class="day_note"></span>
+							</div>
+							<div class="cal_day_body entryContainer"></div>
+						</div>
+					</div>
+				</div>
+				<!--/* 会議室表示カレンダー */-->
+				<div class="calendarBody roomMainCalendar" style="display: none;">
+					<div class="cal-horizontal hover_scroll calendarScrollArea">
+						<table class="cal-table calendarDay">
+							<tr>
+								<th class="cover-area"></th>
+								<td th:each="hour : ${#numbers.sequence(0,23)}"
+									th:with="pad0=${#strings.length(hour) == 1} ? '0' : ''"
+									th:text="|${pad0}${hour}:00|"
+									class="cal-time">00:00</td>
+							</tr>
+							<tr th:each="room : ${scheduleCommonViewForm.roomList}"
+								class="cal-content roomContent"
+								th:data-room-id="${room.roomId}">
+								<th class="cal-header">
+									<div class="cal-header-title-wrapper">
+									<div class="cal-header-title" th:text="${room.roomName}">会議室名</div>
+									</div>
+								</th>
+								<td th:each="hour : ${#numbers.sequence(0,23)}"
+									class="cal-content-hour openEntryModal"
+									th:data-hour="${hour}" data-allday="false">
+									<div class="entryContainer"></div>
+								</td>
+							</tr>
+						</table>
+					</div>
+				</div>
+				<!--/* 予定テンプレート(各表示共通) */-->
+				<div id="calendarEntryTemplate" class="hidden">
+					<div class="cal_entry" tabIndex="0">
+						<div class="cal_title">
+							<span class="iconType"></span>
+							<span class="title"></span>
+						</div>
+						<div>
+							<span class="sch_time"></span>
+							<span class="sch_time_end"></span>
+							<span class="cal_place"></span>
+						</div>
+					</div>
+				</div>
+			</div>
+			<!--カレンダー End===================================================================-->
+
+			<!--/* 予定詳細ポップアップ */-->
+			<div id="calendarPopupTemplate" class="hidden">
+				<script type="text/javascript">
+					$('[data-toggle="tooltip"]').tooltip()
+				</script>
+				<input type="hidden" name="scheduleSeqTemp" id="scheduleSeqTempId">
+				<div class="cal_detail_popup">
+					<div class="cal_detail_popup_inner">
+						<h3 class="cal_subject" data-text-name="subject"></h3>
+						<div class="cal_detail_row">
+							<div class="cal_icon">
+								<i class="far fa-calendar-alt"></i>
+							</div>
+							<div class="cal_data">
+								<span class="cal_detail_popup_date"></span>
+								<span class="cal_detail_popup_week"></span>
+								<span class="cal_detail_popup_time m-0"></span>
+								<div class="allDaysContents hidden d-inline-flex">
+									<span class="mr-3">～</span>
+									<span class="cal_detail_popup_date"></span>
+									<span class="cal_detail_popup_week"></span>
+								</div>
+							</div>
+						</div>
+						<div class="cal_detail_row hideHolidayContents">
+							<div class="cal_icon">
+								<i class="fas fa-map-marker-alt"></i>
+							</div>
+							<div class="cal_data">
+								<span data-text-name="placeDisp"></span><span>&nbsp;</span>
+							</div>
+						</div>
+						<div class="cal_detail_row cal_schedule_memo hideHolidayContents align-items-start">
+							<div class="cal_icon">
+								<i class="fas fa-pen"></i>
+							</div>
+							<div class="cal_data">
+								<span id="scheduleMemo" data-text-name="viewMemo"></span>
+							</div>
+						</div>
+
+						<!--/* 顧客情報 */-->
+						<div class="cal_detail_row hideHolidayContents customerItem">
+							<div class="cal_icon">
+								<i class="far fa-user"></i>
+							</div>
+							<div class="cal_data">
+								<div class="char_ellipsis data_label" data-boundary="window" data-container="body" data-toggle="tooltip" data-trigger="hover" th:title="名簿情報へ">
+									<a href="javascript:void(0);" class="id_link" onclick="clickIdKokyaku();">
+										<span data-text-name="customerName"></span>
+									</a>
+								</div>
+								<span class="sub_text" data-text-name="customerIdDisp"></span>
+							</div>
+						</div>
+
+						<!--/* 案件情報 */-->
+						<div class="cal_detail_row hideHolidayContents ankenItem">
+							<div class="cal_icon">
+								<i class="far fa-file-alt"></i>
+							</div>
+							<div class="cal_data">
+								<div class="char_ellipsis data_label" data-boundary="window" data-container="body" data-toggle="tooltip" data-trigger="hover" th:title="案件ダッシュボードへ">
+									<a href="javascript:void(0);" class="id_link" onclick="clickIdAnken();">
+										<span data-text-name="ankenName"></span>
+									</a>
+								</div>
+								<span class="sub_text" data-text-name="ankenIdDisp"></span>
+							</div>
+						</div>
+
+						<!--/* 裁判情報 */-->
+						<div class="cal_detail_row saibanItem">
+							<div class="cal_icon saiban_icon align-self-start mt-1">
+								<i class="fas fa-gavel reverses_text"></i>
+							</div>
+							<div class="cal_data flex-grow-1">
+								<div class="char_ellipsis data_label mt-2" data-boundary="window" data-container="body" data-toggle="tooltip" data-trigger="hover" th:title="裁判管理へ">
+									<a href="javascript:void(0);" onclick="clickIdSaiban();">
+										<span data-text-name="jikenName"></span>
+									</a>
+								</div>
+								<span class="sub_text" data-text-name="caseNumber"></span>
+								<div class="d-flex mt-2">
+									<div class="col-6 pl-0">
+										<div class="data_item_label" data-text-name="tojishaNameTitleLabel"></div>
+										<span class="data_item" data-text-name="tojishaNameLabel"></span>
+									</div>
+									<div class="col-6 pl-0">
+										<div class="data_item_label" data-text-name="aitegataNameTitleLabel"></div>
+										<span class="data_item" data-text-name="aitegataNameLabel"></span>
+									</div>
+								</div>
+							</div>
+						</div>
+
+						<h4 class="cal_participant_title hideHolidayContents"></h4>
+						<dl class="cal_detail_popup_dl hideHolidayContents">
+							<dt class="userList icon sankasya hoverTooltip" data-boundary="window" data-container="body" data-toggle="tooltip" data-trigger="hover" th:title="参加者"></dt>
+							<dd class="sankasya_list">
+								<ul class="cal_participant_list"></ul>
+							</dd>
+						</dl>
+						<h4 class="cal_participant_title mb-0"></h4>
+						<div class="cal_detail_command_wrap text-right">
+							<button type="button" id="calEditBtn" class="btn btn-primary editSchedule hideHolidayContents" onclick="popOverClose(); openEditSchedule();"><i class="fas fa-edit mr-2"></i>編集</button>
+							<button type="button" class="btn btn-light"  onclick="popOverClose();" data-dismiss="modal"><i class="fas fa-times"></i>閉じる</button>
+						</div>
+					</div>
+				</div>
+			</div>
+		</div>
+	</div>
+</body>
+</html>

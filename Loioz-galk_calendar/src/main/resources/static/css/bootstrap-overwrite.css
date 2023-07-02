@@ -1,0 +1,599 @@
+@charset "UTF-8";
+
+/*
+　bootstrapのスタイルを上書きしています
+*/
+
+/**************************************************
+  背景色
+**************************************************/
+.bg-primary {background-color: var(--loioz-primary)!important;}
+.bg-secondary {background-color: var(--loioz-secondary)!important;}
+.bg-success {background-color: var(--loioz-success)!important;}
+.bg-danger {background-color: var(--loioz-danger)!important;}
+.bg-warning {background-color: var(--loioz-warning)!important;}
+.bg-info {background-color: var(--loioz-info)!important;}
+.bg-light {background-color: var(--loioz-light)!important;}
+
+
+/**************************************************
+  テキスト
+**************************************************/
+.text-primary {
+	color: var(--loioz-primary)!important;
+}
+.text-secondary {
+	color: var(--loioz-secondary)!important;
+}
+.text-success {
+	color: var(--loioz-success)!important;
+}
+.text-danger {
+	color: var(--loioz-danger)!important;
+}
+.text-warning {
+	color: #bd860c!important;
+}
+.text-info {
+	color: var(--loioz-info)!important;
+}
+
+/**************************************************
+  ボタン
+**************************************************/
+.btn:hover {
+  opacity: 0.75;
+}
+/* loiozブルーボタン */
+.btn-primary {
+	background-color: var(--loioz-primary)!important;
+	border-color: var(--loioz-primary)!important;
+}
+.btn-primary:active, .btn-primary:focus {
+ 	box-shadow: 0 0 .1rem .2rem var(--loioz-primary-shadow)!important;
+}
+.btn-outline-primary {
+	background-color: var(--white);
+	border-color: var(--loioz-primary)!important;
+	color: var(--loioz-primary)!important;
+}
+.btn-outline-primary:hover {
+	background-color: var(--loioz-primary)!important;
+	color: var(--white)!important;
+}
+.btn-outline-primary:focus {
+ 	box-shadow: 0 0 .1rem .2rem var(--loioz-primary-shadow)!important;
+}
+.btn-outline-primary:active {
+ 	background-color: var(--loioz-primary)!important;
+ 	box-shadow: 0 0 .1rem .2rem var(--loioz-primary-shadow)!important;
+ 	color: var(--white)!important;
+}
+/* 濃い青ボタン */
+.btn-info {
+	background-color: var(--loioz-info)!important;
+	border-color: var(--loioz-info)!important;
+}
+.btn-info:active, .btn-info:focus, .btn-outline-info:active, .btn-outline-info:focus {
+ 	box-shadow: 0 0 .1rem .2rem var(--loioz-info-shadow)!important;
+}
+.btn-outline-info {
+	border-color: var(--loioz-info)!important;
+	color: var(--loioz-info)!important;
+}
+.btn-outline-info:hover {
+	background-color: var(--loioz-info)!important;
+	color: var(--white)!important;
+}
+/* グレーボタン */
+.btn-secondary {
+	background-color: #eee!important;
+	border-color: #ddd!important;
+	color: #a3a3a3!important;
+	cursor: default !important;
+	opacity: 1!important;
+}
+.btn-secondary:active, .btn-secondary:focus {
+ 	box-shadow: none!important;
+}
+/* 黄色ボタン */
+.btn-warning {
+	color: var(--text-color-main);
+	background-color: var(--loioz-warning)!important;
+	border-color: var(--loioz-warning)!important;	
+}
+.btn-warning:active, .btn-warning:focus {
+ 	box-shadow: 0 0 .1rem .2rem var(--loioz-warning-shadow)!important;
+}
+/* 赤ボタン */
+.btn-danger {
+	background-color: var(--loioz-danger)!important;
+	border-color: var(--loioz-danger)!important;
+}
+.btn-danger:active, .btn-danger:focus {
+ 	box-shadow: 0 0 .1rem .2rem var(--loioz-danger-shadow)!important;
+}
+.btn-outline-danger {
+	border-color: var(--loioz-danger)!important;
+	color: var(--loioz-danger);
+	padding: 0.5rem 1rem;
+}
+/* 緑ボタン */
+.btn-success {
+	background-color: var(--loioz-success)!important;
+	border-color: var(--loioz-v)!important;
+	padding: 0.5rem 1rem;
+}
+.btn-success:active, .btn-success:focus, .btn-outline-success:active, .btn-outline-success:focus {
+ 	box-shadow: 0 0 .1rem .2rem var(--loioz-success-shadow)!important;
+}
+.btn-outline-success {
+	background-color: var(--white);
+	border-color: var(--loioz-success)!important;
+	color: var(--loioz-success)!important;
+	padding: 0.5rem 1rem;
+}
+.btn-outline-success:hover {
+	background-color: var(--loioz-success)!important;
+	color: var(--white)!important;
+}
+
+/* 白ボタン */
+.btn-light {
+	background-color: var(--loioz-light);
+	border-color: var(--bor-color-main);
+	padding: 0.5rem 0.9rem;
+}
+.btn-light:hover {
+	background-color: var(--loioz-light-bg);
+	border-color: var(--bor-color-main);
+}
+.btn-light:active, .btn-light:focus {
+ 	box-shadow: 0 0 .1rem .2rem var(--loioz-light-shadow);
+}
+
+/* 茶系ボタン */
+.btn-dark {
+	background-color: var(--loioz-dark)!important;
+	border-color: var(--loioz-dark)!important;
+}
+.btn-dark:hover {
+	background-color: var(--loioz-dark)!important;
+}
+.btn-dark:active, .btn-dark:focus {
+ 	box-shadow: 0 0 .1rem .2rem var(--loioz-dark-shadow)!important;
+}
+
+
+/* ボタン内のsvg */
+.btn-primary svg, .btn-light svg, .btn-danger svg, .btn-warning svg, .btn-secondary svg, .btn-dark svg,
+.btn-outline-info svg, .btn-outline-primary svg {
+	margin-right: 8px;
+}
+.btn_icon_only.btn-primary svg, .btn_icon_only.btn-light svg, .btn_icon_only.btn-danger svg, .btn_icon_only.btn-warning svg, .btn_icon_only.btn-secondary svg, .btn_icon_only.btn-dark svg,
+.btn_icon_only.btn-outline-info svg, .btn_icon_only.btn-outline-primary svg {
+	margin-right: 0px;
+}
+
+.btn {
+	font-size: 1.4rem;
+	white-space: nowrap;
+	padding: 0.5rem 1rem;
+}
+.btn-group-lg>.btn, .btn-lg {
+	padding: 0.6rem 1rem 0.4rem;
+	font-size: 1.5rem;
+}
+.btn-sm {
+	padding: 0.4rem 0.6rem;
+	font-size: 1.3rem;
+}
+
+/**************************************************
+  フォーム関連
+**************************************************/
+.form-control {
+	background-color: var(--white);
+	color: var(--text-color-main);
+	font-size: 1.3rem;
+	font-family: "メイリオ", "Meiryo", "ヒラギノ角ゴ Pro W3", "Hiragino Kaku Gothic Pro", sans-serif;
+	height: 30px;
+	-webkit-appearance: none;
+	-moz-appearance: none;
+	vertical-align: middle;
+	padding: 5px 6px;
+}
+.form-control::placeholder  {
+	color: #999;
+}
+.form-control.mail_form:focus {
+	-webkit-box-shadow: inset 0px 0px 0px rgb(0,0,0,.075), 0px 1px 0px rgb(102, 175, 233, .6);
+	box-shadow: inset 0px 0px 0px rgb(0,0,0,.075), 0px 1px 0px rgb(102, 175, 233, .6);
+}
+select.form-control {
+	background-image: url(../img/mark_select.svg);
+	background-position: right center;
+	background-repeat: no-repeat;
+	vertical-align: middle;
+	padding-right: 20px;
+	transition: none;
+}
+select.form-control[multiple] {
+	background-image: none;
+}
+.form-control:disabled, .form-control[readonly] {
+	background-color: #f3f3f3;
+	color: var(--disabled-color-text);
+}
+
+/* underlineのフォーム */
+.form-control.underlined {
+	padding-left: 0;
+	padding-right: 0;
+	border-radius: 0;
+	border: none;
+	border-radius: 0;
+	-webkit-box-shadow: none;
+	box-shadow: none;
+	border-bottom: 1px solid #d7dde4;
+	font-size: 1.5rem;
+}
+.form-control.underlined:focus {
+	border-color: #80bdff;
+	-webkit-box-shadow: 0 0.2rem 0 0 rgba(0,123,255,.25);
+	box-shadow: 0 0.2rem 0 0 rgba(0,123,255,.25);
+	transition: border-color 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+}
+
+/* 確認画面用のフォーム */
+.comfirm_view .form-control {
+	background-color: var(--bg-color-view);
+	border: none;
+}
+
+
+/**************************************************
+  バッジ
+**************************************************/
+.badge {
+	border-radius: 8rem;
+	font-size: 1.2rem;
+	font-weight: 400;
+	padding: 0.6em 0.9em 0.5em;
+}
+
+/**************************************************
+  テーブル
+**************************************************/
+.table {
+	border-spacing: 0;
+	border-collapse: separate;
+	width: 100%;
+	margin-bottom: 0;
+}
+.table td, .table th {
+	border-top: none;
+	vertical-align: middle;
+}
+.table.align-top tbody td {
+	vertical-align: top!important;
+}
+.table thead th {
+	border-bottom: 1px solid #bdbdbd;
+	border-top: none;
+	font-weight: normal;
+	font-size: 1.3rem;
+	padding: 1rem 1.05rem;
+	vertical-align: middle;
+	z-index: 999;
+}
+.table tbody td {
+	border-bottom: 1px solid #cdcdcd;
+	font-size: 1.4rem;
+	padding: .8rem 1.05rem;
+}
+.table tfoot th {
+	padding: 1rem 1.05rem .75rem;
+}
+.table tfoot td {
+	padding: 1rem 1.05rem;
+}
+.table thead th:first-child, .table tbody td:first-child {
+	padding-left: 2rem;
+}
+.table tbody tr {
+	background-color: var(--white);
+}
+.table-hover tbody tr:hover {
+	background-color: var(--bg-color-row-hover);
+}
+.table-hover tbody td:hover {
+	cursor: pointer;
+}
+.table.table-striped tbody tr:nth-of-type(odd) {
+	background-color: #f4fbff;
+}
+.table.table-sm thead th, .table.table-sm tbody td, .table.table-sm tfoot th, .table.table-sm tfoot td {
+	padding: 0.5rem 0.75rem;
+}
+.table.table-sm thead th:first-child, .table.table-sm tbody td:first-child {
+	padding-left: 2rem;
+}
+
+/* テーブル色 灰色 */
+.table-secondary, .table-secondary > td, .table-secondary> th {
+	background-color: var(--loioz-secondary-bg)!important;
+	color: var(--text-color-title);
+}
+
+/* テーブル色 primary */
+.table-primary thead th {
+	background-color: var(--loioz-primary)!important;
+	color: var(--white);
+}
+/* テーブル見出し */
+caption {
+	background-color: var(--case-color);
+	caption-side: top;
+	color: var(--white);	
+	padding: 0.5rem 0.5rem 0.3rem 2rem;
+	font-size: 1.3rem;
+}
+
+/* bg-infoのth */
+thead.bg-info th {
+	color: var(--white);
+}
+thead.bg-info th > svg {
+	color: var(--white);
+}
+
+/**************************************************
+  リスト
+**************************************************/
+.list-inline {
+	margin-bottom: 0;
+}
+.list-group-item {
+	padding: 2rem 1rem;
+	border: 1px solid var(--bor-color-main);
+}
+.list-group-item:first-child {
+	border-top-left-radius: 0;
+	border-top-right-radius: 0;
+}
+.list-group-item:last-child {
+	border-bottom-left-radius: 0;
+	border-bottom-right-radius: 0;
+}
+
+/* calendarのユーザー選択で使用 */
+.list-group-item.checkbox_btn {
+	background-color: inherit;
+	border: 0;
+	padding: 1px 0 2px 0;
+	margin-bottom: 10px;
+}
+
+/**************************************************
+  タブ
+**************************************************/
+.nav-tabs {
+	border-bottom: 1px solid var(--bor-color-main);
+}
+
+.standard_tab .nav-tabs .nav-item a:hover {
+	opacity: 1;
+	border-color: var(--bor-color-main) var(--bor-color-main) #fff;
+}
+.standard_tab .nav-tabs .nav-item.show .nav-link, .standard_tab .nav-tabs .nav-link.active {
+	opacity: 1;
+	border-color: var(--bor-color-main) var(--bor-color-main) #fff;
+}
+
+
+/**************************************************
+  ポップオーバー
+**************************************************/
+.popover {
+	border-radius: 4px;
+	box-shadow: 4px 6px 10px 2px rgb(0 0 0 / 25%);
+	font-family: "メイリオ", Meiryo, "ヒラギノ角ゴ Pro W3", Hiragino Kaku Gothic Pro, Osaka," ＭＳ Ｐゴシック", MS PGothic," sans-serif";
+	font-size: 1.4rem;
+}
+.popover-header {
+	padding: .5rem .75rem;
+	margin-bottom: 0;
+	font-weight: bold;
+	font-size: 1rem;
+	color: #fff;
+	background-color: var(--loioz-blue);
+	border-bottom: 1px solid #ebebeb;
+	border-top-left-radius: calc(.3rem - 1px);
+	border-top-right-radius: calc(.3rem - 1px);
+	border-radius: 7px 7px 0px 0;
+}
+.popover-body {
+	padding: 8px 5px;
+	color: var(--text-color-main);
+}
+.container-fluid {
+	padding-bottom: 150px;
+	padding-right: 25px;
+	padding-left: 25px;
+}
+.card-header {
+	background-color: var(--white);
+	color: var(--text-color-sub);
+	font-weight: 600;
+}
+
+/**************************************************
+  モーダル
+**************************************************/
+.modal-header {
+	background-color: var(--bg-color-edit);
+	border: none;
+	border-top-left-radius: 0;
+	border-top-right-radius: 0;
+	box-shadow: inset 0 4px 0 0 var(--loioz-info);
+	padding: 1.2rem 2rem 1rem;
+}
+.modal-title {
+	color: #4f5f6f;
+	font-weight: 600;
+	line-height: 1.2;
+}
+.modal-body {
+	padding: 1.5rem 2rem;
+}
+.modal-dialog-scrollable .modal-body {
+	overflow-y: auto;
+	max-height: calc(83vh - 5.5rem);
+	padding-bottom: 0;
+}
+.modal-dialog-scrollable {
+	height: calc(100% - 1rem);
+}
+.modal-dialog-scrollable .modal-content {
+	max-height: 100%;
+	overflow: hidden;
+	box-shadow: 0 24px 38px 3px rgba(0,0,0,0.14), 0 9px 46px 8px rgba(0,0,0,0.12), 0 11px 15px -7px rgba(0,0,0,0.2);
+	-webkit-box-shadow: 0 24px 38px 3px rgba(0,0,0,0.14), 0 9px 46px 8px rgba(0,0,0,0.12), 0 11px 15px -7px rgba(0,0,0,0.2);
+}
+.modal-footer {
+	border-top: none;
+	padding: 1.5rem 2rem 2rem;
+}
+.modal-footer>:not(:last-child) {
+	margin-right: 0.5rem;
+}
+.modal-footer>:not(:first-child) {
+	margin-left: 0.5rem;
+}
+.modal-content {
+	border: none;
+	cursor: default;
+	text-align: left;
+}
+
+/* 確認モーダル */
+.modal_confirm .modal-content {
+	padding: 2.1rem 2.5rem 2.5rem;
+}
+.modal_confirm .modal-header {
+	background-color: var(--white);
+	box-shadow: none;
+	padding: 0;
+}
+.modal_confirm .modal-body {
+	padding: 0;
+	margin: 0.5rem 0 3rem;
+}
+.modal_confirm .modal-footer {
+	column-gap: 20px;
+	justify-content: space-around;
+	text-align: center;
+	padding: 0;
+	margin: 0;
+	width: 100%;
+}
+
+/**************************************************
+  ページング
+**************************************************/
+ul.pagination {
+	margin-bottom: 0;
+	justify-content: flex-end;
+}
+ul.pagination li {
+	margin-right: 5px;
+} 
+ul.pagination li:last-child {
+	margin-right: 0;
+}
+/* ページング内のリンク */
+.page-link {
+	border: 1px solid var(--bor-color-main);
+	color: var(--loioz-blue);
+	text-align: center;
+	min-width: 30px;
+}
+.page-link:hover {
+	color: var(--loioz-blue);
+	border: 1px solid var(--bor-color-main);
+}
+.page-item.active .page-link {
+	background-color: var(--loioz-blue);
+	border-color: var(--loioz-blue);
+}
+.page-item.disabled .page-link {
+	color: var(--disabled-color-text);
+	border: 1px solid var(--bor-color-main);
+}
+
+/**************************************************
+  ツールチップ
+**************************************************/
+.tooltip {
+	font-size: 1.3rem;
+}
+.tooltip-inner {
+	background-color: var(--lz-gray-800);
+	padding: 4px 8px 5px;
+}
+.bs-tooltip-auto[x-placement^=right] .arrow::before, .bs-tooltip-right .arrow::before {
+	border-right-color: var(--lz-gray-800);
+}
+.bs-tooltip-auto[x-placement^=left] .arrow::before, .bs-tooltip-left .arrow::before {
+	border-left-color: var(--lz-gray-800);
+}
+.bs-tooltip-auto[x-placement^=top] .arrow::before, .bs-tooltip-top .arrow::before {
+	border-top-color: var(--lz-gray-800);
+}
+.bs-tooltip-auto[x-placement^=bottom] .arrow::before, .bs-tooltip-bottom .arrow::before {
+	border-bottom-color: var(--lz-gray-800);
+}
+
+
+/**************************************************
+  htmlタグ
+**************************************************/
+/* 一覧の検索条件のみ */
+.list_filters_container legend {
+	font-weight: 600;
+	letter-spacing: 1px;
+	display: flex;
+}
+dl dt {
+	font-weight: normal;
+}
+
+
+/**************************************************
+  プログレスバー
+**************************************************/
+.progress {
+	height: 1.9rem;
+}
+.progress-bar {
+	background-color: #337ab7;
+}
+.progress-bar-striped {
+	background-size: 3.5rem 3.5rem;
+}
+.progress-bar-success {
+	background-color: #5cb85c;
+}
+.progress-bar-warning {
+	background-color: #dda600;
+}
+.progress-bar-danger {
+	background-color: #c34b7b;
+}
+
+@media (min-width: 576px) {
+	.modal-dialog-scrollable {
+	    height: calc(100% - 3.5rem);
+	}
+}

@@ -1,0 +1,98 @@
+@charset "UTF-8";
+
+.cal-horizontal {
+	overflow: auto;
+	height: 84vh;
+	margin-top: 25px;
+}
+.cal-horizontal .cal-table {
+	border-collapse: separate;
+	border-spacing: 0px;
+	border-bottom: 1px solid #ccc;
+}
+.cal-horizontal .cover-area {
+	position: sticky;
+	top: 0;
+	left: 0;
+	background-color: #fff;
+	z-index: 30;
+}
+.cal-horizontal .cal-time {
+	position: sticky;
+	top: 0;
+	min-width: 74px;
+	max-width: 74px;
+	font-size: 1.3rem;
+	line-height: 1;
+	vertical-align: bottom;
+	padding: 0 2px 2px 2px;
+	background-color: #fff;
+	z-index: 20;
+}
+.cal-horizontal .cal-header {
+	position: sticky;
+	left: 0;
+	min-width: 100px;
+	height: 60px;
+	max-height: 60px;
+	padding: 2px;
+	font-size: 1.3rem;
+	background-color: #ffffff;
+	text-align: center;
+	border-top: 1px solid #ccc;
+	border-right: 1px solid #ccc;
+	z-index: 20;
+	font-weight: normal;
+}
+.cal-horizontal .cal-header-title-wrapper {
+	display: inline-block;
+	border-radius: 15px;
+	background-color: #fff;
+	padding: 4px 5px 2px;
+	margin: 0 1px;
+	vertical-align: middle;
+}
+.cal-horizontal .cal-header-title {
+	line-height: 1.2em;
+	word-break: break-all;
+	overflow-y: hidden;
+	max-height: 3.6em;
+	display: -webkit-box;
+	-webkit-line-clamp: 3;
+	-webkit-box-orient: vertical;
+}
+.cal-horizontal .cal-content-hour {
+	border-top: 1px solid #ccc;
+	border-right: 1px dashed #ccc;
+	z-index: 10;
+	vertical-align: top;
+	padding: 0;
+	font-size: 1.1rem;
+	line-height: 1.2;
+}
+.cal-horizontal .cal-content-hour:last-child {
+	border-right: 1px solid #ccc;
+}
+
+.cal-horizontal .entryContainer {
+	position: relative;
+}
+.cal-horizontal .cal_entry {
+	position: absolute;
+	margin: 0;
+	padding: 2px 1px 2px 2px;
+	z-index: 1;
+	border-bottom: none;
+	cursor: default;
+	border-left-style: solid;
+	border-left-width: 2px;
+	border-radius: 0 3px 3px 0;
+	height: 60px;
+	white-space: inherit;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	cursor: pointer;
+	color: var(--text-color-main)!important;
+}
+.cal-horizontal .cal_entry .sch_time {
+}

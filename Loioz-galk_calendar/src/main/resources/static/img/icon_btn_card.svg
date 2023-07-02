@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="14" height="15" viewBox="0 0 14 15">
+  <g id="icon_btn_card" transform="translate(-176 -314)">
+    <g id="cd4" transform="translate(176 314)" fill="none" stroke="#fff" stroke-width="1">
+      <path d="M0,0H9a5,5,0,0,1,5,5V15a0,0,0,0,1,0,0H0a0,0,0,0,1,0,0V0A0,0,0,0,1,0,0Z" stroke="none"/>
+      <path d="M1,.5H9A4.5,4.5,0,0,1,13.5,5v9a.5.5,0,0,1-.5.5H1A.5.5,0,0,1,.5,14V1A.5.5,0,0,1,1,.5Z" fill="none"/>
+    </g>
+    <line id="cd3" x2="7" transform="translate(179.5 318.5)" fill="none" stroke="#fff" stroke-width="1"/>
+    <line id="cd2" x2="7" transform="translate(179.5 321.5)" fill="none" stroke="#fff" stroke-width="1"/>
+    <line id="cd1" x2="7" transform="translate(179.5 324.5)" fill="none" stroke="#fff" stroke-width="1"/>
+  </g>
+</svg>
