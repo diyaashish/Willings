@@ -144,7 +144,13 @@ public class ScheduleInputForm implements ScheduleDateTimeInput {
 
 	// Existing properties...
 
+    private List<Long> member = new ArrayList<>();
+    private Long memberOne;
+
     private List<String> participantStatus;
+    private boolean voluntaryParticipation;
+    private boolean informationSharing;
+
 
     // Getter and setter methods for participantStatus...
 
