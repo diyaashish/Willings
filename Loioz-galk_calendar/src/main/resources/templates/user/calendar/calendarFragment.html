@@ -36,6 +36,13 @@
 			<!--/* スケジュール & タスク取得処理 ↓↓↓ */-->
 			
 			<!--/* スケジュール & タスク取得処理 ↑↑↑ */-->
+
+			// Get the value of participantStatus
+			const participantStatus = $(this).siblings('.checkbox_txt').text();
+    
+			// Log the value to the console
+			console.log(participantStatus);
+
 		});
 		
 		<!-- カレンダー予定登録モーダル表示 -->
@@ -69,6 +76,9 @@
 					if (isAjaxProcSuccess(jqXHR)) {
 						<!--/* 処理成功 */-->
 						$calendarOptionsFragment.find(".calendarEditModalFragmentWrap").html(result);
+						
+					
+						
 						return resolve();
 					} else {
 						const errorMsg = getAjaxProcResutlMessage(jqXHR);

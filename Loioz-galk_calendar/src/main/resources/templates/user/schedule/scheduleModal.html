@@ -1065,7 +1065,25 @@ function saveCalendarStatus(){
 							<span class="mark_equired">必須</span>
 							<div class="user_selectblock">
 								<div class="schedule_user_selectcol_l">
-									<div class="memberList user_selectbox is_participantlist text-break"></div>
+									<div class="memberList user_selectbox is_participantlist text-break">
+										<!-- Participant List -->
+										<label th:each="participant : ${member}" for="participantStatus__${participant}">
+										  <input type="radio" id="participantStatus__${participant}" onclick="changeTheRadioBtnValue('participantStatus__${participant}')" class="contain-value" name="participantStatus__${participant}" value="participation">
+										  Participation
+										</label>
+									  </div>
+
+									  <script>
+										function changeTheRadioBtnValue(participantId) {
+										  // Get the selected radio button value
+										  var selectedValue = document.querySelector('input[name="' + participantId + '"]:checked').value;
+									  
+										  // Log the selected value to the console
+										  console.log(selectedValue);
+										}
+									  </script>
+
+
 									<a href="javascript:void(0);" class="removeAllMember" th:data-click-sync="|#${id} .memberList .member|">全員削除</a>
 								</div>
 								<div class="user_selectcol_c"></div>
@@ -1091,24 +1109,42 @@ function saveCalendarStatus(){
 					</div>
 
 					<!-- Voluntary Participation -->
-					<div class="form-group">
-						<div class="form-check">
-							<input class="form-check-input" type="radio" name="voluntaryParticipation" id="voluntaryParticipation" value="true">
-							<label class="form-check-label" for="voluntaryParticipation">
-								Voluntary Participation
-							</label>
-						</div>
-					</div>
-
+					<label for="voluntaryParticipation">
+					  <input type="radio" id="voluntaryParticipation" onclick="changeTheRadioBtnValue('voluntaryParticipation')" class="contain-value" name="participantStatus" value="voluntaryParticipation">
+					  Voluntary Participation
+					</label>
+					
+					<br>
+					
 					<!-- Information Sharing -->
-					<div class="form-group">
-						<div class="form-check">
-							<input class="form-check-input" type="radio" name="informationSharing" id="informationSharing" value="true">
-							<label class="form-check-label" for="informationSharing">
-								Information Sharing
-							</label>
-						</div>
-					</div>
+					<label for="informationSharing">
+					  <input type="radio" id="informationSharing" onclick="changeTheRadioBtnValue('informationSharing')" class="contain-value" name="participantStatus" value="informationSharing">
+					  Information Sharing
+					</label>
+					
+					
+					<script>
+						function changeTheRadioBtnValue(id) {
+						    var radioBtnElement = document.getElementById(id);
+						
+						    if (radioBtnElement.classList.contains('contain-value')) {
+						        radioBtnElement.classList.remove('contain-value');
+						        document.getElementById('hiddenButton').click(); // Reset the value
+						        radioBtnElement.checked = false;
+						    } else {
+						        var radioBtnGroup = document.getElementsByClassName('contain-value');
+						        for (var i = 0; i < radioBtnGroup.length; i++) {
+						            radioBtnGroup[i].checked = false;
+						            radioBtnGroup[i].classList.remove('contain-value');
+						        }
+						        radioBtnElement.classList.add('contain-value');
+						    }
+						}
+						</script>
+					
+					
+					
+
 
 					<!--/* メモ・手続き */-->
 					<div class="form-row hideIfShutteiNotRequired" data-contains="memo">
@@ -1233,6 +1269,15 @@ function saveCalendarStatus(){
 
 				</div>
 			</div>
+
+
+			
+			<!-- Other form fields -->
+				
+			<!-- Hidden button for resetting the radio button value -->
+			<button id="hiddenButton" type="button" style="display:none"></button>
+			  
+			  
 		</form>
 
 		<!--/* 予定表カレンダー */-->
