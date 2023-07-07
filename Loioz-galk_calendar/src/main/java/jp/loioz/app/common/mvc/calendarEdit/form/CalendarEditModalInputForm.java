@@ -160,6 +160,11 @@ public class CalendarEditModalInputForm {
 		/** 参加者コメント */
 		private String guestAccountComment;
 
+
+		// New participation status attributes
+		private boolean optionalParticipation;
+		private boolean informationSharing;
+
 	}
 
 }
