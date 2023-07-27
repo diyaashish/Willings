@@ -1,0 +1,288 @@
+@import url(https://fonts.googleapis.com/css?family=Source+Sans+Pro:300,400);
+html,
+body {
+  margin: 0;
+  padding: 0;
+  font-family: 'Source Sans Pro', sans-serif;
+  cursor: default;
+}
+
+.wrapper {
+  text-align: center;
+  margin: 50px 0;
+}
+
+.wrapper h1 {
+  text-transform: uppercase;
+  font-family: 'Baloo Bhaina', cursive;
+  font-size: 45px;
+  margin-bottom: 10px;
+}
+
+.wrapper p {
+  margin-top: 0;
+  margin-bottom: 40px;
+}
+
+/* Modal button */
+.modal-btn {
+  font-family: 'Baloo Bhaina', cursive;
+  letter-spacing: 1px;
+  border: none;
+  outline: none;
+  cursor: pointer;
+  padding: 10px 25px;
+  background-color: #ef6633;
+  color: #fff;
+  transition: all .3s;
+}
+
+.modal-btn:hover {
+  background-color: #d25729;
+}
+
+/* Modal */
+.modal {
+  background-color: rgba(0, 0, 0, 0.65);
+  display: none;
+  overflow: auto;
+  position: fixed;
+  z-index: 1000;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+}
+
+/* Modal Content */
+.modal-content {
+  position: relative;
+  top: 0px;
+  width: 600px;
+  margin: 0 auto;
+  background-color: #ffffff;
+  box-shadow: 0 8px 16px 0 rgba(0, 128, 128, 0.8), 0 6px 20px 0 rgba(0, 179, 179, 0.8);
+}
+
+.modal-header {
+  background-color: #009999;
+  height: auto;
+  padding: 20px;
+  text-align: left;
+}
+
+.modal-header .header-title {
+  font-family: 'Source Sans Pro', sans-serif;
+  margin: 0 0 10px;
+  color: #fff;
+  font-size: 35px;
+}
+
+.modal-header .date-time {
+  font-family: 'Source Sans Pro', sans-serif;
+  margin: 8px 0 20px;
+  color: #fff;
+  font-size: 17.5px;
+}
+
+.modal-header .date-time::before {
+  content: "";
+  background-image: url(https://cdn0.iconfinder.com/data/icons/education-364/24/time-education-clock-calendar-learning-school-date-512.png);
+  background-repeat: no-repeat;
+  background-size: 18px; 
+  width: 20px;
+  height: 20px;
+  display: inline-block;
+  margin-right: 5px; 
+  vertical-align: middle;
+}
+
+
+
+.meeting-link {
+  border-radius: 20px;
+  background-color: #00b3b3;
+  color: #ffffff;
+  padding: 10px 20px;
+  border: none;
+  outline: none;
+  cursor: pointer;
+  font-size: 16px;
+  display: flex;
+  align-items: center;
+}
+
+.meeting-link::before {
+  background-image: url(https://cdn4.iconfinder.com/data/icons/logos-brands-in-colors/48/google-meet-512.png);
+  background-repeat: no-repeat;
+  background-size: 15px;
+  background-position: center left;
+  content: "";
+  display: inline-block;
+  margin-right: 10px;
+  width: 15px;
+  height: 15px;
+}
+
+.meeting-link:hover {
+  background-color: #008080;
+}
+
+.modal-content .close {
+  position: absolute;
+  right: 0;
+  top: 0;
+  background-color: #222;
+  width: 60px;
+  height: 60px;
+  color: #fff;
+  line-height: 60px;
+  text-align: center;
+  cursor: pointer;
+  transition: all .3s;
+}
+
+.modal-content .close:hover {
+  background-color: #fff;
+  color: #222;
+}
+
+.modal-header .close {
+  display: none;
+}
+
+.modal-body {
+  padding: 0 20px;
+}
+
+.modal-body ul {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.modal-body ul li {
+  position: relative;
+  display: block;
+  margin-left: 20px;
+  color: #555;
+}
+
+.modal-body ul li::before {
+  position: absolute;
+  content: '\f00c';
+  color: #5cc560;
+  left: -20px;
+  top: 10px;
+  display: inline-block;
+  font: normal normal normal 14px/1 FontAwesome;
+  text-rendering: auto;
+  -webkit-font-smoothing: antialiased;
+}
+
+.modal-footer {
+  font-family: 'Source Sans Pro', sans-serif;
+  background-color: #009999;
+  width: 100%;
+  height: 60px;
+  line-height: 60px;
+  padding-left: 20px;
+}
+
+.modal-footer button {
+  margin-right: 10px;
+}
+
+.modal-header h3,
+.modal-footer h3 {
+  color: #fff;
+}
+
+/* Existing CSS styles... */
+
+/* Existing CSS styles... */
+
+.modal-body h4 .icon {
+  display: inline-block;
+  width: 20px; /* Set the width of the icon */
+  height: 20px; /* Set the height of the icon */
+  margin-right: 5px; /* Add some spacing between the icon and the heading text */
+  background-size: contain;
+}
+
+/* Custom styles for Participants icon */
+.participants-icon {
+  background-image: url(https://cdn2.iconfinder.com/data/icons/e-commerce-line-4-1/1024/users4-512.png);
+  background-size: 20px; 
+  width: 20px !important;
+  height: 20px !important; 
+  vertical-align: middle;
+}
+
+/* Custom styles for Agendas icon */
+.agendas-icon {
+  background-image: url(https://cdn1.iconfinder.com/data/icons/shopping-set3/100/list-512.png);
+  vertical-align: middle;
+}
+
+
+
+
+/* Todo List Styling */
+.todo-list {
+  margin-top: 20px;
+  padding: 0;
+}
+
+.todo-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px;
+  color: #555;
+}
+
+.todo-item:last-child {
+  border-bottom: none;
+}
+
+.todo-item .check {
+  font-size: 18px;
+  cursor: pointer;
+  order: 2;
+  float: right;
+  margin-left: 10px;
+}
+
+.todo-item .remove {
+  width: 18px;
+  height: 18px;
+  cursor: pointer;
+  background: no-repeat center;
+  background-size: cover;
+  display: block; 
+  order: 1;
+  margin-right: -450px;
+ 
+}
+
+/* Remove the 'x' for remove */
+.todo-item .remove::before {
+  content: none;
+}
+
+.todo-item p {
+  margin-left: 20px;
+  font-style: italic; /* Make the text italic */
+}
+
+/* Reduce the opacity of the input box */
+input[type="text"] {
+  border: none;
+  outline: none;
+  background: rgba(255, 255, 255, 0.7);
+  color: #808080;
+  font-size: 15px;
+  width: 350px;
+  font-style: italic;
+}
