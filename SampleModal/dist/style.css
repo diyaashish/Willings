@@ -1,0 +1,241 @@
+
+:hr {
+  height: 2px;
+  background-color: #808080;
+  border: none;
+}
+
+* {
+  box-sizing: border-box;
+}
+body {
+  background-color: #eee;
+  min-height: 2000px;
+  font-family: 'Source Sans Pro', sans-serif;
+  font-weight: 400;
+  font-size: 18px;
+  line-height: 1.8;
+  color: #444;
+}
+h1, h2, h3, h4, h5, h6 {
+  font-family: 'Source Sans Pro', sans-serif;
+  font-weight: 700;
+  color: #222;
+}
+
+.wrapper {
+  text-align: center;
+}
+.wrapper h1 {
+  text-transform: uppercase;
+  font-family: 'Baloo Bhaina', cursive;
+  font-size: 45px;
+  margin-bottom: 10px;
+}
+.wrapper p {
+  margin-top: 0;
+  margin-bottom: 40px;
+}
+
+/* Modal button */
+.modal-btn {
+  font-family: 'Baloo Bhaina', cursive;
+  letter-spacing: 1px;
+  border: none;
+  outline: none;
+  cursor: pointer;
+  padding: 10px 25px;
+  background-color: #ef6633;
+  color: #fff;
+  transition: all .3s;
+}
+.modal-btn:hover {
+  background-color: #d25729;
+}
+
+/* Modal */
+.modal {
+  background-color: rgba(0,0,0,.65);
+  display: none;
+  overflow: auto;
+  position: fixed;
+  z-index: 1000;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+}
+
+/* Modal Content */
+.modal-content {
+  position: relative;
+  top: 0px;
+  width: 600px;
+  margin: 0 auto;
+  background-color: #ffffff;
+//background-color: #fff;
+  box-shadow: 0 8px 16px 0 rgb(0, 128, 128),0 6px 20px 0 rgb(0, 179, 179);
+}
+.modal-animated-in {
+  animation: totop-in .3s ease;
+}
+.modal-animated-out {
+  animation: totop-out .3s ease forwards;
+}
+/* .modal-header {
+  background-color: #009999;
+  width: 100%;
+  height: 100px;
+  line-height: 60px;
+  padding-left: 20px;
+} */
+
+
+.modal-header {
+  background-color: #009999;
+  height: auto; /* Remove the fixed height */
+  padding: 20px; /* Adjust the padding as needed */
+  text-align: left; /* Center the content horizontally */
+}
+
+.modal-header .header-title {
+  font-family: 'Source Sans Pro', sans-serif;
+  margin: 0 0 10px; /* Adjust the margin as needed */
+  color: #fff;
+  font-size: 30px;
+}
+
+.modal-header .date-time {
+  font-family: 'Source Sans Pro', sans-serif;
+  margin: 0; /* Remove the default margin of the p element */
+  color: #fff;
+}
+
+.meeting-link {
+  border-radius: 20px;
+  background-color: #00b3b3;
+  color: #ffffff;
+  padding: 10px 20px;
+  border: none;
+  outline: none;
+  cursor: pointer;
+  font-size: 16px;
+  display: flex;
+  align-items: center;
+}
+
+.meeting-link::before {
+  background-image: url(https://cdn4.iconfinder.com/data/icons/logos-brands-in-colors/48/google-meet-512.png);
+  background-repeat: no-repeat;
+  background-size: 15px;
+  background-position: center left;
+  content: "";
+  display: inline-block;
+  margin-right: 10px;
+  width: 15px;
+  height: 15px;
+}
+
+.meeting-link:hover {
+  background-color: #008080;
+}
+
+
+
+.modal-content .close {
+  position: absolute;
+  right: 0;
+  top: 0;
+  background-color: #222;
+  width: 60px;
+  height: 60px;
+  color: #fff;
+  line-height: 60px;
+  text-align: center;
+  cursor: pointer;
+  transition: all .3s;
+}
+.modal-content .close:hover {
+  background-color: #fff;
+  color: #222;
+}
+
+.modal-header .close {
+  display: none; /* Add this line to hide the close button */
+}
+
+
+
+/* Modal Body */
+.modal-body {
+  padding: 0 20px;
+}
+.modal-body ul {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.modal-body ul li {
+  position: relative;
+  display: block;
+  margin-left: 20px;
+  color: #555;
+}
+.modal-body ul li::before {
+  position: absolute;
+  content: '\f00c';
+  color: #5cc560;
+  left: -20px;
+  top: 10px;
+  display: inline-block;
+  font: normal normal normal 14px/1 FontAwesome;
+  text-rendering: auto;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Modal Footer */
+.modal-footer {
+  font-family: 'Source Sans Pro', sans-serif;
+  background-color: #009999;
+  width: 100%;
+  height: 60px;
+  line-height: 60px;
+  padding-left: 20px;
+}
+
+.modal-footer button {
+  margin-right: 10px;
+}
+
+.modal-header h3,
+.modal-footer h3 {
+  color: #fff;
+}
+
+
+
+
+
+/* Keyframes */
+@keyframes totop-in {
+  0% {
+    top: 600px;
+    opacity: 0;
+  }
+  100% {
+    top: 0;
+    opacity: 1;
+  }
+}
+
+@keyframes totop-out {
+  0% {
+    top: 0px;
+    opacity: 1;
+  }
+  100% {
+    top: -100%;
+    opacity: 0;
+  }
+}
+

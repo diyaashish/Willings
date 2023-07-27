@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="en" >
+<head>
+  <meta charset="UTF-8">
+  <title>Sample Modal </title>
+  <link href="https://fonts.googleapis.com/css?family=Baloo+Bhaina|Lato|Merriweather:700" rel="stylesheet"><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/normalize/5.0.0/normalize.min.css">
+<link rel='stylesheet' href='https://maxcdn.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css'><link rel="stylesheet" href="./style.css">
+
+</head>
+<body>
+<!-- partial:index.partial.html -->
+<div class="wrapper">
+  <h1>Sample Modal</h1>
+  <p>Clicking this button is equivalent to clicking on an event on the calendar. </p>
+  <!-- Modal button -->
+  <button id="modBtn" class="modal-btn">Open Modal</button>
+</div>
+
+<!-- Modal -->
+<div id="modal" class="modal">
+  <!-- Modal Content -->
+  <div class="modal-content">
+    <!-- Modal Header -->
+    <div class="modal-header">
+      <h3 class="header-title">Event Details</h3>
+      <p class="date-time">21 Jan, 08:30 - 9:30 AM</p>
+      <button onclick="window.open('https://meet.google.com/pns-mavu-mvg')" class="meeting-link">Meeting Link</button>
+    </div>
+    <!-- Modal Body -->
+    <div class="modal-body">
+      <h4>Participants</h4>
+
+
+      <ul>
+        <p>Participant 1, Participant 2, Participant 3, Participant 4</p>
+      </ul>
+
+      <hr>
+
+      <h4>Agendas</h4>
+    </div>
+    <div class="modal-footer">
+      <button class="modal-btn save-btn">Edit</button>
+      <button id="closeBtn" class="modal-btn close-btn">Close</button>
+
+    </div>
+  </div>
+</div>
+
+<script>
+  const modal = document.getElementById('modal');
+  const closeButton = document.getElementById('closeBtn');
+
+  closeButton.addEventListener('click', function() {
+    modal.style.display = 'none';
+  });
+
+  const modalButton = document.getElementById('modBtn');
+
+  modalButton.addEventListener('click', function() {
+    modal.style.display = 'block';
+  });
+</script>
+<!-- partial -->
+  <script src='https://cdnjs.cloudflare.com/ajax/libs/jquery/3.1.1/jquery.min.js'></script><script  src="./script.js"></script>
+
+</body>
+</html>
+
+<!--year-->
+<!--time zone-->
+<!--align-->
+
