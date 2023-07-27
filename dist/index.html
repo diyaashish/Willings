@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="en" >
+<head>
+  <meta charset="UTF-8">
+  <title>Final Sample Modal</title>
+  <link rel="stylesheet" href="./style.css">
+
+</head>
+<body>
+<!-- partial:index.partial.html -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Sample Modal with ToDo List</title>
+  <link href="https://fonts.googleapis.com/css?family=Baloo+Bhaina|Lato|Merriweather:700" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="wrapper">
+    <h1>Sample Modal</h1>
+    <p>Clicking this button is equivalent to clicking on an event on the calendar.</p>
+    <!-- Modal button -->
+    <button id="modBtn" class="modal-btn">Open Modal</button>
+  </div>
+
+  <!-- Modal -->
+  <div id="modal" class="modal">
+    <!-- Modal Content -->
+    <div class="modal-content">
+      <!-- Modal Header -->
+      <div class="modal-header">
+        <h3 class="header-title">Event Details</h3>
+        <p class="date-time">21 Jan 2023, 08:30 - 9:30 AM (IST)</p>
+        <button onclick="window.open('https://meet.google.com/pns-mavu-mvg')" class="meeting-link">Meeting Link</button>
+      </div>
+      <!-- Modal Body -->
+      <div class="modal-body">
+           <h4><span class="icon participants-icon"></span> Participants</h4>
+
+
+        <ul>
+          <p>Participant 1, Participant 2, Participant 3, Participant 4</p>
+        </ul>
+
+        <hr>
+
+        
+            <h4><span class="icon agendas-icon"></span> Agendas</h4>
+
+
+  <div class="todo-list"></div>
+  <input class="toDo" type="text" placeholder="Add your agendas here" autofocus maxlength="40">
+</div>
+        
+      <div class="modal-footer">
+        <button class="modal-btn save-btn">Edit</button>
+        <button id="closeBtn" class="modal-btn close-btn">Close</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="script.js"></script>
+</body>
+</html>
+<!-- partial -->
+  <script  src="./script.js"></script>
+
+</body>
+</html>
