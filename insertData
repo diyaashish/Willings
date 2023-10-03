@@ -1,0 +1,33 @@
+public void insertData(){
+    	System.out.println("Errorrrr! 1");
+         try {
+            // Load the MySQL JDBC driver
+            Class.forName("com.mysql.cj.jdbc.Driver");
+            
+            // Establish the connection
+            Connection connection = DriverManager.getConnection(dbUrl, dbUsername, dbPassword);
+            System.out.println("before query!");
+            
+            // Define the SQL query
+            String query = "SELECT timeFrom FROM events where title = Meet";
+            System.out.println(query);
+            
+            // Create a PreparedStatement
+            PreparedStatement preparedStatement = connection.prepareStatement(query);
+            System.out.println("after query!");
+            preparedStatement.setString(1, my_title);
+            
+            // Execute the query
+            preparedStatement.executeUpdate();
+            
+            // Close the resources
+            preparedStatement.close();
+            connection.close();
+            
+            System.out.println("Data inserted successfully!");
+        } catch (ClassNotFoundException | SQLException e) {
+        	
+            e.printStackTrace();
+        }
+         System.out.println("Errorrrr!");
+    }
